@@ -133,6 +133,68 @@
   // =============================
   // Jam on – Playback Personalizado
   // =============================
+  
+  // --- lista completa de acordes disponíveis ---
+  const AVAILABLE_CHORDS = [
+    // Acordes em A
+    'A', 'A11', 'A13', 'A4', 'A45+', 'A5', 'A5+', 'A6', 'A7', 'A75+', 'A9', 'A95+', 'Adim', 
+    'Am', 'Am4', 'Am5', 'Am5+', 'Am6', 'Am7', 'Am75+', 'Am79', 'Am9',
+
+    // Acordes em AS (A#)
+    'AS', 'AS11', 'AS13', 'AS4', 'AS45+', 'AS5', 'AS5+', 'AS6', 'AS7', 'AS75+', 'AS9', 'AS95+',
+    'ASdim', 'ASm', 'ASm4', 'ASm5', 'ASm5+', 'ASm6', 'ASm7', 'ASm75+', 'ASm79', 'ASm9',
+
+    // Acordes em B
+    'B', 'B11', 'B13', 'B4', 'B45+', 'B5', 'B5+', 'B6', 'B7', 'B75+', 'B9', 'B95+', 'Bdim',
+    'Bm', 'Bm4', 'Bm5', 'Bm5+', 'Bm6', 'Bm7', 'Bm75+', 'Bm79', 'Bm9',
+
+    // Acordes em C
+    'C', 'C11', 'C13', 'C4', 'C45+', 'C5', 'C5+', 'C6', 'C7', 'C75+', 'C9', 'C95+', 'Cdim',
+    'Cm', 'Cm4', 'Cm5', 'Cm5+', 'Cm6', 'Cm7', 'Cm75+', 'Cm79', 'Cm9',
+
+    // Acordes em CS (C#)
+    'CS', 'CS11', 'CS13', 'CS4', 'CS45+', 'CS5', 'CS5+', 'CS6', 'CS7', 'CS75+', 'CS9', 'CS95+',
+    'CSdim', 'CSm', 'CSm4', 'CSm5', 'CSm5+', 'CSm6', 'CSm7', 'CSm75+', 'CSm79', 'CSm9',
+
+    // Acordes em D
+    'D', 'D11', 'D13', 'D4', 'D45+', 'D5', 'D5+', 'D6', 'D7', 'D75+', 'D9', 'D95+', 'Ddim',
+    'Dm', 'Dm4', 'Dm5', 'Dm5+', 'Dm6', 'Dm7', 'Dm75+', 'Dm79', 'Dm9',
+
+    // Acordes em E
+    'E', 'E11', 'E13', 'E4', 'E45+', 'E5', 'E5+', 'E6', 'E7', 'E75+', 'E9', 'E95+', 'Edim',
+    'Em', 'Em4', 'Em5', 'Em5+', 'Em6', 'Em7', 'Em75+', 'Em79', 'Em9',
+
+    // Acordes em DS (D#)
+    'DS', 'DS11', 'DS13', 'DS4', 'DS45+', 'DS5', 'DS5+', 'DS6', 'DS7', 'DS75+', 'DS9', 'DS95+',
+    'DSdim', 'DSm', 'DSm4', 'DSm5', 'DSm5+', 'DSm6', 'DSm7', 'DSm75+', 'DSm79', 'DSm9',
+
+    // Acordes em F
+    'F', 'F11', 'F13', 'F4', 'F45+', 'F5', 'F5+', 'F6', 'F7', 'F75+', 'F9', 'F95+', 'Fdim',
+    'Fm', 'Fm4', 'Fm5', 'Fm5+', 'Fm6', 'Fm7', 'Fm75+', 'Fm79', 'Fm9',
+
+    // Acordes em FS (F#)
+    'FS', 'FS11', 'FS13', 'FS4', 'FS45+', 'FS5', 'FS5+', 'FS6', 'FS7', 'FS75+', 'FS9', 'FS95+',
+    'FSdim', 'FSm', 'FSm4', 'FSm5', 'FSm5+', 'FSm6', 'FSm7', 'FSm75+', 'FSm79', 'FSm9',
+
+    // Acordes em G
+    'G', 'G11', 'G13', 'G4', 'G45+', 'G5', 'G5+', 'G6', 'G7', 'G75+', 'G9', 'G95+', 'Gdim',
+    'Gm', 'Gm4', 'Gm5', 'Gm5+', 'Gm6', 'Gm7', 'Gm75+', 'Gm79', 'Gm9',
+
+    // Acordes em GS (G#)
+    'GS', 'GS11', 'GS13', 'GS4', 'GS45+', 'GS5', 'GS5+', 'GS6', 'GS7', 'GS75+', 'GS9', 'GS95+',
+    'GSdim', 'GSm', 'GSm4', 'GSm5', 'GSm5+', 'GSm6', 'GSm7', 'GSm75+', 'GSm79', 'GSm9'
+  ];
+
+  // --- buffers de áudio ---
+  const audioState = {
+    ctx: null,
+    buffers: {
+      drums: {},
+      bass: {},
+      guitar: {}
+    }
+  };
+
   const ui = {
     play: document.getElementById('btnPlay'),
     pause: document.getElementById('btnPause'),
@@ -213,57 +275,6 @@
 
   BASS_SAMPLES['X'] = 'assets/bass-muted.mp3';
 
-  // --- lista completa de acordes disponíveis ---
-  const AVAILABLE_CHORDS = [
-    // Acordes em A
-    'A', 'A11', 'A13', 'A4', 'A45+', 'A5', 'A5+', 'A6', 'A7', 'A75+', 'A9', 'A95+', 'Adim', 
-    'Am', 'Am4', 'Am5', 'Am5+', 'Am6', 'Am7', 'Am75+', 'Am79', 'Am9',
-
-    // Acordes em AS (A#)
-    'AS', 'AS11', 'AS13', 'AS4', 'AS45+', 'AS5', 'AS5+', 'AS6', 'AS7', 'AS75+', 'AS9', 'AS95+',
-    'ASdim', 'ASm', 'ASm4', 'ASm5', 'ASm5+', 'ASm6', 'ASm7', 'ASm75+', 'ASm79', 'ASm9',
-
-    // Acordes em B
-    'B', 'B11', 'B13', 'B4', 'B45+', 'B5', 'B5+', 'B6', 'B7', 'B75+', 'B9', 'B95+', 'Bdim',
-    'Bm', 'Bm4', 'Bm5', 'Bm5+', 'Bm6', 'Bm7', 'Bm75+', 'Bm79', 'Bm9',
-
-    // Acordes em C
-    'C', 'C11', 'C13', 'C4', 'C45+', 'C5', 'C5+', 'C6', 'C7', 'C75+', 'C9', 'C95+', 'Cdim',
-    'Cm', 'Cm4', 'Cm5', 'Cm5+', 'Cm6', 'Cm7', 'Cm75+', 'Cm79', 'Cm9',
-
-    // Acordes em CS (C#)
-    'CS', 'CS11', 'CS13', 'CS4', 'CS45+', 'CS5', 'CS5+', 'CS6', 'CS7', 'CS75+', 'CS9', 'CS95+',
-    'CSdim', 'CSm', 'CSm4', 'CSm5', 'CSm5+', 'CSm6', 'CSm7', 'CSm75+', 'CSm79', 'CSm9',
-
-    // Acordes em D
-    'D', 'D11', 'D13', 'D4', 'D45+', 'D5', 'D5+', 'D6', 'D7', 'D75+', 'D9', 'D95+', 'Ddim',
-    'Dm', 'Dm4', 'Dm5', 'Dm5+', 'Dm6', 'Dm7', 'Dm75+', 'Dm79', 'Dm9',
-
-    // Acordes em E
-    'E', 'E11', 'E13', 'E4', 'E45+', 'E5', 'E5+', 'E6', 'E7', 'E75+', 'E9', 'E95+', 'Edim',
-    'Em', 'Em4', 'Em5', 'Em5+', 'Em6', 'Em7', 'Em75+', 'Em79', 'Em9',
-
-    // Acordes em DS (D#)
-    'DS', 'DS11', 'DS13', 'DS4', 'DS45+', 'DS5', 'DS5+', 'DS6', 'DS7', 'DS75+', 'DS9', 'DS95+',
-    'DSdim', 'DSm', 'DSm4', 'DSm5', 'DSm5+', 'DSm6', 'DSm7', 'DSm75+', 'DSm79', 'DSm9',
-
-    // Acordes em F
-    'F', 'F11', 'F13', 'F4', 'F45+', 'F5', 'F5+', 'F6', 'F7', 'F75+', 'F9', 'F95+', 'Fdim',
-    'Fm', 'Fm4', 'Fm5', 'Fm5+', 'Fm6', 'Fm7', 'Fm75+', 'Fm79', 'Fm9',
-
-    // Acordes em FS (F#)
-    'FS', 'FS11', 'FS13', 'FS4', 'FS45+', 'FS5', 'FS5+', 'FS6', 'FS7', 'FS75+', 'FS9', 'FS95+',
-    'FSdim', 'FSm', 'FSm4', 'FSm5', 'FSm5+', 'FSm6', 'FSm7', 'FSm75+', 'FSm79', 'FSm9',
-
-    // Acordes em G
-    'G', 'G11', 'G13', 'G4', 'G45+', 'G5', 'G5+', 'G6', 'G7', 'G75+', 'G9', 'G95+', 'Gdim',
-    'Gm', 'Gm4', 'Gm5', 'Gm5+', 'Gm6', 'Gm7', 'Gm75+', 'Gm79', 'Gm9',
-
-    // Acordes em GS (G#)
-    'GS', 'GS11', 'GS13', 'GS4', 'GS45+', 'GS5', 'GS5+', 'GS6', 'GS7', 'GS75+', 'GS9', 'GS95+',
-    'GSdim', 'GSm', 'GSm4', 'GSm5', 'GSm5+', 'GSm6', 'GSm7', 'GSm75+', 'GSm79', 'GSm9'
-  ];
-
   // Tipos de acordes reais (nomes dos arquivos)
   const CHORD_NAMES = ['A', 'A4', 'A5', 'A5+', 'A6', 'A7', 'A9', 'A11', 'A13', 'A45+', 'A75+', 'A95+',
     'Adim', 'Am', 'Am4', 'Am5', 'Am5+', 'Am6', 'Am7', 'Am9', 'Am75+', 'Am79'];
@@ -293,7 +304,7 @@
     [4, 4, 4, 4, 5, 5, 6, 6, 1, 1, 1, 1, 3, 4],
     [1, 1, 1, 1, 2, 2, 4, 4, 5, 5],
     [1, 1, 1, 3, 4, 1, 1, 1, 3, 4, 5, 4, 5, 1, 1, 1, 1],
-    [4, 4, 4, 4, 5, 5, 5, 5, 3, 3, 3, 3, 6, 6, 2, 5, 1, 5, 1, 1, 1, 1, 1, 1, 1, 1, 4, 4, 5, 5, 1, 1, 1, 1, 4, 4, 5, 5, 1, 1, 1, 1]
+    [4, 4, 4, 4, 5, 5, 5, 5, 3, 3, 3, 3, 6, 6, 2, 5, 1, 5, 1, 1, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 4, 4, 5, 5, 1, 1, 1, 1, 4, 4, 5, 5, 1, 1, 1, 1]
   ];
 
   // 🛠️ CUSTOM_GROOVES
@@ -351,21 +362,21 @@
     `;
   }
 
+  // --- carrega buffer de áudio ---
   async function loadBuffer(url) {
     try {
       const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-      const arrayBuffer = await res.arrayBuffer();
-      const audioBuffer = await audio.ctx.decodeAudioData(arrayBuffer);
-      return audioBuffer;
+      if (!res.ok) throw new Error(res.status);
+      const arr = await res.arrayBuffer();
+      return await audioState.ctx.decodeAudioData(arr);
     } catch (e) {
-      log(`[ERRO] Falha ao carregar: ${url} → ${e.message}`);
+      console.error("Falha ao carregar", url, e);
       return null;
     }
   }
 
   // --- pré-carrega apenas bateria e baixo ---
-  async function ensureSamples() {
+  async function ensureSamples(){
     const promises = [];
 
     for (const [k, url] of Object.entries(DRUMS)) {
@@ -399,9 +410,9 @@
     const buf = state.buffers.guitar[chord];
     if (!buf) return;
 
-    const src = audio.ctx.createBufferSource();
+    const src = audioState.ctx.createBufferSource();
     src.buffer = buf;
-    src.connect(distorted ? audio.distGain : audio.cleanGain);
+    src.connect(audioState.ctx.destination);
     src.start(time);
   }
 
@@ -418,6 +429,7 @@
     if (audio.ctx) return;
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     audio.ctx = ctx;
+    audioState.ctx = ctx; // Set the audioState context
     audio.master = ctx.createGain();
     audio.master.gain.value = 0.9;
 
@@ -609,32 +621,6 @@
     return result;
   }
 
-  // === Toca acorde de guitarra ===
-  async function playChordFromScheduler(time, note, chordName, isDistorted) {
-    // Primeiro, determinar qual acorde tocar baseado no grau
-    const degree = state.chordProgression[state.currentChordIndex];
-    let chord = 'A'; // padrão
-    
-    if (degree === 1) chord = 'A';
-    else if (degree === 4) chord = 'D';
-    else if (degree === 5) chord = 'E';
-    else if (degree === 6) chord = 'F';
-    
-    // Adicionar sufixo para acordes menores
-    if (state.quality === 'min') {
-      chord += 'm';
-    }
-    
-    // Verificar se o acorde está disponível
-    if (!AVAILABLE_CHORDS.includes(chord)) {
-      console.warn("Acorde não disponível:", chord);
-      return;
-    }
-    
-    // Tocar o acorde
-    await playChord(note, chord, isDistorted, time);
-  }
-
   // === Scheduler ===
   function scheduleStep(time, stepIdx) {
     const cell = state.pattern[stepIdx % state.pattern.length];
@@ -669,8 +655,9 @@
         state.barsInChord = 0;
 
         // Toca acordes
-        if (!mute.clean) playChordFromScheduler(time, state.key, getCurrentChordName(), false);
-        if (!mute.dist) playChordFromScheduler(time, state.key, getCurrentChordName(), true);
+        const chordName = getCurrentChordName();
+        if (!mute.clean) playChord(state.key, chordName, false, time);
+        if (!mute.dist) playChord(state.key, chordName, true, time);
 
         // Alterna modo do baixo
         if (state.bassMode === 'arpejo') {
@@ -909,6 +896,7 @@
     state.currentGroove = selectRandomGroove();
     await ensureSamples();
     buildBassPlan();
+    state.pattern = buildDrumPattern();
     state.bpm = Number(ui.bpm.value) || 100;
     state.sixteenthDur = (60 / state.bpm) / 4;
     state.stepIndex = 0;
