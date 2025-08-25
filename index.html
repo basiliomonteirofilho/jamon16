@@ -520,20 +520,37 @@
  async function playChord(time, note, type, isDistorted) {
   const folder = isDistorted ? 'guitarraDistorcao' : 'guitarraLimpa';
   const key = `${folder}_${note}${type}`;
-  let buf = state.buffers.guitar[key];
-
-  if (!buf) {
-    const url = `${folder}/${note}/${type}.mp3`;
-    buf = await loadBuffer(url);
-    if (!buf) return;
-    state.buffers.guitar[key] = buf;
+  
+  // Se já temos o buffer carregado, use-o
+  if (state.buffers.guitar[key]) {
+    const src = audio.ctx.createBufferSource();
+    const gainNode = isDistorted ? audio.distGain : audio.cleanGain;
+    src.buffer = state.buffers.guitar[key];
+    src.connect(gainNode);
+    src.start(time);
+    return;
   }
-
-  const src = audio.ctx.createBufferSource();
-  const gainNode = isDistorted ? audio.distGain : audio.cleanGain;
-  src.buffer = buf;
-  src.connect(gainNode);
-  src.start(time);
+  
+  // Caso contrário, tente carregar o arquivo
+  const url = `assets/${folder}/${note}/${note}${type}.mp3`;
+  log(`[CHORD] Tentando carregar: ${url}`);
+  
+  try {
+    const buf = await loadBuffer(url);
+    if (!buf) {
+      log(`[ERRO] Arquivo de acorde não encontrado: ${url}`);
+      return;
+    }
+    
+    state.buffers.guitar[key] = buf;
+    const src = audio.ctx.createBufferSource();
+    const gainNode = isDistorted ? audio.distGain : audio.cleanGain;
+    src.buffer = buf;
+    src.connect(gainNode);
+    src.start(time);
+  } catch (e) {
+    log(`[ERRO] Falha ao carregar acorde: ${url} → ${e.message}`);
+  }
 }
 
   function getCurrentChord() {
@@ -545,36 +562,53 @@
   const noteIndex = (state.keyIdx + rootOffset) % 12;
   const noteSharp = chordNames[noteIndex];
 
+  // Converter nome da nota para formato de pasta (A, AS, B, C, CS, etc.)
   const folderName = NAME_TO_PITCH[noteSharp] || 'A';
 
-  // Use apenas acordes que você gravou
-  const type = quality === 'maj'
-    ? randItem(['A', 'A7', 'A6', 'A9', 'A4', 'A5', 'A5+', 'A11', 'A13'])
-    : randItem(['Am', 'Am7', 'Am6', 'Am9', 'Am4', 'Am5', 'Am5+', 'Am75+', 'Am79']);
+  // Tipos de acordes mais comuns que provavelmente existem
+  const commonChordTypes = {
+    'maj': ['', '7', 'maj7', '6', '9'],
+    'min': ['m', 'm7', 'm6', 'm9']
+  };
 
-  return { note: folderName, type };
+  // Escolher um tipo de acorde aleatório
+  const chordType = randItem(commonChordTypes[quality]);
+  
+  return { 
+    note: folderName, 
+    type: chordType,
+    displayName: noteSharp + (quality === 'maj' ? chordType : 'm' + chordType.replace('m', ''))
+  };
 }
 
-async function preloadChords() {
-  const common = ['A', 'A7', 'Am', 'Am7', 'D', 'D7', 'Dm', 'Dm7', 'E', 'E7', 'Em', 'G', 'C'];
+async function preloadCommonChords() {
+  const commonTypes = ['', '7', 'm', 'm7'];
   const folders = ['guitarraLimpa', 'guitarraDistorcao'];
-  const notes = PITCHES;
+  const notes = ['A', 'AS', 'B', 'C', 'CS', 'D', 'DS', 'E', 'F', 'FS', 'G', 'GS'];
 
   const promises = [];
   for (const folder of folders) {
     for (const note of notes) {
-      for (const type of common) {
+      for (const type of commonTypes) {
+        const chordName = note + type;
         const key = `${folder}_${note}${type}`;
-        const url = `${folder}/${note}/${type}.mp3`;
+        const url = `assets/${folder}/${note}/${note}${type}.mp3`;
+        
+        // Não carregar novamente se já estiver carregado
         if (!state.buffers.guitar[key]) {
           promises.push(loadBuffer(url).then(buf => {
-            if (buf) state.buffers.guitar[key] = buf;
+            if (buf) {
+              state.buffers.guitar[key] = buf;
+              log(`[PRELOAD] Carregado: ${note}${type}`);
+            }
           }));
         }
       }
     }
   }
+  
   await Promise.all(promises);
+  log('[PRELOAD] Pré-carregamento de acordes concluído');
 }
 
   function scheduleStep(time, stepIdx) {
@@ -609,9 +643,9 @@ async function preloadChords() {
         state.currentChordIndex = (state.currentChordIndex + 1) % state.chordProgression.length;
         state.barsInChord = 0;
 
-        const { note, type } = getCurrentChord();
-        if (!mute.clean) playChord(time, note, type, false);
-        if (!mute.dist) playChord(time, note, type, true);
+        const chord = getCurrentChord();
+        if (!mute.clean) playChord(time, chord.note, chord.type, false);
+        if (!mute.dist) playChord(time, chord.note, chord.type, true);
 
         if (state.bassMode === 'arpejo') {
           state.bassMode = 'tonica';
@@ -623,6 +657,9 @@ async function preloadChords() {
             state.bassCycleCount = 0;
           }
         }
+        
+        // Atualizar display com o nome correto do acorde
+        ui.currentChord.textContent = chord.displayName;
       }
       updateChordDisplay();
     }
@@ -830,7 +867,6 @@ async function preloadChords() {
     const currentChord = rootNote + chordType;
     const barsLeft = state.chordDurations[state.currentChordIndex] - state.barsInChord;
 
-    ui.currentChord.textContent = currentChord;
     ui.chordTimer.textContent = `Próx: ${barsLeft} compasso(s)`;
   }
 
@@ -926,8 +962,17 @@ async function preloadChords() {
   ui.stop.addEventListener('click', onStop);
   ui.save.addEventListener('click', onSave);
 
-  log('🔧 Personalize em CUSTOM_GROOVES. Pressione Play para começar.');
+  // Pré-carregar alguns acordes comuns quando a página carregar
+  window.addEventListener('load', () => {
+    log('🔧 Iniciando pré-carregamento de acordes comuns...');
+    if (audio.ctx) {
+      preloadCommonChords();
+    } else {
+      // Se o AudioContext ainda não foi inicializado, inicializar primeiro
+      initAudio();
+      preloadCommonChords();
+    }
+  });
 </script>
 </body>
 </html>
-
