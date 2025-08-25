@@ -61,6 +61,7 @@
     .badge { display:inline-block; padding:.15rem .45rem; border-radius:6px; border:1px solid #294256; background:#0b1826; color:#9bd5f0; font-size:.8rem; }
     .row { display:flex; gap:8px; align-items:center; flex-wrap: wrap; }
     .spacer { flex: 1 1 auto; }
+    .muted { opacity: 0.5; }
   </style>
 </head>
 <body>
@@ -532,7 +533,7 @@
   const gainNode = isDistorted ? audio.distGain : audio.cleanGain;
   src.buffer = buf;
   src.connect(gainNode);
-  src.start(time); // Usa o tempo exato do scheduler
+  src.start(time);
 }
 
   function getCurrentChord() {
@@ -801,20 +802,30 @@ async function preloadChords() {
     ui.save.textContent = '💾 Salvar 4 min (MP3)';
   }
 
+  function toggleMute(type, button) {
+    mute[type] = !mute[type];
+    button.dataset.mute = mute[type] ? 'on' : 'off';
+    button.textContent = mute[type] ? `🔇 ${button.textContent.split(' ')[1]}` : `🔊 ${button.textContent.split(' ')[1]}`;
+    
+    // Atualiza visualmente os botões de mute
+    if (mute[type]) {
+      button.classList.add('muted');
+    } else {
+      button.classList.remove('muted');
+    }
+  }
+
   ui.muteBass.addEventListener('click', () => toggleMute('bass', ui.muteBass));
   ui.muteDrums.addEventListener('click', () => toggleMute('drums', ui.muteDrums));
   ui.muteClean.addEventListener('click', () => toggleMute('clean', ui.muteClean));
   ui.muteDist.addEventListener('click', () => toggleMute('dist', ui.muteDist));
 
-  function toggleMute(type, button) {
-    mute[type] = !mute[type];
-    button.dataset.mute = mute[type] ? 'on' : 'off';
-    button.textContent = mute[type] ? `🔇 ${button.textContent.split(' ')[1]}` : `🔊 ${button.textContent.split(' ')[1]}`;
-  }
-
   function updateChordDisplay() {
     const chordNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-    const rootNote = chordNames[state.keyIdx];
+    const degree = state.chordProgression[state.currentChordIndex];
+    const rootOffset = DEGREE_TO_ROOT[degree] || 0;
+    const rootIdx = (state.keyIdx + rootOffset) % 12;
+    const rootNote = chordNames[rootIdx];
     const chordType = state.quality === 'maj' ? '' : 'm';
     const currentChord = rootNote + chordType;
     const barsLeft = state.chordDurations[state.currentChordIndex] - state.barsInChord;
@@ -826,6 +837,8 @@ async function preloadChords() {
   async function onPlay() {
     if (state.running) { onStop(); setTimeout(onPlay, 100); return; }
     initAudio();
+    await ensureSamples(); // Garante que as samples estão carregadas
+    
     state.currentGroove = selectRandomGroove();
     
     buildBassPlan();
@@ -865,6 +878,7 @@ async function preloadChords() {
     if (state.running && !state.paused) {
       audio.ctx.suspend();
       state.paused = true;
+      stopScheduler();
       ui.play.textContent = '▶️ Retomar';
     } else if (state.paused) {
       audio.ctx.resume();
