@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Jam On – Playback Aleatório</title>
+  <style>
+    :root{
+      --bg:#0b0f14;--panel:#121822;--panel-2:#0f141d;--text:#e6edf3;--muted:#9fb3c8;--accent:#5eead4;--accent-2:#22d3ee;--danger:#ff6b6b;--ok:#22c55e;--warning:#fbbf24
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial,Apple Color Emoji,Segoe UI Emoji;background:linear-gradient(180deg,var(--bg),#0e1622 40%,#0a1018);color:var(--text);}
+    h1{font-size:clamp(1.2rem,2.5vw,1.8rem);margin:0 0 .25rem}
+    .app{max-width:1100px;margin:24px auto;padding:16px}
+    .panel{background:linear-gradient(180deg,var(--panel),var(--panel-2));border:1px solid #1e293b;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.35);padding:16px}
+    .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}
+    .controls{display:flex;flex-wrap:wrap;gap:10px;margin:8px 0 2px}
+    button,.toggle{cursor:pointer;border:none;padding:10px 14px;border-radius:12px;background:#0b1220;color:var(--text);border:1px solid #253244;transition:all .15s ease;display:inline-flex;gap:8px;align-items:center}
+    button:hover,.toggle:hover{transform:translateY(-1px);border-color:#2f4159}
+    button.primary{background:linear-gradient(180deg,#0ea5b6,#0891b2);border-color:#0ea5b6}
+    button.warn{background:linear-gradient(180deg,#b45309,#92400e)}
+    button.danger{background:linear-gradient(180deg,#dc2626,#b91c1c)}
+    .toggles{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+    .toggle[data-on="true"]{background:linear-gradient(180deg,#0f1b2d,#0d2331);box-shadow:inset 0 0 0 2px #1f2a3a}
+    .toggle[data-on="true"] .dot{transform:translateX(18px);background:var(--ok)}
+    .toggle .label{min-width:120px}
+    .toggle .dotwrap{width:36px;height:20px;border-radius:999px;background:#111827;border:1px solid #263244;display:inline-flex;align-items:center;padding:0 2px}
+    .toggle .dot{width:16px;height:16px;border-radius:50%;background:#64748b;transition:transform .2s ease,background .2s ease}
+    .readout{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}
+    .card{background:rgba(15,23,42,.6);border:1px solid #1e293b;border-radius:14px;padding:10px 12px}
+    .value{font-size:1.25rem;font-weight:700;color:var(--accent)}
+    .muted{color:var(--muted);font-size:.85rem}
+    .bpm{display:flex;gap:6px;align-items:center}
+    .bpm input{width:80px}
+    .bpm button{padding:8px 10px}
+    .editor{margin-top:14px}
+    .editor h3{margin:.2rem 0 .4rem;font-size:1rem;color:var(--accent)}
+    textarea{width:100%;min-height:120px;background:#0b1220;color:var(--text);border:1px solid #253244;border-radius:12px;padding:10px;font-family:ui-monospace,Menlo,Consolas,monospace}
+    .small{font-size:.82rem;color:var(--muted)}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .kbd{font-family:ui-monospace,Menlo,Consolas,monospace;background:#0b1220;border:1px solid #263244;border-radius:8px;padding:2px 6px;color:#9fb3c8}
+    .footer{opacity:.8;margin-top:12px}
+    .pill{display:inline-block;border:1px solid #263244;background:#0b1220;border-radius:999px;padding:2px 8px;margin-right:6px}
+    .keytag{background:#0f172a;border-color:#1f2a44}
+    a{color:var(--accent-2)}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="panel">
+      <h1>Jam On – Playback Aleatório</h1>
+      <div class="controls">
+        <button id="btnPlay" class="primary">▶️ Play</button>
+        <button id="btnPause">⏸️ Pause</button>
+        <button id="btnStop" class="danger">⏹️ Parar</button>
+        <button id="btnRepeat" class="warn">🔁 Repetir</button>
+        <button id="btnBack">⏮️ Voltar</button>
+        <button id="btnSave">💾 Salvar MP3 (5 min)</button>
+      </div>
+
+      <div class="toggles">
+        <div class="toggle" id="tglBass" data-on="true"><span class="label">Baixo</span><span class="dotwrap"><span class="dot"></span></span></div>
+        <div class="toggle" id="tglDrums" data-on="true"><span class="label">Bateria</span><span class="dotwrap"><span class="dot"></span></span></div>
+        <div class="toggle" id="tglGtrDist" data-on="true"><span class="label">Guitarra Dist.</span><span class="dotwrap"><span class="dot"></span></span></div>
+        <div class="toggle" id="tglGtrClean" data-on="true"><span class="label">Guitarra Limpa</span><span class="dotwrap"><span class="dot"></span></span></div>
+      </div>
+
+      <div class="readout">
+        <div class="card">
+          <div class="muted">Acorde atual</div>
+          <div id="uiChord" class="value">—</div>
+          <div class="small">Campo harmônico: <span id="uiKey" class="pill keytag">—</span> | Divisão rítmica: <span id="uiTS" class="pill">—</span></div>
+        </div>
+        <div class="card">
+          <div class="muted">BPM</div>
+          <div class="bpm">
+            <button id="bpmDown">–</button>
+            <div id="uiBpm" class="value">100</div>
+            <button id="bpmUp">+</button>
+          </div>
+          <div class="small">Cada pulso = semínima</div>
+        </div>
+        <div class="card">
+          <div class="muted">Status</div>
+          <div id="uiStatus" class="value">Pronto</div>
+          <div class="small">Count-in na abertura para pré-carregar áudios.</div>
+        </div>
+      </div>
+
+      <div class="editor">
+        <h3>🎛️ Editar Levadas (Intro "[]" toca 1x, Loop "()" repete)</h3>
+        <div class="row small">
+          <span class="pill">Bateria: bu, ca, ch, cha, co, at, to1, to2, su, ba, bch, cch, bc, cc, "-" (silêncio)</span>
+        </div>
+        <textarea id="drumsPatterns" spellcheck="false"></textarea>
+        <div class="row small" style="margin-top:8px">
+          <span class="pill">Baixo: sb, m, sm, c, sc, -, ° (mute anterior), x (ghost)</span>
+        </div>
+        <textarea id="bassPatterns" spellcheck="false"></textarea>
+        <div class="row" style="margin-top:8px">
+          <button id="btnApply">Aplicar Levadas</button>
+          <span class="small">Use vírgula <span class="kbd">,</span> para barras. Ex.: <span class="kbd">[ca ca - -] (bch - ch - , cch - ch -)</span></span>
+        </div>
+      </div>
+
+      <div class="footer small">
+        Dica: "Parar" prepara um novo playback aleatório para o próximo Play. "Repetir" reinicia desde a introdução.
+      </div>
+    </div>
+  </div>
+
+  <!-- LameJS para exportar MP3 -->
+  <script src="https://unpkg.com/lamejs@1.2.0/lame.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.0/lame.min.js"></script>
+<script>
+const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+let isPlaying = false;
+let nextNoteTime = 0.0;
+let tempo = 120; // BPM
+let current16thNote = 0;
+let timerID;
+let sourceNodes = [];
+
+// Durations
+const sectionLength = 4 * (60 / tempo); // 1 compasso de 4/4 em segundos
+
+// Map de arquivos de áudio
+const samples = {
+  bateria: {
+    bumbo: "assets/bateria/bumbo.mp3",
+    caixa: "assets/bateria/caixa.mp3",
+    ch: "assets/bateria/ch.mp3",
+    ataque: "assets/bateria/ataque.mp3",
+    "bumbo-ataque": "assets/bateria/bumbo-ataque.mp3"
+  },
+  baixo: {
+    C: "assets/baixo/C.mp3",
+    D: "assets/baixo/D.mp3",
+    E: "assets/baixo/E.mp3",
+    F: "assets/baixo/F.mp3",
+    G: "assets/baixo/G.mp3",
+    A: "assets/baixo/A.mp3",
+    B: "assets/baixo/B.mp3"
+  },
+  guitarraLimpa: {
+    C: "assets/guitarraLimpa/C.mp3",
+    D: "assets/guitarraLimpa/D.mp3",
+    E: "assets/guitarraLimpa/E.mp3",
+    F: "assets/guitarraLimpa/F.mp3",
+    G: "assets/guitarraLimpa/G.mp3",
+    A: "assets/guitarraLimpa/A.mp3",
+    B: "assets/guitarraLimpa/B.mp3"
+  },
+  guitarraDistorcao: {
+    C: "assets/guitarraDistorcao/C.mp3",
+    D: "assets/guitarraDistorcao/D.mp3",
+    E: "assets/guitarraDistorcao/E.mp3",
+    F: "assets/guitarraDistorcao/F.mp3",
+    G: "assets/guitarraDistorcao/G.mp3",
+    A: "assets/guitarraDistorcao/A.mp3",
+    B: "assets/guitarraDistorcao/B.mp3"
+  }
+};
+
+// Cache de buffers
+const audioBuffers = {};
+
+// Pré-carregamento
+async function loadSamples() {
+  for (let grupo in samples) {
+    audioBuffers[grupo] = {};
+    for (let nota in samples[grupo]) {
+      const response = await fetch(samples[grupo][nota]);
+      const arrayBuffer = await response.arrayBuffer();
+      audioBuffers[grupo][nota] = await audioContext.decodeAudioData(arrayBuffer);
+    }
+  }
+  console.log("Todos os samples foram carregados!");
+}
+
+// Função de tocar sample
+function playSample(group, note, time, destination = audioContext.destination) {
+  const buffer = audioBuffers[group][note];
+  if (!buffer) return;
+  const source = audioContext.createBufferSource();
+  source.buffer = buffer;
+  source.connect(destination);
+  source.start(time);
+  sourceNodes.push(source);
+}
+
+// Geração de uma seção (baixo + bateria + guitarras)
+function scheduleSection(startTime) {
+  const baixoNotas = ["C", "D", "E", "F", "G", "A", "B"];
+  const baixoNota = baixoNotas[Math.floor(Math.random() * baixoNotas.length)];
+  playSample("baixo", baixoNota, startTime);
+
+  const guitarraNota = baixoNotas[Math.floor(Math.random() * baixoNotas.length)];
+  playSample("guitarraLimpa", guitarraNota, startTime);
+  playSample("guitarraDistorcao", guitarraNota, startTime);
+
+  // bateria exemplo
+  playSample("bateria", "bumbo", startTime);
+  playSample("bateria", "caixa", startTime + sectionLength / 2);
+  playSample("bateria", "ch", startTime);
+  playSample("bateria", "ataque", startTime + sectionLength - 0.1);
+}
+
+// Loop infinito
+function scheduler() {
+  while (nextNoteTime < audioContext.currentTime + 0.1) {
+    scheduleSection(nextNoteTime);
+    nextNoteTime += sectionLength;
+  }
+  timerID = window.setTimeout(scheduler, 25.0);
+}
+
+// Iniciar / Parar
+document.getElementById("playBtn").addEventListener("click", () => {
+  if (!isPlaying) {
+    isPlaying = true;
+    nextNoteTime = audioContext.currentTime;
+    scheduler();
+  }
+});
+
+document.getElementById("stopBtn").addEventListener("click", () => {
+  isPlaying = false;
+  window.clearTimeout(timerID);
+  sourceNodes.forEach(src => src.stop());
+  sourceNodes = [];
+});
+
+// Exportar 4 minutos fixos
+document.getElementById("saveBtn").addEventListener("click", async () => {
+  const duration = 240; // 4 minutos
+  const sampleRate = audioContext.sampleRate;
+  const offlineContext = new OfflineAudioContext(2, sampleRate * duration, sampleRate);
+
+  let renderTime = 0;
+  while (renderTime < duration) {
+    const baixoNotas = ["C", "D", "E", "F", "G", "A", "B"];
+    const baixoNota = baixoNotas[Math.floor(Math.random() * baixoNotas.length)];
+    let source = offlineContext.createBufferSource();
+    source.buffer = audioBuffers["baixo"][baixoNota];
+    source.connect(offlineContext.destination);
+    source.start(renderTime);
+
+    renderTime += sectionLength;
+  }
+
+  const renderedBuffer = await offlineContext.startRendering();
+
+  const mp3encoder = new lamejs.Mp3Encoder(2, sampleRate, 128);
+  const samplesLeft = renderedBuffer.getChannelData(0);
+  const samplesRight = renderedBuffer.getChannelData(1);
+
+  const blockSize = 1152;
+  let mp3Data = [];
+  for (let i = 0; i < samplesLeft.length; i += blockSize) {
+    const left = samplesLeft.subarray(i, i + blockSize);
+    const right = samplesRight.subarray(i, i + blockSize);
+    const mp3buf = mp3encoder.encodeBuffer(convertFloat32ToInt16(left), convertFloat32ToInt16(right));
+    if (mp3buf.length > 0) mp3Data.push(mp3buf);
+  }
+  const end = mp3encoder.flush();
+  if (end.length > 0) mp3Data.push(end);
+
+  const blob = new Blob(mp3Data, { type: "audio/mp3" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "jam_4min.mp3";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+});
+
+function convertFloat32ToInt16(buffer) {
+  let l = buffer.length;
+  const buf = new Int16Array(l);
+  while (l--) {
+    buf[l] = Math.max(-1, Math.min(1, buffer[l])) * 0x7fff;
+  }
+  return buf;
+}
+
+loadSamples();
+</script>
+
+</body>
+</html>
