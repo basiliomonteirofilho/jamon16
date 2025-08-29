@@ -388,22 +388,23 @@ aleatório.</div>
     const PITCHES = ['A','AS','B','C','CS','D','DS','E','F','FS','G','GS']; 
     const DEGREE_TO_ROOT = { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11 }; 
  
-    const DRUMS = { 
-      bu: 'bumbo', // bumbo.mp3 
-      ca: 'caixa', // caixa.mp3 
-      ch: 'chimbal', // chimbal.mp3 
-      cha: 'chimbalAberto', // chimbal-aberto.mp3 
-      co: 'conducao', // conducao.mp3 
-      at: 'ataque', // ataque.mp3 
-      to1: 'tom1', // tom1.mp3 
-      to2: 'tom2', // tom2.mp3 
-      su: 'surdo', // surdo.mp3 
-      ba: 'ba', // bumbo + ataque bumbo-ataque.mp3 
-      bch: 'bch', // bumbo + chimbal bumbo-chimbal.mp3 
-      cch: 'cch', // caixa + chimbal caixa-chimbal.mp3 
-      bc: 'bc', // bumbo + condução bumbo-conducao.mp3 
-      cc: 'cc' // caixa + condução caixa-conducao.mp3 
-    }; 
+    const DRUMS = {
+  bu: 'bumbo.mp3',
+  ca: 'caixa.mp3',
+  ch: 'chimbal.mp3',
+  cha: 'chimbal-aberto.mp3',   // cuidado com o hífen
+  co: 'conducao.mp3',
+  at: 'ataque.mp3',
+  to1: 'tom1.mp3',
+  to2: 'tom2.mp3',
+  su: 'surdo.mp3',  // combos
+  ba:  'bumbo-ataque.mp3',
+  bch: 'bumbo-chimbal.mp3',
+  cch: 'caixa-chimbal.mp3',
+  bc:  'bumbo-conducao.mp3',
+  cc:  'caixa-conducao.mp3'
+};
+
  
     const BASS_SAMPLES = (() => { 
       const table = {}; 
@@ -1138,9 +1139,7 @@ bassRhythm:["[sm - - - sm - ° - sm - x - sm - ° -]","(sm - - - sm - ° - sm - 
       } else if (state.paused) { 
         audio.ctx.resume(); 
         state.paused = false; 
-        ui.play.textContent = '
- ⏸
- Pause'; 
+        ui.play.textContent = ' ⏸ Pause'; 
         startScheduler(); 
       } 
     } 
@@ -1319,9 +1318,7 @@ audioBuffer.getChannelData(1) : samples;
       state.recordingTimer = finalTimer; 
       log('[REC] Gravação iniciada. Duração fixa: 4 minutos (será convertido para MP3).'); 
       ui.save.disabled = true; 
-      ui.save.textContent = '
- ⏳
- Gravando... (4 min)'; 
+      ui.save.textContent = ' ⏳ Gravando... (4 min)'; 
     } 
  
     function stopRecording() { 
@@ -1339,7 +1336,7 @@ audioBuffer.getChannelData(1) : samples;
 URL.revokeObjectURL(audioPreview.src)); 
       const previewDiv = document.createElement('div'); 
       previewDiv.innerHTML = '<div><b>
- 🎧
+
  Prévia do seu playback:</b></div>'; 
       previewDiv.appendChild(audioPreview); 
       ui.log.parentNode.insertBefore(previewDiv, ui.log); 
@@ -1358,23 +1355,14 @@ URL.revokeObjectURL(audioPreview.src));
       a.click(); 
       a.remove(); 
       URL.revokeObjectURL(a.href); 
-      log(`[
- ✅
- ] Arquivo salvo: ${filename}`); 
+      log(`[ ✅ ] Arquivo salvo: ${filename}`); 
       ui.save.disabled = false; 
-      ui.save.textContent = '
- 💾
- Salvar 4 min (MP3)'; 
-    } 
+      ui.save.textContent = ' 💾 Salvar 4 min (MP3)';} 
  
     function toggleMute(type, button) { 
       mute[type] = !mute[type]; 
       button.dataset.mute = mute[type] ? 'on' : 'off'; 
-      const icon = mute[type] ? '
- 🔇
- ' : '
- 🔊
- '; 
+      const icon = mute[type] ? ' 🔇' : ' 🔊 '; 
       const label = button.textContent.split(' ')[1]; 
       button.textContent = `${icon} ${label}`; 
       button.classList.toggle('muted', mute[type]); 
