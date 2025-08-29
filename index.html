@@ -1,1038 +1,901 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Jam on – Playback Aleatório</title>
-  <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.0/lame.min.js"></script>
-  <style>
-    :root {
-      --bg: #0b0f14;
-      --panel: #121822;
-      --accent: #5eead4;
-      --muted: #7a89a6;
-      --text: #e6edf6;
-      --danger: #f87171;
-      --ok: #86efac;
-    }
-    * {
-      box-sizing: border-box;
-    }
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-    }
-    .wrap {
-      width: min(1100px, 92vw);
-    }
-    header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      margin: 2rem 0 1.25rem;
-    }
-    h1 {
-      font-size: clamp(1.4rem, 2.2vw, 2rem);
-      margin: 0;
-      letter-spacing: .3px;
-    }
-    .chord-display {
-      grid-column: span 12;
-      text-align: center;
-      margin: 1rem 0;
-    }
-    .chord-name {
-      font-size: 4rem;
-      font-weight: bold;
-      color: var(--accent);
-      margin: 0;
-    }
-    .chord-timer {
-      font-size: 1.5rem;
-      color: var(--ok);
-    }
-    .card {
-      background: linear-gradient(180deg, #121822, #0d131c);
-      border: 1px solid #1e293b;
-      border-radius: 18px;
-      padding: 1rem;
-      box-shadow: 0 10px 40px rgba(0,0,0,.25);
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(12, 1fr);
-      gap: 12px;
-    }
-    .controls {
-      grid-column: span 12;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-    }
-    .controls button,
-    .controls select,
-    .controls input[type="number"] {
-      background: #0f172a;
-      color: var(--text);
-      border: 1px solid #1f2937;
-      border-radius: 12px;
-      padding: .65rem .9rem;
-      font-size: .95rem;
-      outline: none;
-    }
-    .controls button.muted {
-      opacity: 0.5;
-      text-decoration: line-through;
-    }
-    .controls button {
-      cursor: pointer;
-      border-color: #334155;
-      transition: transform .06s ease, background .2s ease, border-color .2s ease;
-    }
-    .controls button:hover {
-      transform: translateY(-1px);
-    }
-    .controls button.primary {
-      background: #0b3b39;
-      border-color: #134e4a;
-    }
-    .controls button.primary[data-state="on"] {
-      background: #065f46;
-      border-color: #0f766e;
-    }
-    .controls button.danger {
-      background: #3b0b0b;
-      border-color: #7f1d1d;
-    }
-    .pill {
-      background: #0b1320;
-      border: 1px solid #1f2a44;
-      padding: .4rem .6rem;
-      border-radius: 999px;
-      font-size: .85rem;
-      color: var(--muted);
-    }
-    .split {
-      grid-column: span 12;
-      display: grid;
-      grid-template-columns: repeat(12, 1fr);
-      gap: 12px;
-    }
-    .panel {
-      grid-column: span 6;
-      background: #0b0f16;
-      border: 1px solid #1b2538;
-      border-radius: 12px;
-      padding: 12px;
-    }
-    .panel h3 {
-      margin: 0 0 8px;
-      font-size: 1rem;
-      color: #a6b4cf;
-    }
-    .mono {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: .92rem;
-    }
-    .log {
-      grid-column: span 12;
-      background: #080c12;
-      border: 1px dashed #1b283b;
-      border-radius: 12px;
-      padding: 10px;
-      height: 170px;
-      overflow: auto;
-      white-space: pre-wrap;
-      font-size: .9rem;
-      color: #cbd5e1;
-    }
-    .footer {
-      margin: .75rem 0 0;
-      color: var(--muted);
-      font-size: .85rem;
-    }
-    .badge {
-      display: inline-block;
-      padding: .15rem .45rem;
-      border-radius: 6px;
-      border: 1px solid #294256;
-      background: #0b1826;
-      color: #9bd5f0;
-      font-size: .8rem;
-    }
-    .row {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-    .spacer {
-      flex: 1 1 auto;
-    }
-    .muted {
-      opacity: 0.5;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Playback Aleatório Musical</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #fdbb2d;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 30px;
+            font-size: 24px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .loading-progress {
+            width: 100%;
+            height: 20px;
+            background: #333;
+            border-radius: 10px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(to right, #1a2a6c, #b21f1f);
+            transition: width 0.5s;
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 50px;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(1px);
+        }
+        
+        .btn.active {
+            background: linear-gradient(135deg, #fdbb2d, #b21f1f);
+        }
+        
+        .btn.toggle {
+            background: linear-gradient(135deg, #333, #555);
+        }
+        
+        .btn.toggle.active {
+            background: linear-gradient(135deg, #1a2a6c, #2980b9);
+        }
+        
+        .status {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        .status-item {
+            text-align: center;
+        }
+        
+        .status-label {
+            font-size: 14px;
+            color: #fdbb2d;
+        }
+        
+        .status-value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .bpm-control {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        .bpm-control button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 20px;
+            margin: 0 10px;
+        }
+        
+        .bpm-display {
+            font-size: 28px;
+            font-weight: bold;
+            margin: 0 15px;
+            min-width: 80px;
+            text-align: center;
+        }
+        
+        .editor {
+            margin-top: 20px;
+        }
+        
+        .editor h3 {
+            margin-bottom: 10px;
+            color: #fdbb2d;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #555;
+            border-radius: 5px;
+            color: white;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .instrument-name {
+            font-weight: bold;
+            color: #fdbb2d;
+            margin-top: 10px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .chord-display {
+            font-size: 32px;
+            text-align: center;
+            margin: 20px 0;
+            height: 50px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            color: #fdbb2d;
+        }
+        
+        .key-display {
+            text-align: center;
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #fff;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 10px;
+        }
+        
+        .pattern-info {
+            font-size: 12px;
+            color: #ccc;
+            margin-bottom: 5px;
+        }
+        
+        .sample-status {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 14px;
+            color: #fdbb2d;
+        }
+        
+        .debug-info {
+            font-size: 12px;
+            color: #ccc;
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
+        }
+    </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <h1>Jam on – Playback Aleatório (baixo + bateria + guitarra)</h1>
-      <div class="pill">Cada pulso do BPM = semínima</div>
-    </header>
-
-    <!-- Visor de acorde -->
-    <div class="chord-display">
-      <h2 class="chord-name" id="currentChord">—</h2>
-      <div class="chord-timer" id="chordTimer">—</div>
+    <div class="container">
+        <h1>Playback Aleatório Musical</h1>
+        
+        <div id="loading" class="loading">
+            <p>Carregando arquivos de áudio...</p>
+            <p>Clique para iniciar o carregamento</p>
+            <div class="loading-progress">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <button class="btn" id="startLoading" style="margin-top: 20px;">Iniciar Carregamento</button>
+        </div>
+        
+        <div id="mainContent" class="hidden">
+            <div class="key-display">
+                Campo Harmônico: <span id="currentKey">C Maior</span>
+            </div>
+            
+            <div class="chord-display" id="chordDisplay">
+                A
+            </div>
+            
+            <div class="status">
+                <div class="status-item">
+                    <div class="status-label">BPM</div>
+                    <div class="status-value" id="bpmValue">120</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">Compasso</div>
+                    <div class="status-value" id="measureCount">1</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">Estado</div>
+                    <div class="status-value" id="playbackState">Parado</div>
+                </div>
+            </div>
+            
+            <div class="bpm-control">
+                <button class="btn" id="bpmDown">-</button>
+                <div class="bpm-display" id="bpmDisplay">120</div>
+                <button class="btn" id="bpmUp">+</button>
+            </div>
+            
+            <div class="controls">
+                <button class="btn" id="playBtn">Play</button>
+                <button class="btn" id="pauseBtn">Pause</button>
+                <button class="btn" id="stopBtn">Parar</button>
+                <button class="btn" id="saveBtn">Salvar</button>
+                <button class="btn" id="backBtn">Voltar</button>
+                <button class="btn" id="repeatBtn">Repetir</button>
+            </div>
+            
+            <div class="controls">
+                <button class="btn toggle active" id="bassToggle">Baixo: Ativado</button>
+                <button class="btn toggle active" id="drumsToggle">Bateria: Ativado</button>
+                <button class="btn toggle active" id="distGuitarToggle">Guitarra Dist: Ativado</button>
+                <button class="btn toggle active" id="cleanGuitarToggle">Guitarra Limpa: Ativado</button>
+            </div>
+            
+            <div class="sample-status" id="sampleStatus">
+                Samples carregados: 0/20
+            </div>
+            
+            <div class="debug-info" id="debugInfo">
+                Informações de debug aparecerão aqui
+            </div>
+            
+            <div class="editor">
+                <h3>Editor de Levadas</h3>
+                <div class="pattern-info">Bateria: use símbolos como bu, ca, ch, cha, co, at, to1, to2, su, ba, bch, cch, bc, cc</div>
+                <div class="instrument-name">Bateria:</div>
+                <textarea id="drumsPattern">
+[ca,ca,ca,-,ba,-,-,-,ca,-,ca,-,to1,-,to2,-]
+(ba,-,ch,bu,cch,-,ch,-,bch,-,ch,-,cch,-,ch,-,
+bch,-,ch,bu,cch,-,ch,-,bch,-,ch,-,cch,-,ch,-, 
+bch,-,ch,bu,cch,-,ch,-,bch,-,ch,-,cch,-,ch,-,
+bch,-,ch,bu,cch,-,ch,-,bch,-,ch,-,cch,-,ch,-)
+                </textarea>
+                
+                <div class="pattern-info">Baixo: use símbolos como sb, m, sm, c, sc, -, °, x</div>
+                <div class="instrument-name">Baixo:</div>
+                <textarea id="bassPattern">
+[sc,sc,c,sm,sc,sc]
+(c,c,c,c,c,c,c,c,
+sc,sc,sc,sc,sc,sc,sc,sc,
+sb,
+c,c,c,c,c,c,c,c)
+                </textarea>
+                
+                <button class="btn" id="applyPatterns">Aplicar Padrões</button>
+            </div>
+        </div>
     </div>
 
-    <section class="card">
-      <div class="grid">
-        <div class="controls">
-          <button id="btnRestart">⏮ Reiniciar</button>
-          <button id="btnPrev">⏪ Anterior</button>
-          <button id="btnPlay" class="primary">▶ Play</button>
-          <button id="btnPause">⏸ Pause</button>
-          <button id="btnStop" class="danger">⏹ Stop</button>
-          <button id="btnSave" class="primary">💾 Salvar 4 min (MP3)</button>
-
-          <span class="spacer"></span>
-          <button id="muteBass" data-mute="off">🎸 Baixo</button>
-          <button id="muteDrums" data-mute="off">🥁 Bateria</button>
-          <button id="muteClean" data-mute="off">🎸 Limpa</button>
-          <button id="muteDist" data-mute="off">🔥 Distorção</button>
-
-          <label class="row">
-            BPM
-            <input id="bpm" type="number" min="40" max="220" value="100" style="width:90px">
-          </label>
-          <label class="row">
-            Assinatura
-            <select id="meter">
-              <option value="auto" selected>aleatória</option>
-              <option>2/4</option>
-              <option>3/4</option>
-              <option>4/4</option>
-              <option>5/4</option>
-              <option>6/4</option>
-              <option>7/4</option>
-            </select>
-          </label>
-        </div>
-
-        <div class="split">
-          <div class="panel" style="grid-column: span 6;">
-            <h3>Estado atual</h3>
-            <div class="mono" id="state"></div>
-            <div class="footer">Ao clicar em <b>Play</b>, gera um novo playback aleatório.</div>
-          </div>
-
-          <div class="panel" style="grid-column: span 6;">
-            <h3>Arquivos esperados</h3>
-            <div class="mono">
-              <div>Coloque os áudios nas pastas:</div>
-              <ul>
-                <li><b>guitarraLimpa/[nota]/acorde.mp3</b> (ex: <code>guitarraLimpa/A/A.mp3</code>, <code>guitarraLimpa/A/Am.mp3</code>)</li>
-                <li><b>guitarraDistorcao/[nota]/acorde.mp3</b> (ex: <code>guitarraDistorcao/AS/AS7.mp3</code>, <code>guitarraDistorcao/C/C.mp3</code>)</li>
-                <li>Peças de bateria: <b>bumbo.mp3</b>, <b>caixa.mp3</b>, etc.</li>
-                <li>Baixo: <b>bass-A.mp3</b>, <b>bass-AS.mp3</b>, etc.</li>
-              </ul>
-            </div>
-          </div>
-
-          <div class="log mono" id="log"></div>
-        </div>
-      </div>
-    </section>
-  </div>
-
-  <script>
-    const ui = {
-      play: document.getElementById('btnPlay'),
-      pause: document.getElementById('btnPause'),
-      stop: document.getElementById('btnStop'),
-      save: document.getElementById('btnSave'),
-      muteBass: document.getElementById('muteBass'),
-      muteDrums: document.getElementById('muteDrums'),
-      muteClean: document.getElementById('muteClean'),
-      muteDist: document.getElementById('muteDist'),
-      bpm: document.getElementById('bpm'),
-      meter: document.getElementById('meter'),
-      log: document.getElementById('log'),
-      state: document.getElementById('state'),
-      currentChord: document.getElementById('currentChord'),
-      chordTimer: document.getElementById('chordTimer'),
-      btnRestart: document.getElementById('btnRestart'),
-      btnPrev: document.getElementById('btnPrev'),
-    };
-
-    const audio = {
-      ctx: null,
-      master: null,
-      mix: null,
-      drumGain: null,
-      bassGain: null,
-      cleanGain: null,
-      distGain: null,
-      schedulerTimer: null,
-      lookahead: 0.1,
-      scheduleHorizon: 0.25,
-    };
-
-    const PITCHES = ['A','AS','B','C','CS','D','DS','E','F','FS','G','GS'];
-    const DEGREE_TO_ROOT = { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11 };
-
-    const DRUMS = {
-      bumbo: 'assets/bumbo.mp3',
-      caixa: 'assets/caixa.mp3',
-      chimbal: 'assets/chimbal.mp3',
-      conducao: 'assets/conducao.mp3',
-      ataque: 'assets/ataque.mp3',
-      ba: 'assets/bumbo-ataque.mp3',
-      bch: 'assets/bumbo-chimbal.mp3',
-      cch: 'assets/caixa-chimbal.mp3',
-      bc: 'assets/bumbo-conducao.mp3',
-      cc: 'assets/caixa-conducao.mp3'
-    };
-
-    const BASS_SAMPLES = (() => {
-      const table = {};
-      for (const p of PITCHES) {
-        const letter = p[0];
-        const isSharp = p.includes('S');
-        for (const oct of ['', '8', '16', '24']) {
-          const key = p + (oct || '');
-          const fileName = `bass-${letter}${oct}${isSharp ? 'S' : ''}.mp3`;
-          table[key] = `assets/${fileName}`;
+    <script>
+        // Variáveis globais
+        let audioContext;
+        let isLoading = false;
+        let isPlaying = false;
+        let currentBPM = 120;
+        let measureCount = 0;
+        let currentChord = "A";
+        let currentKey = "C Maior";
+        let audioBuffers = {};
+        let scheduledEvents = [];
+        let nextNoteTime = 0;
+        let current16thNote = 0;
+        let lookahead = 25;
+        let scheduleAheadTime = 0.1;
+        let timerID = null;
+        let drumsPattern = [];
+        let bassPattern = [];
+        let currentChordIndex = 0;
+        let chordProgression = [];
+        let chordChangeInterval = 4;
+        let lastPlaybackSettings = null;
+        let samplesLoaded = 0;
+        let totalSamplesToLoad = 20;
+        
+        // Mapeamento de acordes para notas de baixo
+        const BASS_NOTE_MAP = {
+            // Acordes F# (F sustenido)
+            'FS': ['F', 'F8', 'F16', 'F24', 'G', 'G8', 'G16', 'D', 'D8', 'D16'],
+            'FS11': ['F', 'F8', 'F16', 'F24', 'G', 'G8', 'G16', 'D', 'D8', 'D16'],
+            'FS13': ['F', 'F8', 'F16', 'F24', 'G', 'G8', 'G16', 'D', 'D8', 'D16'],
+            'FS4': ['F', 'F8', 'F16', 'F24', 'G', 'G8', 'G16', 'D', 'D8', 'D16'],
+            'FS45+': ['F', 'F8', 'F16', 'F24', 'G', 'G8', 'G16', 'D', 'D8', 'D16'],
+            'FS5': ['F', 'F8', 'F16', 'F24', 'G', 'G8', 'G16', 'D', 'D8', 'D16'],
+            'FS5+': ['F', 'F8', 'F16', 'F24', 'G', 'G8', 'G16', 'D', 'D8', 'D16'],
+            'FS6': ['F', 'F8', 'F16', 'F24', 'G', 'G8', 'G16', 'D', 'D8', 'D16'],
+            'FS7': ['F', 'F8', 'F16', 'F24', 'G', 'G8', 'G16', 'D', 'D8', 'D16'],
+            'FS75+': ['F', 'F8', 'F16', 'F24', 'G', 'G8', 'G16', 'D', 'D8', 'D16'],
+            'FS9': ['F', 'F8', 'F16', 'F24', 'G', 'G8', 'G16', 'D', 'D8', 'D16'],
+            'FS95+': ['F', 'F8', 'F16', 'F24', 'G', 'G8', 'G16', 'D', 'D8', 'D16'],
+            
+            // Acordes F# menores
+            'FSdim': ['FS', 'F8S', 'F16S', 'F24S', 'A', 'A8', 'A16', 'C', 'C8S', 'C16S'],
+            'FSm': ['FS', 'F8S', 'F16S', 'F24S', 'A', 'A8', 'A16', 'C', 'C8S', 'C16S'],
+            'FSm4': ['FS', 'F8S', 'F16S', 'F24S', 'A', 'A8', 'A16', 'C', 'C8S', 'C16S'],
+            'FSm5': ['FS', 'F8S', 'F16S', 'F24S', 'A', 'A8', 'A16', 'C', 'C8S', 'C16S'],
+            'FSm5+': ['FS', 'F8S', 'F16S', 'F24S', 'A', 'A8', 'A16', 'C', 'C8S', 'C16S'],
+            'FSm6': ['FS', 'F8S', 'F16S', 'F24S', 'A', 'A8', 'A16', 'C', 'C8S', 'C16S'],
+            'FSm7': ['FS', 'F8S', 'F16S', 'F24S', 'A', 'A8', 'A16', 'C', 'C8S', 'C16S'],
+            'FSm75+': ['FS', 'F8S', 'F16S', 'F24S', 'A', 'A8', 'A16', 'C', 'C8S', 'C16S'],
+            'FSm79': ['FS', 'F8S', 'F16S', 'F24S', 'A', 'A8', 'A16', 'C', 'C8S', 'C16S'],
+            'FSm9': ['FS', 'F8S', 'F16S', 'F24S', 'A', 'A8', 'A16', 'C', 'C8S', 'C16S'],
+            
+            // Acordes G
+            'G': ['G', 'G8', 'G16', 'G24', 'B', 'B8', 'B16', 'D', 'D8', 'D16'],
+            'G11': ['G', 'G8', 'G16', 'G24', 'B', 'B8', 'B16', 'D', 'D8', 'D16'],
+            'G13': ['G', 'G8', 'G16', 'G24', 'B', 'B8', 'B16', 'D', 'D8', 'D16'],
+            'G4': ['G', 'G8', 'G16', 'G24', 'B', 'B8', 'B16', 'D', 'D8', 'D16'],
+            'G45+': ['G', 'G8', 'G16', 'G24', 'B', 'B8', 'B16', 'D', 'D8', 'D16'],
+            'G5': ['G', 'G8', 'G16', 'G24', 'B', 'B8', 'B16', 'D', 'D8', 'D16'],
+            'G5+': ['G', 'G8', 'G16', 'G24', 'B', 'B8', 'B16', 'D', 'D8', 'D16'],
+            'G6': ['G', 'G8', 'G16', 'G24', 'B', 'B8', 'B16', 'D', 'D8', 'D16'],
+            'G7': ['G', 'G8', 'G16', 'G24', 'B', 'B8', 'B16', 'D', 'D8', 'D16'],
+            'G75+': ['G', 'G8', 'G16', 'G24', 'B', 'B8', 'B16', 'D', 'D8', 'D16'],
+            'G9': ['G', 'G8', 'G16', 'G24', 'B', 'B8', 'B16', 'D', 'D8', 'D16'],
+            'G95+': ['G', 'G8', 'G16', 'G24', 'B', 'B8', 'B16', 'D', 'D8', 'D16'],
+            
+            // Acordes G menores
+            'Gdim': ['G', 'G8', 'G16', 'G24', 'AS', 'A8S', 'A16S', 'D', 'D8', 'D16'],
+            'Gm': ['G', 'G8', 'G16', 'G24', 'AS', 'A8S', 'A16S', 'D', 'D8', 'D16'],
+            'Gm4': ['G', 'G8', 'G16', 'G24', 'AS', 'A8S', 'A16S', 'D', 'D8', 'D16'],
+            'Gm5': ['G', 'G8', 'G16', 'G24', 'AS', 'A8S', 'A16S', 'D', 'D8', 'D16'],
+            'Gm5+': ['G', 'G8', 'G16', 'G24', 'AS', 'A8S', 'A16S', 'D', 'D8', 'D16'],
+            'Gm6': ['G', 'G8', 'G16', 'G24', 'AS', 'A8S', 'A16S', 'D', 'D8', 'D16'],
+            'Gm7': ['G', 'G8', 'G16', 'G24', 'AS', 'A8S', 'A16S', 'D', 'D8', 'D16'],
+            'Gm75+': ['G', 'G8', 'G16', 'G24', 'AS', 'A8S', 'A16S', 'D', 'D8', 'D16'],
+            'Gm79': ['G', 'G8', 'G16', 'G24', 'AS', 'A8S', 'A16S', 'D', 'D8', 'D16'],
+            'Gm9': ['G', 'G8', 'G16', 'G24', 'AS', 'A8S', 'A16S', 'D', 'D8', 'D16'],
+            
+            // Acordes G# (G sustenido)
+            'GS': ['GS', 'G8S', 'G16S', 'C', 'C8', 'C16', 'DS', 'D8S', 'D16S'],
+            'GS11': ['GS', 'G8S', 'G16S', 'C', 'C8', 'C16', 'DS', 'D8S', 'D16S'],
+            'GS13': ['GS', 'G8S', 'G16S', 'C', 'C8', 'C16', 'DS', 'D8S', 'D16S'],
+            'GS4': ['GS', 'G8S', 'G16S', 'C', 'C8', 'C16', 'DS', 'D8S', 'D16S'],
+            'GS45+': ['GS', 'G8S', 'G16S', 'C', 'C8', 'C16', 'DS', 'D8S', 'D16S'],
+            'GS5': ['GS', 'G8S', 'G16S', 'C', 'C8', 'C16', 'DS', 'D8S', 'D16S'],
+            'GS5+': ['GS', 'G8S', 'G16S', 'C', 'C8', 'C16', 'DS', 'D8S', 'D16S'],
+            'GS6': ['GS', 'G8S', 'G16S', 'C', 'C8', 'C16', 'DS', 'D8S', 'D16S'],
+            'GS7': ['GS', 'G8S', 'G16S', 'C', 'C8', 'C16', 'DS', 'D8S', 'D16S'],
+            'GS75+': ['GS', 'G8S', 'G16S', 'C', 'C8', 'C16', 'DS', 'D8S', 'D16S'],
+            'GS9': ['GS', 'G8S', 'G16S', 'C', 'C8', 'C16', 'DS', 'D8S', 'D16S'],
+            'GS95+': ['GS', 'G8S', 'G16S', 'C', 'C8', 'C16', 'DS', 'D8S', 'D16S'],
+            
+            // Acordes G# menores
+            'GSdim': ['GS', 'G8S', 'G16S', 'B', 'B8', 'B16', 'DS', 'D8S', 'D16S'],
+            'GSm': ['GS', 'G8S', 'G16S', 'B', 'B8', 'B16', 'DS', 'D8S', 'D16S'],
+            'GSm4': ['GS', 'G8S', 'G16S', 'B', 'B8', 'B16', 'DS', 'D8S', 'D16S'],
+            'GSm5': ['GS', 'G8S', 'G16S', 'B', 'B8', 'B16', 'DS', 'D8S', 'D16S'],
+            'GSm5+': ['GS', 'G8S', 'G16S', 'B', 'B8', 'B16', 'DS', 'D8S', 'D16S'],
+            'GSm6': ['GS', 'G8S', 'G16S', 'B', 'B8', 'B16', 'DS', 'D8S', 'D16S'],
+            'GSm7': ['GS', 'G8S', 'G16S', 'B', 'B8', 'B16', 'DS', 'D8S', 'D16S'],
+            'GSm75+': ['GS', 'G8S', 'G16S', 'B', 'B8', 'B16', 'DS', 'D8S', 'D16S'],
+            'GSm79': ['GS', 'G8S', 'G16S', 'B', 'B8', 'B16', 'DS', 'D8S', 'D16S'],
+            'GSm9': ['GS', 'G8S', 'G16S', 'B', 'B8', 'B16', 'DS', 'D8S', 'D16S'],
+            
+            // Acordes padrão para outros casos
+            'default': ['A', 'A8', 'A16', 'C', 'C8', 'C16', 'E', 'E8', 'E16']
+        };
+        
+        // Elementos DOM
+        const loadingElement = document.getElementById('loading');
+        const mainContentElement = document.getElementById('mainContent');
+        const progressBarElement = document.getElementById('progressBar');
+        const startLoadingButton = document.getElementById('startLoading');
+        const playBtn = document.getElementById('playBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const backBtn = document.getElementById('backBtn');
+        const repeatBtn = document.getElementById('repeatBtn');
+        const bassToggle = document.getElementById('bassToggle');
+        const drumsToggle = document.getElementById('drumsToggle');
+        const distGuitarToggle = document.getElementById('distGuitarToggle');
+        const cleanGuitarToggle = document.getElementById('cleanGuitarToggle');
+        const bpmDisplay = document.getElementById('bpmDisplay');
+        const bpmValue = document.getElementById('bpmValue');
+        const bpmUp = document.getElementById('bpmUp');
+        const bpmDown = document.getElementById('bpmDown');
+        const chordDisplay = document.getElementById('chordDisplay');
+        const measureCountElement = document.getElementById('measureCount');
+        const playbackStateElement = document.getElementById('playbackState');
+        const currentKeyElement = document.getElementById('currentKey');
+        const drumsPatternElement = document.getElementById('drumsPattern');
+        const bassPatternElement = document.getElementById('bassPattern');
+        const applyPatternsButton = document.getElementById('applyPatterns');
+        const sampleStatusElement = document.getElementById('sampleStatus');
+        const debugInfoElement = document.getElementById('debugInfo');
+        
+        // Event Listeners
+        startLoadingButton.addEventListener('click', startLoading);
+        playBtn.addEventListener('click', togglePlay);
+        pauseBtn.addEventListener('click', togglePause);
+        stopBtn.addEventListener('click', stopPlayback);
+        saveBtn.addEventListener('click', savePlayback);
+        backBtn.addEventListener('click', goBack);
+        repeatBtn.addEventListener('click', repeatPlayback);
+        bassToggle.addEventListener('click', () => toggleInstrument(bassToggle, 'bass'));
+        drumsToggle.addEventListener('click', () => toggleInstrument(drumsToggle, 'drums'));
+        distGuitarToggle.addEventListener('click', () => toggleInstrument(distGuitarToggle, 'distGuitar'));
+        cleanGuitarToggle.addEventListener('click', () => toggleInstrument(cleanGuitarToggle, 'cleanGuitar'));
+        bpmUp.addEventListener('click', () => changeBPM(5));
+        bpmDown.addEventListener('click', () => changeBPM(-5));
+        applyPatternsButton.addEventListener('click', applyPatterns);
+        
+        // Iniciar carregamento
+        function startLoading() {
+            if (isLoading) return;
+            
+            isLoading = true;
+            startLoadingButton.disabled = true;
+            
+            // Inicializar contexto de áudio
+            initializeAudioContext();
+            
+            // Carregar samples essenciais
+            loadEssentialSamples().then(() => {
+                progressBarElement.style.width = '100%';
+                setTimeout(() => {
+                    loadingElement.classList.add('hidden');
+                    mainContentElement.classList.remove('hidden');
+                    parsePatterns();
+                    generateChordProgression();
+                }, 500);
+            }).catch(error => {
+                console.error("Erro ao carregar samples:", error);
+                alert("Erro ao carregar arquivos de áudio. Verifique o console para mais detalhes.");
+            });
         }
-      }
-      table['X'] = 'assets/bass-muted.mp3';
-      return table;
-    })();
-
-    // Mapeamento acorde → notas do baixo
-    const BASS_NOTE_MAP = {
-      // F#
-      'FS': ['F', 'F8', 'F16', 'F24', 'G', 'G8', 'G16', 'D', 'D8', 'D16'],
-      'FS11': ['F', 'F8', 'F16', 'F24', 'G', 'G8', 'G16', 'D', 'D8', 'D16'],
-      'FS13': ['F', 'F8', 'F16', 'F24', 'G', 'G8', 'G16', 'D', 'D8', 'D16'],
-      'FS4': ['F', 'F8', 'F16', 'F24', 'G', 'G8', 'G16', 'D', 'D8', 'D16'],
-      'FS45+': ['F', 'F8', 'F16', 'F24', 'G', 'G8', 'G16', 'D', 'D8', 'D16'],
-      'FS5': ['F', 'F8', 'F16', 'F24', 'G', 'G8', 'G16', 'D', 'D8', 'D16'],
-      'FS5+': ['F', 'F8', 'F16', 'F24', 'G', 'G8', 'G16', 'D', 'D8', 'D16'],
-      'FS6': ['F', 'F8', 'F16', 'F24', 'G', 'G8', 'G16', 'D', 'D8', 'D16'],
-      'FS7': ['F', 'F8', 'F16', 'F24', 'G', 'G8', 'G16', 'D', 'D8', 'D16'],
-      'FS75+': ['F', 'F8', 'F16', 'F24', 'G', 'G8', 'G16', 'D', 'D8', 'D16'],
-      'FS9': ['F', 'F8', 'F16', 'F24', 'G', 'G8', 'G16', 'D', 'D8', 'D16'],
-      'FS95+': ['F', 'F8', 'F16', 'F24', 'G', 'G8', 'G16', 'D', 'D8', 'D16'],
-
-      'FSdim': ['FS', 'F8S', 'F16S', 'F24S', 'A', 'A8', 'A16', 'C', 'C8S', 'C16S'],
-      'FSm': ['FS', 'F8S', 'F16S', 'F24S', 'A', 'A8', 'A16', 'C', 'C8S', 'C16S'],
-      'FSm4': ['FS', 'F8S', 'F16S', 'F24S', 'A', 'A8', 'A16', 'C', 'C8S', 'C16S'],
-      'FSm5': ['FS', 'F8S', 'F16S', 'F24S', 'A', 'A8', 'A16', 'C', 'C8S', 'C16S'],
-      'FSm5+': ['FS', 'F8S', 'F16S', 'F24S', 'A', 'A8', 'A16', 'C', 'C8S', 'C16S'],
-      'FSm6': ['FS', 'F8S', 'F16S', 'F24S', 'A', 'A8', 'A16', 'C', 'C8S', 'C16S'],
-      'FSm7': ['FS', 'F8S', 'F16S', 'F24S', 'A', 'A8', 'A16', 'C', 'C8S', 'C16S'],
-      'FSm75+': ['FS', 'F8S', 'F16S', 'F24S', 'A', 'A8', 'A16', 'C', 'C8S', 'C16S'],
-      'FSm79': ['FS', 'F8S', 'F16S', 'F24S', 'A', 'A8', 'A16', 'C', 'C8S', 'C16S'],
-      'FSm9': ['FS', 'F8S', 'F16S', 'F24S', 'A', 'A8', 'A16', 'C', 'C8S', 'C16S'],
-
-      // G
-      'G': ['G', 'G8', 'G16', 'G24', 'B', 'B8', 'B16', 'D', 'D8', 'D16'],
-      'G11': ['G', 'G8', 'G16', 'G24', 'B', 'B8', 'B16', 'D', 'D8', 'D16'],
-      'G13': ['G', 'G8', 'G16', 'G24', 'B', 'B8', 'B16', 'D', 'D8', 'D16'],
-      'G4': ['G', 'G8', 'G16', 'G24', 'B', 'B8', 'B16', 'D', 'D8', 'D16'],
-      'G45+': ['G', 'G8', 'G16', 'G24', 'B', 'B8', 'B16', 'D', 'D8', 'D16'],
-      'G5': ['G', 'G8', 'G16', 'G24', 'B', 'B8', 'B16', 'D', 'D8', 'D16'],
-      'G5+': ['G', 'G8', 'G16', 'G24', 'B', 'B8', 'B16', 'D', 'D8', 'D16'],
-      'G6': ['G', 'G8', 'G16', 'G24', 'B', 'B8', 'B16', 'D', 'D8', 'D16'],
-      'G7': ['G', 'G8', 'G16', 'G24', 'B', 'B8', 'B16', 'D', 'D8', 'D16'],
-      'G75+': ['G', 'G8', 'G16', 'G24', 'B', 'B8', 'B16', 'D', 'D8', 'D16'],
-      'G9': ['G', 'G8', 'G16', 'G24', 'B', 'B8', 'B16', 'D', 'D8', 'D16'],
-      'G95+': ['G', 'G8', 'G16', 'G24', 'B', 'B8', 'B16', 'D', 'D8', 'D16'],
-
-      'Gdim': ['G', 'G8', 'G16', 'G24', 'AS', 'A8S', 'A16S', 'D', 'D8', 'D16'],
-      'Gm': ['G', 'G8', 'G16', 'G24', 'AS', 'A8S', 'A16S', 'D', 'D8', 'D16'],
-      'Gm4': ['G', 'G8', 'G16', 'G24', 'AS', 'A8S', 'A16S', 'D', 'D8', 'D16'],
-      'Gm5': ['G', 'G8', 'G16', 'G24', 'AS', 'A8S', 'A16S', 'D', 'D8', 'D16'],
-      'Gm5+': ['G', 'G8', 'G16', 'G24', 'AS', 'A8S', 'A16S', 'D', 'D8', 'D16'],
-      'Gm6': ['G', 'G8', 'G16', 'G24', 'AS', 'A8S', 'A16S', 'D', 'D8', 'D16'],
-      'Gm7': ['G', 'G8', 'G16', 'G24', 'AS', 'A8S', 'A16S', 'D', 'D8', 'D16'],
-      'Gm75+': ['G', 'G8', 'G16', 'G24', 'AS', 'A8S', 'A16S', 'D', 'D8', 'D16'],
-      'Gm79': ['G', 'G8', 'G16', 'G24', 'AS', 'A8S', 'A16S', 'D', 'D8', 'D16'],
-      'Gm9': ['G', 'G8', 'G16', 'G24', 'AS', 'A8S', 'A16S', 'D', 'D8', 'D16'],
-
-      // GS
-      'GS': ['GS', 'G8S', 'G16S', 'C', 'C8', 'C16', 'DS', 'D8S', 'D16S'],
-      'GS11': ['GS', 'G8S', 'G16S', 'C', 'C8', 'C16', 'DS', 'D8S', 'D16S'],
-      'GS13': ['GS', 'G8S', 'G16S', 'C', 'C8', 'C16', 'DS', 'D8S', 'D16S'],
-      'GS4': ['GS', 'G8S', 'G16S', 'C', 'C8', 'C16', 'DS', 'D8S', 'D16S'],
-      'GS45+': ['GS', 'G8S', 'G16S', 'C', 'C8', 'C16', 'DS', 'D8S', 'D16S'],
-      'GS5': ['GS', 'G8S', 'G16S', 'C', 'C8', 'C16', 'DS', 'D8S', 'D16S'],
-      'GS5+': ['GS', 'G8S', 'G16S', 'C', 'C8', 'C16', 'DS', 'D8S', 'D16S'],
-      'GS6': ['GS', 'G8S', 'G16S', 'C', 'C8', 'C16', 'DS', 'D8S', 'D16S'],
-      'GS7': ['GS', 'G8S', 'G16S', 'C', 'C8', 'C16', 'DS', 'D8S', 'D16S'],
-      'GS75+': ['GS', 'G8S', 'G16S', 'C', 'C8', 'C16', 'DS', 'D8S', 'D16S'],
-      'GS9': ['GS', 'G8S', 'G16S', 'C', 'C8', 'C16', 'DS', 'D8S', 'D16S'],
-      'GS95+': ['GS', 'G8S', 'G16S', 'C', 'C8', 'C16', 'DS', 'D8S', 'D16S'],
-
-      'GSdim': ['GS', 'G8S', 'G16S', 'B', 'B8', 'B16', 'DS', 'D8S', 'D16S'],
-      'GSm': ['GS', 'G8S', 'G16S', 'B', 'B8', 'B16', 'DS', 'D8S', 'D16S'],
-      'GSm4': ['GS', 'G8S', 'G16S', 'B', 'B8', 'B16', 'DS', 'D8S', 'D16S'],
-      'GSm5': ['GS', 'G8S', 'G16S', 'B', 'B8', 'B16', 'DS', 'D8S', 'D16S'],
-      'GSm5+': ['GS', 'G8S', 'G16S', 'B', 'B8', 'B16', 'DS', 'D8S', 'D16S'],
-      'GSm6': ['GS', 'G8S', 'G16S', 'B', 'B8', 'B16', 'DS', 'D8S', 'D16S'],
-      'GSm7': ['GS', 'G8S', 'G16S', 'B', 'B8', 'B16', 'DS', 'D8S', 'D16S'],
-      'GSm75+': ['GS', 'G8S', 'G16S', 'B', 'B8', 'B16', 'DS', 'D8S', 'D16S'],
-      'GSm79': ['GS', 'G8S', 'G16S', 'B', 'B8', 'B16', 'DS', 'D8S', 'D16S'],
-      'GSm9': ['GS', 'G8S', 'G16S', 'B', 'B8', 'B16', 'DS', 'D8S', 'D16S']
-    };
-
-    const CUSTOM_GROOVES = [
-      {
-        name: "Pop Rock com Introdução",
-        meter: "4/4",
-        drumPattern: [
-          "[ca ca ca- ba--- ca- ca- to1- to2-]",
-          "(ba- ch bu cch- ch- bch- ch- cch- ch-, bch- ch bu cch- ch- bch- ch- cch- ch-, bch- ch bu cch- ch- bch- ch- cch- ch-, bch- ch bu cch- ch- bch- ch- cch- ch-)"
-        ],
-        bassRhythm: [
-          "[sc sc c sm cc cc]",
-          "(c c c c c c c c, sc sc sc sc cc sc sc sc sc ca, sb, c c c c c c c c)"
-        ]
-      }
-    ];
-
-    const PROGRESSIONS = [
-      [1, 1, 1, 1, 4, 4, 5, 5],
-      [1, 1, 1, 1, 5, 5, 6, 6, 4, 4, 5, 5],
-      [1, 1, 1, 1, 4, 4, 5, 5, 1, 1, 1, 1]
-    ];
-
-    const lastState = {
-      chordProgression: [],
-      key: null,
-      quality: null,
-      currentGroove: null,
-      meter: null
-    };
-
-    const state = {
-      running: false,
-      paused: false,
-      nextNoteTime: 0,
-      meter: '4/4',
-      bpm: 100,
-      sixteenthDur: 0.15,
-      stepIndex: 0,
-      pattern: [],
-      buffers: { drums: {}, bass: {}, guitar: {} },
-      lastBassSrc: null,
-      bassPlan: [],
-      bassNoteEndTime: 0,
-      signatureTag: '',
-      key: null,
-      keyIdx: 0,
-      quality: 'maj',
-      chordProgression: [],
-      chordDurations: [],
-      currentGroove: null,
-      currentChordIndex: 0,
-      barsInChord: 0,
-      bassMode: 'tonica',
-      bassCycleCount: 0,
-      recordingTimer: null
-    };
-
-    const mute = {
-      bass: false,
-      drums: false,
-      clean: false,
-      dist: false
-    };
-
-    let recorder = null;
-    let recChunks = [];
-
-    function log(msg) {
-      ui.log.textContent += `\n${msg}`;
-      ui.log.scrollTop = ui.log.scrollHeight;
-    }
-
-    function setStatePanel() {
-      ui.state.innerHTML = `
-        <div>Estilo: <b>${state.signatureTag}</b></div>
-        <div>Compasso: <b>${state.meter}</b></div>
-        <div>BPM: <b>${state.bpm}</b> (semicolcheia=${(state.sixteenthDur * 1000).toFixed(0)} ms)</div>
-        <div>Tom: <b>${state.key}${state.quality}</b></div>
-        <div>Progressão: <b>${state.chordProgression.join('-')}</b></div>
-      `;
-    }
-
-    async function loadBuffer(url) {
-      try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-        const arrayBuffer = await res.arrayBuffer();
-        const audioBuffer = await audio.ctx.decodeAudioData(arrayBuffer);
-        return audioBuffer;
-      } catch (e) {
-        log(`[ERRO] Falha ao carregar: ${url} → ${e.message}`);
-        return null;
-      }
-    }
-
-    async function ensureSamples() {
-      const allDrums = Object.keys(DRUMS);
-      const promises = [];
-
-      for (const k of allDrums) {
-        if (!state.buffers.drums[k]) {
-          promises.push(loadBuffer(DRUMS[k]).then(buf => {
-            if (buf) {
-              state.buffers.drums[k] = buf;
-              log(`[DRUM] ✔ Carregado: ${k}`);
+        
+        // Inicializar contexto de áudio
+        function initializeAudioContext() {
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                console.log("Contexto de áudio inicializado");
+            } catch (e) {
+                alert("Seu navegador não suporta Web Audio API. Por favor, use um navegador moderno.");
+                console.error(e);
             }
-          }));
         }
-      }
-
-      for (const [k, url] of Object.entries(BASS_SAMPLES)) {
-        if (!state.buffers.bass[k]) {
-          promises.push(loadBuffer(url).then(buf => {
-            if (buf) state.buffers.bass[k] = buf;
-          }));
+        
+        // Carregar samples essenciais
+        async function loadEssentialSamples() {
+            // Samples de bateria essenciais
+            const essentialDrumSamples = ['ca', 'ch', 'bu', 'bch', 'cch'];
+            
+            for (const sample of essentialDrumSamples) {
+                await loadSample(sample, `assets/${sample}.mp3`);
+            }
+            
+            // Samples de baixo essenciais
+            const essentialBassNotes = ['A', 'C', 'D', 'E', 'G', 'F', 'FS', 'GS'];
+            for (const note of essentialBassNotes) {
+                await loadSample(`bass-${note}`, `assets/bass-${note}.mp3`);
+                await loadSample(`bass-${note}8`, `assets/bass-${note}8.mp3`);
+            }
+            
+            // Samples de guitarra essenciais
+            const essentialGuitarChords = ['A', 'Am', 'C', 'D', 'E', 'Em', 'G', 'FS', 'FSm', 'GS', 'GSm'];
+            
+            for (const chord of essentialGuitarChords) {
+                // Guitarra distorcida
+                await loadSample(`dist-${chord}`, `assets/guitarraDistorcao/${chord}.mp3`);
+                // Guitarra limpa
+                await loadSample(`clean-${chord}`, `assets/guitarraLimpa/${chord}.mp3`);
+            }
+            
+            // Sample de baixo mudo
+            await loadSample('bass-muted', 'assets/bass-muted.mp3');
+            
+            return Promise.resolve();
         }
-      }
-
-      await Promise.all(promises);
-    }
-
-    function initAudio() {
-      if (audio.ctx) return;
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      audio.ctx = ctx;
-      audio.master = ctx.createGain();
-      audio.master.gain.value = 0.9;
-
-      audio.drumGain = ctx.createGain(); audio.drumGain.gain.value = 0.85;
-      audio.bassGain = ctx.createGain(); audio.bassGain.gain.value = 0.9;
-      audio.cleanGain = ctx.createGain(); audio.cleanGain.gain.value = 0.8;
-      audio.distGain = ctx.createGain(); audio.distGain.gain.value = 0.8;
-
-      audio.mix = ctx.createMediaStreamDestination();
-
-      audio.drumGain.connect(audio.master);
-      audio.bassGain.connect(audio.master);
-      audio.cleanGain.connect(audio.master);
-      audio.distGain.connect(audio.master);
-      audio.master.connect(audio.mix);
-      audio.master.connect(ctx.destination);
-    }
-
-    function randItem(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
-    function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
-
-    function meterToBeats(meter) {
-      const [num, den] = meter.split('/').map(Number);
-      return [num, den];
-    }
-
-    function playClick(isStrong) {
-      const ctx = audio.ctx;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(audio.drumGain);
-      osc.frequency.setValueAtTime(isStrong ? 880 : 440, ctx.currentTime);
-      gain.gain.setValueAtTime(0.3, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.08);
-    }
-
-    async function playChord(time, note, type, isDistorted) {
-      const folder = isDistorted ? 'guitarraDistorcao' : 'guitarraLimpa';
-      const key = `${folder}_${note}${type}`;
-      const url = `${folder}/${note}/${note}${type}.mp3`;
-
-      if (state.buffers.guitar[key]) {
-        const src = audio.ctx.createBufferSource();
-        const gainNode = isDistorted ? audio.distGain : audio.cleanGain;
-        src.buffer = state.buffers.guitar[key];
-        src.connect(gainNode);
-        src.start(time);
-        return;
-      }
-
-      try {
-        const buf = await loadBuffer(url);
-        if (!buf) throw new Error('Falha ao decodificar');
-        state.buffers.guitar[key] = buf;
-        const src = audio.ctx.createBufferSource();
-        src.buffer = buf;
-        src.connect(isDistorted ? audio.distGain : audio.cleanGain);
-        src.start(time);
-      } catch (e) {
-        log(`[ERRO] Falha ao carregar acorde: ${url}`);
-      }
-    }
-
-    function getCurrentChord() {
-      const chordNames = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-      const degree = state.chordProgression[state.currentChordIndex];
-      const rootOffset = DEGREE_TO_ROOT[degree] || 0;
-      const noteIndex = (state.keyIdx + rootOffset) % 12;
-      const noteSharp = chordNames[noteIndex];
-      const noteWithS = noteSharp.replace('#', 'S');
-      const chordType = state.quality === 'maj' ? randItem(['', '7']) : randItem(['m', 'm7']);
-      return { note: noteWithS, type: chordType, displayName: noteSharp + chordType };
-    }
-
-    function parsePattern(patternArray, type) {
-      const introMatch = patternArray.join(' ').match(/\[(.*?)\]/);
-      const loopMatch = patternArray.join(' ').match(/\((.*?)\)/);
-      const intro = introMatch ? introMatch[1].split(',').map(s => s.trim()) : [];
-      const loop = loopMatch ? Array(4).fill(loopMatch[1]).join(',').split(',').map(s => s.trim()) : [];
-      return { intro, loop };
-    }
-
-    function buildBassPlan() {
-      const groove = state.currentGroove;
-      state.meter = ui.meter.value === 'auto' ? groove.meter : ui.meter.value;
-      const [num, den] = meterToBeats(state.meter);
-      const sixteenthsPerBar = num * 4;
-      const totalBars = 16;
-      const totalSteps = totalBars * sixteenthsPerBar;
-
-      state.keyIdx = randInt(0, PITCHES.length - 1);
-      state.key = PITCHES[state.keyIdx];
-      state.quality = randItem(['maj', 'min']);
-
-      state.chordProgression = randItem(PROGRESSIONS);
-      const durations = [];
-      let current = state.chordProgression[0], count = 1;
-      for (let i = 1; i < state.chordProgression.length; i++) {
-        if (state.chordProgression[i] === current) count++;
-        else { durations.push(count); current = state.chordProgression[i]; count = 1; }
-      }
-      durations.push(count);
-      state.chordDurations = durations;
-
-      const { intro, loop } = parsePattern(groove.bassRhythm, 'bass');
-      const rhythmPattern = [...intro, ...Array(4).fill(loop.join(',')).join(',').split(',')];
-
-      const plan = [];
-      let barsInChord = 0;
-      let chordIndex = 0;
-
-      for (let step = 0; step < totalSteps; step++) {
-        const sixteenthInBar = step % sixteenthsPerBar;
-        if (sixteenthInBar === 0) {
-          barsInChord++;
-          if (barsInChord >= state.chordDurations[chordIndex]) {
-            chordIndex = (chordIndex + 1) % state.chordProgression.length;
-            barsInChord = 0;
-          }
+        
+        // Carregar um sample individual
+        async function loadSample(name, path) {
+            try {
+                // Verificar se já carregamos este sample
+                if (audioBuffers[name]) {
+                    samplesLoaded++;
+                    updateProgress();
+                    return Promise.resolve();
+                }
+                
+                const response = await fetch(path);
+                if (!response.ok) {
+                    throw new Error(`Erro ao carregar ${path}: ${response.status} ${response.statusText}`);
+                }
+                
+                const arrayBuffer = await response.arrayBuffer();
+                const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                audioBuffers[name] = audioBuffer;
+                
+                samplesLoaded++;
+                updateProgress();
+                
+                return Promise.resolve();
+            } catch (error) {
+                console.error(`Erro ao carregar ${name} de ${path}:`, error);
+                // Continuar mesmo com erro para não quebrar a aplicação
+                samplesLoaded++;
+                updateProgress();
+                return Promise.resolve();
+            }
         }
-
-        const degree = state.chordProgression[chordIndex];
-        const rootOffset = DEGREE_TO_ROOT[degree] || 0;
-        const rootIdx = (state.keyIdx + rootOffset) % 12;
-        const rootNote = PITCHES[rootIdx];
-        const chordType = state.quality === 'maj' ? '' : 'm';
-        const chordName = rootNote + (chordType || '');
-
-        const availableNotes = BASS_NOTE_MAP[chordName] || [rootNote];
-        const rhythm = rhythmPattern[step % rhythmPattern.length];
-        let note = '-';
-
-        if (rhythm === 'S') {
-          note = randItem(availableNotes);
-        } else if (rhythm === 'x') {
-          note = 'X';
-        } else if (rhythm === '°' || rhythm === 'º' || rhythm === '-') {
-          note = '-';
+        
+        // Atualizar barra de progresso
+        function updateProgress() {
+            const progress = (samplesLoaded / totalSamplesToLoad) * 100;
+            progressBarElement.style.width = `${progress}%`;
+            sampleStatusElement.textContent = `Samples carregados: ${samplesLoaded}/${totalSamplesToLoad}`;
         }
-        plan.push(note);
-      }
-
-      state.bassPlan = plan;
-      state.signatureTag = groove.name;
-      updateChordDisplay();
-    }
-
-    function buildDrumPattern() {
-      const groove = state.currentGroove;
-      const [num, den] = meterToBeats(state.meter);
-      const sixteenthsPerBar = num * 4;
-      const totalBars = 16;
-      const totalSteps = totalBars * sixteenthsPerBar;
-
-      const { intro, loop } = parsePattern(groove.drumPattern, 'drum');
-      const expandedPattern = [...intro, ...Array(4).fill(loop.join(',')).join(',').split(',')];
-
-      const result = [];
-      for (let i = 0; i < totalSteps; i++) {
-        let cell = expandedPattern[i % expandedPattern.length];
-        if (!cell || cell === '-' || cell === '----') {
-          result.push('-');
-          continue;
+        
+        // Analisar padrões da textarea
+        function parsePatterns() {
+            try {
+                drumsPattern = [];
+                bassPattern = [];
+                
+                // Analisar padrão de bateria
+                const drumsText = drumsPatternElement.value;
+                const drumsParts = drumsText.split(/[\[\]\(\)]/).filter(part => part.trim().length > 0);
+                
+                if (drumsParts.length > 0) {
+                    const introPart = drumsParts[0].split(',').map(item => item.trim()).filter(item => item);
+                    drumsPattern.push(...introPart);
+                }
+                
+                if (drumsParts.length > 1) {
+                    const loopParts = drumsParts[1].split(',').map(item => item.trim()).filter(item => item);
+                    // Adicionar o loop várias vezes para ter padrão suficiente
+                    for (let i = 0; i < 4; i++) {
+                        drumsPattern.push(...loopParts);
+                    }
+                }
+                
+                // Analisar padrão de baixo
+                const bassText = bassPatternElement.value;
+                const bassParts = bassText.split(/[\[\]\(\)]/).filter(part => part.trim().length > 0);
+                
+                if (bassParts.length > 0) {
+                    const introPart = bassParts[0].split(',').map(item => item.trim()).filter(item => item);
+                    bassPattern.push(...introPart);
+                }
+                
+                if (bassParts.length > 1) {
+                    const loopParts = bassParts[1].split(',').map(item => item.trim()).filter(item => item);
+                    // Adicionar o loop várias vezes para ter padrão suficiente
+                    for (let i = 0; i < 4; i++) {
+                        bassPattern.push(...loopParts);
+                    }
+                }
+                
+                console.log("Padrões analisados:", {drumsPattern, bassPattern});
+                debugInfoElement.textContent = `Drums: ${drumsPattern.length} steps, Bass: ${bassPattern.length} steps`;
+            } catch (error) {
+                console.error("Erro ao analisar padrões:", error);
+                alert("Erro ao analisar padrões. Verifique a formatação.");
+            }
         }
-        cell = cell.replace(/\(bu\s+at\)|\(at\s+bu\)/gi, 'ba')
-                   .replace(/\(bu\s+ch\)|\(ch\s+bu\)/gi, 'bch')
-                   .replace(/\(ch\s+ca\)|\(ca\s+ch\)/gi, 'cch')
-                   .replace(/\(bu\s+co\)|\(co\s+bu\)/gi, 'bc')
-                   .replace(/\(ca\s+co\)|\(co\s+ca\)/gi, 'cc');
-        cell = cell.replace(/\([^)]+\)/g, '').trim();
-        if (!cell) { result.push('-'); continue; }
-
-        const drumMap = {
-          bu: 'bumbo', ca: 'caixa', ch: 'chimbal', co: 'conducao', at: 'ataque',
-          ba: 'ba', bch: 'bch', cch: 'cch', bc: 'bc', cc: 'cc'
-        };
-
-        const pieces = cell.split(/\s+/).filter(Boolean).map(key => drumMap[key]).filter(Boolean);
-        result.push(pieces.length ? pieces.join(',') : '-');
-      }
-      return result;
-    }
-
-    function updateChordDisplay() {
-      const chordNames = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-      const degree = state.chordProgression[state.currentChordIndex];
-      const rootOffset = DEGREE_TO_ROOT[degree] || 0;
-      const rootIdx = (state.keyIdx + rootOffset) % 12;
-      const rootNote = chordNames[rootIdx];
-      const chordType = state.quality === 'maj' ? '' : 'm';
-      const currentChord = rootNote + chordType;
-      const barsLeft = state.chordDurations[state.currentChordIndex] - state.barsInChord;
-      ui.currentChord.textContent = currentChord;
-      ui.chordTimer.textContent = `Próx: ${barsLeft} compasso(s)`;
-    }
-
-    async function onPlay() {
-      if (state.running) { onStop(); setTimeout(onPlay, 100); return; }
-      initAudio();
-      await ensureSamples();
-      state.currentGroove = randItem(CUSTOM_GROOVES);
-
-      lastState.chordProgression = [...state.chordProgression];
-      lastState.key = state.key;
-      lastState.quality = state.quality;
-      lastState.currentGroove = state.currentGroove;
-      lastState.meter = state.meter;
-
-      buildBassPlan();
-      state.pattern = buildDrumPattern();
-      state.bpm = Number(ui.bpm.value) || 100;
-      state.sixteenthDur = (60 / state.bpm) / 4;
-      state.stepIndex = 0;
-      state.nextNoteTime = audio.ctx.currentTime + 0.1;
-      state.barsInChord = 0;
-      state.currentChordIndex = 0;
-      state.bassMode = 'tonica';
-      state.bassCycleCount = 0;
-      state.bassNoteEndTime = 0;
-
-      const [num] = meterToBeats(state.meter);
-      const quarterDur = 60 / state.bpm;
-      const totalClicks = num * 2;
-
-      for (let i = 0; i < totalClicks; i++) {
-        const isStrong = i % num === 0;
-        const clickTime = audio.ctx.currentTime + 0.1 + i * quarterDur;
-        setTimeout(() => playClick(isStrong), (clickTime - audio.ctx.currentTime) * 1000);
-      }
-
-      setTimeout(() => {
-        state.running = true;
-        startScheduler();
-        ui.play.dataset.state = 'on';
-        log(`[PLAY] Estilo: ${state.signatureTag} | ${state.meter}@${state.bpm} BPM`);
-      }, totalClicks * quarterDur * 1000);
-
-      setStatePanel();
-      updateChordDisplay();
-    }
-
-    function scheduler() {
-      const now = audio.ctx.currentTime;
-      while (state.nextNoteTime < now + audio.scheduleHorizon) {
-        scheduleStep(state.nextNoteTime, state.stepIndex);
-        state.nextNoteTime += state.sixteenthDur;
-        state.stepIndex++;
-      }
-    }
-
-    function scheduleStep(time, stepIdx) {
-      const cell = state.pattern[stepIdx % state.pattern.length];
-      const [num, den] = meterToBeats(state.meter);
-      const sixteenthsPerBar = num * 4;
-      const isNewBar = stepIdx % sixteenthsPerBar === 0;
-
-      // Bateria (1 símbolo = 1 semicolcheia)
-      if (cell && cell !== '-' && !mute.drums) {
-        const isSixteenth = stepIdx % 4 !== 0;
-        const dynamicGain = isSixteenth ? 0.6 + Math.random() * 0.3 : 1.0;
-        cell.split(',').forEach(p => {
-          const buf = state.buffers.drums[p];
-          if (!buf) return;
-          const src = audio.ctx.createBufferSource();
-          const gainNode = audio.ctx.createGain();
-          src.buffer = buf;
-          src.connect(gainNode);
-          gainNode.connect(audio.drumGain);
-          gainNode.gain.value = 0.8 * dynamicGain;
-          src.start(time);
-          if (p !== 'ataque' && p !== 'ba') src.stop(time + 0.15);
-        });
-      }
-
-      // Mudança de acorde
-      if (isNewBar && stepIdx > 0) {
-        state.barsInChord++;
-        if (state.barsInChord >= state.chordDurations[state.currentChordIndex]) {
-          state.currentChordIndex = (state.currentChordIndex + 1) % state.chordProgression.length;
-          state.barsInChord = 0;
-          const chord = getCurrentChord();
-          if (!mute.clean) playChord(time, chord.note, chord.type, false);
-          if (!mute.dist) playChord(time, chord.note, chord.type, true);
+        
+        // Gerar progressão de acordes
+        function generateChordProgression() {
+            const keys = [
+                "C Maior", "C# Maior", "Db Maior", "D Maior", "Eb Maior", 
+                "E Maior", "F Maior", "F# Maior", "Gb Maior", "G Maior", 
+                "Ab Maior", "A Maior", "Bb Maior", "B Maior"
+            ];
+            
+            currentKey = keys[Math.floor(Math.random() * keys.length)];
+            currentKeyElement.textContent = currentKey;
+            
+            // Gerar progressão de acordes simples baseada na tonalidade
+            const chords = {
+                "C Maior": ["C", "Dm", "Em", "F", "G", "Am"],
+                "A Maior": ["A", "Bm", "C#m", "D", "E", "F#m"],
+                "G Maior": ["G", "Am", "Bm", "C", "D", "Em"],
+                "E Maior": ["E", "F#m", "G#m", "A", "B", "C#m"],
+                "D Maior": ["D", "Em", "F#m", "G", "A", "Bm"],
+                "F# Maior": ["FS", "GSm", "ASm", "B", "CS", "DSm"]
+            };
+            
+            // Usar progressão padrão se a tonalidade não estiver definida
+            chordProgression = chords[currentKey] || ["C", "G", "Am", "F"];
+            
+            // Embaralhar progressão
+            for (let i = chordProgression.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [chordProgression[i], chordProgression[j]] = [chordProgression[j], chordProgression[i]];
+            }
+            
+            currentChord = chordProgression[0];
+            chordDisplay.textContent = currentChord;
         }
-        updateChordDisplay();
-      }
-
-      // Baixo
-      const bassKey = state.bassPlan[stepIdx % state.bassPlan.length];
-      if (bassKey === 'X' && !mute.bass && time >= state.bassNoteEndTime) {
-        const src = audio.ctx.createBufferSource();
-        src.buffer = state.buffers.bass['X'];
-        src.connect(audio.bassGain);
-        src.start(time);
-        src.stop(time + 0.1);
-        if (state.lastBassSrc) state.lastBassSrc.stop(time + 0.005);
-        state.lastBassSrc = src;
-        src.onended = () => { if (state.lastBassSrc === src) state.lastBassSrc = null; };
-        state.bassNoteEndTime = time + 0.1;
-      } else if (bassKey && bassKey !== '-' && !mute.bass && time >= state.bassNoteEndTime) {
-        if (state.lastBassSrc) state.lastBassSrc.stop(time + 0.005);
-        const run = async () => {
-          if (!state.buffers.bass[bassKey]) {
-            state.buffers.bass[bassKey] = await loadBuffer(BASS_SAMPLES[bassKey]);
-          }
-          const src = audio.ctx.createBufferSource();
-          src.buffer = state.buffers.bass[bassKey];
-          src.connect(audio.bassGain);
-          src.start(time);
-          state.lastBassSrc = src;
-          src.onended = () => { if (state.lastBassSrc === src) state.lastBassSrc = null; };
-          state.bassNoteEndTime = time + state.sixteenthDur * 4; // duração mínima de 1 seminima
-        };
-        run();
-      }
-    }
-
-    function startScheduler() {
-      stopScheduler();
-      audio.schedulerTimer = setInterval(scheduler, audio.lookahead * 1000);
-    }
-
-    function stopScheduler() {
-      if (audio.schedulerTimer) {
-        clearInterval(audio.schedulerTimer);
-        audio.schedulerTimer = null;
-      }
-    }
-
-    function onPause() {
-      if (state.running && !state.paused) {
-        audio.ctx.suspend();
-        state.paused = true;
-        stopScheduler();
-        ui.play.textContent = '▶ Retomar';
-      } else if (state.paused) {
-        audio.ctx.resume();
-        state.paused = false;
-        ui.play.textContent = '⏸ Pause';
-        startScheduler();
-      }
-    }
-
-    async function onStop() {
-      stopScheduler();
-      stopRecording();
-      if (audio.ctx && audio.ctx.state !== 'closed') {
-        try { await audio.ctx.close(); } catch (e) {}
-      }
-      audio.ctx = null;
-      state.running = false;
-      state.paused = false;
-      state.stepIndex = 0;
-      state.pattern = [];
-      state.bassPlan = [];
-      state.currentGroove = null;
-      ui.currentChord.textContent = '—';
-      ui.chordTimer.textContent = '—';
-      ui.play.dataset.state = '';
-      ui.play.textContent = '▶ Play';
-      log('[STOP] Pronto.');
-    }
-
-    function onRestart() {
-      if (!state.running) return;
-      onStop();
-      setTimeout(() => onPlay(), 100);
-    }
-
-    function onPrev() {
-      if (!lastState.currentGroove) return log('[INFO] Nenhum playback anterior.');
-      onStop();
-      setTimeout(() => {
-        state.currentGroove = lastState.currentGroove;
-        state.key = lastState.key;
-        state.keyIdx = PITCHES.indexOf(lastState.key);
-        state.quality = lastState.quality;
-        state.chordProgression = [...lastState.chordProgression];
-        state.meter = lastState.meter;
-        state.bpm = Number(ui.bpm.value) || 100;
-        buildBassPlan();
-        state.pattern = buildDrumPattern();
-        initAudio();
-        ensureSamples();
-        state.stepIndex = 0;
-        state.nextNoteTime = audio.ctx.currentTime + 0.1;
-        state.barsInChord = 0;
-        state.currentChordIndex = 0;
-        startScheduler();
-        setStatePanel();
-        updateChordDisplay();
-        log('[PREV] Playback anterior restaurado.');
-      }, 100);
-    }
-
-    function onSave() {
-      if (!audio.ctx) return;
-      startRecording();
-    }
-
-    function startRecording() {
-      if (!audio.mix) return;
-      try {
-        recorder = new MediaRecorder(audio.mix.stream, { mimeType: 'audio/webm' });
-      } catch (e) {
-        log('[REC] Erro ao iniciar gravação: ' + e.message);
-        return;
-      }
-      recChunks = [];
-      recorder.ondataavailable = e => { if (e.data.size) recChunks.push(e.data); };
-      recorder.onstop = async () => {
-        const webmBlob = new Blob(recChunks, { type: 'audio/webm' });
-        const arrayBuffer = await webmBlob.arrayBuffer();
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-        const samples = audioBuffer.getChannelData(0);
-        const samplesRight = audioBuffer.numberOfChannels > 1 ? audioBuffer.getChannelData(1) : samples;
-        const mp3Encoder = new lamejs.Mp3Encoder(2, 44100, 128);
-        const mp3Data = [];
-        const frameSize = 1152;
-        for (let i = 0; i < samples.length; i += frameSize) {
-          const left = samples.subarray(i, i + frameSize);
-          const right = samplesRight.subarray(i, i + frameSize);
-          const mp3buf = mp3Encoder.encodeBuffer(left, right);
-          if (mp3buf.length > 0) mp3Data.push(new Int8Array(mp3buf));
+        
+        // Tocar um sample
+        function playSample(name, time, volume = 1.0) {
+            if (!audioBuffers[name]) {
+                console.warn(`Sample não encontrado: ${name}`);
+                return null;
+            }
+            
+            try {
+                const source = audioContext.createBufferSource();
+                source.buffer = audioBuffers[name];
+                
+                const gainNode = audioContext.createGain();
+                gainNode.gain.value = volume;
+                
+                source.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                source.start(time);
+                
+                return source;
+            } catch (error) {
+                console.error(`Erro ao tocar sample ${name}:`, error);
+                return null;
+            }
         }
-        const final = mp3Encoder.flush();
-        if (final.length > 0) mp3Data.push(new Int8Array(final));
-        const mp3Blob = new Blob(mp3Data, { type: 'audio/mp3' });
-        downloadMp3(mp3Blob);
-      };
-      recorder.start();
-      const fixedDuration = 4 * 60 * 1000;
-      const startTime = Date.now();
-      const finalTimer = setInterval(() => {
-        const now = Date.now();
-        if (now >= startTime + fixedDuration) {
-          if (recorder && recorder.state !== 'inactive') recorder.stop();
-          clearInterval(finalTimer);
-          log('[✅] Gravação de 4 minutos concluída!');
+        
+        // Obter notas de baixo para um acorde
+        function getBassNotesForChord(chord) {
+            // Verificar se temos um mapeamento específico para este acorde
+            if (BASS_NOTE_MAP[chord]) {
+                return BASS_NOTE_MAP[chord];
+            }
+            
+            // Para acordes menores, usar a tônica e a quinta
+            if (chord.endsWith('m')) {
+                const root = chord.replace('m', '');
+                return [root, `${root}8`, `${root}16`, getFifthNote(root), `${getFifthNote(root)}8`];
+            }
+            
+            // Para acordes maiores, usar a tônica e a quinta
+            return [chord, `${chord}8`, `${chord}16`, getFifthNote(chord), `${getFifthNote(chord)}8`];
         }
-      }, 1000);
-      if (state.recordingTimer) clearInterval(state.recordingTimer);
-      state.recordingTimer = finalTimer;
-      log('[REC] Gravação iniciada. Duração fixa: 4 minutos (será convertido para MP3).');
-      ui.save.disabled = true;
-      ui.save.textContent = '⏳ Gravando... (4 min)';
-    }
-
-    function stopRecording() {
-      if (recorder && recorder.state !== 'inactive') recorder.stop();
-    }
-
-    function downloadMp3(blob) {
-      const audioPreview = new Audio();
-      audioPreview.src = URL.createObjectURL(blob);
-      audioPreview.controls = true;
-      audioPreview.style.display = 'block';
-      audioPreview.style.margin = '10px 0';
-      audioPreview.style.width = '100%';
-      audioPreview.addEventListener('ended', () => URL.revokeObjectURL(audioPreview.src));
-      const previewDiv = document.createElement('div');
-      previewDiv.innerHTML = '<div><b>🎧 Prévia do seu playback:</b></div>';
-      previewDiv.appendChild(audioPreview);
-      ui.log.parentNode.insertBefore(previewDiv, ui.log);
-
-      const now = new Date();
-      const dateStr = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') +
-                     String(now.getDate()).padStart(2, '0') + '-' +
-                     String(now.getHours()).padStart(2, '0') +
-                     String(now.getMinutes()).padStart(2, '0');
-      const filename = `jam-${state.signatureTag}-${dateStr}.mp3`;
-
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(a.href);
-      log(`[✅] Arquivo salvo: ${filename}`);
-      ui.save.disabled = false;
-      ui.save.textContent = '💾 Salvar 4 min (MP3)';
-    }
-
-    function toggleMute(type, button) {
-      mute[type] = !mute[type];
-      button.dataset.mute = mute[type] ? 'on' : 'off';
-      const icon = mute[type] ? '🔇' : '🔊';
-      const label = button.textContent.split(' ')[1];
-      button.textContent = `${icon} ${label}`;
-      button.classList.toggle('muted', mute[type]);
-    }
-
-    ui.play.addEventListener('click', onPlay);
-    ui.pause.addEventListener('click', onPause);
-    ui.stop.addEventListener('click', onStop);
-    ui.save.addEventListener('click', onSave);
-    ui.btnRestart.addEventListener('click', onRestart);
-    ui.btnPrev.addEventListener('click', onPrev);
-
-    ui.muteBass.addEventListener('click', () => toggleMute('bass', ui.muteBass));
-    ui.muteDrums.addEventListener('click', () => toggleMute('drums', ui.muteDrums));
-    ui.muteClean.addEventListener('click', () => toggleMute('clean', ui.muteClean));
-    ui.muteDist.addEventListener('click', () => toggleMute('dist', ui.muteDist));
-
-    window.addEventListener('load', () => {
-      log('🔧 Pré-carregando acordes...');
-      initAudio();
-    });
-  </script>
+        
+        // Obter a quinta de uma nota
+        function getFifthNote(note) {
+            const notes = ['A', 'AS', 'B', 'C', 'CS', 'D', 'DS', 'E', 'F', 'FS', 'G', 'GS'];
+            const index = notes.indexOf(note);
+            if (index === -1) return 'E'; // Fallback
+            
+            const fifthIndex = (index + 7) % 12;
+            return notes[fifthIndex];
+        }
+        
+        // Agendar próximos eventos
+        function scheduler() {
+            if (!isPlaying) return;
+            
+            while (nextNoteTime < audioContext.currentTime + scheduleAheadTime) {
+                scheduleNote(current16thNote, nextNoteTime);
+                nextNote();
+            }
+            
+            timerID = setTimeout(scheduler, lookahead);
+        }
+        
+        // Agendar uma nota específica
+        function scheduleNote(time16th, time) {
+            // Tocar bateria se ativada
+            if (drumsToggle.classList.contains('active') && drumsPattern.length > 0) {
+                const drumNote = drumsPattern[time16th % drumsPattern.length];
+                if (drumNote && drumNote !== '-') {
+                    playSample(drumNote, time);
+                }
+            }
+            
+            // Tocar baixo se ativado
+            if (bassToggle.classList.contains('active') && bassPattern.length > 0) {
+                const bassSymbol = bassPattern[time16th % bassPattern.length];
+                if (bassSymbol && bassSymbol !== '-') {
+                    if (bassSymbol === 'x') {
+                        playSample('bass-muted', time, 0.7);
+                    } else {
+                        // Obter notas de baixo para o acorde atual
+                        const bassNotes = getBassNotesForChord(currentChord);
+                        const randomBassNote = bassNotes[Math.floor(Math.random() * bassNotes.length)];
+                        playSample(`bass-${randomBassNote}`, time, 0.8);
+                    }
+                }
+            }
+            
+            // Tocar acorde de guitarra no início do compasso
+            if (time16th % 16 === 0) {
+                // Mudar acorde a cada X compassos
+                if (time16th % (16 * chordChangeInterval) === 0) {
+                    currentChordIndex = (currentChordIndex + 1) % chordProgression.length;
+                    currentChord = chordProgression[currentChordIndex];
+                    chordDisplay.textContent = currentChord;
+                    measureCount++;
+                    measureCountElement.textContent = measureCount;
+                }
+                
+                // Tocar guitarra distorcida se ativada
+                if (distGuitarToggle.classList.contains('active')) {
+                    playSample(`dist-${currentChord}`, time, 0.9);
+                }
+                
+                // Tocar guitarra limpa se ativada
+                if (cleanGuitarToggle.classList.contains('active')) {
+                    playSample(`clean-${currentChord}`, time, 0.9);
+                }
+            }
+        }
+        
+        // Avançar para a próxima nota
+        function nextNote() {
+            const secondsPerBeat = 60.0 / currentBPM;
+            nextNoteTime += 0.25 * secondsPerBeat; // 16th note
+            
+            current16thNote++;
+            
+            if (current16thNote >= 16 * 4) { // 4 compassos
+                current16thNote = 0;
+            }
+        }
+        
+        // Alternar reprodução
+        function togglePlay() {
+            if (!isPlaying) {
+                isPlaying = true;
+                playbackStateElement.textContent = "Tocando";
+                playBtn.textContent = "Playing";
+                
+                // Salvar configurações atuais para possível uso do botão "voltar"
+                lastPlaybackSettings = {
+                    drumsPattern: [...drumsPattern],
+                    bassPattern: [...bassPattern],
+                    chordProgression: [...chordProgression],
+                    currentChord: currentChord,
+                    currentKey: currentKey
+                };
+                
+                // Iniciar reprodução
+                nextNoteTime = audioContext.currentTime;
+                current16thNote = 0;
+                measureCount = 1;
+                measureCountElement.textContent = measureCount;
+                scheduler();
+            } else {
+                togglePause();
+            }
+        }
+        
+        // Alternar pausa
+        function togglePause() {
+            isPlaying = !isPlaying;
+            if (isPlaying) {
+                playbackStateElement.textContent = "Tocando";
+                playBtn.textContent = "Playing";
+                nextNoteTime = audioContext.currentTime;
+                scheduler();
+            } else {
+                playbackStateElement.textContent = "Pausado";
+                playBtn.textContent = "Play";
+                clearTimeout(timerID);
+            }
+        }
+        
+        // Parar reprodução
+        function stopPlayback() {
+            isPlaying = false;
+            clearTimeout(timerID);
+            measureCount = 0;
+            measureCountElement.textContent = measureCount;
+            playbackStateElement.textContent = "Parado";
+            playBtn.textContent = "Play";
+            
+            // Sortear novo campo harmônico e progressão
+            generateChordProgression();
+        }
+        
+        // Salvar playback (simulado)
+        function savePlayback() {
+            alert("Funcionalidade de salvar seria implementada aqui. Geraria um MP3 de 5 minutos do playback atual.");
+        }
+        
+        // Voltar para o playback anterior
+        function goBack() {
+            if (lastPlaybackSettings) {
+                drumsPattern = [...lastPlaybackSettings.drumsPattern];
+                bassPattern = [...lastPlaybackSettings.bassPattern];
+                chordProgression = [...lastPlaybackSettings.chordProgression];
+                currentChord = lastPlaybackSettings.currentChord;
+                currentKey = lastPlaybackSettings.currentKey;
+                
+                currentKeyElement.textContent = currentKey;
+                chordDisplay.textContent = currentChord;
+                
+                alert("Voltando para o playback anterior");
+                stopPlayback();
+            } else {
+                alert("Nenhum playback anterior disponível");
+            }
+        }
+        
+        // Repetir playback
+        function repeatPlayback() {
+            alert("Repetindo a partir da introdução");
+            stopPlayback();
+            togglePlay();
+        }
+        
+        // Alternar instrumento
+        function toggleInstrument(button, instrument) {
+            button.classList.toggle('active');
+            const isActive = button.classList.contains('active');
+            button.textContent = `${button.textContent.split(':')[0]}: ${isActive ? 'Ativado' : 'Desativado'}`;
+            console.log(`${instrument} ${isActive ? 'ativado' : 'desativado'}`);
+        }
+        
+        // Alterar BPM
+        function changeBPM(delta) {
+            currentBPM += delta;
+            if (currentBPM < 60) currentBPM = 60;
+            if (currentBPM > 200) currentBPM = 200;
+            
+            bpmDisplay.textContent = currentBPM;
+            bpmValue.textContent = currentBPM;
+        }
+        
+        // Aplicar padrões editados
+        function applyPatterns() {
+            drumsPattern = [];
+            bassPattern = [];
+            parsePatterns();
+            alert("Padrões aplicados com sucesso!");
+        }
+    </script>
 </body>
 </html>
