@@ -669,9 +669,14 @@
       if (state.running && !state.paused) return;
       if (!audio.ctx) initAudio();
       if (!state.currentGroove) {
-        state.currentGroove = CUSTOM_GROOVES[0];
-        log(`[INFO] Groove padrão definido: ${state.currentGroove.name}`);
-      }
+  state.currentGroove = CUSTOM_GROOVES[0];
+  log(`[INFO] Groove padrão definido: ${state.currentGroove.name}`);
+}
+
+// ✅ Garantir que o plano de acordes e baixo foi gerado
+if (!state.chordPlan || state.chordPlan.length === 0) {
+  buildBassAndChordPlan();
+}
 
       if (state.paused) {
         state.paused = false;
@@ -756,16 +761,30 @@
 
       // Guitarra (agora com acorde no 1º compasso)
       if (isNewBar) {
-        const chord = state.chordPlan[stepIdx % state.chordPlan.length];
-        if (!mute.clean) playChord(time, chord.note, chord.type, false);
-        if (!mute.dist) playChord(time, chord.note, chord.type, true);
-        ui.currentChord.textContent = chord.display;
-        const barsLeft = state.chordDurations[state.currentChordIndex] - state.barsInChord;
-        ui.chordTimer.textContent = `Próx: ${barsLeft} compasso(s)`;
-      }
+  state.barsInChord++;
 
-      state.stepIndex++;
-      state.nextNoteTime += state.sixteenthDur;
+  if (state.barsInChord >= state.chordDurations[state.currentChordIndex]) {
+    state.currentChordIndex = (state.currentChordIndex + 1) % state.chordProgression.length;
+    state.barsInChord = 0;
+  }
+
+  const chord = state.chordPlan[stepIdx % state.chordPlan.length];
+  if (chord) { // ✅ Verifique se existe
+    if (!mute.clean) playChord(time, chord.note, chord.type, false);
+    if (!mute.dist) playChord(time, chord.note, chord.type, true);
+    ui.currentChord.textContent = chord.display;
+    const barsLeft = state.chordDurations[state.currentChordIndex] - state.barsInChord;
+    ui.chordTimer.textContent = `Próx: ${barsLeft} compasso(s)`;
+  }
+}
+
+  // Verifica se deve mudar de acorde
+  if (state.barsInChord >= state.chordDurations[state.currentChordIndex]) {
+    state.currentChordIndex = (state.currentChordIndex + 1) % state.chordProgression.length;
+    state.barsInChord = 0;
+  }
+
+  const chord = state.chordPlan[stepIdx % state.chordPlan.length];
     }
 
     function playChord(time, note, type, isDistorted) {
