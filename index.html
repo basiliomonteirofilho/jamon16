@@ -693,7 +693,7 @@ const BASS_NOTE_MAP = {
       }
 
       // Guitarra (toca no início do compasso)
-      if (isNewBar && stepIdx > 0) {
+      if (isNewBar) {
         const chord = state.chordPlan[stepIdx % state.chordPlan.length];
         if (!mute.clean) playChord(time, chord.note, chord.type, false);
         if (!mute.dist) playChord(time, chord.note, chord.type, true);
@@ -750,7 +750,7 @@ const BASS_NOTE_MAP = {
       state.running = true;
       state.paused = false;
       state.stepIndex = 0;
-      state.nextNoteTime = audio.ctx.currentTime + 0.1;
+      state.nextNoteTime = audio.ctx.currentTime;
       buildBassAndChordPlan();
       startScheduler();
     }
