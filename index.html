@@ -154,6 +154,7 @@
 
     // Caminhos corretos
     const DRUMS = {
+      click: 'click',  // Adicionado para o metrônomo
       bu: 'bumbo',
       ca: 'caixa',
       ch: 'chimbal',
@@ -185,7 +186,9 @@
       table['X'] = 'assets/bass-muted.mp3';
       return table;
     })();
-const BASS_NOTE_MAP = {
+
+    // ✅ BASS_NOTE_MAP corrigido (sem C8S, D8S, etc.)
+    const BASS_NOTE_MAP = {
       // A 
 'A':     ['A','A8','A16','CS','C8S','C16S','E','E8','E16'], 
 'A11':   ['A','A8','A16','CS','C8S','C16S','E','E8','E16'], 
@@ -440,7 +443,8 @@ const BASS_NOTE_MAP = {
 'GSm75+': ['GS','G8S','G16S','B','B8','B16','DS','D8S','D16S'], 
 'GSm79':  ['GS','G8S','G16S','B','B8','B16','DS','D8S','D16S'], 
 'GSm9':   ['GS','G8S','G16S','B','B8','B16','DS','D8S','D16S'] 
-    }; 
+    };
+
     const CUSTOM_GROOVES = [
       {
         name: "Groove Alternado",
@@ -470,6 +474,7 @@ const BASS_NOTE_MAP = {
       bpm: 100,
       sixteenthDur: 0.15,
       stepIndex: 0,
+      barIndex: 0,
       buffers: { drums: {}, bass: {}, guitar: {} },
       lastBassSrc: null,
       lastChordSrc: { clean: null, dist: null },
@@ -483,7 +488,9 @@ const BASS_NOTE_MAP = {
       chordDurations: [],
       currentGroove: null,
       currentChordIndex: 0,
-      barsInChord: 0
+      barsInChord: 0,
+      clickCount: 0,
+      totalClicks: 0
     };
 
     const mute = { bass: false, drums: false, clean: false, dist: false };
@@ -522,8 +529,9 @@ const BASS_NOTE_MAP = {
       audio.cleanGain.connect(audio.master);
       audio.distGain.connect(audio.master);
 
+      log('🔧 Pré-carregando áudios...');
       await ensureSamples();
-      log('✅ Áudios pré-carregados.');
+      log('✅ Áudios carregados.');
     }
 
     async function loadBuffer(url) {
@@ -610,8 +618,8 @@ const BASS_NOTE_MAP = {
       let chordIndex = 0;
 
       for (let step = 0; step < totalSteps; step++) {
-        const sixteenthInBar = step % sixteenthsPerBar;
-        if (sixteenthInBar === 0 && step > 0) {
+        const isNewBar = (step % 16) === 0;
+        if (isNewBar && step > 0) {
           barsInChord++;
           if (barsInChord >= state.chordDurations[chordIndex]) {
             chordIndex = (chordIndex + 1) % state.chordProgression.length;
@@ -627,12 +635,13 @@ const BASS_NOTE_MAP = {
         const chordName = rootNote + chordType;
         const chordDisplay = CHORD_NAMES[rootIdx] + chordType;
 
+        const availableNotes = BASS_NOTE_MAP[chordName] || [rootNote];
         const symbol = rhythm[step];
         let bassNote = '-';
 
         if (symbol === 'x') bassNote = 'X';
         else if (symbol === '°') bassNote = '°';
-        else if (symbol === 'sm') bassNote = rootNote;
+        else if (symbol === 'sm') bassNote = availableNotes[Math.floor(Math.random() * availableNotes.length)];
 
         bassPlan.push(bassNote);
         chordPlan.push({ note: rootNote, type: chordType, display: chordDisplay });
@@ -642,6 +651,59 @@ const BASS_NOTE_MAP = {
       state.chordPlan = chordPlan;
       state.signatureTag = groove.name;
       setStatePanel();
+    }
+
+    function playClick(isStrong) {
+      const ctx = audio.ctx;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(audio.drumGain);
+      osc.frequency.value = isStrong ? 880 : 440;
+      gain.gain.value = isStrong ? 0.3 : 0.15;
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.05);
+    }
+
+    function onPlay() {
+      if (state.running && !state.paused) return;
+      if (!audio.ctx) initAudio();
+      if (!state.currentGroove) {
+        state.currentGroove = CUSTOM_GROOVES[0];
+        log(`[INFO] Groove padrão definido: ${state.currentGroove.name}`);
+      }
+
+      if (state.paused) {
+        state.paused = false;
+        return;
+      }
+
+      state.running = false;
+      state.stepIndex = 0;
+      state.barIndex = 0;
+      state.barsInChord = 0;
+      state.currentChordIndex = 0;
+      state.nextNoteTime = audio.ctx.currentTime + 0.1;
+
+      // ✅ Metrônomo de 4 compassos
+      const [num, den] = meterToBeats(state.meter);
+      const quarterDur = 60 / state.bpm;
+      state.totalClicks = num * 4; // 4 compassos
+      state.clickCount = 0;
+
+      const clickInterval = setInterval(() => {
+        if (state.clickCount >= state.totalClicks) {
+          clearInterval(clickInterval);
+          state.running = true;
+          ui.play.dataset.state = 'on';
+          log(`[PLAY] Iniciando playback: ${state.signatureTag} | ${state.meter}@${state.bpm} BPM`);
+          startScheduler();
+          return;
+        }
+        const isStrong = state.clickCount % num === 0;
+        playClick(isStrong);
+        state.clickCount++;
+      }, quarterDur * 1000);
     }
 
     function scheduler() {
@@ -692,7 +754,7 @@ const BASS_NOTE_MAP = {
         state.lastBassSrc = src;
       }
 
-      // Guitarra (toca no início do compasso)
+      // Guitarra (agora com acorde no 1º compasso)
       if (isNewBar) {
         const chord = state.chordPlan[stepIdx % state.chordPlan.length];
         if (!mute.clean) playChord(time, chord.note, chord.type, false);
@@ -734,25 +796,6 @@ const BASS_NOTE_MAP = {
       if (introMatch) result.intro = introMatch[1].trim().split(/\s+/).filter(s => s);
       if (loopMatch) result.loop = loopMatch[1].trim().split(/\s+/).filter(s => s);
       return result;
-    }
-
-    function onPlay() {
-      if (state.running && !state.paused) return;
-      if (!audio.ctx) initAudio();
-      if (!state.currentGroove) {
-        state.currentGroove = CUSTOM_GROOVES[0];
-        log(`[INFO] Groove padrão definido: ${state.currentGroove.name}`);
-      }
-      if (state.paused) {
-        state.paused = false;
-        return;
-      }
-      state.running = true;
-      state.paused = false;
-      state.stepIndex = 0;
-      state.nextNoteTime = audio.ctx.currentTime;
-      buildBassAndChordPlan();
-      startScheduler();
     }
 
     function onPause() {
