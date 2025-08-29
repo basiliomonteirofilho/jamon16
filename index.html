@@ -152,9 +152,7 @@
     const DEGREE_TO_ROOT = { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11 };
     const CHORD_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 
-    // Caminhos corretos
     const DRUMS = {
-      click: 'click',  // Adicionado para o metrônomo
       bu: 'bumbo',
       ca: 'caixa',
       ch: 'chimbal',
@@ -187,7 +185,6 @@
       return table;
     })();
 
-    // ✅ BASS_NOTE_MAP corrigido (sem C8S, D8S, etc.)
     const BASS_NOTE_MAP = {
       // A 
 'A':     ['A','A8','A16','CS','C8S','C16S','E','E8','E16'], 
@@ -477,7 +474,6 @@
       barIndex: 0,
       buffers: { drums: {}, bass: {}, guitar: {} },
       lastBassSrc: null,
-      lastChordSrc: { clean: null, dist: null },
       bassPlan: [],
       chordPlan: [],
       signatureTag: '',
@@ -494,8 +490,6 @@
     };
 
     const mute = { bass: false, drums: false, clean: false, dist: false };
-    let recorder = null;
-    let recChunks = [];
 
     function log(msg) {
       ui.log.textContent += `\n${msg}`;
@@ -618,7 +612,7 @@
       let chordIndex = 0;
 
       for (let step = 0; step < totalSteps; step++) {
-        const isNewBar = (step % 16) === 0;
+        const isNewBar = (step % sixteenthsPerBar) === 0;
         if (isNewBar && step > 0) {
           barsInChord++;
           if (barsInChord >= state.chordDurations[chordIndex]) {
@@ -668,15 +662,19 @@
     function onPlay() {
       if (state.running && !state.paused) return;
       if (!audio.ctx) initAudio();
-      if (!state.currentGroove) {
-  state.currentGroove = CUSTOM_GROOVES[0];
-  log(`[INFO] Groove padrão definido: ${state.currentGroove.name}`);
-}
 
-// ✅ Garantir que o plano de acordes e baixo foi gerado
-if (!state.chordPlan || state.chordPlan.length === 0) {
-  buildBassAndChordPlan();
-}
+      // Atualiza BPM e meter
+      state.bpm = Number(ui.bpm.value);
+      state.sixteenthDur = 60 / state.bpm / 4; // Recalcula duração da semicolcheia
+
+      if (!state.currentGroove) {
+        state.currentGroove = CUSTOM_GROOVES[0];
+        log(`[INFO] Groove padrão definido: ${state.currentGroove.name}`);
+      }
+
+      if (!state.chordPlan || state.chordPlan.length === 0) {
+        buildBassAndChordPlan();
+      }
 
       if (state.paused) {
         state.paused = false;
@@ -685,15 +683,13 @@ if (!state.chordPlan || state.chordPlan.length === 0) {
 
       state.running = false;
       state.stepIndex = 0;
-      state.barIndex = 0;
       state.barsInChord = 0;
       state.currentChordIndex = 0;
       state.nextNoteTime = audio.ctx.currentTime + 0.1;
 
-      // ✅ Metrônomo de 4 compassos
-      const [num, den] = meterToBeats(state.meter);
+      const [num] = meterToBeats(state.meter);
       const quarterDur = 60 / state.bpm;
-      state.totalClicks = num * 4; // 4 compassos
+      state.totalClicks = num * 4;
       state.clickCount = 0;
 
       const clickInterval = setInterval(() => {
@@ -722,7 +718,9 @@ if (!state.chordPlan || state.chordPlan.length === 0) {
     function scheduleStep() {
       const stepIdx = state.stepIndex;
       const time = state.nextNoteTime;
-      const isNewBar = (stepIdx % 16) === 0;
+      const [num] = meterToBeats(state.meter);
+      const sixteenthsPerBar = num * 4;
+      const isNewBar = (stepIdx % sixteenthsPerBar) === 0;
 
       // Bateria
       const drumPattern = parsePattern(state.currentGroove.drumPattern.join(' '), 'drum');
@@ -759,32 +757,26 @@ if (!state.chordPlan || state.chordPlan.length === 0) {
         state.lastBassSrc = src;
       }
 
-      // Guitarra (agora com acorde no 1º compasso)
+      // Guitarra
       if (isNewBar) {
-  state.barsInChord++;
+        state.barsInChord++;
+        if (state.barsInChord >= state.chordDurations[state.currentChordIndex]) {
+          state.currentChordIndex = (state.currentChordIndex + 1) % state.chordProgression.length;
+          state.barsInChord = 0;
+        }
 
-  if (state.barsInChord >= state.chordDurations[state.currentChordIndex]) {
-    state.currentChordIndex = (state.currentChordIndex + 1) % state.chordProgression.length;
-    state.barsInChord = 0;
-  }
+        const chord = state.chordPlan[stepIdx % state.chordPlan.length];
+        if (chord) {
+          if (!mute.clean) playChord(time, chord.note, chord.type, false);
+          if (!mute.dist) playChord(time, chord.note, chord.type, true);
+          ui.currentChord.textContent = chord.display;
+          const barsLeft = state.chordDurations[state.currentChordIndex] - state.barsInChord;
+          ui.chordTimer.textContent = `Próx: ${barsLeft} compasso(s)`;
+        }
+      }
 
-  const chord = state.chordPlan[stepIdx % state.chordPlan.length];
-  if (chord) { // ✅ Verifique se existe
-    if (!mute.clean) playChord(time, chord.note, chord.type, false);
-    if (!mute.dist) playChord(time, chord.note, chord.type, true);
-    ui.currentChord.textContent = chord.display;
-    const barsLeft = state.chordDurations[state.currentChordIndex] - state.barsInChord;
-    ui.chordTimer.textContent = `Próx: ${barsLeft} compasso(s)`;
-  }
-}
-
-  // Verifica se deve mudar de acorde
-  if (state.barsInChord >= state.chordDurations[state.currentChordIndex]) {
-    state.currentChordIndex = (state.currentChordIndex + 1) % state.chordProgression.length;
-    state.barsInChord = 0;
-  }
-
-  const chord = state.chordPlan[stepIdx % state.chordPlan.length];
+      state.stepIndex++;
+      state.nextNoteTime += state.sixteenthDur;
     }
 
     function playChord(time, note, type, isDistorted) {
@@ -808,7 +800,7 @@ if (!state.chordPlan || state.chordPlan.length === 0) {
       }
     }
 
-    function parsePattern(patternText, type) {
+    function parsePattern(patternText) {
       const result = { intro: [], loop: [] };
       const introMatch = patternText.match(/\[(.*?)\]/);
       const loopMatch = patternText.match(/\((.*?)\)/);
