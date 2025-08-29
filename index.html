@@ -1,351 +1,117 @@
-<!DOCTYPE html> 
-<html lang="pt-BR"> 
-<head> 
-  <meta charset="UTF-8" /> 
-  <meta name="viewport" content="width=device-width, initial-scale=1" /> 
-  <title>Jam on – Playback Aleatório</title> 
-  <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.0/lame.min.js"></script> 
-  <style> 
-    :root { 
-      --bg: #0b0f14; 
-      --panel: #121822; 
-      --accent: #5eead4; 
-      --muted: #7a89a6; 
-      --text: #e6edf6; 
-      --danger: #f87171; 
-      --ok: #86efac; 
-    } 
-    * { 
-      box-sizing: border-box; 
-    } 
-    body { 
-      margin: 0; 
-      background: var(--bg); 
-      color: var(--text); 
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, 
-"Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"; 
-      min-height: 100vh; 
-      display: grid; 
-      place-items: center; 
-    } 
-    .wrap { 
-      width: min(1100px, 92vw); 
-    } 
-    header { 
-      display: flex; 
-      align-items: center; 
-      justify-content: space-between; 
-      gap: 1rem; 
-      margin: 2rem 0 1.25rem; 
-    } 
-    h1 { 
-      font-size: clamp(1.4rem, 2.2vw, 2rem); 
-      margin: 0; 
-      letter-spacing: .3px; 
-    } 
-    .chord-display { 
-      grid-column: span 12; 
-      text-align: center; 
-      margin: 1rem 0; 
-    } 
-    .chord-name { 
-      font-size: 4rem; 
-      font-weight: bold; 
-      color: var(--accent); 
-      margin: 0; 
-    } 
-    .chord-timer { 
-      font-size: 1.5rem; 
-      color: var(--ok); 
-    } 
-    .card { 
-      background: linear-gradient(180deg, #121822, #0d131c); 
-      border: 1px solid #1e293b; 
-      border-radius: 18px; 
-      padding: 1rem; 
-      box-shadow: 0 10px 40px rgba(0,0,0,.25); 
-    } 
-    .grid { 
-      display: grid; 
-      grid-template-columns: repeat(12, 1fr); 
-      gap: 12px; 
-    } 
-    .controls { 
-      grid-column: span 12; 
-      display: flex; 
-      flex-wrap: wrap; 
-      gap: 10px; 
-      align-items: center; 
-    } 
-    .controls button, 
-    .controls select, 
-    .controls input[type="number"] { 
-      background: #0f172a; 
-      color: var(--text); 
-      border: 1px solid #1f2937; 
-      border-radius: 12px; 
-      padding: .65rem .9rem; 
-      font-size: .95rem; 
-      outline: none; 
-    } 
-    .controls button.muted { 
-      opacity: 0.5; 
-      text-decoration: line-through; 
-    } 
-    .controls button { 
-      cursor: pointer; 
-      border-color: #334155; 
-      transition: transform .06s ease, background .2s ease, border-color .2s ease; 
-    } 
-    .controls button:hover { 
-      transform: translateY(-1px); 
-    } 
-    .controls button.primary { 
-      background: #0b3b39; 
-      border-color: #134e4a; 
-    } 
-    .controls button.primary[data-state="on"] { 
-      background: #065f46; 
-      border-color: #0f766e; 
-    } 
-    .controls button.danger { 
-      background: #3b0b0b; 
-      border-color: #7f1d1d; 
-    } 
-    .pill { 
-      background: #0b1320; 
-      border: 1px solid #1f2a44; 
-      padding: .4rem .6rem; 
-      border-radius: 999px; 
-      font-size: .85rem; 
-      color: var(--muted); 
-    } 
-    .split { 
-      grid-column: span 12; 
-      display: grid; 
-      grid-template-columns: repeat(12, 1fr); 
-      gap: 12px; 
-    } 
-    .panel { 
-      grid-column: span 6; 
-      background: #0b0f16; 
-      border: 1px solid #1b2538; 
-      border-radius: 12px; 
-      padding: 12px; 
-    } 
-    .panel h3 { 
-      margin: 0 0 8px; 
-      font-size: 1rem; 
-      color: #a6b4cf; 
-    } 
-    .mono { 
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation 
-Mono", "Courier New", monospace; 
-      font-size: .92rem; 
-    } 
-    .log { 
-      grid-column: span 12; 
-      background: #080c12; 
-      border: 1px dashed #1b283b; 
-      border-radius: 12px; 
-      padding: 10px; 
-      height: 170px; 
-      overflow: auto; 
-      white-space: pre-wrap; 
-      font-size: .9rem; 
-      color: #cbd5e1; 
-    } 
-    .footer { 
-      margin: .75rem 0 0; 
-      color: var(--muted); 
-      font-size: .85rem; 
-    } 
-    .badge { 
-      display: inline-block; 
-      padding: .15rem .45rem; 
-      border-radius: 6px; 
-      border: 1px solid #294256; 
-      background: #0b1826; 
-      color: #9bd5f0; 
-      font-size: .8rem; 
-    } 
-    .row { 
-      display: flex; 
-      gap: 8px; 
-      align-items: center; 
-      flex-wrap: wrap; 
-    } 
-    .spacer { 
-      flex: 1 1 auto; 
-    } 
-    .muted { 
-      opacity: 0.5; 
-    } 
-    .groove-editor { 
-      grid-column: span 12; 
-      background: #0b0f16; 
-      border: 1px solid #1b2538; 
-      border-radius: 12px; 
-      padding: 12px; 
-      margin-top: 12px; 
-    } 
-    .groove-editor h3 { 
-      margin: 0 0 8px; 
-      font-size: 1rem; 
-      color: #a6b4cf; 
-    } 
-    .groove-editor textarea { 
-      width: 100%; 
-      background: #0f172a; 
-      color: var(--text); 
-      border: 1px solid #1f2937; 
-      border-radius: 8px; 
-      padding: 8px; 
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation 
-Mono", "Courier New", monospace; 
-      font-size: 0.9rem; 
-      min-height: 80px; 
-      resize: vertical; 
-    } 
-    .groove-editor button { 
-      margin-top: 8px; 
-      background: #0b3b39; 
-      border: 1px solid #134e4a; 
-      color: var(--text); 
-      padding: 6px 12px; 
-      border-radius: 6px; 
-      cursor: pointer; 
-    } 
-  </style> 
-</head> 
-<body> 
-  <div class="wrap"> 
-    <header> 
-      <h1>Jam on – Playback Aleatório (baixo + bateria + guitarra)</h1> 
-      <div class="pill">Cada pulso do BPM = semínima</div> 
-    </header> 
- 
-    <!-- Visor de acorde --> 
-    <div class="chord-display"> 
-      <h2 class="chord-name" id="currentChord">—</h2> 
-      <div class="chord-timer" id="chordTimer">—</div> 
-    </div> 
- 
-    <section class="card"> 
-      <div class="grid"> 
-        <div class="controls"> 
-          <button id="btnRestart">⏮ Reiniciar</button> 
-          <button id="btnPrev">
- ⏪
- Anterior</button> 
-          <button id="btnPlay" class="primary">▶ Play</button> 
-          <button id="btnPause">
- ⏸
- Pause</button> 
-          <button id="btnStop" class="danger">
- ⏹
- Stop</button> 
-          <button id="btnSave" class="primary">
- 💾
- Salvar 4 min (MP3)</button> 
- 
-          <span class="spacer"></span> 
-          <button id="muteBass" data-mute="off">
- 🎸
- Baixo</button> 
-          <button id="muteDrums" data-mute="off">
- 🥁
- Bateria</button> 
-          <button id="muteClean" data-mute="off">
- 🎸
- Limpa</button> 
-          <button id="muteDist" data-mute="off">
- 🔥
- Distorção</button> 
- 
-          <label class="row"> 
-            BPM 
-            <input id="bpm" type="number" min="40" max="220" value="100" 
-style="width:90px"> 
-          </label> 
-          <label class="row"> 
-            Assinatura 
-            <select id="meter"> 
-              <option value="auto" selected>aleatória</option> 
-              <option>2/4</option> 
-              <option>3/4</option> 
-              <option>4/4</option> 
-              <option>5/4</option> 
-              <option>6/4</option> 
-              <option>7/4</option> 
-            </select> 
-          </label> 
-        </div> 
- 
-        <div class="groove-editor"> 
-          <h3>Editor de Levadas</h3> 
-          <div class="row"> 
-            <div style="flex: 1;"> 
-              <label>Bateria:</label> 
-              <textarea id="drumPattern" placeholder="Ex: [ca ca ca - ba - - - ca - ca - to1 - to2-]&#10;(ba - ch bu cch - ch - bch - ch - cch - ch -)"></textarea> 
-            </div> 
-            <div style="flex: 1;"> 
-              <label>Baixo:</label> 
-              <textarea id="bassRhythm" placeholder="Ex: [sc sc c sm cc cc]&#10;(c c c c c c c 
-c)"></textarea> 
-            </div> 
-          </div> 
-          <div class="row"> 
-            <div style="flex: 1;"> 
-              <label>Nome do Estilo:</label> 
-              <input type="text" id="grooveName" placeholder="Ex: Rock Básico" style="width: 
-100%;"> 
-            </div> 
-            <div style="flex: 1;"> 
-              <label>Compasso:</label> 
-              <select id="grooveMeter" style="width: 100%;"> 
-                <option>2/4</option> 
-                <option>3/4</option> 
-                <option selected>4/4</option> 
-                <option>5/4</option> 
-                <option>6/4</option> 
-                <option>7/4</option> 
-              </select> 
-            </div> 
-          </div> 
-          <button id="btnApplyGroove">Aplicar Levada</button> 
-        </div> 
- 
-        <div class="split"> 
-          <div class="panel" style="grid-column: span 6;"> 
-            <h3>Estado atual</h3> 
-            <div class="mono" id="state"></div> 
-            <div class="footer">Ao clicar em <b>Play</b>, gera um novo playback 
-aleatório.</div> 
-          </div> 
- 
-          <div class="panel" style="grid-column: span 6;"> 
-            <h3>Arquivos esperados</h3> 
-            <div class="mono"> 
-              <div>Coloque os áudios nas pastas:</div> 
-              <ul> 
-                <li><b>guitarraLimpa/[nota]/acorde.mp3</b> (ex: 
-<code>guitarraLimpa/A/A.mp3</code>, <code>guitarraLimpa/A/Am.mp3</code>)</li> 
-                <li><b>guitarraDistorcao/[nota]/acorde.mp3</b> (ex: 
-<code>guitarraDistorcao/AS/AS7.mp3</code>, 
-<code>guitarraDistorcao/C/C.mp3</code>)</li> 
-                <li>Peças de bateria: <b>bumbo.mp3</b>, <b>caixa.mp3</b>, etc.</li> 
-                <li>Baixo: <b>bass-A.mp3</b>, <b>bass-AS.mp3</b>, etc.</li> 
-              </ul> 
-            </div> 
-          </div> 
- 
-          <div class="log mono" id="log"></div> 
-        </div> 
-      </div> 
-    </section> 
-  </div> 
- 
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Jam on – Playback Aleatório</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 20px; background: #f0f0f0; }
+    .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .row { display: flex; align-items: center; margin: 10px 0; }
+    .row label { width: 120px; }
+    textarea { width: 100%; height: 80px; font-family: monospace; }
+    button { padding: 10px; margin: 5px; cursor: pointer; border: none; border-radius: 6px; }
+    .primary { background: #4CAF50; color: white; }
+    .danger { background: #f44336; color: white; }
+    .muted { opacity: 0.6; }
+    .chord-display { text-align: center; margin: 20px 0; }
+    .chord-name { font-size: 2.5em; margin: 0; }
+    .mono { font-family: monospace; font-size: 0.9em; background: #eee; padding: 10px; border-radius: 6px; }
+    .footer { font-size: 0.8em; color: #666; margin-top: 10px; }
+    .pill { display: inline-block; background: #000; color: #fff; padding: 4px 8px; border-radius: 12px; font-size: 0.8em; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Jam on – Playback Aleatório (baixo + bateria + guitarra)</h1>
+    <div class="pill">Cada pulso do BPM = semínima</div>
+  </header>
+
+  <div class="chord-display">
+    <h2 class="chord-name" id="currentChord">—</h2>
+    <div id="chordTimer">—</div>
+  </div>
+
+  <div class="card">
+    <div class="grid">
+      <div class="controls">
+        <button id="btnRestart">⏮ Reiniciar</button>
+        <button id="btnPrev">⏪ Anterior</button>
+        <button id="btnPlay" class="primary">▶ Play</button>
+        <button id="btnPause">⏸ Pause</button>
+        <button id="btnStop" class="danger">⏹ Stop</button>
+        <button id="btnSave" class="primary">💾 Salvar 4 min (MP3)</button>
+        <span class="spacer"></span>
+        <button id="muteBass" data-mute="off">🎸 Baixo</button>
+        <button id="muteDrums" data-mute="off">🥁 Bateria</button>
+        <button id="muteClean" data-mute="off">🎸 Limpa</button>
+        <button id="muteDist" data-mute="off">🔥 Distorção</button>
+        <label class="row">BPM <input id="bpm" type="number" min="40" max="220" value="100" style="width:90px"></label>
+        <label class="row">Assinatura
+          <select id="meter">
+            <option value="auto" selected>aleatória</option>
+            <option>2/4</option>
+            <option>3/4</option>
+            <option>4/4</option>
+            <option>5/4</option>
+            <option>6/4</option>
+            <option>7/4</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="groove-editor">
+        <h3>Editor de Levadas</h3>
+        <div class="row">
+          <div style="flex:1;">
+            <label>Bateria:</label>
+            <textarea id="drumPattern" placeholder="Ex: [ca ca ca - bu - - - ca - ca - to1 - to2 -]
+(bu - ch bu cch - ch - bch - ch - cch - ch -)"></textarea>
+          </div>
+          <div style="flex:1;">
+            <label>Baixo:</label>
+            <textarea id="bassRhythm" placeholder="Ex: (sm - - - sm - ° - sm - x - sm - ° -)
+(sm ° sm ° sm ° sm °)"></textarea>
+          </div>
+        </div>
+        <div class="row">
+          <div style="flex:1;">
+            <label>Nome do Estilo:</label>
+            <input id="grooveName" type="text" placeholder="Meu Groove">
+            <label>Compasso:</label>
+            <select id="grooveMeter">
+              <option value="4/4">4/4</option>
+              <option value="3/4">3/4</option>
+              <option value="6/8">6/8</option>
+            </select>
+            <button id="btnApplyGroove">Aplicar Levada</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="grid-column: span 6;">
+        <h3>Estado atual</h3>
+        <div class="mono" id="state"></div>
+        <div class="footer">Ao clicar em <b>Play</b>, gera um novo playback aleatório.</div>
+      </div>
+
+      <div class="panel" style="grid-column: span 6;">
+        <h3>Arquivos esperados</h3>
+        <div class="mono">
+          <div>Coloque os áudios nas pastas:</div>
+          <ul>
+            <li><b>guitarraLimpa/[nota]/acorde.mp3</b> (ex: <code>guitarraLimpa/A/A.mp3</code>, <code>guitarraLimpa/A/Am.mp3</code>)</li>
+            <li><b>guitarraDistorcao/[nota]/acorde.mp3</b> (ex: <code>guitarraDistorcao/AS/AS7.mp3</code>, <code>guitarraDistorcao/C/C.mp3</code>)</li>
+            <li>Peças de bateria: <b>bumbo.mp3</b>, <b>caixa.mp3</b>, etc. em <code>assets/</code></li>
+            <li>Baixo: <b>bass-A.mp3</b>, <b>bass-AS.mp3</b>, etc. em <code>assets/</code></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="log mono" id="log"></div>
+    </div>
+  </div>
+
   <script>
     const ui = {
       play: document.getElementById('btnPlay'),
@@ -364,7 +130,9 @@ aleatório.</div>
       grooveMeter: document.getElementById('grooveMeter'),
       btnApplyGroove: document.getElementById('btnApplyGroove'),
       state: document.getElementById('state'),
-      log: document.getElementById('log')
+      log: document.getElementById('log'),
+      currentChord: document.getElementById('currentChord'),
+      chordTimer: document.getElementById('chordTimer')
     };
 
     const audio = {
@@ -382,8 +150,9 @@ aleatório.</div>
 
     const PITCHES = ['A','AS','B','C','CS','D','DS','E','F','FS','G','GS'];
     const DEGREE_TO_ROOT = { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11 };
+    const CHORD_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 
-    // Caminhos corretos para bateria
+    // Caminhos corretos
     const DRUMS = {
       bu: 'bumbo',
       ca: 'caixa',
@@ -401,26 +170,22 @@ aleatório.</div>
       cc: 'caixa-conducao'
     };
 
-    // Caminhos corretos para baixo
     const BASS_SAMPLES = (() => {
-  const table = {};
-  const octaves = ['', '8', '16']; // Removido '24'
-  for (const p of PITCHES) {
-    const letter = p[0];
-    const isSharp = p.includes('S');
-    const sharpSuffix = isSharp ? 'S' : '';
-    for (const oct of octaves) {
-      const key = p + oct;
-      const fileName = `bass-${letter}${oct}${sharpSuffix}.mp3`;
-      table[key] = `assets/${fileName}`;
-    }
-  }
-  table['X'] = 'assets/bass-muted.mp3';
-  return table;
-})();
-
-    // Mapa de notas do baixo por acorde
-    const BASS_NOTE_MAP = {
+      const table = {};
+      for (const p of PITCHES) {
+        const letter = p[0];
+        const isSharp = p.includes('S');
+        const sharpSuffix = isSharp ? 'S' : '';
+        for (const oct of ['', '8', '16']) {
+          const key = p + oct;
+          const fileName = `bass-${letter}${oct}${sharpSuffix}.mp3`;
+          table[key] = `assets/${fileName}`;
+        }
+      }
+      table['X'] = 'assets/bass-muted.mp3';
+      return table;
+    })();
+const BASS_NOTE_MAP = {
       // A 
 'A':     ['A','A8','A16','CS','C8S','C16S','E','E8','E16'], 
 'A11':   ['A','A8','A16','CS','C8S','C16S','E','E8','E16'], 
@@ -707,7 +472,9 @@ aleatório.</div>
       stepIndex: 0,
       buffers: { drums: {}, bass: {}, guitar: {} },
       lastBassSrc: null,
+      lastChordSrc: { clean: null, dist: null },
       bassPlan: [],
+      chordPlan: [],
       signatureTag: '',
       key: null,
       keyIdx: 0,
@@ -728,33 +495,35 @@ aleatório.</div>
       ui.log.scrollTop = ui.log.scrollHeight;
     }
 
+    function meterToBeats(meter) {
+      const [num, den] = meter.split('/').map(Number);
+      return [num, den];
+    }
+
     function setStatePanel() {
       ui.state.innerHTML = `<div>Chord: ${state.signatureTag || '—'}</div>`;
     }
 
     async function initAudio() {
-      try {
-        audio.ctx = new (window.AudioContext || window.webkitAudioContext)();
-        audio.master = audio.ctx.createGain();
-        audio.mix = audio.ctx.createGain();
-        audio.drumGain = audio.ctx.createGain();
-        audio.bassGain = audio.ctx.createGain();
-        audio.cleanGain = audio.ctx.createGain();
-        audio.distGain = audio.ctx.createGain();
+      if (audio.ctx) return;
+      audio.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      audio.master = audio.ctx.createGain();
+      audio.mix = audio.ctx.createGain();
+      audio.drumGain = audio.ctx.createGain();
+      audio.bassGain = audio.ctx.createGain();
+      audio.cleanGain = audio.ctx.createGain();
+      audio.distGain = audio.ctx.createGain();
 
-        audio.master.connect(audio.mix);
-        audio.mix.connect(audio.ctx.destination);
+      audio.master.connect(audio.mix);
+      audio.mix.connect(audio.ctx.destination);
 
-        audio.drumGain.connect(audio.master);
-        audio.bassGain.connect(audio.master);
-        audio.cleanGain.connect(audio.master);
-        audio.distGain.connect(audio.master);
+      audio.drumGain.connect(audio.master);
+      audio.bassGain.connect(audio.master);
+      audio.cleanGain.connect(audio.master);
+      audio.distGain.connect(audio.master);
 
-        await ensureSamples();
-        log('✅ Áudios pré-carregados.');
-      } catch (e) {
-        log(`[ERRO] Falha ao iniciar áudio: ${e.message}`);
-      }
+      await ensureSamples();
+      log('✅ Áudios pré-carregados.');
     }
 
     async function loadBuffer(url) {
@@ -810,10 +579,10 @@ aleatório.</div>
       return expanded;
     }
 
-    function buildBassPlan() {
+    function buildBassAndChordPlan() {
       const groove = state.currentGroove;
       state.meter = ui.meter.value === 'auto' ? groove.meter : ui.meter.value;
-      const [num, den] = state.meter.split('/').map(Number);
+      const [num, den] = meterToBeats(state.meter);
       const sixteenthsPerBar = num * 4;
       const totalBars = 16;
       const totalSteps = totalBars * sixteenthsPerBar;
@@ -835,7 +604,8 @@ aleatório.</div>
       const fullPattern = [...groove.bassRhythm, ...groove.bassRhythm];
       const rhythm = expandRhythm(fullPattern, totalSteps);
 
-      const plan = [];
+      const bassPlan = [];
+      const chordPlan = [];
       let barsInChord = 0;
       let chordIndex = 0;
 
@@ -855,19 +625,21 @@ aleatório.</div>
         const rootNote = PITCHES[rootIdx];
         const chordType = state.quality === 'maj' ? '' : 'm';
         const chordName = rootNote + chordType;
-        const availableNotes = BASS_NOTE_MAP[chordName] || [rootNote];
+        const chordDisplay = CHORD_NAMES[rootIdx] + chordType;
 
         const symbol = rhythm[step];
-        let note = '-';
+        let bassNote = '-';
 
-        if (symbol === 'x') note = 'X';
-        else if (symbol === '°') note = '°';
-        else if (symbol === 'sm') note = availableNotes[Math.floor(Math.random() * availableNotes.length)];
+        if (symbol === 'x') bassNote = 'X';
+        else if (symbol === '°') bassNote = '°';
+        else if (symbol === 'sm') bassNote = rootNote;
 
-        plan.push(note);
+        bassPlan.push(bassNote);
+        chordPlan.push({ note: rootNote, type: chordType, display: chordDisplay });
       }
 
-      state.bassPlan = plan;
+      state.bassPlan = bassPlan;
+      state.chordPlan = chordPlan;
       state.signatureTag = groove.name;
       setStatePanel();
     }
@@ -883,7 +655,7 @@ aleatório.</div>
     function scheduleStep() {
       const stepIdx = state.stepIndex;
       const time = state.nextNoteTime;
-      const isNewBar = (stepIdx % (4 * 4)) === 0;
+      const isNewBar = (stepIdx % 16) === 0;
 
       // Bateria
       const drumPattern = parsePattern(state.currentGroove.drumPattern.join(' '), 'drum');
@@ -896,15 +668,6 @@ aleatório.</div>
           src.buffer = buf;
           src.connect(audio.drumGain);
           src.start(time);
-        }
-      }
-
-      // Mudança de acorde
-      if (isNewBar && stepIdx > 0) {
-        state.barsInChord++;
-        if (state.barsInChord >= state.chordDurations[state.currentChordIndex]) {
-          state.currentChordIndex = (state.currentChordIndex + 1) % state.chordProgression.length;
-          state.barsInChord = 0;
         }
       }
 
@@ -929,8 +692,39 @@ aleatório.</div>
         state.lastBassSrc = src;
       }
 
+      // Guitarra (toca no início do compasso)
+      if (isNewBar && stepIdx > 0) {
+        const chord = state.chordPlan[stepIdx % state.chordPlan.length];
+        if (!mute.clean) playChord(time, chord.note, chord.type, false);
+        if (!mute.dist) playChord(time, chord.note, chord.type, true);
+        ui.currentChord.textContent = chord.display;
+        const barsLeft = state.chordDurations[state.currentChordIndex] - state.barsInChord;
+        ui.chordTimer.textContent = `Próx: ${barsLeft} compasso(s)`;
+      }
+
       state.stepIndex++;
       state.nextNoteTime += state.sixteenthDur;
+    }
+
+    function playChord(time, note, type, isDistorted) {
+      const folder = isDistorted ? 'guitarraDistorcao' : 'guitarraLimpa';
+      const url = `${folder}/${note}/${note}${type}.mp3`;
+      if (!state.buffers.guitar[url]) {
+        loadBuffer(url).then(buf => {
+          if (buf) {
+            state.buffers.guitar[url] = buf;
+            const src = audio.ctx.createBufferSource();
+            src.buffer = buf;
+            src.connect(isDistorted ? audio.distGain : audio.cleanGain);
+            src.start(time);
+          }
+        });
+      } else {
+        const src = audio.ctx.createBufferSource();
+        src.buffer = state.buffers.guitar[url];
+        src.connect(isDistorted ? audio.distGain : audio.cleanGain);
+        src.start(time);
+      }
     }
 
     function parsePattern(patternText, type) {
@@ -943,31 +737,26 @@ aleatório.</div>
     }
 
     function onPlay() {
-  if (state.running && !state.paused) return;
-  if (!audio.ctx) initAudio();
-
-  // Define um groove padrão se nenhum existir
-  if (!state.currentGroove) {
-    state.currentGroove = CUSTOM_GROOVES[0]; // Usa o primeiro groove personalizado
-    log(`[INFO] Groove padrão definido: ${state.currentGroove.name}`);
-  }
-
-  if (state.paused) {
-    state.paused = false;
-    return;
-  }
-
-  state.running = true;
-  state.paused = false;
-  state.stepIndex = 0;
-  state.nextNoteTime = audio.ctx.currentTime + 0.1;
-  buildBassPlan();
-  startScheduler();
-}
-    function onPause() {
-      if (state.running && !state.paused) {
-        state.paused = true;
+      if (state.running && !state.paused) return;
+      if (!audio.ctx) initAudio();
+      if (!state.currentGroove) {
+        state.currentGroove = CUSTOM_GROOVES[0];
+        log(`[INFO] Groove padrão definido: ${state.currentGroove.name}`);
       }
+      if (state.paused) {
+        state.paused = false;
+        return;
+      }
+      state.running = true;
+      state.paused = false;
+      state.stepIndex = 0;
+      state.nextNoteTime = audio.ctx.currentTime + 0.1;
+      buildBassAndChordPlan();
+      startScheduler();
+    }
+
+    function onPause() {
+      if (state.running && !state.paused) state.paused = true;
     }
 
     function onStop() {
@@ -976,6 +765,8 @@ aleatório.</div>
       stopScheduler();
       if (state.lastBassSrc) state.lastBassSrc.stop();
       state.lastBassSrc = null;
+      ui.currentChord.textContent = '—';
+      ui.chordTimer.textContent = '—';
     }
 
     function startScheduler() {
@@ -984,10 +775,8 @@ aleatório.</div>
     }
 
     function stopScheduler() {
-      if (audio.schedulerTimer) {
-        clearInterval(audio.schedulerTimer);
-        audio.schedulerTimer = null;
-      }
+      if (audio.schedulerTimer) clearInterval(audio.schedulerTimer);
+      audio.schedulerTimer = null;
     }
 
     function toggleMute(type, button) {
@@ -1009,11 +798,11 @@ aleatório.</div>
         return;
       }
       const customGroove = { name, meter, drumPattern, bassRhythm };
+      CUSTOM_GROOVES.push(customGroove);
       state.currentGroove = customGroove;
       log(`[LEVADA] "${name}" aplicada com sucesso!`);
     }
 
-    // Event Listeners
     ui.play.addEventListener('click', onPlay);
     ui.pause.addEventListener('click', onPause);
     ui.stop.addEventListener('click', onStop);
