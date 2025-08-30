@@ -133,28 +133,26 @@
     }
     BASS_SAMPLES['X'] = 'assets/bass-muted.mp3';
 
-    // Grooves (exemplo simples). padroes de drum e baixo (intro e loop) em tokens
     const ALL_GROOVES = [
       {
         name: "Rock Básico",
         meter: "4/4",
-        drumPattern: ["[ba - ch - ca - ch]","(ba - ch - - ch)"], // simplificado
-        bassRhythm: ["(sm - - sm - - sm - - sm - - sm - - sm -)"]
+        drumPattern: ["[ba - ch - cch - ch - bch - ch bu cch - ch - bch - ch bu]", "(ba - ch - cch - ch - bch - ch bu cch - ch - bch - ch bu)"],
+        bassRhythm: ["(sm - sm - sm - sm - sm - sm - sm - sm -)", "(sm - sm - sm - sm - sm - sm - sm - sm -)"]
       },
       {
         name: "Pop Sincopado",
         meter: "4/4",
-        drumPattern: ["[ba - ch ca ch]","(ba - ch - ch)"],
-        bassRhythm: ["(sm - sm - - sm - sm - - sm - sm -)"]
+        drumPattern: ["[ba - ch - cch - ch - bch - ch bu cch - ch - bch - ch bu]", "(ba - ch - cch - ch - bch - ch bu cch - ch - bch - ch bu)"],
+        bassRhythm: ["(sm - sm - sm - sm - sm - sm - sm - sm -)", "(sm - sm - sm - sm - sm - sm - sm - sm -)"]
       },
       {
         name: "Funk",
         meter: "4/4",
-        drumPattern: ["[ba ch ca ch]","(ba ch - ch)"],
-        bassRhythm: ["(sm sm - sm - sm sm - sm -)"]
+        drumPattern: ["[ba - ch - cch - ch - bch - ch bu cch - ch - bch - ch bu]", "(ba - ch - cch - ch - bch - ch bu cch - ch - bch - ch bu)"],
+        bassRhythm: ["(sm - sm - sm - sm - sm - sm - sm - sm -)", "(sm - sm - sm - sm - sm - sm - sm - sm -)"]
       }
     ];
-
     const PROGRESSIONS = [[1, 1, 4, 4, 5, 5, 1, 1], [1, 4, 5, 1]];
 
     const state = {
@@ -646,3 +644,4 @@
   </script>
 </body>
 </html>
+
