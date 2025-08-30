@@ -136,7 +136,7 @@
       to2: 'tom2'
     };
 
-    // ✅ Baixo: apenas notas graves (bass-A.mp3, bass-B.mp3, etc.)
+    // ✅ Baixo: apenas notas graves
     const BASS_SAMPLES = {};
     for (const p of PITCHES) {
       const letter = p[0];
@@ -146,87 +146,30 @@
     }
     BASS_SAMPLES['X'] = 'assets/bass-muted.mp3';
 
-    // ✅ Mapeamento: usa apenas a tônica grave do acorde
-    const BASS_NOTE_MAP = {};
-    for (const p of PITCHES) {
-      BASS_NOTE_MAP[p] = [p]; // Apenas a tônica grave
-      BASS_NOTE_MAP[p + 'm'] = [p];
-    }
-
-    // 🔥 LEVADAS INTERNAS (você pode editar/adicionar aqui)
+    // 🔥 LEVADAS INTERNAS
     const ALL_GROOVES = [
-      // Groove 1: Rock básico
       {
         name: "Rock Básico",
         meter: "4/4",
-        drumPattern: [
-          "[ba - ch bu cch - ch - bch - ch - cch - ch -]",
-          "(ba - ch bu cch - ch - bch - ch - cch - ch -)"
-        ],
-        bassRhythm: [
-          "[sm - - - sm - - - sm - - - sm - - -]",
-          "(sm - - - sm - - - sm - - - sm - - -)"
-        ]
+        drumPattern: ["[bu - ch - bu - ch -]", "(bu - ch - bch - ch -)"],
+        bassRhythm: ["(sm - - - sm - - -)", "(sm - - - sm - - -)"]
       },
-      // Groove 2: Pop sincopado
       {
         name: "Pop Sincopado",
         meter: "4/4",
-        drumPattern: [
-          "[ba - ch bu cch - ch - bch - ch - cch - ch -]",
-          "(ba - ch bu cch - ch - bch - ch - cch - ch -)"
-        ],
-        bassRhythm: [
-          "[sm - - - sm - - - sm - - - sm - - -]",
-          "(sm - - - sm - - - sm - - - sm - - -)"
-        ]
+        drumPattern: ["[bu ca - ca bu ca - ca]", "(ch ch ch ch ch ch ch ch)"],
+        bassRhythm: ["(sm - sm - sm - sm -)", "(sm - sm - sm - sm -)"]
       },
-      // Groove 3: Blues
-      {
-        name: "Blues em 4/4",
-        meter: "4/4",
-        drumPattern: [
-          "[ba - ch bu cch - ch - bch - ch - cch - ch -]",
-          "(ba - ch bu cch - ch - bch - ch - cch - ch -)"
-        ],
-        bassRhythm: [
-          "[sm - - - sm - - - sm - - - sm - - -]",
-          "(sm - - - sm - - - sm - - - sm - - -)"
-        ]
-      },
-      // Groove 4: Reggae
-      {
-        name: "Reggae",
-        meter: "4/4",
-        drumPattern: [
-          "[ba - ch bu cch - ch - bch - ch - cch - ch -]",
-          "(ba - ch bu cch - ch - bch - ch - cch - ch -)"
-        ],
-        bassRhythm: [
-          "[sm - - - sm - - - sm - - - sm - - -]",
-          "(sm - - - sm - - - sm - - - sm - - -)"
-        ]
-      },
-      // Groove 5: Funk
       {
         name: "Funk",
         meter: "4/4",
-        drumPattern: [
-          "[ba - ch bu cch - ch - bch - ch - cch - ch -]",
-          "(ba - ch bu cch - ch - bch - ch - cch - ch -)"
-        ],
-        bassRhythm: [
-          "[sm - - - sm - - - sm - - - sm - - -]",
-          "(sm - - - sm - - - sm - - - sm - - -)"
-        ]
+        drumPattern: ["[bu ca bu ca bu ca bu ca]", "(ch ch ch ch ch ch ch ch)"],
+        bassRhythm: ["(sm ° sm ° sm ° sm °)", "(sm ° sm ° sm ° sm °)"]
       }
     ];
 
     // Progressões
-    const PROGRESSIONS = [
-      [1, 1, 4, 4, 5, 5, 1, 1],
-      [1, 4, 5, 1]
-    ];
+    const PROGRESSIONS = [[1, 1, 4, 4, 5, 5, 1, 1], [1, 4, 5, 1]];
 
     // Estado
     const state = {
@@ -262,8 +205,8 @@
     }
 
     function meterToBeats(meter) {
-      const [num, den] = meter.split('/').map(Number);
-      return [num, den];
+      const [num] = meter.split('/').map(Number);
+      return num;
     }
 
     function setStatePanel() {
@@ -347,14 +290,14 @@
     }
 
     function buildBassAndChordPlan() {
+      // ✅ Sorteia uma levada
       state.currentGroove = ALL_GROOVES[Math.floor(Math.random() * ALL_GROOVES.length)];
       log(`🎲 Levada sorteada: ${state.currentGroove.name}`);
 
       state.meter = ui.meter.value === 'auto' ? state.currentGroove.meter : ui.meter.value;
-      const [num, den] = meterToBeats(state.meter);
+      const num = meterToBeats(state.meter);
       const sixteenthsPerBar = num * 4;
-      const totalBars = 16;
-      const totalSteps = totalBars * sixteenthsPerBar;
+      const totalSteps = 16 * sixteenthsPerBar; // 16 compassos
 
       state.keyIdx = Math.floor(Math.random() * PITCHES.length);
       state.key = PITCHES[state.keyIdx];
@@ -370,7 +313,7 @@
       durations.push(count);
       state.chordDurations = durations;
 
-      const fullPattern = [...state.currentGroove.bassRhythm, ...state.currentGroove.bassRhythm];
+      const fullPattern = [...state.currentGroove.bassRhythm];
       const rhythm = expandRhythm(fullPattern, totalSteps);
 
       const bassPlan = [];
@@ -394,7 +337,6 @@
         const rootIdx = (state.keyIdx + rootOffset) % 12;
         const rootNote = PITCHES[rootIdx];
         const chordType = state.quality === 'maj' ? '' : 'm';
-        const chordName = rootNote + chordType;
         const chordDisplay = CHORD_NAMES[rootIdx] + chordType;
 
         const symbol = rhythm[step];
@@ -402,7 +344,7 @@
 
         if (symbol === 'x') bassNote = 'X';
         else if (symbol === '°') bassNote = '°';
-        else if (symbol === 'sm') bassNote = rootNote; // ✅ Apenas tônica grave
+        else if (symbol === 'sm') bassNote = rootNote; // ✅ Garantido: apenas tônica grave
 
         bassPlan.push(bassNote);
         chordPlan.push({ note: rootNote, type: chordType, display: chordDisplay });
@@ -433,6 +375,7 @@
       state.bpm = Number(ui.bpm.value);
       state.sixteenthDur = 60 / state.bpm / 4;
 
+      // ✅ Garante que o plano seja gerado
       buildBassAndChordPlan();
 
       if (state.paused) {
@@ -446,7 +389,7 @@
       state.currentChordIndex = 0;
       state.nextNoteTime = audio.ctx.currentTime + 0.1;
 
-      const [num] = meterToBeats(state.meter);
+      const num = meterToBeats(state.meter);
       const quarterDur = 60 / state.bpm;
       state.totalClicks = num * 4;
       state.clickCount = 0;
@@ -476,7 +419,7 @@
     function scheduleStep() {
       const stepIdx = state.stepIndex;
       const time = state.nextNoteTime;
-      const [num] = meterToBeats(state.meter);
+      const num = meterToBeats(state.meter);
       const sixteenthsPerBar = num * 4;
       const isNewBar = (stepIdx % sixteenthsPerBar) === 0;
 
@@ -494,7 +437,7 @@
         }
       }
 
-      // ✅ Baixo (sincronizado com o passo)
+      // ✅ Baixo: sincronizado, apenas tônica
       const bassKey = state.bassPlan[stepIdx % state.bassPlan.length];
       if (bassKey === 'X' && !mute.bass) {
         const src = audio.ctx.createBufferSource();
@@ -583,7 +526,7 @@
 
     function startScheduler() {
       stopScheduler();
-      audio.schedulerTimer = setInterval(scheduler, audio.lookahead * 1000);
+      audio.schedulerTimer = setInterval(scheduler, 100);
     }
 
     function stopScheduler() {
@@ -615,6 +558,4 @@
     });
   </script>
 </body>
-
 </html>
-
