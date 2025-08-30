@@ -79,7 +79,7 @@
           <li><b>guitarraLimpa/[nota]/acorde.mp3</b></li>
           <li><b>guitarraDistorcao/[nota]/acorde.mp3</b></li>
           <li><b>bumbo.mp3</b>, <b>caixa.mp3</b> em <code>assets/</code></li>
-          <li><b>bass-A.mp3</b>, <b>bass-AS.mp3</b> em <code>assets/</code></li>
+          <li><b>bass-A.mp3</b>, <b>bass-B.mp3</b>, ..., <b>bass-GS.mp3</b> em <code>assets/</code></li>
         </ul>
       </div>
     </div>
@@ -136,280 +136,23 @@
       to2: 'tom2'
     };
 
-    // Baixo
-    const BASS_SAMPLES = (() => {
-      const table = {};
-      for (const p of PITCHES) {
-        const letter = p[0];
-        const isSharp = p.includes('S');
-        const sharpSuffix = isSharp ? 'S' : '';
-        for (const oct of ['', '8', '16']) {
-          const key = p + oct;
-          const fileName = `bass-${letter}${oct}${sharpSuffix}.mp3`;
-          table[key] = `assets/${fileName}`;
-        }
-      }
-      table['X'] = 'assets/bass-muted.mp3';
-      return table;
-    })();
+    // ✅ Baixo: apenas notas graves (bass-A.mp3, bass-B.mp3, etc.)
+    const BASS_SAMPLES = {};
+    for (const p of PITCHES) {
+      const letter = p[0];
+      const isSharp = p.includes('S');
+      const sharpSuffix = isSharp ? 'S' : '';
+      BASS_SAMPLES[p] = `assets/bass-${letter}${sharpSuffix}.mp3`;
+    }
+    BASS_SAMPLES['X'] = 'assets/bass-muted.mp3';
 
-    // Mapeamento de notas do baixo por acorde
-    const BASS_NOTE_MAP = {
-      // A 
-'A':     ['A','A8','A16','CS','C8S','C16S','E','E8','E16'], 
-'A11':   ['A','A8','A16','CS','C8S','C16S','E','E8','E16'], 
-'A13':   ['A','A8','A16','CS','C8S','C16S','E','E8','E16'], 
-'A4':    ['A','A8','A16','CS','C8S','C16S','E','E8','E16'], 
-'A45+':  ['A','A8','A16','CS','C8S','C16S','E','E8','E16'], 
-'A5':    ['A','A8','A16','CS','C8S','C16S','E','E8','E16'], 
-'A5+':   ['A','A8','A16','CS','C8S','C16S','E','E8','E16'], 
-'A6':    ['A','A8','A16','CS','C8S','C16S','E','E8','E16'], 
-'A7':    ['A','A8','A16','CS','C8S','C16S','E','E8','E16'], 
-'A75+':  ['A','A8','A16','CS','C8S','C16S','E','E8','E16'], 
-'A9':    ['A','A8','A16','CS','C8S','C16S','E','E8','E16'], 
-'A95+':  ['A','A8','A16','CS','C8S','C16S','E','E8','E16'], 
-'Adim':  ['A','A8','A16','C','C8','C16','DS','D8S','D16S'], 
-'Am':    ['A','A8','A16','C','C8','C16','E','E8','E16'], 
-'Am4':   ['A','A8','A16','C','C8','C16','E','E8','E16'], 
-'Am5':   ['A','A8','A16','C','C8','C16','E','E8','E16'], 
-'Am5+':  ['A','A8','A16','C','C8','C16','E','E8','E16'], 
-'Am6':   ['A','A8','A16','C','C8','C16','E','E8','E16'], 
-'Am7':   ['A','A8','A16','C','C8','C16','E','E8','E16'], 
-'Am75+': ['A','A8','A16','C','C8','C16','E','E8','E16'], 
-'Am79':  ['A','A8','A16','C','C8','C16','E','E8','E16'], 
-'Am9':   ['A','A8','A16','C','C8','C16','E','E8','E16'], 
-// B 
-'B':     ['B','B8','B16','DS','D8S','D16S','FS','F8S','F16S'], 
-'B11':   ['B','B8','B16','DS','D8S','D16S','FS','F8S','F16S'], 
-'B13':   ['B','B8','B16','DS','D8S','D16S','FS','F8S','F16S'], 
-'B4':    ['B','B8','B16','DS','D8S','D16S','FS','F8S','F16S'], 
-'B45+':  ['B','B8','B16','DS','D8S','D16S','FS','F8S','F16S'], 
-'B5':    ['B','B8','B16','DS','D8S','D16S','FS','F8S','F16S'], 
-'B5+':   ['B','B8','B16','DS','D8S','D16S','FS','F8S','F16S'], 
-'B6':    ['B','B8','B16','DS','D8S','D16S','FS','F8S','F16S'], 
-'B7':    ['B','B8','B16','DS','D8S','D16S','FS','F8S','F16S'], 
-'B75+':  ['B','B8','B16','DS','D8S','D16S','FS','F8S','F16S'], 
-'B9':    ['B','B8','B16','DS','D8S','D16S','FS','F8S','F16S'], 
-'B95+':  ['B','B8','B16','DS','D8S','D16S','FS','F8S','F16S'], 
-'Bdim':  ['B','B8','B16','D','D8','D16','F','F8','F16'], 
-'Bm':    ['B','B8','B16','D','D8','D16','FS','F8S','F16S'], 
-'Bm4':   ['B','B8','B16','D','D8','D16','FS','F8S','F16S'], 
-'Bm5':   ['B','B8','B16','D','D8','D16','FS','F8S','F16S'], 
-'Bm5+':  ['B','B8','B16','D','D8','D16','FS','F8S','F16S'], 
-'Bm6':   ['B','B8','B16','D','D8','D16','FS','F8S','F16S'], 
-'Bm7':   ['B','B8','B16','D','D8','D16','FS','F8S','F16S'], 
-'Bm75+': ['B','B8','B16','D','D8','D16','FS','F8S','F16S'], 
-'Bm79':  ['B','B8','B16','D','D8','D16','FS','F8S','F16S'], 
-'Bm9':   ['B','B8','B16','D','D8','D16','FS','F8S','F16S'], 
-// C 
-'C':     ['C','C8','C16','E','E8','E16','G','G8','G16'], 
-'C11':   ['C','C8','C16','E','E8','E16','G','G8','G16'], 
-'C13':   ['C','C8','C16','E','E8','E16','G','G8','G16'], 
-'C4':    ['C','C8','C16','E','E8','E16','G','G8','G16'], 
-'C45+':  ['C','C8','C16','E','E8','E16','G','G8','G16'], 
-'C5':    ['C','C8','C16','E','E8','E16','G','G8','G16'], 
-'C5+':   ['C','C8','C16','E','E8','E16','G','G8','G16'], 
-'C6':    ['C','C8','C16','E','E8','E16','G','G8','G16'], 
-'C7':    ['C','C8','C16','E','E8','E16','G','G8','G16'], 
-'C75+':  ['C','C8','C16','E','E8','E16','G','G8','G16'], 
-'C9':    ['C','C8','C16','E','E8','E16','G','G8','G16'], 
-'C95+':  ['C','C8','C16','E','E8','E16','G','G8','G16'], 
-'Cdim':  ['C','C8','C16','DS','D8S','D16S','A','A8','A16'], 
-'Cm':    ['C','C8','C16','DS','D8S','D16S','G','G8','G16'], 
-'Cm4':   ['C','C8','C16','DS','D8S','D16S','G','G8','G16'], 
-'Cm5':   ['C','C8','C16','DS','D8S','D16S','G','G8','G16'], 
-'Cm5+':  ['C','C8','C16','DS','D8S','D16S','G','G8','G16'], 
-'Cm6':   ['C','C8','C16','DS','D8S','D16S','G','G8','G16'], 
-'Cm7':   ['C','C8','C16','DS','D8S','D16S','G','G8','G16'], 
-'Cm75+': ['C','C8','C16','DS','D8S','D16S','G','G8','G16'], 
-'Cm79':  ['C','C8','C16','DS','D8S','D16S','G','G8','G16'], 
-'Cm9':   ['C','C8','C16','DS','D8S','D16S','G','G8','G16'], 
-// CS 
-'CS':     ['CS','C8S','C16S','F','F8','F16','GS','G8S','G16S'], 
-'CS11':   ['CS','C8S','C16S','F','F8','F16','GS','G8S','G16S'], 
-'CS13':   ['CS','C8S','C16S','F','F8','F16','GS','G8S','G16S'], 
-'CS4':    ['CS','C8S','C16S','F','F8','F16','GS','G8S','G16S'], 
-'CS45+':  ['CS','C8S','C16S','F','F8','F16','GS','G8S','G16S'], 
-'CS5':    ['CS','C8S','C16S','F','F8','F16','GS','G8S','G16S'], 
-'CS5+':   ['CS','C8S','C16S','F','F8','F16','GS','G8S','G16S'], 
-'CS6':    ['CS','C8S','C16S','F','F8','F16','GS','G8S','G16S'], 
-'CS7':    ['CS','C8S','C16S','F','F8','F16','GS','G8S','G16S'], 
-'CS75+':  ['CS','C8S','C16S','F','F8','F16','GS','G8S','G16S'], 
-'CS9':    ['CS','C8S','C16S','F','F8','F16','GS','G8S','G16S'], 
-'CS95+':  ['CS','C8S','C16S','F','F8','F16','GS','G8S','G16S'], 
-'CSdim':  ['CS','C8S','C16S','E','E8','E16','G','G8','G16'], 
-'CSm':    ['CS','C8S','C16S','E','E8','E16','GS','G8S','G16S'], 
-'CSm4':   ['CS','C8S','C16S','E','E8','E16','GS','G8S','G16S'], 
-'CSm5':   ['CS','C8S','C16S','E','E8','E16','GS','G8S','G16S'], 
-'CSm5+':  ['CS','C8S','C16S','E','E8','E16','GS','G8S','G16S'], 
-'CSm6':   ['CS','C8S','C16S','E','E8','E16','GS','G8S','G16S'], 
-'CSm7':   ['CS','C8S','C16S','E','E8','E16','GS','G8S','G16S'], 
-'CSm75+': ['CS','C8S','C16S','E','E8','E16','GS','G8S','G16S'], 
-'CSm79':  ['CS','C8S','C16S','E','E8','E16','GS','G8S','G16S'], 
-'CSm9':   ['CS','C8S','C16S','E','E8','E16','GS','G8S','G16S'], 
-// D 
-'D':     ['D','D8','D16','FS','F8S','F16S','A','A8','A16'], 
-'D11':   ['D','D8','D16','FS','F8S','F16S','A','A8','A16'], 
-'D13':   ['D','D8','D16','FS','F8S','F16S','A','A8','A16'], 
-'D4':    ['D','D8','D16','FS','F8S','F16S','A','A8','A16'], 
-'D45+':  ['D','D8','D16','FS','F8S','F16S','A','A8','A16'], 
-'D5':    ['D','D8','D16','FS','F8S','F16S','A','A8','A16'], 
-'D5+':   ['D','D8','D16','FS','F8S','F16S','A','A8','A16'], 
-'D6':    ['D','D8','D16','FS','F8S','F16S','A','A8','A16'], 
-'D7':    ['D','D8','D16','FS','F8S','F16S','A','A8','A16'], 
-'D75+':  ['D','D8','D16','FS','F8S','F16S','A','A8','A16'], 
-'D9':    ['D','D8','D16','FS','F8S','F16S','A','A8','A16'], 
-'D95+':  ['D','D8','D16','FS','F8S','F16S','A','A8','A16'], 
-'Ddim':  ['D','D8','D16','F','F8','F16','GS','G8S','G16S'], 
-'Dm':    ['D','D8','D16','F','F8','F16','A','A8','A16'], 
-'Dm4':   ['D','D8','D16','F','F8','F16','A','A8','A16'], 
-'Dm5':   ['D','D8','D16','F','F8','F16','A','A8','A16'], 
-'Dm5+':  ['D','D8','D16','F','F8','F16','A','A8','A16'], 
-'Dm6':   ['D','D8','D16','F','F8','F16','A','A8','A16'], 
-'Dm7':   ['D','D8','D16','F','F8','F16','A','A8','A16'], 
-'Dm75+': ['D','D8','D16','F','F8','F16','A','A8','A16'], 
-'Dm79':  ['D','D8','D16','F','F8','F16','A','A8','A16'], 
-'Dm9':   ['D','D8','D16','F','F8','F16','A','A8','A16'], 
-// DS 
-'DS':     ['DS','D8S','D16S','G','G8','G16','AS','A8S','A16S'], 
-'DS11':   ['DS','D8S','D16S','G','G8','G16','AS','A8S','A16S'], 
-'DS13':   ['DS','D8S','D16S','G','G8','G16','AS','A8S','A16S'], 
-'DS4':    ['DS','D8S','D16S','G','G8','G16','AS','A8S','A16S'], 
-'DS45+':  ['DS','D8S','D16S','G','G8','G16','AS','A8S','A16S'], 
-'DS5':    ['DS','D8S','D16S','G','G8','G16','AS','A8S','A16S'], 
-'DS5+':   ['DS','D8S','D16S','G','G8','G16','AS','A8S','A16S'], 
-'DS6':    ['DS','D8S','D16S','G','G8','G16','AS','A8S','A16S'], 
-'DS7':    ['DS','D8S','D16S','G','G8','G16','AS','A8S','A16S'], 
-'DS75+':  ['DS','D8S','D16S','G','G8','G16','AS','A8S','A16S'], 
-'DS9':    ['DS','D8S','D16S','G','G8','G16','AS','A8S','A16S'], 
-'DS95+':  ['DS','D8S','D16S','G','G8','G16','AS','A8S','A16S'], 
-'DSdim':  ['DS','D8S','D16S','FS','F8S','F16S','A','A8','A16'], 
-'DSm':    ['DS','D8S','D16S','FS','F8S','F16S','AS','A8S','A16S'], 
-'DSm4':   ['DS','D8S','D16S','FS','F8S','F16S','AS','A8S','A16S'], 
-'DSm5':   ['DS','D8S','D16S','FS','F8S','F16S','AS','A8S','A16S'], 
-'DSm5+':  ['DS','D8S','D16S','FS','F8S','F16S','AS','A8S','A16S'], 
-'DSm6':   ['DS','D8S','D16S','FS','F8S','F16S','AS','A8S','A16S'], 
-'DSm7':   ['DS','D8S','D16S','FS','F8S','F16S','AS','A8S','A16S'], 
-'DSm75+': ['DS','D8S','D16S','FS','F8S','F16S','AS','A8S','A16S'], 
-'DSm79':  ['DS','D8S','D16S','FS','F8S','F16S','AS','A8S','A16S'], 
-'DSm9':   ['DS','D8S','D16S','FS','F8S','F16S','AS','A8S','A16S'], 
-// E 
-'E':     ['E','E8','E16','E24','GS','G8S','G16S','B','B8','B16'], 
-'E11':   ['E','E8','E16','E24','GS','G8S','G16S','B','B8','B16'], 
-'E13':   ['E','E8','E16','E24','GS','G8S','G16S','B','B8','B16'], 
-'E4':    ['E','E8','E16','E24','GS','G8S','G16S','B','B8','B16'], 
-'E45+':  ['E','E8','E16','E24','GS','G8S','G16S','B','B8','B16'], 
-'E5':    ['E','E8','E16','E24','GS','G8S','G16S','B','B8','B16'], 
-'E5+':   ['E','E8','E16','E24','GS','G8S','G16S','B','B8','B16'], 
-'E6':    ['E','E8','E16','E24','GS','G8S','G16S','B','B8','B16'], 
-'E7':    ['E','E8','E16','E24','GS','G8S','G16S','B','B8','B16'], 
-'E75+':  ['E','E8','E16','E24','GS','G8S','G16S','B','B8','B16'], 
-'E9':    ['E','E8','E16','E24','GS','G8S','G16S','B','B8','B16'], 
-'E95+':  ['E','E8','E16','E24','GS','G8S','G16S','B','B8','B16'], 
-'Edim':  ['E','E8','E16','G','G8','G16','AS','A8S','A16S'], 
-'Em':    ['E','E8','E16','E24','G','G8','G16','B','B8','B16'], 
-'Em4':   ['E','E8','E16','E24','G','G8','G16','B','B8','B16'], 
-'Em5':   ['E','E8','E16','E24','G','G8','G16','B','B8','B16'], 
-'Em5+':  ['E','E8','E16','E24','G','G8','G16','B','B8','B16'], 
-'Em6':   ['E','E8','E16','E24','G','G8','G16','B','B8','B16'], 
-'Em7':   ['E','E8','E16','E24','G','G8','G16','B','B8','B16'], 
-'Em75+': ['E','E8','E16','E24','G','G8','G16','B','B8','B16'], 
-'Em79':  ['E','E8','E16','E24','G','G8','G16','B','B8','B16'], 
-'Em9':   ['E','E8','E16','E24','G','G8','G16','B','B8','B16'], 
-// F 
-'F':     ['F','F8','F16','F24','A','A8','A16','C','C8','C16'], 
-'F11':   ['F','F8','F16','F24','A','A8','A16','C','C8','C16'], 
-'F13':   ['F','F8','F16','F24','A','A8','A16','C','C8','C16'], 
-'F4':    ['F','F8','F16','F24','A','A8','A16','C','C8','C16'], 
-'F45+':  ['F','F8','F16','F24','A','A8','A16','C','C8','C16'], 
-'F5':    ['F','F8','F16','F24','A','A8','A16','C','C8','C16'], 
-'F5+':   ['F','F8','F16','F24','A','A8','A16','C','C8','C16'], 
-'F6':    ['F','F8','F16','F24','A','A8','A16','C','C8','C16'], 
-'F7':    ['F','F8','F16','F24','A','A8','A16','C','C8','C16'], 
-'F75+':  ['F','F8','F16','F24','A','A8','A16','C','C8','C16'], 
-'F9':    ['F','F8','F16','F24','A','A8','A16','C','C8','C16'], 
-'F95+':  ['F','F8','F16','F24','A','A8','A16','C','C8','C16'], 
-'Fdim':  ['F','F8','F16','GS','G8S','G16S','B','B8','B16'], 
-'Fm':    ['F','F8','F16','F24','GS','G8S','G16S','C','C8','C16'], 
-'Fm4':   ['F','F8','F16','F24','GS','G8S','G16S','C','C8','C16'], 
-'Fm5':   ['F','F8','F16','F24','GS','G8S','G16S','C','C8','C16'], 
-'Fm5+':  ['F','F8','F16','F24','GS','G8S','G16S','C','C8','C16'], 
-'Fm6':   ['F','F8','F16','F24','GS','G8S','G16S','C','C8','C16'], 
-'Fm7':   ['F','F8','F16','F24','GS','G8S','G16S','C','C8','C16'], 
-'Fm75+': ['F','F8','F16','F24','GS','G8S','G16S','C','C8','C16'], 
-'Fm79':  ['F','F8','F16','F24','GS','G8S','G16S','C','C8','C16'], 
-'Fm9':   ['F','F8','F16','F24','GS','G8S','G16S','C','C8','C16'],  
+    // ✅ Mapeamento: usa apenas a tônica grave do acorde
+    const BASS_NOTE_MAP = {};
+    for (const p of PITCHES) {
+      BASS_NOTE_MAP[p] = [p]; // Apenas a tônica grave
+      BASS_NOTE_MAP[p + 'm'] = [p];
+    }
 
-// FS 
-'FS':     ['FS','F8S','F16S','F24S','AS','A8S','A16S','CS','C8S','C16S'], 
-'FS11':   ['FS','F8S','F16S','F24S','AS','A8S','A16S','CS','C8S','C16S'], 
-'FS13':   ['FS','F8S','F16S','F24S','AS','A8S','A16S','CS','C8S','C16S'], 
-'FS4':    ['FS','F8S','F16S','F24S','AS','A8S','A16S','CS','C8S','C16S'], 
-'FS45+':  ['FS','F8S','F16S','F24S','AS','A8S','A16S','CS','C8S','C16S'], 
-'FS5':    ['FS','F8S','F16S','F24S','AS','A8S','A16S','CS','C8S','C16S'], 
-'FS5+':   ['FS','F8S','F16S','F24S','AS','A8S','A16S','CS','C8S','C16S'], 
-'FS6':    ['FS','F8S','F16S','F24S','AS','A8S','A16S','CS','C8S','C16S'], 
-'FS7':    ['FS','F8S','F16S','F24S','AS','A8S','A16S','CS','C8S','C16S'], 
-'FS75+':  ['FS','F8S','F16S','F24S','AS','A8S','A16S','CS','C8S','C16S'], 
-'FS9':    ['FS','F8S','F16S','F24S','AS','A8S','A16S','CS','C8S','C16S'], 
-'FS95+':  ['FS','F8S','F16S','F24S','AS','A8S','A16S','CS','C8S','C16S'], 
-'FSdim':  ['FS','F8S','F16S','A','A8','A16','C','C8','C16'], 
-'FSm':    ['FS','F8S','F16S','F24S','A','A8','A16','CS','C8S','C16S'], 
-'FSm4':   ['FS','F8S','F16S','F24S','A','A8','A16','CS','C8S','C16S'], 
-'FSm5':   ['FS','F8S','F16S','F24S','A','A8','A16','CS','C8S','C16S'], 
-'FSm5+':  ['FS','F8S','F16S','F24S','A','A8','A16','CS','C8S','C16S'], 
-'FSm6':   ['FS','F8S','F16S','F24S','A','A8','A16','CS','C8S','C16S'], 
-'FSm7':   ['FS','F8S','F16S','F24S','A','A8','A16','CS','C8S','C16S'], 
-'FSm75+': ['FS','F8S','F16S','F24S','A','A8','A16','CS','C8S','C16S'], 
-'FSm79':  ['FS','F8S','F16S','F24S','A','A8','A16','CS','C8S','C16S'], 
-'FSm9':   ['FS','F8S','F16S','F24S','A','A8','A16','CS','C8S','C16S'], 
-// G 
-'G':     ['G','G8','G16','G24','B','B8','B16','D','D8','D16'], 
-'G11':   ['G','G8','G16','G24','B','B8','B16','D','D8','D16'], 
-'G13':   ['G','G8','G16','G24','B','B8','B16','D','D8','D16'], 
-'G4':    ['G','G8','G16','G24','B','B8','B16','D','D8','D16'], 
-'G45+':  ['G','G8','G16','G24','B','B8','B16','D','D8','D16'], 
-'G5':    ['G','G8','G16','G24','B','B8','B16','D','D8','D16'], 
-'G5+':   ['G','G8','G16','G24','B','B8','B16','D','D8','D16'], 
-'G6':    ['G','G8','G16','G24','B','B8','B16','D','D8','D16'], 
-'G7':    ['G','G8','G16','G24','B','B8','B16','D','D8','D16'], 
-'G75+':  ['G','G8','G16','G24','B','B8','B16','D','D8','D16'], 
-'G9':    ['G','G8','G16','G24','B','B8','B16','D','D8','D16'], 
-'G95+':  ['G','G8','G16','G24','B','B8','B16','D','D8','D16'], 
-'Gdim':  ['G','G8','G16','AS','A8S','A16S','CS','C8S','C16S'], 
-'Gm':    ['G','G8','G16','G24','AS','A8S','A16S','D','D8','D16'], 
-'Gm4':   ['G','G8','G16','G24','AS','A8S','A16S','D','D8','D16'], 
-'Gm5':   ['G','G8','G16','G24','AS','A8S','A16S','D','D8','D16'], 
-'Gm5+':  ['G','G8','G16','G24','AS','A8S','A16S','D','D8','D16'], 
-'Gm6':   ['G','G8','G16','G24','AS','A8S','A16S','D','D8','D16'], 
-'Gm7':   ['G','G8','G16','G24','AS','A8S','A16S','D','D8','D16'], 
-'Gm75+': ['G','G8','G16','G24','AS','A8S','A16S','D','D8','D16'], 
-'Gm79':  ['G','G8','G16','G24','AS','A8S','A16S','D','D8','D16'], 
-'Gm9':   ['G','G8','G16','G24','AS','A8S','A16S','D','D8','D16'], 
-// GS 
-'GS':     ['GS','G8S','G16S','C','C8','C16','DS','D8S','D16S'], 
-'GS11':   ['GS','G8S','G16S','C','C8','C16','DS','D8S','D16S'], 
-'GS13':   ['GS','G8S','G16S','C','C8','C16','DS','D8S','D16S'], 
-'GS4':    ['GS','G8S','G16S','C','C8','C16','DS','D8S','D16S'], 
-'GS45+':  ['GS','G8S','G16S','C','C8','C16','DS','D8S','D16S'], 
-'GS5':    ['GS','G8S','G16S','C','C8','C16','DS','D8S','D16S'], 
-'GS5+':   ['GS','G8S','G16S','C','C8','C16','DS','D8S','D16S'], 
-'GS6':    ['GS','G8S','G16S','C','C8','C16','DS','D8S','D16S'], 
-'GS7':    ['GS','G8S','G16S','C','C8','C16','DS','D8S','D16S'], 
-'GS75+':  ['GS','G8S','G16S','C','C8','C16','DS','D8S','D16S'], 
-'GS9':    ['GS','G8S','G16S','C','C8','C16','DS','D8S','D16S'], 
-'GS95+':  ['GS','G8S','G16S','C','C8','C16','DS','D8S','D16S'], 
-'GSdim':  ['GS','G8S','G16S','B','B8','B16','D','D8','D16'], 
-'GSm':    ['GS','G8S','G16S','B','B8','B16','DS','D8S','D16S'], 
-'GSm4':   ['GS','G8S','G16S','B','B8','B16','DS','D8S','D16S'], 
-'GSm5':   ['GS','G8S','G16S','B','B8','B16','DS','D8S','D16S'], 
-'GSm5+':  ['GS','G8S','G16S','B','B8','B16','DS','D8S','D16S'], 
-'GSm6':   ['GS','G8S','G16S','B','B8','B16','DS','D8S','D16S'], 
-'GSm7':   ['GS','G8S','G16S','B','B8','B16','DS','D8S','D16S'], 
-'GSm75+': ['GS','G8S','G16S','B','B8','B16','DS','D8S','D16S'], 
-'GSm79':  ['GS','G8S','G16S','B','B8','B16','DS','D8S','D16S'], 
-'GSm9':   ['GS','G8S','G16S','B','B8','B16','DS','D8S','D16S'] 
-    };
     // 🔥 LEVADAS INTERNAS (você pode editar/adicionar aqui)
     const ALL_GROOVES = [
       // Groove 1: Rock básico
@@ -417,12 +160,12 @@
         name: "Rock Básico",
         meter: "4/4",
         drumPattern: [
-          "[ba - ch bu cch - ch - bch - ch - cch - ch bu]",
-          "(ba - ch bu cch - ch - bch - ch - cch - ch bu)"
+          "[bu - ch - bu - ch -]",
+          "(bu - ch - bch - ch -)"
         ],
         bassRhythm: [
-          "[sm x sm x sm x sm x sm x sm x sm x sm x]",
-          "(sm x sm x sm x sm x sm x sm x sm x sm x)"
+          "(sm - - - sm - - -)",
+          "(sm - - - sm - - -)"
         ]
       },
       // Groove 2: Pop sincopado
@@ -430,12 +173,12 @@
         name: "Pop Sincopado",
         meter: "4/4",
         drumPattern: [
-          "[ba - ch bu cch - ch - bch - ch - cch - ch bu]",
-          "(ba - ch bu cch - ch - bch - ch - cch - ch bu)"
+          "[bu ca - ca bu ca - ca]",
+          "(ch ch ch ch ch ch ch ch)"
         ],
         bassRhythm: [
-          "[sm x sm x sm x sm x sm x sm x sm x sm x]",
-          "(sm x sm x sm x sm x sm x sm x sm x sm x)"
+          "(sm - sm - sm - sm -)",
+          "(sm - sm - sm - sm -)"
         ]
       },
       // Groove 3: Blues
@@ -443,12 +186,12 @@
         name: "Blues em 12/8",
         meter: "12/8",
         drumPattern: [
-          "[ba - ch bu cch - ch - bch - ch - cch - ch bu]",
-          "(ba - ch bu cch - ch - bch - ch - cch - ch bu)"
+          "[bu - - ch - - bu - - ch - -]",
+          "(bu - - ch - - bch - - ch - -)"
         ],
         bassRhythm: [
-          "[sm x sm x sm x sm x sm x sm x sm x sm x]",
-          "(sm x sm x sm x sm x sm x sm x sm x sm x)"
+          "(sm - - sm - - sm - - sm - -)",
+          "(sm - - sm - - sm - - sm - -)"
         ]
       },
       // Groove 4: Reggae
@@ -456,12 +199,12 @@
         name: "Reggae",
         meter: "4/4",
         drumPattern: [
-         "[ba - ch bu cch - ch - bch - ch - cch - ch bu]",
-          "(ba - ch bu cch - ch - bch - ch - cch - ch bu)"
+          "[bu - - - - - - -]",
+          "(ch - cch - ch - cch -)"
         ],
         bassRhythm: [
-          "[sm x sm x sm x sm x sm x sm x sm x sm x]",
-          "(sm x sm x sm x sm x sm x sm x sm x sm x)"
+          "(sm - - - sm - - -)",
+          "(sm - - - sm - - -)"
         ]
       },
       // Groove 5: Funk
@@ -469,20 +212,19 @@
         name: "Funk",
         meter: "4/4",
         drumPattern: [
-          "[ba - ch bu cch - ch - bch - ch - cch - ch bu]",
-          "(ba - ch bu cch - ch - bch - ch - cch - ch bu)"
+          "[bu ca bu ca bu ca bu ca]",
+          "(ch ch ch ch ch ch ch ch)"
         ],
         bassRhythm: [
-          "[sm x sm x sm x sm x sm x sm x sm x sm x]",
-          "(sm x sm x sm x sm x sm x sm x sm x sm x)"
+          "(sm ° sm ° sm ° sm °)",
+          "(sm ° sm ° sm ° sm °)"
         ]
       }
     ];
 
-    // Progressões de acordes
+    // Progressões
     const PROGRESSIONS = [
       [1, 1, 4, 4, 5, 5, 1, 1],
-      [1, 1, 1, 1, 6, 6, 4, 4, 5, 5, 1, 1],
       [1, 4, 5, 1]
     ];
 
@@ -605,7 +347,6 @@
     }
 
     function buildBassAndChordPlan() {
-      // ✅ Sorteia uma levada aleatória
       state.currentGroove = ALL_GROOVES[Math.floor(Math.random() * ALL_GROOVES.length)];
       log(`🎲 Levada sorteada: ${state.currentGroove.name}`);
 
@@ -656,13 +397,12 @@
         const chordName = rootNote + chordType;
         const chordDisplay = CHORD_NAMES[rootIdx] + chordType;
 
-        const availableNotes = BASS_NOTE_MAP[chordName] || [rootNote];
         const symbol = rhythm[step];
         let bassNote = '-';
 
         if (symbol === 'x') bassNote = 'X';
         else if (symbol === '°') bassNote = '°';
-        else if (symbol === 'sm') bassNote = availableNotes[Math.floor(Math.random() * availableNotes.length)];
+        else if (symbol === 'sm') bassNote = rootNote; // ✅ Apenas tônica grave
 
         bassPlan.push(bassNote);
         chordPlan.push({ note: rootNote, type: chordType, display: chordDisplay });
@@ -693,8 +433,7 @@
       state.bpm = Number(ui.bpm.value);
       state.sixteenthDur = 60 / state.bpm / 4;
 
-      // ✅ Sempre sorteia uma nova levada ao clicar em Play
-      buildBassAndChordPlan(); // Isso sorteia e gera o plano
+      buildBassAndChordPlan();
 
       if (state.paused) {
         state.paused = false;
@@ -755,7 +494,7 @@
         }
       }
 
-      // Baixo
+      // ✅ Baixo (sincronizado com o passo)
       const bassKey = state.bassPlan[stepIdx % state.bassPlan.length];
       if (bassKey === 'X' && !mute.bass) {
         const src = audio.ctx.createBufferSource();
@@ -877,5 +616,3 @@
   </script>
 </body>
 </html>
-
-
