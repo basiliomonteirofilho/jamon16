@@ -489,13 +489,39 @@ function scheduler() {
 
 // 🛠 Correção 2: initAudio com garantia de única execução
 let initPromise = null;
+
 async function initAudio() {
   if (audio.ctx) return;
   if (initPromise) return initPromise;
 
   initPromise = (async () => {
-    // ... conteúdo original de initAudio
+    audio.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    audio.master = audio.ctx.createGain();
+    audio.mix = audio.ctx.createGain();
+    audio.drumGain = audio.ctx.createGain();
+    audio.bassGain = audio.ctx.createGain();
+    audio.cleanGain = audio.ctx.createGain();
+    audio.distGain = audio.ctx.createGain();
+
+    audio.master.gain.value = 0.9;
+    audio.drumGain.gain.value = 0.6;
+    audio.bassGain.gain.value = 0.45;
+    audio.cleanGain.gain.value = 0.45;
+    audio.distGain.gain.value = 0.35;
+
+    audio.master.connect(audio.mix);
+    audio.mix.connect(audio.ctx.destination);
+
+    audio.drumGain.connect(audio.master);
+    audio.bassGain.connect(audio.master);
+    audio.cleanGain.connect(audio.master);
+    audio.distGain.connect(audio.master);
+
+    log('🔧 Inicializando áudio e pré-carregando básicos...');
+    await ensureBasicSamples();
+    log('✅ Básicos carregados.');
   })();
+
   return initPromise;
 }
 
