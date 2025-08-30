@@ -6,10 +6,9 @@
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 20px; background: #f0f0f0; }
     .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
     .row { display: flex; align-items: center; margin: 10px 0; }
     .row label { width: 120px; }
-    textarea { width: 100%; height: 80px; font-family: monospace; }
     button { padding: 10px; margin: 5px; cursor: pointer; border: none; border-radius: 6px; }
     .primary { background: #4CAF50; color: white; }
     .danger { background: #f44336; color: white; }
@@ -22,6 +21,7 @@
   </style>
 </head>
 <body>
+
   <header>
     <h1>Jam on – Playback Aleatório (baixo + bateria + guitarra)</h1>
     <div class="pill">Cada pulso do BPM = semínima</div>
@@ -33,86 +33,62 @@
   </div>
 
   <div class="card">
-    <div class="grid">
-      <div class="controls">
-        <button id="btnRestart">⏮ Reiniciar</button>
-        <button id="btnPrev">⏪ Anterior</button>
-        <button id="btnPlay" class="primary">▶ Play</button>
-        <button id="btnPause">⏸ Pause</button>
-        <button id="btnStop" class="danger">⏹ Stop</button>
-        <button id="btnSave" class="primary">💾 Salvar 4 min (MP3)</button>
-        <span class="spacer"></span>
+    <div class="controls">
+      <button id="btnPlay" class="primary">▶ Play</button>
+      <button id="btnPause">⏸ Pause</button>
+      <button id="btnStop" class="danger">⏹ Stop</button>
+      <button id="btnSave" class="primary">💾 Salvar 4 min (MP3)</button>
+
+      <div style="margin-top: 10px;">
         <button id="muteBass" data-mute="off">🎸 Baixo</button>
         <button id="muteDrums" data-mute="off">🥁 Bateria</button>
         <button id="muteClean" data-mute="off">🎸 Limpa</button>
         <button id="muteDist" data-mute="off">🔥 Distorção</button>
-        <label class="row">BPM <input id="bpm" type="number" min="40" max="220" value="100" style="width:90px"></label>
-        <label class="row">Assinatura
-          <select id="meter">
-            <option value="auto" selected>aleatória</option>
-            <option>2/4</option>
-            <option>3/4</option>
-            <option>4/4</option>
-            <option>5/4</option>
-            <option>6/4</option>
-            <option>7/4</option>
-          </select>
-        </label>
       </div>
 
-      <div class="groove-editor">
-        <h3>Editor de Levadas</h3>
-        <div class="row">
-          <div style="flex:1;">
-            <label>Bateria:</label>
-            <textarea id="drumPattern" placeholder="Ex: [ca ca ca - bu - - - ca - ca - to1 - to2 -]
-(bu - ch bu cch - ch - bch - ch - cch - ch -)"></textarea>
-          </div>
-          <div style="flex:1;">
-            <label>Baixo:</label>
-            <textarea id="bassRhythm" placeholder="Ex: [sm - - - sm - ° - sm - x - sm - ° -]
-(sm - - - sm - ° - sm - x - sm - ° -)"></textarea>
-          </div>
-        </div>
-        <div class="row">
-          <div style="flex:1;">
-            <label>Nome do Estilo:</label>
-            <input id="grooveName" type="text" placeholder="Meu Groove">
-            <label>Compasso:</label>
-            <select id="grooveMeter">
-              <option value="4/4">4/4</option>
-              <option value="3/4">3/4</option>
-              <option value="6/8">6/8</option>
-            </select>
-            <button id="btnApplyGroove">Aplicar Levada</button>
-          </div>
-        </div>
+      <div class="row">
+        <label>BPM</label>
+        <input id="bpm" type="number" min="40" max="220" value="100" style="width:90px">
       </div>
 
-      <div class="panel" style="grid-column: span 6;">
-        <h3>Estado atual</h3>
-        <div class="mono" id="state"></div>
-        <div class="footer">Ao clicar em <b>Play</b>, gera um novo playback aleatório.</div>
+      <div class="row">
+        <label>Assinatura</label>
+        <select id="meter">
+          <option value="auto" selected>aleatória</option>
+          <option>2/4</option>
+          <option>3/4</option>
+          <option>4/4</option>
+          <option>5/4</option>
+          <option>6/4</option>
+          <option>7/4</option>
+        </select>
       </div>
-
-      <div class="panel" style="grid-column: span 6;">
-        <h3>Arquivos esperados</h3>
-        <div class="mono">
-          <div>Coloque os áudios nas pastas:</div>
-          <ul>
-            <li><b>guitarraLimpa/[nota]/acorde.mp3</b> (ex: <code>guitarraLimpa/A/A.mp3</code>, <code>guitarraLimpa/A/Am.mp3</code>)</li>
-            <li><b>guitarraDistorcao/[nota]/acorde.mp3</b> (ex: <code>guitarraDistorcao/AS/AS7.mp3</code>, <code>guitarraDistorcao/C/C.mp3</code>)</li>
-            <li>Peças de bateria: <b>bumbo.mp3</b>, <b>caixa.mp3</b>, etc. em <code>assets/</code></li>
-            <li>Baixo: <b>bass-A.mp3</b>, <b>bass-AS.mp3</b>, etc. em <code>assets/</code></li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="log mono" id="log"></div>
     </div>
+
+    <div class="panel">
+      <h3>Estado atual</h3>
+      <div class="mono" id="state"></div>
+      <div class="footer">Ao clicar em <b>Play</b>, gera um novo playback aleatório.</div>
+    </div>
+
+    <div class="panel">
+      <h3>Arquivos esperados</h3>
+      <div class="mono">
+        <div>Coloque os áudios nas pastas:</div>
+        <ul>
+          <li><b>guitarraLimpa/[nota]/acorde.mp3</b></li>
+          <li><b>guitarraDistorcao/[nota]/acorde.mp3</b></li>
+          <li><b>bumbo.mp3</b>, <b>caixa.mp3</b> em <code>assets/</code></li>
+          <li><b>bass-A.mp3</b>, <b>bass-AS.mp3</b> em <code>assets/</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="log mono" id="log"></div>
   </div>
 
   <script>
+    // UI
     const ui = {
       play: document.getElementById('btnPlay'),
       pause: document.getElementById('btnPause'),
@@ -124,17 +100,13 @@
       muteDist: document.getElementById('muteDist'),
       bpm: document.getElementById('bpm'),
       meter: document.getElementById('meter'),
-      drumPattern: document.getElementById('drumPattern'),
-      bassRhythm: document.getElementById('bassRhythm'),
-      grooveName: document.getElementById('grooveName'),
-      grooveMeter: document.getElementById('grooveMeter'),
-      btnApplyGroove: document.getElementById('btnApplyGroove'),
       state: document.getElementById('state'),
       log: document.getElementById('log'),
       currentChord: document.getElementById('currentChord'),
       chordTimer: document.getElementById('chordTimer')
     };
 
+    // Áudio
     const audio = {
       ctx: null,
       master: null,
@@ -148,27 +120,23 @@
       scheduleHorizon: 0.25
     };
 
+    // Notas
     const PITCHES = ['A','AS','B','C','CS','D','DS','E','F','FS','G','GS'];
     const DEGREE_TO_ROOT = { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11 };
     const CHORD_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 
+    // Bateria
     const DRUMS = {
       bu: 'bumbo',
       ca: 'caixa',
       ch: 'chimbal',
-      cha: 'chimbal-aberto',
-      co: 'conducao',
-      at: 'ataque',
-      to1: 'tom1',
-      to2: 'tom2',
-      su: 'surdo',
-      ba: 'bumbo-ataque',
-      bch: 'bumbo-chimbal',
       cch: 'caixa-chimbal',
-      bc: 'bumbo-conducao',
-      cc: 'caixa-conducao'
+      bch: 'bumbo-chimbal',
+      to1: 'tom1',
+      to2: 'tom2'
     };
 
+    // Baixo
     const BASS_SAMPLES = (() => {
       const table = {};
       for (const p of PITCHES) {
@@ -185,6 +153,7 @@
       return table;
     })();
 
+    // Mapeamento de notas do baixo por acorde
     const BASS_NOTE_MAP = {
       // A 
 'A':     ['A','A8','A16','CS','C8S','C16S','E','E8','E16'], 
@@ -441,28 +410,83 @@
 'GSm79':  ['GS','G8S','G16S','B','B8','B16','DS','D8S','D16S'], 
 'GSm9':   ['GS','G8S','G16S','B','B8','B16','DS','D8S','D16S'] 
     };
-
-    const CUSTOM_GROOVES = [
+    // 🔥 LEVADAS INTERNAS (você pode editar/adicionar aqui)
+    const ALL_GROOVES = [
+      // Groove 1: Rock básico
       {
-        name: "Groove Alternado",
+        name: "Rock Básico",
         meter: "4/4",
         drumPattern: [
-          "[bu - ch - cch - ch - bch - ch - cch - ch]",
-          "(bu - ch - cch - ch - bch - ch - cch - ch)"
+          "[bu - ch - bu - ch -]",
+          "(bu - ch - bch - ch -)"
         ],
         bassRhythm: [
-          "(sm - - - sm - ° - sm - x - sm - ° -)",
-          "(sm - - - sm - ° - sm - x - sm - ° -)"
+          "(sm - - - sm - - -)",
+          "(sm - - - sm - - -)"
+        ]
+      },
+      // Groove 2: Pop sincopado
+      {
+        name: "Pop Sincopado",
+        meter: "4/4",
+        drumPattern: [
+          "[bu ca - ca bu ca - ca]",
+          "(ch ch ch ch ch ch ch ch)"
+        ],
+        bassRhythm: [
+          "(sm - sm - sm - sm -)",
+          "(sm - sm - sm - sm -)"
+        ]
+      },
+      // Groove 3: Blues
+      {
+        name: "Blues em 12/8",
+        meter: "12/8",
+        drumPattern: [
+          "[bu - - ch - - bu - - ch - -]",
+          "(bu - - ch - - bch - - ch - -)"
+        ],
+        bassRhythm: [
+          "(sm - - sm - - sm - - sm - -)",
+          "(sm - - sm - - sm - - sm - -)"
+        ]
+      },
+      // Groove 4: Reggae
+      {
+        name: "Reggae",
+        meter: "4/4",
+        drumPattern: [
+          "[bu - - - - - - -]",
+          "(ch - cch - ch - cch -)"
+        ],
+        bassRhythm: [
+          "(sm - - - sm - - -)",
+          "(sm - - - sm - - -)"
+        ]
+      },
+      // Groove 5: Funk
+      {
+        name: "Funk",
+        meter: "4/4",
+        drumPattern: [
+          "[bu ca bu ca bu ca bu ca]",
+          "(ch ch ch ch ch ch ch ch)"
+        ],
+        bassRhythm: [
+          "(sm ° sm ° sm ° sm °)",
+          "(sm ° sm ° sm ° sm °)"
         ]
       }
     ];
 
+    // Progressões de acordes
     const PROGRESSIONS = [
-      [1, 1, 1, 1, 4, 4, 5, 5],
-      [1, 1, 1, 1, 5, 5, 6, 6, 4, 4, 5, 5],
-      [1, 1, 1, 1, 4, 4, 5, 5, 1, 1, 1, 1]
+      [1, 1, 4, 4, 5, 5, 1, 1],
+      [1, 1, 1, 1, 6, 6, 4, 4, 5, 5, 1, 1],
+      [1, 4, 5, 1]
     ];
 
+    // Estado
     const state = {
       running: false,
       paused: false,
@@ -471,7 +495,6 @@
       bpm: 100,
       sixteenthDur: 0.15,
       stepIndex: 0,
-      barIndex: 0,
       buffers: { drums: {}, bass: {}, guitar: {} },
       lastBassSrc: null,
       bassPlan: [],
@@ -502,7 +525,7 @@
     }
 
     function setStatePanel() {
-      ui.state.innerHTML = `<div>Chord: ${state.signatureTag || '—'}</div>`;
+      ui.state.innerHTML = `<div>Levada: ${state.signatureTag || '—'}</div>`;
     }
 
     async function initAudio() {
@@ -582,8 +605,11 @@
     }
 
     function buildBassAndChordPlan() {
-      const groove = state.currentGroove;
-      state.meter = ui.meter.value === 'auto' ? groove.meter : ui.meter.value;
+      // ✅ Sorteia uma levada aleatória
+      state.currentGroove = ALL_GROOVES[Math.floor(Math.random() * ALL_GROOVES.length)];
+      log(`🎲 Levada sorteada: ${state.currentGroove.name}`);
+
+      state.meter = ui.meter.value === 'auto' ? state.currentGroove.meter : ui.meter.value;
       const [num, den] = meterToBeats(state.meter);
       const sixteenthsPerBar = num * 4;
       const totalBars = 16;
@@ -603,11 +629,12 @@
       durations.push(count);
       state.chordDurations = durations;
 
-      const fullPattern = [...groove.bassRhythm, ...groove.bassRhythm];
+      const fullPattern = [...state.currentGroove.bassRhythm, ...state.currentGroove.bassRhythm];
       const rhythm = expandRhythm(fullPattern, totalSteps);
 
       const bassPlan = [];
       const chordPlan = [];
+
       let barsInChord = 0;
       let chordIndex = 0;
 
@@ -643,7 +670,7 @@
 
       state.bassPlan = bassPlan;
       state.chordPlan = chordPlan;
-      state.signatureTag = groove.name;
+      state.signatureTag = state.currentGroove.name;
       setStatePanel();
     }
 
@@ -663,18 +690,11 @@
       if (state.running && !state.paused) return;
       if (!audio.ctx) initAudio();
 
-      // Atualiza BPM e meter
       state.bpm = Number(ui.bpm.value);
-      state.sixteenthDur = 60 / state.bpm / 4; // Recalcula duração da semicolcheia
+      state.sixteenthDur = 60 / state.bpm / 4;
 
-      if (!state.currentGroove) {
-        state.currentGroove = CUSTOM_GROOVES[0];
-        log(`[INFO] Groove padrão definido: ${state.currentGroove.name}`);
-      }
-
-      if (!state.chordPlan || state.chordPlan.length === 0) {
-        buildBassAndChordPlan();
-      }
+      // ✅ Sempre sorteia uma nova levada ao clicar em Play
+      buildBassAndChordPlan(); // Isso sorteia e gera o plano
 
       if (state.paused) {
         state.paused = false;
@@ -696,8 +716,7 @@
         if (state.clickCount >= state.totalClicks) {
           clearInterval(clickInterval);
           state.running = true;
-          ui.play.dataset.state = 'on';
-          log(`[PLAY] Iniciando playback: ${state.signatureTag} | ${state.meter}@${state.bpm} BPM`);
+          log(`[PLAY] Iniciando: ${state.signatureTag} | ${state.meter}@${state.bpm} BPM`);
           startScheduler();
           return;
         }
@@ -842,21 +861,7 @@
       button.classList.toggle('muted', mute[type]);
     }
 
-    function applyCustomGroove() {
-      const name = ui.grooveName.value || "Personalizado";
-      const meter = ui.grooveMeter.value;
-      const drumPattern = ui.drumPattern.value.split('\n').filter(line => line.trim());
-      const bassRhythm = ui.bassRhythm.value.split('\n').filter(line => line.trim());
-      if (drumPattern.length === 0 || bassRhythm.length === 0) {
-        log('[ERRO] Padrões de bateria e baixo são obrigatórios.');
-        return;
-      }
-      const customGroove = { name, meter, drumPattern, bassRhythm };
-      CUSTOM_GROOVES.push(customGroove);
-      state.currentGroove = customGroove;
-      log(`[LEVADA] "${name}" aplicada com sucesso!`);
-    }
-
+    // Eventos
     ui.play.addEventListener('click', onPlay);
     ui.pause.addEventListener('click', onPause);
     ui.stop.addEventListener('click', onStop);
@@ -864,7 +869,6 @@
     ui.muteDrums.addEventListener('click', () => toggleMute('drums', ui.muteDrums));
     ui.muteClean.addEventListener('click', () => toggleMute('clean', ui.muteClean));
     ui.muteDist.addEventListener('click', () => toggleMute('dist', ui.muteDist));
-    ui.btnApplyGroove.addEventListener('click', applyCustomGroove);
 
     window.addEventListener('load', () => {
       log('🔧 Pré-carregando áudios...');
@@ -873,4 +877,3 @@
   </script>
 </body>
 </html>
-
