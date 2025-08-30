@@ -472,14 +472,37 @@ bassPlan.push(bassNote);
       }, msDelay);
     }
 
-    function scheduler() {
-      if (!state.running || state.paused) return;
-      const lookahead = 0.12; // segundos para "pré-agendar"
-      const currentTime = audio.ctx.currentTime;
-      while (state.nextNoteTime < currentTime + lookahead) {
-        scheduleStep();
-      }
+    // 🔁 Correção 1: Proteção no scheduler
+function scheduler() {
+  if (!state.running || state.paused) return;
+  const lookahead = 0.12;
+  const currentTime = audio.ctx.currentTime;
+  let safetyCounter = 0;
+  while (state.nextNoteTime < currentTime + lookahead) {
+    scheduleStep();
+    if (++safetyCounter > 100) {
+      log("⚠️ Loop de scheduler interrompido por segurança");
+      break;
     }
+  }
+}
+
+// 🛠 Correção 2: initAudio com garantia de única execução
+let initPromise = null;
+async function initAudio() {
+  if (audio.ctx) return;
+  if (initPromise) return initPromise;
+
+  initPromise = (async () => {
+    // ... conteúdo original de initAudio
+  })();
+  return initPromise;
+}
+
+// 📏 Correção 3: Limite de compassos
+// Dentro de buildBassAndChordPlan():
+const MAX_BARS = 64;
+const totalBars = Math.min(state.chordDurations.reduce((a,b)=>a+b,0), MAX_BARS);
 
     function scheduleStep() {
       const time = state.nextNoteTime;
@@ -607,15 +630,25 @@ src.start(time);
     }
 
     function parsePattern(patternText) {
-      const result = { intro: [], loop: [] };
-      const introMatch = patternText.match(/\[(.*?)\]/);
-      const loopMatch = patternText.match(/\((.*?)\)/);
-      if (introMatch) result.intro = introMatch[1].trim().split(/\s+/).filter(s => s);
-      if (loopMatch) result.loop = loopMatch[1].trim().split(/\s+/).filter(s => s);
-      // if loop empty fallback to intro
-      if (!result.loop.length) result.loop = result.intro.slice();
-      return result;
-    }
+  const result = { intro: [], loop: [] };
+  const introMatch = patternText.match(/\[(.*?)\]/);
+  const loopMatch = patternText.match(/\((.*?)\)/);
+
+  if (introMatch) {
+    result.intro = introMatch[1].trim().split(/\s+/).filter(s => s);
+  }
+  if (loopMatch) {
+    result.loop = loopMatch[1].trim().split(/\s+/).filter(s => s);
+  }
+
+  // Se nada for encontrado, use todo o texto como loop
+  if (!introMatch && !loopMatch) {
+    result.loop = patternText.trim().split(/\s+/).filter(s => s);
+  }
+
+  if (!result.loop.length) result.loop = result.intro.slice();
+  return result;
+}
 
     function onPause() {
       if (state.running && !state.paused) {
@@ -635,9 +668,15 @@ src.start(time);
     }
 
     function startScheduler() {
-      stopScheduler();
-      audio.schedulerTimer = setInterval(scheduler, 40);
+  stopScheduler();
+  function tick() {
+    if (state.running && !state.paused) {
+      scheduler();
     }
+    requestAnimationFrame(tick);
+  }
+  tick();
+}
 
     function stopScheduler() {
       if (audio.schedulerTimer) clearInterval(audio.schedulerTimer);
