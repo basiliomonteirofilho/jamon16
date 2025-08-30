@@ -477,13 +477,12 @@
         // map drum token to sample key - here token 'ba' => bu, 'ca' => ca, 'ch' => ch
         // Accept several tokens
         let key = null;
-        if (/(ba|bumbo|bu)/i.test(drumToken)) key = 'bu';
-        else if (/(ca|caixa|c)/i.test(drumToken)) key = 'ca';
-        else if (/(ch|chimbal)/i.test(drumToken)) key = 'ch';
-        else if (/(cch|caixa-chimbal)/i.test(drumToken)) key = 'cch';
-        else if (/(bch|bumbo-chimbal)/i.test(drumToken)) key = 'bch';
-        else if (/(ba|bumbo-ataque)/i.test(drumToken)) key = 'ba';
-        else if (/(bc|bumbo-conducao)/i.test(drumToken)) key = 'bc';
+if (/^(cch|caixa-chimbal)$/i.test(drumToken)) key = 'cch';
+else if (/^(bch|bumbo-chimbal)$/i.test(drumToken)) key = 'bch';
+else if (/^(ba|bumbo-ataque)$/i.test(drumToken)) key = 'ba';
+else if (/^(bu|bumbo)$/i.test(drumToken)) key = 'bu';
+else if (/^(ca|caixa)$/i.test(drumToken)) key = 'ca';
+else if (/^(ch|chimbal)$/i.test(drumToken)) key = 'ch';
         
         if (key && state.buffers.drums[key]) {
           const src = audio.ctx.createBufferSource();
@@ -652,6 +651,7 @@
   </script>
 </body>
 </html>
+
 
 
 
