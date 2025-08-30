@@ -18,6 +18,7 @@
     .mono { font-family: monospace; font-size: 0.9em; background: #eee; padding: 10px; border-radius: 6px; }
     .footer { font-size: 0.8em; color: #666; margin-top: 10px; }
     .pill { display: inline-block; background: #000; color: #fff; padding: 4px 8px; border-radius: 12px; font-size: 0.8em; }
+    #log { height: 120px; overflow:auto; white-space: pre-wrap; margin-top:10px; }
   </style>
 </head>
 <body>
@@ -75,10 +76,10 @@
       <div class="mono">
         <div>Coloque os áudios nas pastas:</div>
         <ul>
-          <li><b>guitarraLimpa/[nota]/acorde.mp3</b></li>
-          <li><b>guitarraDistorcao/[nota]/acorde.mp3</b></li>
-          <li><b>bumbo.mp3</b>, <b>caixa.mp3</b> em <code>assets/</code></li>
-          <li><b>bass-A.mp3</b>, <b>bass-B.mp3</b>, ..., <b>bass-GS.mp3</b> em <code>assets/</code></li>
+          <li><b>guitarraLimpa/[nota]/[nota][tipo].mp3</b> — Ex: guitarraLimpa/A/A.mp3 ou guitarraLimpa/C/Cm.mp3</li>
+          <li><b>guitarraDistorcao/[nota]/[nota][tipo].mp3</b></li>
+          <li><b>assets/bumbo.mp3</b>, <b>assets/caixa.mp3</b>, <b>assets/chimbal.mp3</b></li>
+          <li><b>assets/bass-A.mp3</b>, <b>assets/bass-AS.mp3</b>, etc. (A, AS, B, C, CS, ...)</li>
         </ul>
       </div>
     </div>
@@ -112,7 +113,6 @@
       bassGain: null,
       cleanGain: null,
       distGain: null,
-      compressor: null,
       schedulerTimer: null
     };
 
@@ -123,42 +123,35 @@
     const DRUMS = {
       bu: 'bumbo',
       ca: 'caixa',
-      ch: 'chimbal',
-      cch: 'caixa-chimbal',
-      bch: 'bumbo-chimbal',
-      to1: 'tom1',
-      to2: 'tom2'
+      ch: 'chimbal'
     };
 
-    // ✅ Baixo: apenas notas graves
+    // Bass sample mapping (expecting files like assets/bass-A.mp3, assets/bass-AS.mp3 ... )
     const BASS_SAMPLES = {};
     for (const p of PITCHES) {
-      const letter = p[0];
-      const isSharp = p.includes('S');
-      const sharpSuffix = isSharp ? 'S' : '';
-      BASS_SAMPLES[p] = `assets/bass-${letter}${sharpSuffix}.mp3`;
+      BASS_SAMPLES[p] = `assets/bass-${p}.mp3`;
     }
     BASS_SAMPLES['X'] = 'assets/bass-muted.mp3';
 
-    // 🔥 LEVADAS
+    // Grooves (exemplo simples). padroes de drum e baixo (intro e loop) em tokens
     const ALL_GROOVES = [
       {
         name: "Rock Básico",
         meter: "4/4",
-        drumPattern: ["[bu - ch - bu - ch -]", "(bu - ch - bch - ch -)"],
-        bassRhythm: ["(sm - - - sm - - -)", "(sm - - - sm - - -)"]
+        drumPattern: ["[ba - ch - ca - ch]","(ba - ch - - ch)"], // simplificado
+        bassRhythm: ["(sm - - sm - - sm - - sm - - sm - - sm -)"]
       },
       {
         name: "Pop Sincopado",
         meter: "4/4",
-        drumPattern: ["[bu ca - ca bu ca - ca]", "(ch ch ch ch ch ch ch ch)"],
-        bassRhythm: ["(sm - sm - sm - sm -)", "(sm - sm - sm - sm -)"]
+        drumPattern: ["[ba - ch ca ch]","(ba - ch - ch)"],
+        bassRhythm: ["(sm - sm - - sm - sm - - sm - sm -)"]
       },
       {
         name: "Funk",
         meter: "4/4",
-        drumPattern: ["[bu ca bu ca bu ca bu ca]", "(ch ch ch ch ch ch ch ch)"],
-        bassRhythm: ["(sm ° sm ° sm ° sm °)", "(sm ° sm ° sm ° sm °)"]
+        drumPattern: ["[ba ch ca ch]","(ba ch - ch)"],
+        bassRhythm: ["(sm sm - sm - sm sm - sm -)"]
       }
     ];
 
@@ -185,66 +178,54 @@
       currentChordIndex: 0,
       barsInChord: 0,
       clickCount: 0,
-      totalClicks: 0
+      totalClicks: 0,
+      drumSeq: []
     };
 
     const mute = { bass: false, drums: false, clean: false, dist: false };
 
     function log(msg) {
-      ui.log.textContent += `\n${msg}`;
+      const now = new Date().toLocaleTimeString();
+      ui.log.textContent += `[${now}] ${msg}\n`;
       ui.log.scrollTop = ui.log.scrollHeight;
     }
 
     function meterToBeats(meter) {
-      return meter.split('/')[0] | 0;
+      return Number(meter.split('/')[0]) || 4;
     }
 
     function setStatePanel() {
-      ui.state.innerHTML = `<div>Levada: ${state.signatureTag || '—'}</div>`;
+      ui.state.innerHTML = `<div>Levada: ${state.signatureTag || '—'}</div><div>Key: ${state.key || '—'} ${state.quality}</div>`;
     }
 
     async function initAudio() {
       if (audio.ctx) return;
       audio.ctx = new (window.AudioContext || window.webkitAudioContext)();
-      
-      // ✅ Ganho de saída controlado
       audio.master = audio.ctx.createGain();
-      audio.master.gain.value = 0.7; // 🔊 Volume seguro para evitar clipping
-
-      // ✅ Compressor opcional
-      audio.compressor = audio.ctx.createDynamicsCompressor();
-      audio.compressor.threshold.value = -24;
-      audio.compressor.knee.value = 30;
-      audio.compressor.ratio.value = 12;
-      audio.compressor.attack.value = 0.003;
-      audio.compressor.release.value = 0.25;
-
       audio.mix = audio.ctx.createGain();
       audio.drumGain = audio.ctx.createGain();
       audio.bassGain = audio.ctx.createGain();
       audio.cleanGain = audio.ctx.createGain();
       audio.distGain = audio.ctx.createGain();
 
-      // ✅ Mix → Compressor → Master → Destino
-      audio.mix.connect(audio.compressor);
-      audio.compressor.connect(audio.master);
-      audio.master.connect(audio.ctx.destination);
+      // conservative default gains to avoid clipping
+      audio.master.gain.value = 0.9;
+      audio.drumGain.gain.value = 0.6;
+      audio.bassGain.gain.value = 0.45;
+      audio.cleanGain.gain.value = 0.45;
+      audio.distGain.gain.value = 0.35;
 
-      // ✅ Instrumentos → Mix
-      audio.drumGain.connect(audio.mix);
-      audio.bassGain.connect(audio.mix);
-      audio.cleanGain.connect(audio.mix);
-      audio.distGain.connect(audio.mix);
+      audio.master.connect(audio.mix);
+      audio.mix.connect(audio.ctx.destination);
 
-      // ✅ Ajuste de volume dos instrumentos
-      audio.drumGain.gain.value = 0.8;
-      audio.bassGain.gain.value = 0.7;
-      audio.cleanGain.gain.value = 0.6;
-      audio.distGain.gain.value = 0.6;
+      audio.drumGain.connect(audio.master);
+      audio.bassGain.connect(audio.master);
+      audio.cleanGain.connect(audio.master);
+      audio.distGain.connect(audio.master);
 
-      log('🔧 Pré-carregando áudios...');
-      await ensureSamples();
-      log('✅ Áudios carregados.');
+      log('🔧 Inicializando áudio e pré-carregando básicos...');
+      await ensureBasicSamples();
+      log('✅ Básicos carregados.');
     }
 
     async function loadBuffer(url) {
@@ -259,60 +240,68 @@
       }
     }
 
-    async function ensureSamples() {
+    async function ensureBasicSamples() {
       const promises = [];
-      for (const [key, url] of Object.entries(BASS_SAMPLES)) {
-        if (!state.buffers.bass[key]) {
-          promises.push(loadBuffer(url).then(buf => {
-            if (buf) state.buffers.bass[key] = buf;
-          }));
-        }
-      }
+      // drums
       for (const [key, name] of Object.entries(DRUMS)) {
         const url = `assets/${name}.mp3`;
         if (!state.buffers.drums[key]) {
-          promises.push(loadBuffer(url).then(buf => {
-            if (buf) state.buffers.drums[key] = buf;
-          }));
+          promises.push(loadBuffer(url).then(buf => { if (buf) state.buffers.drums[key] = buf; }));
+        }
+      }
+      // bass
+      for (const [key, url] of Object.entries(BASS_SAMPLES)) {
+        if (!state.buffers.bass[key]) {
+          promises.push(loadBuffer(url).then(buf => { if (buf) state.buffers.bass[key] = buf; }));
         }
       }
       await Promise.all(promises);
     }
 
-    function expandRhythm(pattern, totalSteps) {
-      const flat = pattern.join(' ').trim().split(/\s+/).filter(s => s);
-      const expanded = [];
-      let step = 0;
-      while (step < totalSteps) {
-        for (const symbol of flat) {
-          if (step >= totalSteps) break;
-          if (symbol === 'sm') {
-            expanded.push('sm');
-            for (let i = 1; i < 4; i++) if (step + i < totalSteps) expanded.push('-');
-            step += 4;
+    // expande um padrão para passos de semicolcheia (16 por compasso em 4/4)
+    function expandRhythm(patternArray, totalSteps) {
+      const joined = patternArray.join(' ').replace(/\s+/g, ' ').trim();
+      const tokens = [];
+      // extrai só tokens alfanuméricos e símbolos -, sm, etc.
+      joined.split(/\s+/).forEach(t => {
+        if (t) tokens.push(t);
+      });
+      const out = [];
+      let i = 0;
+      while (out.length < totalSteps) {
+        for (const token of tokens) {
+          if (out.length >= totalSteps) break;
+          if (token === 'sm') {
+            out.push('sm'); // assume 1 step (we handle densidade nos padrões)
+          } else if (token === '-') {
+            out.push('-');
           } else {
-            expanded.push(symbol);
-            step++;
+            out.push(token);
           }
         }
+        // safety break
+        i++; if (i>1000) break;
       }
-      return expanded;
+      // trim to totalSteps
+      return out.slice(0, totalSteps);
     }
 
     function buildBassAndChordPlan() {
       state.currentGroove = ALL_GROOVES[Math.floor(Math.random() * ALL_GROOVES.length)];
+      state.signatureTag = state.currentGroove.name;
       log(`🎲 Levada sorteada: ${state.currentGroove.name}`);
 
       state.meter = ui.meter.value === 'auto' ? state.currentGroove.meter : ui.meter.value;
-      const num = meterToBeats(state.meter);
-      const sixteenthsPerBar = num * 4;
-      const totalSteps = 16 * sixteenthsPerBar;
+      const beats = meterToBeats(state.meter);
+      const sixteenthsPerBar = beats * 4;
 
+      // escolher tonalidade e qualidade
       state.keyIdx = Math.floor(Math.random() * PITCHES.length);
       state.key = PITCHES[state.keyIdx];
       state.quality = Math.random() > 0.5 ? 'maj' : 'min';
       state.chordProgression = PROGRESSIONS[Math.floor(Math.random() * PROGRESSIONS.length)];
 
+      // calcular durações por acorde (em compassos) - aqui usamos 1 compasso por Grau por padrão, agrupando iguais
       const durations = [];
       let count = 1;
       for (let i = 1; i < state.chordProgression.length; i++) {
@@ -322,25 +311,29 @@
       durations.push(count);
       state.chordDurations = durations;
 
-      const fullPattern = [...state.currentGroove.bassRhythm];
-      const rhythm = expandRhythm(fullPattern, totalSteps);
+      const totalBars = state.chordDurations.reduce((a,b)=>a+b,0);
+      const totalSteps = sixteenthsPerBar * totalBars; // passos totais = semicolcheias por barra * barras da progressão
+
+      // preparar ritmo do baixo
+      const rhythm = expandRhythm(state.currentGroove.bassRhythm, totalSteps);
 
       const bassPlan = [];
       const chordPlan = [];
 
-      let barsInChord = 0;
       let chordIndex = 0;
+      let barsCounted = 0;
+      let stepsInCurrentBar = 0;
 
       for (let step = 0; step < totalSteps; step++) {
-        const isNewBar = (step % sixteenthsPerBar) === 0;
-        if (isNewBar && step > 0) {
-          barsInChord++;
-          if (barsInChord >= state.chordDurations[chordIndex]) {
+        if (stepsInCurrentBar === 0) {
+          // início de bar
+          if (barsCounted >= state.chordDurations[chordIndex]) {
             chordIndex = (chordIndex + 1) % state.chordProgression.length;
-            barsInChord = 0;
+            barsCounted = 0;
           }
         }
 
+        // determine degree and root
         const degree = state.chordProgression[chordIndex];
         const rootOffset = DEGREE_TO_ROOT[degree] || 0;
         const rootIdx = (state.keyIdx + rootOffset) % 12;
@@ -348,157 +341,245 @@
         const chordType = state.quality === 'maj' ? '' : 'm';
         const chordDisplay = CHORD_NAMES[rootIdx] + chordType;
 
-        const symbol = rhythm[step];
+        // bass symbol
+        const sym = rhythm[step] || '-';
         let bassNote = '-';
-
-        if (symbol === 'x') bassNote = 'X';
-        else if (symbol === '°') bassNote = '°';
-        else if (symbol === 'sm') bassNote = rootNote;
+        if (sym === 'sm' || sym === 'x') bassNote = rootNote;
+        else if (sym === '°') bassNote = 'X';
+        else if (sym !== '-') bassNote = rootNote; // fallback: tocar root
 
         bassPlan.push(bassNote);
         chordPlan.push({ note: rootNote, type: chordType, display: chordDisplay });
+
+        stepsInCurrentBar++;
+        if (stepsInCurrentBar >= sixteenthsPerBar) {
+          stepsInCurrentBar = 0;
+          barsCounted++;
+        }
       }
 
-      state.bassPlan = bassPlan.length > 0 ? bassPlan : ['-'];
-      state.chordPlan = chordPlan.length > 0 ? chordPlan : [{ note: 'C', type: '', display: 'C' }];
-      state.signatureTag = state.currentGroove.name;
+      // store
+      state.bassPlan = bassPlan.length ? bassPlan : ['-'];
+      state.chordPlan = chordPlan.length ? chordPlan : [{ note: 'C', type: '', display: 'C' }];
+      state.currentChordIndex = 0;
+      state.barsInChord = 0;
+
+      // preparar drum sequence baseado em drumPattern (intro+loop -> seq de tokens)
+      const drumParsed = parsePattern(state.currentGroove.drumPattern.join(' '));
+      const drumSeq = [...drumParsed.intro, ...drumParsed.loop];
+      // expand drumSeq para o mesmo totalSteps (repete o loop)
+      const drumExpanded = [];
+      while (drumExpanded.length < state.bassPlan.length) {
+        for (const t of drumSeq) {
+          if (drumExpanded.length >= state.bassPlan.length) break;
+          drumExpanded.push(t);
+        }
+      }
+      state.drumSeq = drumExpanded.slice(0, state.bassPlan.length);
+
       setStatePanel();
+
+      // pré-carregar guitarras necessárias (limpa e distorcida)
+      const guitarUrls = new Set();
+      for (const ch of state.chordPlan) {
+        const base = `${ch.note}${ch.type}`;
+        guitarUrls.add(`guitarraLimpa/${ch.note}/${base}.mp3`);
+        guitarUrls.add(`guitarraDistorcao/${ch.note}/${base}.mp3`);
+      }
+      const preloadPromises = [];
+      guitarUrls.forEach(url => {
+        if (!state.buffers.guitar[url]) {
+          preloadPromises.push(loadBuffer(url).then(buf => { if (buf) state.buffers.guitar[url] = buf; }));
+        }
+      });
+
+      Promise.all(preloadPromises).then(() => log('✅ Guitarras pré-carregadas para a progressão.'));
     }
 
-    function playClick(isStrong) {
+    function playClickAtTime(time, isStrong) {
       const ctx = audio.ctx;
       const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(audio.drumGain);
+      const g = ctx.createGain();
+      osc.connect(g);
+      g.connect(audio.drumGain);
       osc.frequency.value = isStrong ? 880 : 440;
-      gain.gain.value = isStrong ? 0.2 : 0.1;
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.05);
+      g.gain.setValueAtTime(0.0, time);
+      g.gain.linearRampToValueAtTime(isStrong ? 0.18 : 0.09, time + 0.002);
+      g.gain.linearRampToValueAtTime(0.0, time + 0.06);
+      osc.start(time);
+      osc.stop(time + 0.07);
     }
 
     function onPlay() {
-      if (state.running && !state.paused) return;
       if (!audio.ctx) initAudio();
+      if (state.running && !state.paused) return;
 
-      state.bpm = Number(ui.bpm.value);
+      state.bpm = Number(ui.bpm.value) || 100;
       state.sixteenthDur = 60 / state.bpm / 4;
 
       buildBassAndChordPlan();
 
       if (state.paused) {
         state.paused = false;
+        log('▶ Retomando reprodução.');
         return;
       }
 
+      // reset
       state.running = false;
       state.stepIndex = 0;
-      state.barsInChord = 0;
-      state.currentChordIndex = 0;
-      state.nextNoteTime = audio.ctx.currentTime + 0.01;
-
-      const num = meterToBeats(state.meter);
+      state.nextNoteTime = audio.ctx.currentTime + 0.05; // pequeno offset
+      const beats = meterToBeats(state.meter);
       const quarterDur = 60 / state.bpm;
-      state.totalClicks = num * 4;
+
+      state.totalClicks = beats; // um compasso de clique
       state.clickCount = 0;
 
-      const clickInterval = setInterval(() => {
-        if (state.clickCount >= state.totalClicks) {
-          clearInterval(clickInterval);
-          state.running = true;
-          log(`[PLAY] Iniciando: ${state.signatureTag} | ${state.meter}@${state.bpm} BPM`);
-          startScheduler();
-          return;
-        }
-        const isStrong = state.clickCount % num === 0;
-        playClick(isStrong);
-        state.clickCount++;
-      }, quarterDur * 1000);
+      // agendar clique(s) de contagem (usamos 1 compasso de contagem por padrão)
+      const startTime = audio.ctx.currentTime + 0.05;
+      for (let i = 0; i < state.totalClicks; i++) {
+        const t = startTime + i * quarterDur;
+        const isStrong = (i % beats) === 0;
+        playClickAtTime(t, isStrong);
+      }
+
+      const schedulerStartTime = startTime + state.totalClicks * quarterDur; // inicia após os cliques
+      const msDelay = Math.max(0, (schedulerStartTime - audio.ctx.currentTime) * 1000 + 10);
+
+      setTimeout(() => {
+        state.running = true;
+        state.nextNoteTime = schedulerStartTime;
+        log(`[PLAY] Iniciando: ${state.signatureTag} | ${state.meter}@${state.bpm} BPM`);
+        startScheduler();
+      }, msDelay);
     }
 
     function scheduler() {
       if (!state.running || state.paused) return;
-      const time = audio.ctx.currentTime;
-      while (state.nextNoteTime < time + 0.1) {
+      const lookahead = 0.12; // segundos para "pré-agendar"
+      const currentTime = audio.ctx.currentTime;
+      while (state.nextNoteTime < currentTime + lookahead) {
         scheduleStep();
       }
-      requestAnimationFrame(scheduler);
     }
 
     function scheduleStep() {
-      const stepIdx = state.stepIndex;
       const time = state.nextNoteTime;
-      const num = meterToBeats(state.meter);
-      const sixteenthsPerBar = num * 4;
+      const stepIdx = state.stepIndex;
+      const beats = meterToBeats(state.meter);
+      const sixteenthsPerBar = beats * 4;
       const isNewBar = (stepIdx % sixteenthsPerBar) === 0;
 
-      // Bateria
-      const drumPattern = parsePattern(state.currentGroove.drumPattern.join(' '), 'drum');
-      const drumSeq = [...drumPattern.intro, ...drumPattern.loop];
-      const drumSymbol = drumSeq[stepIdx % drumSeq.length];
-      if (drumSymbol && DRUMS[drumSymbol] && !mute.drums) {
-        const buf = state.buffers.drums[drumSymbol];
-        if (buf) {
+      // DRUMS
+      const drumToken = state.drumSeq[stepIdx % state.drumSeq.length];
+      if (drumToken && !mute.drums) {
+        // map drum token to sample key - here token 'ba' => bu, 'ca' => ca, 'ch' => ch
+        // Accept several tokens
+        let key = null;
+        if (/(ba|bumbo|bu)/i.test(drumToken)) key = 'bu';
+        else if (/(ca|caixa|c)/i.test(drumToken)) key = 'ca';
+        else if (/(ch|chimbal)/i.test(drumToken)) key = 'ch';
+        if (key && state.buffers.drums[key]) {
           const src = audio.ctx.createBufferSource();
-          src.buffer = buf;
-          src.connect(audio.drumGain);
+          const g = audio.ctx.createGain();
+          src.buffer = state.buffers.drums[key];
+          src.connect(g);
+          g.connect(audio.drumGain);
+          // small attack to avoid click
+          g.gain.setValueAtTime(0.0, time);
+          g.gain.linearRampToValueAtTime(1.0, time + 0.005);
+          g.gain.linearRampToValueAtTime(0.0, time + 0.2);
           src.start(time);
         }
       }
 
-      // Baixo
+      // BASS (sempre sincronizado com mesmo `time`)
       const bassKey = state.bassPlan[stepIdx % state.bassPlan.length];
-      if (bassKey !== '-' && !mute.bass) {
-        const buf = state.buffers.bass[bassKey];
+      if (bassKey && bassKey !== '-' && !mute.bass) {
+        const buf = state.buffers.bass[bassKey] || state.buffers.bass[bassKey];
         if (buf) {
           const src = audio.ctx.createBufferSource();
+          const g = audio.ctx.createGain();
           src.buffer = buf;
-          src.connect(audio.bassGain);
+          src.connect(g);
+          g.connect(audio.bassGain);
+          // soft attack to avoid initial clipping
+          g.gain.setValueAtTime(0.0, time);
+          g.gain.linearRampToValueAtTime(1.0, time + 0.01);
+          g.gain.linearRampToValueAtTime(0.0, time + state.sixteenthDur * 0.9); // release
           src.start(time);
         }
       }
 
-      // Guitarra
-      if (isNewBar && state.chordPlan.length > 0) {
+      // GUITAR: tocar no início do compasso (isNewBar)
+      if (isNewBar) {
+        const chordIdx = stepIdx % state.chordPlan.length;
+        const chord = state.chordPlan[chordIdx];
+        // update chord progress tracking
+        if (chord) {
+          if (!mute.clean) playChord(time, chord.note, chord.type, false);
+          if (!mute.dist) playChord(time, chord.note, chord.type, true);
+          ui.currentChord.textContent = chord.display;
+          // calcular quantos compassos até trocar (exibe)
+          // nota: state.barsInChord já conta como 0 no início do acorde
+          const barsLeft = Math.max(0, state.chordDurations[state.currentChordIndex] - state.barsInChord);
+          ui.chordTimer.textContent = `Próx: ${barsLeft} compasso(s)`;
+        }
+        // avançar contagem de barras por acorde (quando uma barra completa passar)
+        // Esse incremento é feito quando completarmos o bar; mas aqui estamos no início do bar: incrementar só se já passamos a barra
+        // Implementaremos incremento ao final do bar (quando stepIndex++ resultar em novo bar).
+      }
+
+      // avançar step e next time
+      state.stepIndex++;
+      // se completou um compasso, atualizar barsInChord e possivelmente trocar acorde
+      if ((state.stepIndex % (sixteenthsPerBar)) === 0) {
         state.barsInChord++;
         if (state.barsInChord >= state.chordDurations[state.currentChordIndex]) {
           state.currentChordIndex = (state.currentChordIndex + 1) % state.chordProgression.length;
           state.barsInChord = 0;
         }
-
-        const chordIdx = stepIdx % state.chordPlan.length;
-        const chord = state.chordPlan[chordIdx];
-        if (chord) {
-          if (!mute.clean) playChord(time, chord.note, chord.type, false);
-          if (!mute.dist) playChord(time, chord.note, chord.type, true);
-          ui.currentChord.textContent = chord.display;
-          const barsLeft = state.chordDurations[state.currentChordIndex] - state.barsInChord;
-          ui.chordTimer.textContent = `Próx: ${barsLeft} compasso(s)`;
-        }
       }
 
-      state.stepIndex++;
       state.nextNoteTime += state.sixteenthDur;
     }
 
     function playChord(time, note, type, isDistorted) {
       const folder = isDistorted ? 'guitarraDistorcao' : 'guitarraLimpa';
-      const url = `${folder}/${note}/${note}${type}.mp3`;
-      if (!state.buffers.guitar[url]) {
-        loadBuffer(url).then(buf => {
-          if (buf) {
-            state.buffers.guitar[url] = buf;
+      const base = `${note}${type}`;
+      const url = `${folder}/${note}/${base}.mp3`;
+      const buf = state.buffers.guitar[url];
+      if (buf) {
+        const src = audio.ctx.createBufferSource();
+        const g = audio.ctx.createGain();
+        src.buffer = buf;
+        src.connect(g);
+        g.connect(isDistorted ? audio.distGain : audio.cleanGain);
+        // gentle attack to avoid clipping on first chord
+        g.gain.setValueAtTime(0.0, time);
+        g.gain.linearRampToValueAtTime(1.0, time + 0.01);
+        // hold for 1 bar (approx) then fade
+        const beats = meterToBeats(state.meter);
+        const barDur = (60/state.bpm) * beats;
+        g.gain.linearRampToValueAtTime(0.0, time + Math.min(barDur * (state.chordDurations[state.currentChordIndex] || 1), barDur * 2));
+        src.start(time);
+      } else {
+        // se não carregado, tenta carregar e tocar quando estiver pronto
+        loadBuffer(url).then(b => {
+          if (b) {
+            state.buffers.guitar[url] = b;
             const src = audio.ctx.createBufferSource();
-            src.buffer = buf;
-            src.connect(isDistorted ? audio.distGain : audio.cleanGain);
+            const g = audio.ctx.createGain();
+            src.buffer = b;
+            src.connect(g);
+            g.connect(isDistorted ? audio.distGain : audio.cleanGain);
+            g.gain.setValueAtTime(0.0, time);
+            g.gain.linearRampToValueAtTime(1.0, time + 0.01);
             src.start(time);
+          } else {
+            log(`[AVISO] amostra de guitarra faltando: ${url}`);
           }
         });
-      } else {
-        const src = audio.ctx.createBufferSource();
-        src.buffer = state.buffers.guitar[url];
-        src.connect(isDistorted ? audio.distGain : audio.cleanGain);
-        src.start(time);
       }
     }
 
@@ -508,11 +589,16 @@
       const loopMatch = patternText.match(/\((.*?)\)/);
       if (introMatch) result.intro = introMatch[1].trim().split(/\s+/).filter(s => s);
       if (loopMatch) result.loop = loopMatch[1].trim().split(/\s+/).filter(s => s);
+      // if loop empty fallback to intro
+      if (!result.loop.length) result.loop = result.intro.slice();
       return result;
     }
 
     function onPause() {
-      if (state.running && !state.paused) state.paused = true;
+      if (state.running && !state.paused) {
+        state.paused = true;
+        log('⏸ Pausado.');
+      }
     }
 
     function onStop() {
@@ -521,24 +607,27 @@
       stopScheduler();
       ui.currentChord.textContent = '—';
       ui.chordTimer.textContent = '—';
+      state.stepIndex = 0;
+      log('⏹ Stopped.');
     }
 
     function startScheduler() {
       stopScheduler();
-      scheduler();
+      audio.schedulerTimer = setInterval(scheduler, 40);
     }
 
     function stopScheduler() {
-      if (audio.schedulerTimer) cancelAnimationFrame(audio.schedulerTimer);
+      if (audio.schedulerTimer) clearInterval(audio.schedulerTimer);
       audio.schedulerTimer = null;
     }
 
     function toggleMute(type, button) {
       mute[type] = !mute[type];
       button.dataset.mute = mute[type] ? 'on' : 'off';
-      const icon = mute[type] ? '🔇' : '🔊';
-      const label = button.textContent.split(' ')[1];
-      button.textContent = `${icon} ${label}`;
+      const icon = mute[type] ? '🔇' : (type === 'bass' ? '🎸' : (type === 'drums' ? '🥁' : '🎸'));
+      // maintain a short label after the icon
+      const labelMap = { bass: 'Baixo', drums: 'Bateria', clean: 'Limpa', dist: 'Distorção' };
+      button.textContent = `${icon} ${labelMap[type]}`;
       button.classList.toggle('muted', mute[type]);
     }
 
@@ -551,7 +640,7 @@
     ui.muteDist.addEventListener('click', () => toggleMute('dist', ui.muteDist));
 
     window.addEventListener('load', () => {
-      log('🔧 Pré-carregando áudios...');
+      log('Carregando interface... preparando áudio (pré-carregando amostras básicas).');
       initAudio();
     });
   </script>
