@@ -121,12 +121,13 @@
     const CHORD_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 
     const DRUMS = {
-      bu: 'bumbo',
-      ca: 'caixa',
-      ch: 'chimbal',
       ba: 'bumbo-ataque',
       cch:  'caixa-chimbal',
-      bch: 'bumbo-chimbal'
+      bch: 'bumbo-chimbal',
+      bu: 'bumbo',
+      ca: 'caixa',
+      ch: 'chimbal'
+      
     };
 
     // Bass sample mapping (expecting files like assets/bass-A.mp3, assets/bass-AS.mp3 ... )
@@ -651,6 +652,7 @@ else if (/^(ch|chimbal)$/i.test(drumToken)) key = 'ch';
   </script>
 </body>
 </html>
+
 
 
 
