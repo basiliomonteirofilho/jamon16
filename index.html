@@ -112,6 +112,7 @@
       bassGain: null,
       cleanGain: null,
       distGain: null,
+      compressor: null,
       schedulerTimer: null
     };
 
@@ -144,20 +145,20 @@
       {
         name: "Rock Básico",
         meter: "4/4",
-        drumPattern: ["[ba - ch - cch - ch - bch - ch bu cch - ch - bch - ch bu]", "(ba - ch - cch - ch - bch - ch bu cch - ch - bch - ch bu)"],
-        bassRhythm: ["(sm - sm - sm - sm - sm - sm - sm - sm -)", "(sm - sm - sm - sm - sm - sm - sm - sm -)"]
+        drumPattern: ["[bu - ch - bu - ch -]", "(bu - ch - bch - ch -)"],
+        bassRhythm: ["(sm - - - sm - - -)", "(sm - - - sm - - -)"]
       },
       {
         name: "Pop Sincopado",
         meter: "4/4",
-        drumPattern: ["[ba - ch - cch - ch - bch - ch bu cch - ch - bch - ch bu]", "(ba - ch - cch - ch - bch - ch bu cch - ch - bch - ch bu)"],
-        bassRhythm: ["(sm - sm - sm - sm - sm - sm - sm - sm -)", "(sm - sm - sm - sm - sm - sm - sm - sm -)"]
+        drumPattern: ["[bu ca - ca bu ca - ca]", "(ch ch ch ch ch ch ch ch)"],
+        bassRhythm: ["(sm - sm - sm - sm -)", "(sm - sm - sm - sm -)"]
       },
       {
         name: "Funk",
         meter: "4/4",
-        drumPattern: ["[ba - ch - cch - ch - bch - ch bu cch - ch - bch - ch bu]", "(ba - ch - cch - ch - bch - ch bu cch - ch - bch - ch bu)"],
-        bassRhythm: ["(sm - sm - sm - sm - sm - sm - sm - sm -)", "(sm - sm - sm - sm - sm - sm - sm - sm -)"]
+        drumPattern: ["[bu ca bu ca bu ca bu ca]", "(ch ch ch ch ch ch ch ch)"],
+        bassRhythm: ["(sm ° sm ° sm ° sm °)", "(sm ° sm ° sm ° sm °)"]
       }
     ];
 
@@ -205,20 +206,41 @@
     async function initAudio() {
       if (audio.ctx) return;
       audio.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      
+      // ✅ Ganho de saída controlado
       audio.master = audio.ctx.createGain();
+      audio.master.gain.value = 0.7; // 🔊 Volume seguro para evitar clipping
+
+      // ✅ Compressor opcional
+      audio.compressor = audio.ctx.createDynamicsCompressor();
+      audio.compressor.threshold.value = -24;
+      audio.compressor.knee.value = 30;
+      audio.compressor.ratio.value = 12;
+      audio.compressor.attack.value = 0.003;
+      audio.compressor.release.value = 0.25;
+
       audio.mix = audio.ctx.createGain();
       audio.drumGain = audio.ctx.createGain();
       audio.bassGain = audio.ctx.createGain();
       audio.cleanGain = audio.ctx.createGain();
       audio.distGain = audio.ctx.createGain();
 
-      audio.master.connect(audio.mix);
-      audio.mix.connect(audio.ctx.destination);
+      // ✅ Mix → Compressor → Master → Destino
+      audio.mix.connect(audio.compressor);
+      audio.compressor.connect(audio.master);
+      audio.master.connect(audio.ctx.destination);
 
-      audio.drumGain.connect(audio.master);
-      audio.bassGain.connect(audio.master);
-      audio.cleanGain.connect(audio.master);
-      audio.distGain.connect(audio.master);
+      // ✅ Instrumentos → Mix
+      audio.drumGain.connect(audio.mix);
+      audio.bassGain.connect(audio.mix);
+      audio.cleanGain.connect(audio.mix);
+      audio.distGain.connect(audio.mix);
+
+      // ✅ Ajuste de volume dos instrumentos
+      audio.drumGain.gain.value = 0.8;
+      audio.bassGain.gain.value = 0.7;
+      audio.cleanGain.gain.value = 0.6;
+      audio.distGain.gain.value = 0.6;
 
       log('🔧 Pré-carregando áudios...');
       await ensureSamples();
@@ -337,7 +359,6 @@
         chordPlan.push({ note: rootNote, type: chordType, display: chordDisplay });
       }
 
-      // ✅ Garante que os planos não sejam vazios
       state.bassPlan = bassPlan.length > 0 ? bassPlan : ['-'];
       state.chordPlan = chordPlan.length > 0 ? chordPlan : [{ note: 'C', type: '', display: 'C' }];
       state.signatureTag = state.currentGroove.name;
@@ -351,7 +372,7 @@
       osc.connect(gain);
       gain.connect(audio.drumGain);
       osc.frequency.value = isStrong ? 880 : 440;
-      gain.gain.value = isStrong ? 0.3 : 0.15;
+      gain.gain.value = isStrong ? 0.2 : 0.1;
       osc.start(ctx.currentTime);
       osc.stop(ctx.currentTime + 0.05);
     }
@@ -374,7 +395,7 @@
       state.stepIndex = 0;
       state.barsInChord = 0;
       state.currentChordIndex = 0;
-      state.nextNoteTime = audio.ctx.currentTime + 0.05; // ⏱️ Tempo inicial preciso
+      state.nextNoteTime = audio.ctx.currentTime + 0.01;
 
       const num = meterToBeats(state.meter);
       const quarterDur = 60 / state.bpm;
@@ -401,6 +422,7 @@
       while (state.nextNoteTime < time + 0.1) {
         scheduleStep();
       }
+      requestAnimationFrame(scheduler);
     }
 
     function scheduleStep() {
@@ -424,7 +446,7 @@
         }
       }
 
-      // ✅ BAIXO: sincronizado com o mesmo `time`
+      // Baixo
       const bassKey = state.bassPlan[stepIdx % state.bassPlan.length];
       if (bassKey !== '-' && !mute.bass) {
         const buf = state.buffers.bass[bassKey];
@@ -432,7 +454,7 @@
           const src = audio.ctx.createBufferSource();
           src.buffer = buf;
           src.connect(audio.bassGain);
-          src.start(time); // ✅ Mesmo tempo da bateria
+          src.start(time);
         }
       }
 
@@ -503,11 +525,11 @@
 
     function startScheduler() {
       stopScheduler();
-      audio.schedulerTimer = setInterval(scheduler, 50); // 🕒 Intervalo mais curto
+      scheduler();
     }
 
     function stopScheduler() {
-      if (audio.schedulerTimer) clearInterval(audio.schedulerTimer);
+      if (audio.schedulerTimer) cancelAnimationFrame(audio.schedulerTimer);
       audio.schedulerTimer = null;
     }
 
