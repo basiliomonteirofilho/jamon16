@@ -616,44 +616,39 @@ else if (/^(ch|chimbal)$/i.test(drumToken)) key = 'ch';
     }
 
     function playChord(time, note, type, isDistorted) {
-      const folder = isDistorted ? 'guitarraDistorcao' : 'guitarraLimpa';
-      const base = `${note}${type}`;
-      const url = `${folder}/${note}/${base}.mp3`;
-      const buf = state.buffers.guitar[url];
-      if (buf) {
-        const src = audio.ctx.createBufferSource();
-        const g = audio.ctx.createGain();
-        src.buffer = buf;
-        src.connect(g);
-g.connect(isDistorted ? audio.distGain : audio.cleanGain);
-// ataque suave
-g.gain.setValueAtTime(0.0, time);
-g.gain.linearRampToValueAtTime(1.0, time + 0.01);
+  const folder = isDistorted ? 'guitarraDistorcao' : 'guitarraLimpa';
+  const base = `${note}${type}`;
+  const url = `${folder}/${note}/${base}.mp3`;
+  const buf = state.buffers.guitar[url];
+  const currentTime = audio.ctx.currentTime;
 
-const beats = meterToBeats(state.meter);
-const barDur = (60/state.bpm) * beats;
-g.gain.linearRampToValueAtTime(0.0, time + Math.min(barDur * (state.chordDurations[state.currentChordIndex] || 1), barDur * 2));
+  // Se já passou do tempo, pula
+  if (time < currentTime - 0.02) return;
 
-src.start(time);
-      } else {
-        // se não carregado, tenta carregar e tocar quando estiver pronto
-        loadBuffer(url).then(b => {
-          if (b) {
-            state.buffers.guitar[url] = b;
-            const src = audio.ctx.createBufferSource();
-            const g = audio.ctx.createGain();
-            src.buffer = b;
-            src.connect(g);
-            g.connect(isDistorted ? audio.distGain : audio.cleanGain);
-            g.gain.setValueAtTime(0.0, time);
-            g.gain.linearRampToValueAtTime(1.0, time + 0.01);
-            src.start(time);
-          } else {
-            log(`[AVISO] amostra de guitarra faltando: ${url}`);
-          }
-        });
+  if (buf) {
+    playBuffer(buf, time, isDistorted);
+  } else {
+    loadBuffer(url).then(b => {
+      if (b && audio.ctx.currentTime < time + 0.1) {
+        state.buffers.guitar[url] = b;
+        playBuffer(b, time, isDistorted);
       }
-    }
+    });
+  }
+}
+
+function playBuffer(buffer, time, isDistorted) {
+  const src = audio.ctx.createBufferSource();
+  const g = audio.ctx.createGain();
+  src.buffer = buffer;
+  src.connect(g);
+  g.connect(isDistorted ? audio.distGain : audio.cleanGain);
+
+  g.gain.setValueAtTime(0.0, time);
+  g.gain.linearRampToValueAtTime(1.0, time + 0.01); // ataque rápido
+
+  src.start(time);
+}
 
     function parsePattern(patternText) {
   const result = { intro: [], loop: [] };
