@@ -22,6 +22,19 @@
     .slider-row { display: flex; align-items: center; gap: 10px; margin: 5px 0; }
     .slider-row label { width: 100px; }
     .slider-row input[type=range] { flex: 1; }
+    .chord-item {
+      display: inline-block;
+      padding: 6px 10px;
+      margin: 0 4px;
+      border-radius: 6px;
+      background: #eee;
+      transition: background 0.3s;
+    }
+    .chord-item.current {
+      background: #4CAF50;
+      color: white;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -33,6 +46,9 @@
   <div class="chord-display">
     <h2 class="chord-name" id="currentChord">—</h2>
     <div id="chordTimer">—</div>
+    <div id="chordProgression" style="margin-top: 10px; font-size: 1.2em; font-family: monospace;">
+      <!-- Os acordes aparecerão aqui -->
+    </div>
   </div>
 
   <div class="card">
@@ -378,9 +394,9 @@
           if (sym === 'x') {
             bassNote = 'x';
           } else if (sym === '°') {
-            bassNote = '°'; // corte, sem som
+            bassNote = '°';
           } else if (sym === 'sm' || sym === '-') {
-            bassNote = '-'; // sustenta
+            bassNote = '-';
           } else if (sym === 'bo') {
             bassNote = rootNote;
           } else if (sym === 'bs') {
@@ -398,6 +414,15 @@
       state.chordPlan = chordPlan;
       state.currentChordIndex = 0;
       state.barsInChord = 0;
+
+      // === GERA A PROGRESSÃO VISUAL DE ACORDES ===
+      const progEl = document.getElementById('chordProgression');
+      if (progEl && state.chordPlan.length > 0) {
+        const chordLabels = state.chordPlan.map(ch => ch.display);
+        progEl.innerHTML = chordLabels
+          .map((label, i) => `<span class="chord-item" data-index="${i}">${label}</span>`)
+          .join(' ');
+      }
 
       const drumParsed = parsePattern(state.currentGroove.drumPattern.join(' '));
       const drumSeq = [...drumParsed.intro, ...drumParsed.loop];
@@ -563,7 +588,6 @@
       // BASS
       const bassCommand = state.bassPlan[stepIdx % state.bassPlan.length];
       if (!mute.bass) {
-        // Corta nota anterior em qualquer caso (exceto '-')
         if (state.lastBassGainNode && bassCommand !== '-' && bassCommand !== '°' && bassCommand !== 'x') {
           state.lastBassGainNode.gain.cancelScheduledValues(time);
           state.lastBassGainNode.gain.setValueAtTime(state.lastBassGainNode.gain.value, time);
@@ -608,12 +632,10 @@
             state.lastBassGainNode = g;
           }
         }
-        // Se for '-', mantém a nota anterior tocando
       }
 
       // GUITAR
       if (isNewBar) {
-        // Corta acorde anterior
         if (state.lastCleanSource) {
           state.lastCleanSource.stop(time);
           state.lastCleanSource = null;
@@ -624,24 +646,20 @@
         }
 
         const chord = state.chordPlan[state.currentChordIndex];
-                if (chord) {
-          // Atualiza o display no tempo exato do áudio
-          const displayTime = time - audio.ctx.currentTime;
-          if (displayTime < 0.1) {
-            // Se for tocar em breve ou já passou, atualiza agora
-            ui.currentChord.textContent = chord.display;
-            const barsLeft = state.chordDurations[state.currentChordIndex] - state.barsInChord;
-            ui.chordTimer.textContent = `Próx: ${barsLeft} compasso(s)`;
-          } else {
-            // Se for tocar daqui a pouco, agenda a atualização visual
-            setTimeout(() => {
-              ui.currentChord.textContent = chord.display;
-              const barsLeft = state.chordDurations[state.currentChordIndex] - state.barsInChord;
-              ui.chordTimer.textContent = `Próx: ${barsLeft} compasso(s)`;
-            }, displayTime * 1000 - 50); // 50ms de antecedência visual
+        if (chord) {
+          ui.currentChord.textContent = chord.display;
+
+          const barsLeft = state.chordDurations[state.currentChordIndex] - state.barsInChord;
+          ui.chordTimer.textContent = `Próx: ${barsLeft} compasso(s)`;
+
+          // Destaca o acorde atual na progressão
+          document.querySelectorAll('.chord-item.current').forEach(el => el.classList.remove('current'));
+          const items = document.querySelectorAll('.chord-item');
+          const currentIndex = state.currentChordIndex % items.length;
+          if (items[currentIndex]) {
+            items[currentIndex].classList.add('current');
           }
 
-          // Toca o acorde
           if (!mute.clean) playChord(time, chord.note, chord.type, false);
           if (!mute.dist) playChord(time, chord.note, chord.type, true);
         }
@@ -710,6 +728,9 @@
       state.lastBassGainNode = null;
       state.lastCleanSource = null;
       state.lastDistSource = null;
+
+      // Limpa destaque
+      document.querySelectorAll('.chord-item.current').forEach(el => el.classList.remove('current'));
 
       log('⏹ Stopped.');
     }
