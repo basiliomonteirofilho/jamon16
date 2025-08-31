@@ -19,9 +19,10 @@
     .footer { font-size: 0.8em; color: #666; margin-top: 10px; }
     .pill { display: inline-block; background: #000; color: #fff; padding: 4px 8px; border-radius: 12px; font-size: 0.8em; }
     #log { height: 120px; overflow:auto; white-space: pre-wrap; margin-top:10px; }
-    .slider-row { display: flex; align-items: center; gap: 10px; margin: 5px 0; }
-    .slider-row label { width: 100px; }
-    .slider-row input[type=range] { flex: 1; }
+    .volume-row { margin: 10px 0; }
+    .volume-row label { width: 70px; text-align: right; margin-right: 8px; }
+    .volume-row input[type="range"] { width: 100px; }
+    .volume-row button { margin-left: 8px; }
   </style>
 </head>
 <body>
@@ -42,11 +43,24 @@
       <button id="btnStop" class="danger">⏹ Stop</button>
       <button id="btnSave" class="primary">💾 Salvar 4 min (MP3)</button>
 
-      <div style="margin-top: 10px;">
-        <button id="muteBass" data-mute="off">🎸 Baixo</button>
-        <button id="muteDrums" data-mute="off">🥁 Bateria</button>
-        <button id="muteClean" data-mute="off">🎸 Limpa</button>
-        <button id="muteDist" data-mute="off">🔥 Distorção</button>
+      <!-- Sliders de Volume -->
+      <div class="volume-row">
+        <label>Baixo</label>
+        <input type="range" id="volBass" min="0" max="1" step="0.01" value="0.45">
+        <button id="muteBass" data-mute="off">🎸</button>
+
+        <label>Bateria</label>
+        <input type="range" id="volDrums" min="0" max="1" step="0.01" value="0.6">
+        <button id="muteDrums" data-mute="off">🥁</button>
+      </div>
+      <div class="volume-row">
+        <label>Limpa</label>
+        <input type="range" id="volClean" min="0" max="1" step="0.01" value="0.45">
+        <button id="muteClean" data-mute="off">🎸</button>
+
+        <label>Distorção</label>
+        <input type="range" id="volDist" min="0" max="1" step="0.01" value="0.35">
+        <button id="muteDist" data-mute="off">🔥</button>
       </div>
 
       <div class="row">
@@ -66,31 +80,6 @@
           <option>7/4</option>
         </select>
       </div>
-
-      <!-- Sliders de Volume -->
-      <div style="margin-top: 15px;">
-        <h3>Controle de Volume</h3>
-        <div class="slider-row">
-          <label>Baixo</label>
-          <input type="range" id="volBass" min="0" max="1" step="0.01" value="0.45">
-          <span id="volBassLabel">45%</span>
-        </div>
-        <div class="slider-row">
-          <label>Bateria</label>
-          <input type="range" id="volDrums" min="0" max="1" step="0.01" value="0.6">
-          <span id="volDrumsLabel">60%</span>
-        </div>
-        <div class="slider-row">
-          <label>Limpa</label>
-          <input type="range" id="volClean" min="0" max="1" step="0.01" value="0.45">
-          <span id="volCleanLabel">45%</span>
-        </div>
-        <div class="slider-row">
-          <label>Distorcida</label>
-          <input type="range" id="volDist" min="0" max="1" step="0.01" value="0.35">
-          <span id="volDistLabel">35%</span>
-        </div>
-      </div>
     </div>
 
     <div class="panel">
@@ -108,6 +97,7 @@
           <li><b>guitarraDistorcao/[nota]/[nota][tipo].mp3</b></li>
           <li><b>assets/bumbo.mp3</b>, <b>assets/caixa.mp3</b>, <b>assets/chimbal.mp3</b></li>
           <li><b>assets/bass-A.mp3</b>, <b>assets/bass-AS.mp3</b>, etc. (A, AS, B, C, CS, ...)</li>
+          <li><b>assets/bass-muted.mp3</b> → para ghost notes (x)</li>
         </ul>
       </div>
     </div>
@@ -125,20 +115,16 @@
       muteDrums: document.getElementById('muteDrums'),
       muteClean: document.getElementById('muteClean'),
       muteDist: document.getElementById('muteDist'),
+      volBass: document.getElementById('volBass'),
+      volDrums: document.getElementById('volDrums'),
+      volClean: document.getElementById('volClean'),
+      volDist: document.getElementById('volDist'),
       bpm: document.getElementById('bpm'),
       meter: document.getElementById('meter'),
       state: document.getElementById('state'),
       log: document.getElementById('log'),
       currentChord: document.getElementById('currentChord'),
-      chordTimer: document.getElementById('chordTimer'),
-      volBass: document.getElementById('volBass'),
-      volDrums: document.getElementById('volDrums'),
-      volClean: document.getElementById('volClean'),
-      volDist: document.getElementById('volDist'),
-      volBassLabel: document.getElementById('volBassLabel'),
-      volDrumsLabel: document.getElementById('volDrumsLabel'),
-      volCleanLabel: document.getElementById('volCleanLabel'),
-      volDistLabel: document.getElementById('volDistLabel')
+      chordTimer: document.getElementById('chordTimer')
     };
 
     const audio = {
@@ -170,21 +156,20 @@
     for (const p of PITCHES) {
       BASS_SAMPLES[p] = `assets/bass-${p}.mp3`;
     }
-    BASS_SAMPLES['x'] = 'assets/bass-muted.mp3'; // ghost note
-    BASS_SAMPLES['°'] = 'assets/bass-muted.mp3'; // muted
+    BASS_SAMPLES['X'] = 'assets/bass-muted.mp3';
 
     const ALL_GROOVES = [
       {
         name: "Rock Básico",
         meter: "4/4",
         drumPattern: ["ba - ch - cch - ch - bch - ch - cch - ch bu", "ba - ch - cch - ch - bch - ch - cch - ch bu"],
-        bassRhythm: ["bo - sm - bo - sm - bo - sm - bo bo bo bo", "bo - sm - bo - sm - bo - sm - bo bo bo bo"]
+        bassRhythm: ["bo - sm - bo - sm - bo - sm - bo bo bo bo", "bo - sm - bo - sm - bo - sm - bo x bo bo"]
       },
       {
         name: "Samba",
         meter: "2/4",
         drumPattern: ["bch - ch bu bch - ch bu", "bch - ch bu bch - ch -"],
-        bassRhythm: ["bo - - bo bo - - bo", "bo - - bo bo - - bo"]
+        bassRhythm: ["bo - - bo bo - - bo", "bo ° - bo bo x - bo"]
       }
     ];
 
@@ -217,7 +202,10 @@
       clickCount: 0,
       totalClicks: 0,
       drumSeq: [],
-      lastBassNote: null // mantém a nota anterior ativa
+      bassSource: null,
+      bassGainNode: null,
+      lastCleanSource: null,
+      lastDistSource: null
     };
 
     const mute = { bass: false, drums: false, clean: false, dist: false };
@@ -265,21 +253,22 @@
         audio.cleanGain.connect(audio.master);
         audio.distGain.connect(audio.master);
 
+        // Atualiza volume com sliders
+        function updateVolume() {
+          audio.bassGain.gain.value = Number(ui.volBass.value);
+          audio.drumGain.gain.value = Number(ui.volDrums.value);
+          audio.cleanGain.gain.value = Number(ui.volClean.value);
+          audio.distGain.gain.value = Number(ui.volDist.value);
+        }
+        updateVolume();
+        ui.volBass.addEventListener('input', updateVolume);
+        ui.volDrums.addEventListener('input', updateVolume);
+        ui.volClean.addEventListener('input', updateVolume);
+        ui.volDist.addEventListener('input', updateVolume);
+
         log('🔧 Inicializando áudio e pré-carregando básicos...');
         await ensureBasicSamples();
         log('✅ Básicos carregados.');
-
-        // Vincular sliders
-        ui.volBass.addEventListener('input', () => { audio.bassGain.gain.value = parseFloat(ui.volBass.value); ui.volBassLabel.textContent = Math.round(ui.volBass.value * 100) + '%'; });
-        ui.volDrums.addEventListener('input', () => { audio.drumGain.gain.value = parseFloat(ui.volDrums.value); ui.volDrumsLabel.textContent = Math.round(ui.volDrums.value * 100) + '%'; });
-        ui.volClean.addEventListener('input', () => { audio.cleanGain.gain.value = parseFloat(ui.volClean.value); ui.volCleanLabel.textContent = Math.round(ui.volClean.value * 100) + '%'; });
-        ui.volDist.addEventListener('input', () => { audio.distGain.gain.value = parseFloat(ui.volDist.value); ui.volDistLabel.textContent = Math.round(ui.volDist.value * 100) + '%'; });
-
-        // Inicializar labels
-        ui.volBassLabel.textContent = '45%';
-        ui.volDrumsLabel.textContent = '60%';
-        ui.volCleanLabel.textContent = '45%';
-        ui.volDistLabel.textContent = '35%';
       })();
 
       return initPromise;
@@ -365,17 +354,21 @@
         for (let stepInBar = 0; stepInBar < sixteenthsPerBar; stepInBar++) {
           const step = bar * sixteenthsPerBar + stepInBar;
           const sym = rhythm[step] || '-';
-          let bassNote = null;
+          let bassNote = '-';
 
-          if (sym === 'x' || sym === '°') {
-            bassNote = sym; // ghost ou mute
-          } else if (sym === 'sm' || sym === '-') {
-            bassNote = '-'; // sustenta
+          if (sym === 'sm' || sym === '-') {
+            bassNote = '-';
           } else if (sym === 'bo') {
             bassNote = rootNote;
           } else if (sym === 'bs') {
             const fifthIdx = (rootIdx + 7) % 12;
             bassNote = PITCHES[fifthIdx];
+          } else if (sym === 'bx') {
+            bassNote = rootNote;
+          } else if (sym === 'x') {
+            bassNote = 'x';
+          } else if (sym === '°') {
+            bassNote = '°';
           } else {
             bassNote = rootNote;
           }
@@ -388,8 +381,8 @@
       state.chordPlan = chordPlan;
       state.currentChordIndex = 0;
       state.barsInChord = 0;
-      state.lastBassNote = null; // reset
 
+      // Preparar sequência de bateria
       const drumParsed = parsePattern(state.currentGroove.drumPattern.join(' '));
       const drumSeq = [...drumParsed.intro, ...drumParsed.loop];
       const drumExpanded = [];
@@ -403,6 +396,7 @@
 
       setStatePanel();
 
+      // Pré-carregar guitarras
       const guitarUrls = new Set();
       for (const ch of state.chordPlan) {
         const base = `${ch.note}${ch.type}`;
@@ -422,9 +416,9 @@
       });
 
       return Promise.all(preloadPromises).then(() => {
-        log('✅ Guitarras pré-carregadas.');
+        log('✅ Guitarras pré-carregadas para a progressão (ou tentadas).');
       }).catch(() => {
-        log('⚠️ Preload de guitarras terminou com erros.');
+        log('⚠️ Preload de guitarras terminou com alguns erros.');
       });
     }
 
@@ -552,11 +546,18 @@
       }
 
       // BASS
-      const bassCommand = state.bassPlan[stepIdx % state.bassPlan.length];
-      if (!mute.bass && bassCommand !== '-' && bassCommand !== null) {
-        if (bassCommand === 'x' || bassCommand === '°') {
-          // Toca ghost note (bass-muted.mp3)
-          const buf = state.buffers.bass[bassCommand];
+      const bassKey = state.bassPlan[stepIdx % state.bassPlan.length];
+      if (!mute.bass) {
+        if (bassKey === '°') {
+          if (state.bassGainNode) {
+            state.bassGainNode.gain.cancelScheduledValues(time);
+            state.bassGainNode.gain.setValueAtTime(state.bassGainNode.gain.value, time);
+            state.bassGainNode.gain.linearRampToValueAtTime(0.0, time + 0.02);
+            state.bassSource = null;
+            state.bassGainNode = null;
+          }
+        } else if (bassKey === 'x') {
+          const buf = state.buffers.bass['X'];
           if (buf) {
             const src = audio.ctx.createBufferSource();
             const g = audio.ctx.createGain();
@@ -564,14 +565,17 @@
             src.connect(g);
             g.connect(audio.bassGain);
             g.gain.setValueAtTime(0.0, time);
-            g.gain.linearRampToValueAtTime(0.8, time + 0.01);
-            g.gain.linearRampToValueAtTime(0.0, time + state.sixteenthDur * 0.9);
+            g.gain.linearRampToValueAtTime(0.9, time + 0.01);
+            g.gain.linearRampToValueAtTime(0.0, time + state.sixteenthDur * 0.8);
             src.start(time);
           }
-          state.lastBassNote = null; // interrompe sustentação
-        } else {
-          // Nova nota (inicia sustentação)
-          const buf = state.buffers.bass[bassCommand];
+        } else if (bassKey !== '-' && bassKey !== '°') {
+          if (state.bassGainNode) {
+            state.bassGainNode.gain.cancelScheduledValues(time);
+            state.bassGainNode.gain.setValueAtTime(state.bassGainNode.gain.value, time);
+            state.bassGainNode.gain.linearRampToValueAtTime(0.0, time + 0.02);
+          }
+          const buf = state.buffers.bass[bassKey];
           if (buf) {
             const src = audio.ctx.createBufferSource();
             const g = audio.ctx.createGain();
@@ -580,18 +584,23 @@
             g.connect(audio.bassGain);
             g.gain.setValueAtTime(0.0, time);
             g.gain.linearRampToValueAtTime(1.0, time + 0.01);
-            g.gain.setTargetAtTime(0.7, time + 0.05, 0.05); // sustenta
             src.start(time);
-            state.lastBassNote = bassCommand;
+            state.bassSource = src;
+            state.bassGainNode = g;
           }
         }
-      } else if (bassCommand === '-' && !mute.bass && state.lastBassNote) {
-        // Sustenta a nota anterior
-        // Nada a fazer: a nota anterior já está tocando e foi configurada com sustain
       }
 
-      // GUITAR
+      // GUITAR: toca no início do compasso
       if (isNewBar) {
+        // Parar acorde anterior
+        if (state.lastCleanSource && !mute.clean) {
+          state.lastCleanSource.stop(time);
+        }
+        if (state.lastDistSource && !mute.dist) {
+          state.lastDistSource.stop(time);
+        }
+
         const chord = state.chordPlan[state.currentChordIndex];
         if (chord) {
           if (!mute.clean) playChord(time, chord.note, chord.type, false);
@@ -603,6 +612,7 @@
       }
 
       state.stepIndex++;
+
       if (isNewBar) {
         state.barsInChord++;
         if (state.barsInChord >= state.chordDurations[state.currentChordIndex]) {
@@ -631,6 +641,12 @@
         g.gain.setValueAtTime(0.0, time);
         g.gain.linearRampToValueAtTime(1.0, time + 0.01);
         src.start(time);
+
+        if (isDistorted) {
+          state.lastDistSource = src;
+        } else {
+          state.lastCleanSource = src;
+        }
       } else {
         log(`⚠️ Buffer de guitarra faltando: ${url}`);
       }
@@ -650,7 +666,16 @@
       ui.currentChord.textContent = '—';
       ui.chordTimer.textContent = '—';
       state.stepIndex = 0;
-      state.lastBassNote = null;
+
+      // Limpar sons ativos
+      if (state.bassSource) {
+        state.bassSource.stop(0);
+        state.bassSource = null;
+        state.bassGainNode = null;
+      }
+      if (state.lastCleanSource) { state.lastCleanSource.stop(0); state.lastCleanSource = null; }
+      if (state.lastDistSource) { state.lastDistSource.stop(0); state.lastDistSource = null; }
+
       log('⏹ Stopped.');
     }
 
