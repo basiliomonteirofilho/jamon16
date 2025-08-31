@@ -19,6 +19,9 @@
     .footer { font-size: 0.8em; color: #666; margin-top: 10px; }
     .pill { display: inline-block; background: #000; color: #fff; padding: 4px 8px; border-radius: 12px; font-size: 0.8em; }
     #log { height: 120px; overflow:auto; white-space: pre-wrap; margin-top:10px; }
+    .slider-row { display: flex; align-items: center; gap: 10px; margin: 5px 0; }
+    .slider-row label { width: 100px; }
+    .slider-row input[type=range] { flex: 1; }
   </style>
 </head>
 <body>
@@ -63,6 +66,31 @@
           <option>7/4</option>
         </select>
       </div>
+
+      <!-- Sliders de Volume -->
+      <div style="margin-top: 15px;">
+        <h3>Controle de Volume</h3>
+        <div class="slider-row">
+          <label>Baixo</label>
+          <input type="range" id="volBass" min="0" max="1" step="0.01" value="0.45">
+          <span id="volBassLabel">45%</span>
+        </div>
+        <div class="slider-row">
+          <label>Bateria</label>
+          <input type="range" id="volDrums" min="0" max="1" step="0.01" value="0.6">
+          <span id="volDrumsLabel">60%</span>
+        </div>
+        <div class="slider-row">
+          <label>Limpa</label>
+          <input type="range" id="volClean" min="0" max="1" step="0.01" value="0.45">
+          <span id="volCleanLabel">45%</span>
+        </div>
+        <div class="slider-row">
+          <label>Distorcida</label>
+          <input type="range" id="volDist" min="0" max="1" step="0.01" value="0.35">
+          <span id="volDistLabel">35%</span>
+        </div>
+      </div>
     </div>
 
     <div class="panel">
@@ -102,7 +130,15 @@
       state: document.getElementById('state'),
       log: document.getElementById('log'),
       currentChord: document.getElementById('currentChord'),
-      chordTimer: document.getElementById('chordTimer')
+      chordTimer: document.getElementById('chordTimer'),
+      volBass: document.getElementById('volBass'),
+      volDrums: document.getElementById('volDrums'),
+      volClean: document.getElementById('volClean'),
+      volDist: document.getElementById('volDist'),
+      volBassLabel: document.getElementById('volBassLabel'),
+      volDrumsLabel: document.getElementById('volDrumsLabel'),
+      volCleanLabel: document.getElementById('volCleanLabel'),
+      volDistLabel: document.getElementById('volDistLabel')
     };
 
     const audio = {
@@ -134,7 +170,8 @@
     for (const p of PITCHES) {
       BASS_SAMPLES[p] = `assets/bass-${p}.mp3`;
     }
-    BASS_SAMPLES['X'] = 'assets/bass-muted.mp3';
+    BASS_SAMPLES['x'] = 'assets/bass-muted.mp3'; // ghost note
+    BASS_SAMPLES['°'] = 'assets/bass-muted.mp3'; // muted
 
     const ALL_GROOVES = [
       {
@@ -179,7 +216,8 @@
       barsInChord: 0,
       clickCount: 0,
       totalClicks: 0,
-      drumSeq: []
+      drumSeq: [],
+      lastBassNote: null // mantém a nota anterior ativa
     };
 
     const mute = { bass: false, drums: false, clean: false, dist: false };
@@ -230,6 +268,18 @@
         log('🔧 Inicializando áudio e pré-carregando básicos...');
         await ensureBasicSamples();
         log('✅ Básicos carregados.');
+
+        // Vincular sliders
+        ui.volBass.addEventListener('input', () => { audio.bassGain.gain.value = parseFloat(ui.volBass.value); ui.volBassLabel.textContent = Math.round(ui.volBass.value * 100) + '%'; });
+        ui.volDrums.addEventListener('input', () => { audio.drumGain.gain.value = parseFloat(ui.volDrums.value); ui.volDrumsLabel.textContent = Math.round(ui.volDrums.value * 100) + '%'; });
+        ui.volClean.addEventListener('input', () => { audio.cleanGain.gain.value = parseFloat(ui.volClean.value); ui.volCleanLabel.textContent = Math.round(ui.volClean.value * 100) + '%'; });
+        ui.volDist.addEventListener('input', () => { audio.distGain.gain.value = parseFloat(ui.volDist.value); ui.volDistLabel.textContent = Math.round(ui.volDist.value * 100) + '%'; });
+
+        // Inicializar labels
+        ui.volBassLabel.textContent = '45%';
+        ui.volDrumsLabel.textContent = '60%';
+        ui.volCleanLabel.textContent = '45%';
+        ui.volDistLabel.textContent = '35%';
       })();
 
       return initPromise;
@@ -279,108 +329,104 @@
     }
 
     async function buildBassAndChordPlan() {
-  state.currentGroove = ALL_GROOVES[Math.floor(Math.random() * ALL_GROOVES.length)];
-  state.signatureTag = state.currentGroove.name;
-  log(`🎲 Levada sorteada: ${state.currentGroove.name}`);
+      state.currentGroove = ALL_GROOVES[Math.floor(Math.random() * ALL_GROOVES.length)];
+      state.signatureTag = state.currentGroove.name;
+      log(`🎲 Levada sorteada: ${state.currentGroove.name}`);
 
-  state.meter = ui.meter.value === 'auto' ? state.currentGroove.meter : ui.meter.value;
-  const beats = meterToBeats(state.meter);
-  const sixteenthsPerBar = beats * 4;
+      state.meter = ui.meter.value === 'auto' ? state.currentGroove.meter : ui.meter.value;
+      const beats = meterToBeats(state.meter);
+      const sixteenthsPerBar = beats * 4;
 
-  state.keyIdx = Math.floor(Math.random() * PITCHES.length);
-  state.key = PITCHES[state.keyIdx];
-  state.quality = Math.random() > 0.5 ? 'maj' : 'min';
-  state.chordProgression = PROGRESSIONS[Math.floor(Math.random() * PROGRESSIONS.length)];
+      state.keyIdx = Math.floor(Math.random() * PITCHES.length);
+      state.key = PITCHES[state.keyIdx];
+      state.quality = Math.random() > 0.5 ? 'maj' : 'min';
+      state.chordProgression = PROGRESSIONS[Math.floor(Math.random() * PROGRESSIONS.length)];
 
-  // Cada número na progressão = 1 compasso
-  const totalBars = Math.min(state.chordProgression.length, 64); // limite de 64 compassos
-  const totalSteps = sixteenthsPerBar * totalBars;
+      const totalBars = Math.min(state.chordProgression.length, 64);
+      const totalSteps = sixteenthsPerBar * totalBars;
 
-  // Cada acorde dura 1 compasso
-  state.chordDurations = Array(state.chordProgression.length).fill(1); // 1 compasso por acorde
+      state.chordDurations = Array(state.chordProgression.length).fill(1);
 
-  const rhythm = expandRhythm(state.currentGroove.bassRhythm, totalSteps);
+      const rhythm = expandRhythm(state.currentGroove.bassRhythm, totalSteps);
 
-  const bassPlan = [];
-  const chordPlan = [];
+      const bassPlan = [];
+      const chordPlan = [];
 
-  for (let bar = 0; bar < totalBars; bar++) {
-    const degree = state.chordProgression[bar];
-    const rootOffset = DEGREE_TO_ROOT[degree] || 0;
-    const rootIdx = (state.keyIdx + rootOffset) % 12;
-    const rootNote = PITCHES[rootIdx];
-    const chordType = state.quality === 'maj' ? '' : 'm';
-    const chordDisplay = CHORD_NAMES[rootIdx] + chordType;
+      for (let bar = 0; bar < totalBars; bar++) {
+        const degree = state.chordProgression[bar];
+        const rootOffset = DEGREE_TO_ROOT[degree] || 0;
+        const rootIdx = (state.keyIdx + rootOffset) % 12;
+        const rootNote = PITCHES[rootIdx];
+        const chordType = state.quality === 'maj' ? '' : 'm';
+        const chordDisplay = CHORD_NAMES[rootIdx] + chordType;
 
-    chordPlan.push({ note: rootNote, type: chordType, display: chordDisplay });
+        chordPlan.push({ note: rootNote, type: chordType, display: chordDisplay });
 
-    // Preenche o compasso inteiro com o mesmo acorde para o baixo
-    for (let stepInBar = 0; stepInBar < sixteenthsPerBar; stepInBar++) {
-      const step = bar * sixteenthsPerBar + stepInBar;
-      const sym = rhythm[step] || '-';
-      let bassNote = '-';
+        for (let stepInBar = 0; stepInBar < sixteenthsPerBar; stepInBar++) {
+          const step = bar * sixteenthsPerBar + stepInBar;
+          const sym = rhythm[step] || '-';
+          let bassNote = null;
 
-      if (sym === 'sm' || sym === '-') {
-        bassNote = '-';
-      } else if (sym === 'bo') {
-        bassNote = rootNote;
-      } else if (sym === 'bs') {
-        const fifthIdx = (rootIdx + 7) % 12;
-        bassNote = PITCHES[fifthIdx];
-      } else if (sym === 'bx') {
-        bassNote = rootNote;
-      } else {
-        bassNote = rootNote;
+          if (sym === 'x' || sym === '°') {
+            bassNote = sym; // ghost ou mute
+          } else if (sym === 'sm' || sym === '-') {
+            bassNote = '-'; // sustenta
+          } else if (sym === 'bo') {
+            bassNote = rootNote;
+          } else if (sym === 'bs') {
+            const fifthIdx = (rootIdx + 7) % 12;
+            bassNote = PITCHES[fifthIdx];
+          } else {
+            bassNote = rootNote;
+          }
+
+          bassPlan.push(bassNote);
+        }
       }
 
-      bassPlan.push(bassNote);
+      state.bassPlan = bassPlan;
+      state.chordPlan = chordPlan;
+      state.currentChordIndex = 0;
+      state.barsInChord = 0;
+      state.lastBassNote = null; // reset
+
+      const drumParsed = parsePattern(state.currentGroove.drumPattern.join(' '));
+      const drumSeq = [...drumParsed.intro, ...drumParsed.loop];
+      const drumExpanded = [];
+      while (drumExpanded.length < state.bassPlan.length) {
+        for (const t of drumSeq) {
+          if (drumExpanded.length >= state.bassPlan.length) break;
+          drumExpanded.push(t);
+        }
+      }
+      state.drumSeq = drumExpanded.slice(0, state.bassPlan.length);
+
+      setStatePanel();
+
+      const guitarUrls = new Set();
+      for (const ch of state.chordPlan) {
+        const base = `${ch.note}${ch.type}`;
+        guitarUrls.add(`guitarraLimpa/${ch.note}/${base}.mp3`);
+        guitarUrls.add(`guitarraDistorcao/${ch.note}/${base}.mp3`);
+      }
+
+      const preloadPromises = [];
+      guitarUrls.forEach(url => {
+        if (!state.buffers.guitar) state.buffers.guitar = {};
+        if (!state.buffers.guitar[url]) {
+          const p = loadBuffer(url).then(buf => {
+            if (buf) state.buffers.guitar[url] = buf;
+          }).catch(() => {});
+          preloadPromises.push(p);
+        }
+      });
+
+      return Promise.all(preloadPromises).then(() => {
+        log('✅ Guitarras pré-carregadas.');
+      }).catch(() => {
+        log('⚠️ Preload de guitarras terminou com erros.');
+      });
     }
-  }
-
-  state.bassPlan = bassPlan;
-  state.chordPlan = chordPlan;
-  state.currentChordIndex = 0;
-  state.barsInChord = 0;
-
-  // Preparar sequência de bateria
-  const drumParsed = parsePattern(state.currentGroove.drumPattern.join(' '));
-  const drumSeq = [...drumParsed.intro, ...drumParsed.loop];
-  const drumExpanded = [];
-  while (drumExpanded.length < state.bassPlan.length) {
-    for (const t of drumSeq) {
-      if (drumExpanded.length >= state.bassPlan.length) break;
-      drumExpanded.push(t);
-    }
-  }
-  state.drumSeq = drumExpanded.slice(0, state.bassPlan.length);
-
-  setStatePanel();
-
-  // Pré-carregar guitarras
-  const guitarUrls = new Set();
-  for (const ch of state.chordPlan) {
-    const base = `${ch.note}${ch.type}`;
-    guitarUrls.add(`guitarraLimpa/${ch.note}/${base}.mp3`);
-    guitarUrls.add(`guitarraDistorcao/${ch.note}/${base}.mp3`);
-  }
-
-  const preloadPromises = [];
-  guitarUrls.forEach(url => {
-    if (!state.buffers.guitar) state.buffers.guitar = {};
-    if (!state.buffers.guitar[url]) {
-      const p = loadBuffer(url).then(buf => {
-        if (buf) state.buffers.guitar[url] = buf;
-      }).catch(() => {});
-      preloadPromises.push(p);
-    }
-  });
-
-  return Promise.all(preloadPromises).then(() => {
-    log('✅ Guitarras pré-carregadas para a progressão (ou tentadas).');
-  }).catch(() => {
-    log('⚠️ Preload de guitarras terminou com alguns erros.');
-  });
-}
 
     function parsePattern(patternText) {
       const result = { intro: [], loop: [] };
@@ -475,88 +521,106 @@
     }
 
     function scheduleStep() {
-  const time = state.nextNoteTime;
-  const stepIdx = state.stepIndex;
-  const beats = meterToBeats(state.meter);
-  const sixteenthsPerBar = beats * 4;
-  const isNewBar = (stepIdx % sixteenthsPerBar) === 0;
+      const time = state.nextNoteTime;
+      const stepIdx = state.stepIndex;
+      const beats = meterToBeats(state.meter);
+      const sixteenthsPerBar = beats * 4;
+      const isNewBar = (stepIdx % sixteenthsPerBar) === 0;
 
-  // DRUMS
-  const drumToken = state.drumSeq[stepIdx % state.drumSeq.length];
-  if (drumToken && !mute.drums) {
-    let key = null;
-    if (/^(cch|caixa-chimbal)$/i.test(drumToken)) key = 'cch';
-    else if (/^(bch|bumbo-chimbal)$/i.test(drumToken)) key = 'bch';
-    else if (/^(ba|bumbo-ataque)$/i.test(drumToken)) key = 'ba';
-    else if (/^(bu|bumbo)$/i.test(drumToken)) key = 'bu';
-    else if (/^(ca|caixa)$/i.test(drumToken)) key = 'ca';
-    else if (/^(ch|chimbal)$/i.test(drumToken)) key = 'ch';
+      // DRUMS
+      const drumToken = state.drumSeq[stepIdx % state.drumSeq.length];
+      if (drumToken && !mute.drums) {
+        let key = null;
+        if (/^(cch|caixa-chimbal)$/i.test(drumToken)) key = 'cch';
+        else if (/^(bch|bumbo-chimbal)$/i.test(drumToken)) key = 'bch';
+        else if (/^(ba|bumbo-ataque)$/i.test(drumToken)) key = 'ba';
+        else if (/^(bu|bumbo)$/i.test(drumToken)) key = 'bu';
+        else if (/^(ca|caixa)$/i.test(drumToken)) key = 'ca';
+        else if (/^(ch|chimbal)$/i.test(drumToken)) key = 'ch';
 
-    if (key && state.buffers.drums[key]) {
-      const src = audio.ctx.createBufferSource();
-      const g = audio.ctx.createGain();
-      src.buffer = state.buffers.drums[key];
-      src.connect(g);
-      g.connect(audio.drumGain);
-      g.gain.setValueAtTime(0.0, time);
-      g.gain.linearRampToValueAtTime(1.0, time + 0.005);
-      g.gain.linearRampToValueAtTime(0.0, time + 0.2);
-      src.start(time);
+        if (key && state.buffers.drums[key]) {
+          const src = audio.ctx.createBufferSource();
+          const g = audio.ctx.createGain();
+          src.buffer = state.buffers.drums[key];
+          src.connect(g);
+          g.connect(audio.drumGain);
+          g.gain.setValueAtTime(0.0, time);
+          g.gain.linearRampToValueAtTime(1.0, time + 0.005);
+          g.gain.linearRampToValueAtTime(0.0, time + 0.2);
+          src.start(time);
+        }
+      }
+
+      // BASS
+      const bassCommand = state.bassPlan[stepIdx % state.bassPlan.length];
+      if (!mute.bass && bassCommand !== '-' && bassCommand !== null) {
+        if (bassCommand === 'x' || bassCommand === '°') {
+          // Toca ghost note (bass-muted.mp3)
+          const buf = state.buffers.bass[bassCommand];
+          if (buf) {
+            const src = audio.ctx.createBufferSource();
+            const g = audio.ctx.createGain();
+            src.buffer = buf;
+            src.connect(g);
+            g.connect(audio.bassGain);
+            g.gain.setValueAtTime(0.0, time);
+            g.gain.linearRampToValueAtTime(0.8, time + 0.01);
+            g.gain.linearRampToValueAtTime(0.0, time + state.sixteenthDur * 0.9);
+            src.start(time);
+          }
+          state.lastBassNote = null; // interrompe sustentação
+        } else {
+          // Nova nota (inicia sustentação)
+          const buf = state.buffers.bass[bassCommand];
+          if (buf) {
+            const src = audio.ctx.createBufferSource();
+            const g = audio.ctx.createGain();
+            src.buffer = buf;
+            src.connect(g);
+            g.connect(audio.bassGain);
+            g.gain.setValueAtTime(0.0, time);
+            g.gain.linearRampToValueAtTime(1.0, time + 0.01);
+            g.gain.setTargetAtTime(0.7, time + 0.05, 0.05); // sustenta
+            src.start(time);
+            state.lastBassNote = bassCommand;
+          }
+        }
+      } else if (bassCommand === '-' && !mute.bass && state.lastBassNote) {
+        // Sustenta a nota anterior
+        // Nada a fazer: a nota anterior já está tocando e foi configurada com sustain
+      }
+
+      // GUITAR
+      if (isNewBar) {
+        const chord = state.chordPlan[state.currentChordIndex];
+        if (chord) {
+          if (!mute.clean) playChord(time, chord.note, chord.type, false);
+          if (!mute.dist) playChord(time, chord.note, chord.type, true);
+          ui.currentChord.textContent = chord.display;
+          const barsLeft = state.chordDurations[state.currentChordIndex] - state.barsInChord;
+          ui.chordTimer.textContent = `Próx: ${barsLeft} compasso(s)`;
+        }
+      }
+
+      state.stepIndex++;
+      if (isNewBar) {
+        state.barsInChord++;
+        if (state.barsInChord >= state.chordDurations[state.currentChordIndex]) {
+          state.currentChordIndex = (state.currentChordIndex + 1) % state.chordPlan.length;
+          state.barsInChord = 0;
+        }
+      }
+
+      state.nextNoteTime += state.sixteenthDur;
     }
-  }
-
-  // BASS
-  const bassKey = state.bassPlan[stepIdx % state.bassPlan.length];
-  if (bassKey && bassKey !== '-' && !mute.bass) {
-    const buf = state.buffers.bass[bassKey];
-    if (buf) {
-      const src = audio.ctx.createBufferSource();
-      const g = audio.ctx.createGain();
-      src.buffer = buf;
-      src.connect(g);
-      g.connect(audio.bassGain);
-      g.gain.setValueAtTime(0.0, time);
-      g.gain.linearRampToValueAtTime(1.0, time + 0.01);
-      g.gain.linearRampToValueAtTime(0.0, time + state.sixteenthDur * 0.9);
-      src.start(time);
-    }
-  }
-
-  // GUITAR: toca no início do compasso
-  if (isNewBar) {
-    const chord = state.chordPlan[state.currentChordIndex];
-    if (chord) {
-      if (!mute.clean) playChord(time, chord.note, chord.type, false);
-      if (!mute.dist) playChord(time, chord.note, chord.type, true);
-      ui.currentChord.textContent = chord.display;
-      const barsLeft = state.chordDurations[state.currentChordIndex] - state.barsInChord;
-      ui.chordTimer.textContent = `Próx: ${barsLeft} compasso(s)`;
-    }
-  }
-
-  // Avança o step
-  state.stepIndex++;
-
-  // Avança o acorde a cada compasso completo
-  if (isNewBar) {
-    state.barsInChord++;
-    if (state.barsInChord >= state.chordDurations[state.currentChordIndex]) {
-      state.currentChordIndex = (state.currentChordIndex + 1) % state.chordPlan.length;
-      state.barsInChord = 0;
-    }
-  }
-
-  state.nextNoteTime += state.sixteenthDur;
-}
 
     function playChord(time, note, type, isDistorted) {
       const folder = isDistorted ? 'guitarraDistorcao' : 'guitarraLimpa';
       const base = `${note}${type}`;
       const url = `${folder}/${note}/${base}.mp3`;
       const buf = state.buffers.guitar?.[url] || null;
-      const currentTime = audio.ctx.currentTime;
 
-      if (time < currentTime - 0.02) return;
+      if (time < audio.ctx.currentTime - 0.02) return;
 
       if (buf) {
         const src = audio.ctx.createBufferSource();
@@ -586,6 +650,7 @@
       ui.currentChord.textContent = '—';
       ui.chordTimer.textContent = '—';
       state.stepIndex = 0;
+      state.lastBassNote = null;
       log('⏹ Stopped.');
     }
 
@@ -628,4 +693,3 @@
   </script>
 </body>
 </html>
-
