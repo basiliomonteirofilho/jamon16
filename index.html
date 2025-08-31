@@ -289,153 +289,130 @@
       return out.slice(0, totalSteps);
     }
 
-    function buildBassAndChordPlan() {
-      state.currentGroove = ALL_GROOVES[Math.floor(Math.random() * ALL_GROOVES.length)];
-      state.signatureTag = state.currentGroove.name;
-      log(`🎲 Levada sorteada: ${state.currentGroove.name}`);
+    async function buildBassAndChordPlan() {
+  state.currentGroove = ALL_GROOVES[Math.floor(Math.random() * ALL_GROOVES.length)];
+  state.signatureTag = state.currentGroove.name;
+  log(`🎲 Levada sorteada: ${state.currentGroove.name}`);
 
-      state.meter = ui.meter.value === 'auto' ? state.currentGroove.meter : ui.meter.value;
-      const beats = meterToBeats(state.meter);
-      const sixteenthsPerBar = beats * 4;
+  state.meter = ui.meter.value === 'auto' ? state.currentGroove.meter : ui.meter.value;
+  const beats = meterToBeats(state.meter);
+  const sixteenthsPerBar = beats * 4;
 
-      // escolher tonalidade e qualidade
-      state.keyIdx = Math.floor(Math.random() * PITCHES.length);
-      state.key = PITCHES[state.keyIdx];
-      state.quality = Math.random() > 0.5 ? 'maj' : 'min';
-      state.chordProgression = PROGRESSIONS[Math.floor(Math.random() * PROGRESSIONS.length)];
+  // escolher tonalidade e qualidade
+  state.keyIdx = Math.floor(Math.random() * PITCHES.length);
+  state.key = PITCHES[state.keyIdx];
+  state.quality = Math.random() > 0.5 ? 'maj' : 'min';
+  state.chordProgression = PROGRESSIONS[Math.floor(Math.random() * PROGRESSIONS.length)];
 
-      // calcular durações por acorde (em compassos) - aqui usamos 1 compasso por Grau por padrão, agrupando iguais
-      const durations = [];
-      let count = 1;
-      for (let i = 1; i < state.chordProgression.length; i++) {
-        if (state.chordProgression[i] === state.chordProgression[i-1]) count++;
-        else { durations.push(count); count = 1; }
+  // calcular durações por acorde
+  const durations = [];
+  let count = 1;
+  for (let i = 1; i < state.chordProgression.length; i++) {
+    if (state.chordProgression[i] === state.chordProgression[i-1]) count++;
+    else { durations.push(count); count = 1; }
+  }
+  durations.push(count);
+  state.chordDurations = durations;
+
+  const totalBars = Math.min(state.chordDurations.reduce((a,b)=>a+b,0), 64); // limite de 64 compassos
+  const totalSteps = sixteenthsPerBar * totalBars;
+
+  // preparar ritmo do baixo
+  const rhythm = expandRhythm(state.currentGroove.bassRhythm, totalSteps);
+
+  const bassPlan = [];
+  const chordPlan = [];
+
+  let chordIndex = 0;
+  let barsCounted = 0;
+  let stepsInCurrentBar = 0;
+
+  for (let step = 0; step < totalSteps; step++) {
+    if (stepsInCurrentBar === 0) {
+      if (barsCounted >= state.chordDurations[chordIndex]) {
+        chordIndex = (chordIndex + 1) % state.chordProgression.length;
+        barsCounted = 0;
       }
-      durations.push(count);
-      state.chordDurations = durations;
+    }
 
-      const totalBars = state.chordDurations.reduce((a,b)=>a+b,0);
-      const totalSteps = sixteenthsPerBar * totalBars; // passos totais = semicolcheias por barra * barras da progressão
+    const degree = state.chordProgression[chordIndex];
+    const rootOffset = DEGREE_TO_ROOT[degree] || 0;
+    const rootIdx = (state.keyIdx + rootOffset) % 12;
+    const rootNote = PITCHES[rootIdx];
+    const chordType = state.quality === 'maj' ? '' : 'm';
+    const chordDisplay = CHORD_NAMES[rootIdx] + chordType;
 
-      // preparar ritmo do baixo
-      const rhythm = expandRhythm(state.currentGroove.bassRhythm, totalSteps);
+    const sym = rhythm[step] || '-';
+    let bassNote = '-';
 
-      const bassPlan = [];
-      const chordPlan = [];
+    if (sym === 'sm' || sym === '-') {
+      bassNote = '-';
+    } else if (sym === 'bo') {
+      bassNote = rootNote;
+    } else if (sym === 'bs') {
+      const fifthIdx = (rootIdx + 7) % 12;
+      bassNote = PITCHES[fifthIdx];
+    } else if (sym === 'bx') {
+      bassNote = rootNote;
+    } else {
+      bassNote = rootNote;
+    }
 
-      let chordIndex = 0;
-      let barsCounted = 0;
-      let stepsInCurrentBar = 0;
+    bassPlan.push(bassNote);
+    chordPlan.push({ note: rootNote, type: chordType, display: chordDisplay });
 
-      for (let step = 0; step < totalSteps; step++) {
-        if (stepsInCurrentBar === 0) {
-          // início de bar
-          if (barsCounted >= state.chordDurations[chordIndex]) {
-            chordIndex = (chordIndex + 1) % state.chordProgression.length;
-            barsCounted = 0;
-          }
-        }
+    stepsInCurrentBar++;
+    if (stepsInCurrentBar >= sixteenthsPerBar) {
+      stepsInCurrentBar = 0;
+      barsCounted++;
+    }
+  }
 
-        // determine degree and root
-        const degree = state.chordProgression[chordIndex];
-        const rootOffset = DEGREE_TO_ROOT[degree] || 0;
-        const rootIdx = (state.keyIdx + rootOffset) % 12;
-        const rootNote = PITCHES[rootIdx];
-        const chordType = state.quality === 'maj' ? '' : 'm';
-        const chordDisplay = CHORD_NAMES[rootIdx] + chordType;
+  state.bassPlan = bassPlan.length ? bassPlan : ['-'];
+  state.chordPlan = chordPlan.length ? chordPlan : [{ note: 'C', type: '', display: 'C' }];
+  state.currentChordIndex = 0;
+  state.barsInChord = 0;
 
-        // bass symbol
-        // bass symbol (interpretação dos tokens)
-const sym = rhythm[step] || '-';
-let bassNote = '-';
+  // preparar drum sequence
+  const drumParsed = parsePattern(state.currentGroove.drumPattern.join(' '));
+  const drumSeq = [...drumParsed.intro, ...drumParsed.loop];
+  const drumExpanded = [];
+  while (drumExpanded.length < state.bassPlan.length) {
+    for (const t of drumSeq) {
+      if (drumExpanded.length >= state.bassPlan.length) break;
+      drumExpanded.push(t);
+    }
+  }
+  state.drumSeq = drumExpanded.slice(0, state.bassPlan.length);
 
-if (sym === 'sm' || sym === '-') {
-  bassNote = '-'; // silêncio / ghost note
-} else if (sym === 'bo') {
-  bassNote = rootNote; // tônica
-} else if (sym === 'bs') {
-  // quinta justa (7 semitons acima)
-  const fifthIdx = (rootIdx + 7) % 12;
-  bassNote = PITCHES[fifthIdx];
-} else if (sym === 'bx') {
-  // oitava (12 semitons acima → mesma letra da tônica)
-  bassNote = rootNote;
-} else {
-  // fallback = tônica
-  bassNote = rootNote;
+  setStatePanel();
+
+  // 🔥 Pré-carregar guitarras necessárias (limpa e distorcida)
+  const guitarUrls = new Set();
+  for (const ch of state.chordPlan) {
+    const base = `${ch.note}${ch.type}`;
+    guitarUrls.add(`guitarraLimpa/${ch.note}/${base}.mp3`);
+    guitarUrls.add(`guitarraDistorcao/${ch.note}/${base}.mp3`);
+  }
+
+  const preloadPromises = [];
+  guitarUrls.forEach(url => {
+    if (!state.buffers.guitar) state.buffers.guitar = {};
+    if (!state.buffers.guitar[url]) {
+      const p = loadBuffer(url).then(buf => {
+        if (buf) state.buffers.guitar[url] = buf;
+      }).catch(() => {});
+      preloadPromises.push(p);
+    }
+  });
+
+  // Retorna uma Promise para aguardar o carregamento
+  return Promise.all(preloadPromises).then(() => {
+    log('✅ Guitarras pré-carregadas para a progressão (ou tentadas).');
+  }).catch(() => {
+    log('⚠️ Preload de guitarras terminou com alguns erros.');
+  });
 }
-
-bassPlan.push(bassNote);
-
-        chordPlan.push({ note: rootNote, type: chordType, display: chordDisplay });
-
-        stepsInCurrentBar++;
-        if (stepsInCurrentBar >= sixteenthsPerBar) {
-          stepsInCurrentBar = 0;
-          barsCounted++;
-        }
-      }
-
-      // store
-      state.bassPlan = bassPlan.length ? bassPlan : ['-'];
-      state.chordPlan = chordPlan.length ? chordPlan : [{ note: 'C', type: '', display: 'C' }];
-      state.currentChordIndex = 0;
-      state.barsInChord = 0;
-
-      // preparar drum sequence baseado em drumPattern (intro+loop -> seq de tokens)
-      const drumParsed = parsePattern(state.currentGroove.drumPattern.join(' '));
-      const drumSeq = [...drumParsed.intro, ...drumParsed.loop];
-      // expand drumSeq para o mesmo totalSteps (repete o loop)
-      const drumExpanded = [];
-      while (drumExpanded.length < state.bassPlan.length) {
-        for (const t of drumSeq) {
-          if (drumExpanded.length >= state.bassPlan.length) break;
-          drumExpanded.push(t);
-        }
-      }
-      state.drumSeq = drumExpanded.slice(0, state.bassPlan.length);
-
-      setStatePanel();
-
-      // pré-carregar guitarras necessárias (limpa e distorcida)
-      const guitarUrls = new Set();
-      for (const ch of state.chordPlan) {
-        const base = `${ch.note}${ch.type}`;
-        guitarUrls.add(`guitarraLimpa/${ch.note}/${base}.mp3`);
-        guitarUrls.add(`guitarraDistorcao/${ch.note}/${base}.mp3`);
-      }
-      const preloadPromises = [];
-      guitarUrls.forEach(url => {
-        if (!state.buffers.guitar[url]) {
-          preloadPromises.push(loadBuffer(url).then(buf => { if (buf) state.buffers.guitar[url] = buf; }));
-        }
-      });
-
-      Pconst guitarUrls = new Set();
-    for (const ch of state.chordPlan) {
-      const base = `${ch.note}${ch.type}`;
-      guitarUrls.add(`guitarraLimpa/${ch.note}/${base}.mp3`);
-      guitarUrls.add(`guitarraDistorcao/${ch.note}/${base}.mp3`);
-    }
-    const preloadPromises = [];
-    guitarUrls.forEach(url => {
-      if (!state.buffers.guitar) state.buffers.guitar = {};
-      if (!state.buffers.guitar[url]) {
-        // guardamos a promise para evitar duplo carregamento
-        const p = loadBuffer(url).then(buf => {
-          if (buf) state.buffers.guitar[url] = buf;
-        }).catch(() => {});
-        preloadPromises.push(p);
-      }
-    });
-
-    // retorna uma Promise que resolve quando todos os buffers de guitarra estiverem carregados
-    return Promise.all(preloadPromises).then(() => {
-      log('✅ Guitarras pré-carregadas para a progressão (ou tentadas).');
-    }).catch(() => {
-      log('⚠️ Preload de guitarras terminou com alguns erros.');
-    });
-    }
 
     function playClickAtTime(time, isStrong) {
       const ctx = audio.ctx;
@@ -762,3 +739,4 @@ function playBuffer(buffer, time, isDistorted) {
   </script>
 </body>
 </html>
+
