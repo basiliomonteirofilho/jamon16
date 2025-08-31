@@ -133,6 +133,15 @@
   </div>
 
   <script>
+    // Função de transposição: 3 semitons abaixo
+    function transposeDown3Semitones(note) {
+      const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+      const index = notes.indexOf(note);
+      if (index === -1) return note;
+      const newIndex = (index - 3 + 12) % 12;
+      return notes[newIndex];
+    }
+
     const ui = {
       play: document.getElementById('btnPlay'),
       pause: document.getElementById('btnPause'),
@@ -384,7 +393,16 @@
         const chordType = state.quality === 'maj' ? '' : 'm';
         const chordDisplay = CHORD_NAMES[rootIdx] + chordType;
 
-        chordPlan.push({ note: rootNote, type: chordType, display: chordDisplay });
+        // Transpõe 3 semitons abaixo para exibição
+        const displayedNote = transposeDown3Semitones(CHORD_NAMES[rootIdx]);
+        const displayedChord = displayedNote + chordType;
+
+        chordPlan.push({
+          note: rootNote,
+          type: chordType,
+          display: chordDisplay,
+          displayed: displayedChord
+        });
 
         for (let stepInBar = 0; stepInBar < sixteenthsPerBar; stepInBar++) {
           const step = bar * sixteenthsPerBar + stepInBar;
@@ -415,10 +433,10 @@
       state.currentChordIndex = 0;
       state.barsInChord = 0;
 
-      // === GERA A PROGRESSÃO VISUAL DE ACORDES ===
+      // Gera a exibição da progressão completa (com transposição)
       const progEl = document.getElementById('chordProgression');
       if (progEl && state.chordPlan.length > 0) {
-        const chordLabels = state.chordPlan.map(ch => ch.display);
+        const chordLabels = state.chordPlan.map(ch => ch.displayed);
         progEl.innerHTML = chordLabels
           .map((label, i) => `<span class="chord-item" data-index="${i}">${label}</span>`)
           .join(' ');
@@ -647,7 +665,8 @@
 
         const chord = state.chordPlan[state.currentChordIndex];
         if (chord) {
-          ui.currentChord.textContent = chord.display;
+          // Mostra o acorde transposto
+          ui.currentChord.textContent = chord.displayed;
 
           const barsLeft = state.chordDurations[state.currentChordIndex] - state.barsInChord;
           ui.chordTimer.textContent = `Próx: ${barsLeft} compasso(s)`;
@@ -660,6 +679,7 @@
             items[currentIndex].classList.add('current');
           }
 
+          // Toca o acorde real (sem transposição)
           if (!mute.clean) playChord(time, chord.note, chord.type, false);
           if (!mute.dist) playChord(time, chord.note, chord.type, true);
         }
@@ -729,7 +749,6 @@
       state.lastCleanSource = null;
       state.lastDistSource = null;
 
-      // Limpa destaque
       document.querySelectorAll('.chord-item.current').forEach(el => el.classList.remove('current'));
 
       log('⏹ Stopped.');
