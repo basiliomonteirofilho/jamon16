@@ -411,7 +411,30 @@ bassPlan.push(bassNote);
         }
       });
 
-      Promise.all(preloadPromises).then(() => log('✅ Guitarras pré-carregadas para a progressão.'));
+      Pconst guitarUrls = new Set();
+    for (const ch of state.chordPlan) {
+      const base = `${ch.note}${ch.type}`;
+      guitarUrls.add(`guitarraLimpa/${ch.note}/${base}.mp3`);
+      guitarUrls.add(`guitarraDistorcao/${ch.note}/${base}.mp3`);
+    }
+    const preloadPromises = [];
+    guitarUrls.forEach(url => {
+      if (!state.buffers.guitar) state.buffers.guitar = {};
+      if (!state.buffers.guitar[url]) {
+        // guardamos a promise para evitar duplo carregamento
+        const p = loadBuffer(url).then(buf => {
+          if (buf) state.buffers.guitar[url] = buf;
+        }).catch(() => {});
+        preloadPromises.push(p);
+      }
+    });
+
+    // retorna uma Promise que resolve quando todos os buffers de guitarra estiverem carregados
+    return Promise.all(preloadPromises).then(() => {
+      log('✅ Guitarras pré-carregadas para a progressão (ou tentadas).');
+    }).catch(() => {
+      log('⚠️ Preload de guitarras terminou com alguns erros.');
+    });
     }
 
     function playClickAtTime(time, isStrong) {
@@ -428,14 +451,19 @@ bassPlan.push(bassNote);
       osc.stop(time + 0.07);
     }
 
-    function onPlay() {
-      if (!audio.ctx) initAudio();
+        async function onPlay() {
+      if (!audio.ctx) await initAudio();
       if (state.running && !state.paused) return;
 
       state.bpm = Number(ui.bpm.value) || 100;
       state.sixteenthDur = 60 / state.bpm / 4;
 
-      buildBassAndChordPlan();
+      // agora aguardamos o planejamento + preload das guitarras
+      try {
+        await buildBassAndChordPlan();
+      } catch (e) {
+        log('⚠️ buildBassAndChordPlan falhou: ' + e.message);
+      }
 
       if (state.paused) {
         state.paused = false;
@@ -472,10 +500,11 @@ bassPlan.push(bassNote);
       }, msDelay);
     }
 
+
     // 🔁 Correção 1: Proteção no scheduler
 function scheduler() {
   if (!state.running || state.paused) return;
-  const lookahead = 0.12;
+  const lookahead = 0.20;
   const currentTime = audio.ctx.currentTime;
   let safetyCounter = 0;
   while (state.nextNoteTime < currentTime + lookahead) {
@@ -619,23 +648,25 @@ else if (/^(ch|chimbal)$/i.test(drumToken)) key = 'ch';
   const folder = isDistorted ? 'guitarraDistorcao' : 'guitarraLimpa';
   const base = `${note}${type}`;
   const url = `${folder}/${note}/${base}.mp3`;
-  const buf = state.buffers.guitar[url];
+  const buf = (state.buffers.guitar && state.buffers.guitar[url]) ? state.buffers.guitar[url] : null;
   const currentTime = audio.ctx.currentTime;
 
-  // Se já passou do tempo, pula
-  if (time < currentTime - 0.02) return;
+  // Se já passou do tempo, pula (evita tocar atrasado)
+  if (time < currentTime - 0.02) {
+    // já passou muito do tempo programado - não tocar
+    return;
+  }
 
   if (buf) {
     playBuffer(buf, time, isDistorted);
   } else {
-    loadBuffer(url).then(b => {
-      if (b && audio.ctx.currentTime < time + 0.1) {
-        state.buffers.guitar[url] = b;
-        playBuffer(b, time, isDistorted);
-      }
-    });
+    // Não tentar carregar e tocar aqui — isso causa atrasos se o carregamento ocorrer depois.
+    log(`⚠️ Buffer de guitarra faltando (não tocará agora): ${url}`);
+    // opcional: você pode agendar um retry curto (ex: tocar "ao vivo" só se chegar antes de time+0.05s)
+    // mas eu recomendo não tocar a guitarra atrasada; é melhor silêncio do que off-beat.
   }
 }
+
 
 function playBuffer(buffer, time, isDistorted) {
   const src = audio.ctx.createBufferSource();
@@ -644,11 +675,13 @@ function playBuffer(buffer, time, isDistorted) {
   src.connect(g);
   g.connect(isDistorted ? audio.distGain : audio.cleanGain);
 
+  // ataque e release
   g.gain.setValueAtTime(0.0, time);
   g.gain.linearRampToValueAtTime(1.0, time + 0.01); // ataque rápido
-
+  // opcional: agendar release se quiser (ex: time + barLength)
   src.start(time);
 }
+
 
     function parsePattern(patternText) {
   const result = { intro: [], loop: [] };
