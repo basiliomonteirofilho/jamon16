@@ -624,12 +624,26 @@
         }
 
         const chord = state.chordPlan[state.currentChordIndex];
-        if (chord) {
+                if (chord) {
+          // Atualiza o display no tempo exato do áudio
+          const displayTime = time - audio.ctx.currentTime;
+          if (displayTime < 0.1) {
+            // Se for tocar em breve ou já passou, atualiza agora
+            ui.currentChord.textContent = chord.display;
+            const barsLeft = state.chordDurations[state.currentChordIndex] - state.barsInChord;
+            ui.chordTimer.textContent = `Próx: ${barsLeft} compasso(s)`;
+          } else {
+            // Se for tocar daqui a pouco, agenda a atualização visual
+            setTimeout(() => {
+              ui.currentChord.textContent = chord.display;
+              const barsLeft = state.chordDurations[state.currentChordIndex] - state.barsInChord;
+              ui.chordTimer.textContent = `Próx: ${barsLeft} compasso(s)`;
+            }, displayTime * 1000 - 50); // 50ms de antecedência visual
+          }
+
+          // Toca o acorde
           if (!mute.clean) playChord(time, chord.note, chord.type, false);
           if (!mute.dist) playChord(time, chord.note, chord.type, true);
-          ui.currentChord.textContent = chord.display;
-          const barsLeft = state.chordDurations[state.currentChordIndex] - state.barsInChord;
-          ui.chordTimer.textContent = `Próx: ${barsLeft} compasso(s)`;
         }
       }
 
