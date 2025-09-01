@@ -2,73 +2,279 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Jam on – Playback Aleatório</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jam On – Playback Aleatório</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 20px; background: #f0f0f0; }
-    .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-    .grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
-    .row { display: flex; align-items: center; margin: 10px 0; }
-    .row label { width: 120px; }
-    button { padding: 10px; margin: 5px; cursor: pointer; border: none; border-radius: 6px; }
-    .primary { background: #4CAF50; color: white; }
-    .danger { background: #f44336; color: white; }
-    .muted { opacity: 0.6; }
-    .chord-display { text-align: center; margin: 20px 0; }
-    .chord-name { font-size: 2.5em; margin: 0; }
-    .mono { font-family: monospace; font-size: 0.9em; background: #eee; padding: 10px; border-radius: 6px; }
-    .footer { font-size: 0.8em; color: #666; margin-top: 10px; }
-    .pill { display: inline-block; background: #000; color: #fff; padding: 4px 8px; border-radius: 12px; font-size: 0.8em; }
-    #log { height: 120px; overflow:auto; white-space: pre-wrap; margin-top:10px; }
-    .slider-row { display: flex; align-items: center; gap: 10px; margin: 5px 0; }
-    .slider-row label { width: 100px; }
-    .slider-row input[type=range] { flex: 1; }
+    /* ===== RESET & CORE ===== */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      background: #121212;
+      color: #e0e0e0;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+
+    /* ===== HEADER ===== */
+    header {
+      margin-bottom: 20px;
+    }
+    h1 {
+      color: #5eead4;
+      font-size: 1.8em;
+      margin: 0 0 10px;
+    }
+    .pill {
+      display: inline-block;
+      background: #333;
+      color: #aaa;
+      font-size: 0.75em;
+      padding: 4px 10px;
+      border-radius: 12px;
+    }
+
+    /* ===== CARD PRINCIPAL ===== */
+    .card {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #1e1e1e;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      overflow: hidden;
+      padding: 20px;
+      text-align: left;
+    }
+
+    /* ===== DISPLAY DO ACORDE ===== */
+    .chord-display {
+      margin: 20px 0;
+      text-align: center;
+    }
+    .chord-name {
+      font-size: 3em;
+      color: #5eead4;
+      margin: 0;
+      font-weight: bold;
+    }
+    #chordTimer {
+      font-size: 1.1em;
+      color: #aaa;
+    }
+    #chordProgression {
+      margin-top: 12px;
+      font-family: monospace;
+      font-size: 1.1em;
+      white-space: nowrap;
+      overflow-x: auto;
+      padding: 8px 0;
+    }
     .chord-item {
       display: inline-block;
       padding: 6px 10px;
       margin: 0 4px;
       border-radius: 6px;
-      background: #eee;
+      background: #333;
       transition: background 0.3s;
     }
     .chord-item.current {
-      background: #4CAF50;
-      color: white;
+      background: #5eead4;
+      color: #121212;
       font-weight: bold;
     }
 
-    /* --- MELODY ADDON: estilos da matriz --- */
-    .melody-panel { margin-top: 16px; }
-    .melody-toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
-    .melody-block { border: 1px dashed #bbb; border-radius: 8px; padding: 8px; background: #fafafa; margin-bottom: 10px; }
-    .melody-table { border-collapse: collapse; width: 100%; table-layout: fixed; }
-    .melody-table th, .melody-table td { border: 1px solid #ddd; padding: 2px; text-align: center; }
-    .melody-table input { width: 100%; box-sizing: border-box; padding: 6px; text-align: center; }
-    .melody-caption { font-size: 0.9em; color: #333; margin-bottom: 6px; }
-    .line-label { font-size: 0.85em; color: #444; }
+    /* ===== CONTROLES ===== */
+    .controls {
+      display: grid;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .btn-row {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 1em;
+      transition: background 0.2s;
+    }
+    button.primary {
+      background: #5eead4;
+      color: #121212;
+    }
+    button.danger {
+      background: #f44336;
+      color: white;
+    }
+    button:hover {
+      opacity: 0.9;
+    }
+    button:active {
+      transform: scale(0.98);
+    }
+
+    /* ===== MUTE BUTTONS ===== */
+    .mute-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 10px 0;
+    }
+    .mute-buttons button {
+      padding: 8px 14px;
+      font-size: 0.9em;
+    }
+    .mute-buttons button.muted {
+      opacity: 0.5;
+    }
+
+    /* ===== INPUTS ===== */
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      justify-content: center;
+    }
+    .row label {
+      width: 100px;
+      text-align: right;
+      color: #ccc;
+    }
+    input[type="number"], select {
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #444;
+      background: #2a2a2a;
+      color: #fff;
+      width: 90px;
+    }
+    select {
+      width: auto;
+      min-width: 100px;
+    }
+
+    /* ===== SLIDERS DE VOLUME ===== */
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      justify-content: center;
+    }
+    .slider-row label {
+      width: 80px;
+      text-align: right;
+      font-size: 0.9em;
+    }
+    input[type="range"] {
+      width: 180px;
+      accent-color: #5eead4;
+    }
+    .slider-value {
+      width: 40px;
+      text-align: left;
+      font-size: 0.9em;
+      color: #aaa;
+    }
+
+    /* ===== LOG E PAINÉIS ===== */
+    .panel {
+      margin-top: 20px;
+    }
+    .panel h3 {
+      color: #5eead4;
+      margin-top: 0;
+    }
+    .mono {
+      background: #2a2a2a;
+      padding: 12px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 0.9em;
+      white-space: pre-wrap;
+      color: #ddd;
+      text-align: left;
+    }
+    .footer {
+      font-size: 0.8em;
+      color: #777;
+      margin-top: 8px;
+    }
+
+    /* ===== MELODY MATRIX ===== */
+    .melody-panel { margin-top: 20px; }
+    .melody-toolbar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 10px;
+    }
+    .melody-block {
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 12px;
+      background: #222;
+    }
+    .melody-caption {
+      font-size: 0.9em;
+      color: #ccc;
+      margin-bottom: 6px;
+    }
+    .melody-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85em;
+    }
+    .melody-table th, .melody-table td {
+      border: 1px solid #555;
+      padding: 2px;
+    }
+    .melody-table input {
+      width: 100%;
+      padding: 4px;
+      text-align: center;
+      background: #333;
+      border: 1px solid #555;
+      color: white;
+      border-radius: 4px;
+    }
+    .line-label {
+      font-size: 0.8em;
+      color: #aaa;
+    }
   </style>
 </head>
 <body>
+
   <header>
-    <h1>Jam on – Playback Aleatório (baixo + bateria + guitarra)</h1>
+    <h1>Jam On – Playback Aleatório</h1>
     <div class="pill">Cada pulso do BPM = semínima</div>
   </header>
 
   <div class="chord-display">
     <h2 class="chord-name" id="currentChord">—</h2>
     <div id="chordTimer">—</div>
-    <div id="chordProgression" style="margin-top: 10px; font-size: 1.2em; font-family: monospace;">
-      <!-- Os acordes aparecerão aqui -->
-    </div>
+    <div id="chordProgression" style="margin-top: 10px;"></div>
   </div>
 
   <div class="card">
     <div class="controls">
-      <button id="btnPlay" class="primary">▶ Play</button>
-      <button id="btnPause">⏸ Pause</button>
-      <button id="btnStop" class="danger">⏹ Stop</button>
-      <button id="btnSave" class="primary">💾 Salvar 4 min (MP3)</button>
+      <div class="btn-row">
+        <button id="btnPlay" class="primary">▶ Play</button>
+        <button id="btnPause">⏸ Pause</button>
+        <button id="btnStop" class="danger">⏹ Stop</button>
+        <button id="btnSave" class="primary">💾 Salvar 4 min (MP3)</button>
+      </div>
 
-      <div style="margin-top: 10px;">
+      <div class="mute-buttons">
         <button id="muteBass" data-mute="off">🎸 Baixo</button>
         <button id="muteDrums" data-mute="off">🥁 Bateria</button>
         <button id="muteClean" data-mute="off">🎸 Limpa</button>
@@ -77,7 +283,7 @@
 
       <div class="row">
         <label>BPM</label>
-        <input id="bpm" type="number" min="40" max="220" value="100" style="width:90px">
+        <input id="bpm" type="number" min="40" max="220" value="100">
       </div>
 
       <div class="row">
@@ -93,66 +299,65 @@
         </select>
       </div>
 
-      <!-- Sliders de Volume -->
-      <div style="margin-top: 15px;">
-        <h3>Controle de Volume</h3>
-        <div class="slider-row">
-          <label>Baixo</label>
-          <input type="range" id="volBass" min="0" max="1" step="0.01" value="0.45">
-          <span id="volBassLabel">45%</span>
-        </div>
-        <div class="slider-row">
-          <label>Bateria</label>
-          <input type="range" id="volDrums" min="0" max="1" step="0.01" value="0.6">
-          <span id="volDrumsLabel">60%</span>
-        </div>
-        <div class="slider-row">
-          <label>Limpa</label>
-          <input type="range" id="volClean" min="0" max="1" step="0.01" value="0.45">
-          <span id="volCleanLabel">45%</span>
-        </div>
-        <div class="slider-row">
-          <label>Distorcida</label>
-          <input type="range" id="volDist" min="0" max="1" step="0.01" value="0.35">
-          <span id="volDistLabel">35%</span>
-        </div>
+      <h3 style="color: #5eead4; margin: 15px 0 5px;">Controle de Volume</h3>
+      <div class="slider-row">
+        <label>Baixo</label>
+        <input type="range" id="volBass" min="0" max="1" step="0.01" value="0.45">
+        <span class="slider-value" id="volBassLabel">45%</span>
+      </div>
+      <div class="slider-row">
+        <label>Bateria</label>
+        <input type="range" id="volDrums" min="0" max="1" step="0.01" value="0.6">
+        <span class="slider-value" id="volDrumsLabel">60%</span>
+      </div>
+      <div class="slider-row">
+        <label>Limpa</label>
+        <input type="range" id="volClean" min="0" max="1" step="0.01" value="0.45">
+        <span class="slider-value" id="volCleanLabel">45%</span>
+      </div>
+      <div class="slider-row">
+        <label>Distorcida</label>
+        <input type="range" id="volDist" min="0" max="1" step="0.01" value="0.35">
+        <span class="slider-value" id="volDistLabel">35%</span>
       </div>
     </div>
 
     <div class="panel">
-      <h3>Estado atual</h3>
-      <div class="mono" id="state"></div>
+      <h3>Estado Atual</h3>
+      <div class="mono" id="state">Parado</div>
       <div class="footer">Ao clicar em <b>Play</b>, gera um novo playback aleatório.</div>
     </div>
 
     <div class="panel">
-      <h3>Arquivos esperados</h3>
+      <h3>Arquivos Esperados</h3>
       <div class="mono">
         <div>Coloque os áudios nas pastas:</div>
-        <ul>
-          <li><b>guitarraLimpa/[nota]/[nota][tipo].mp3</b> — Ex: guitarraLimpa/A/A.mp3 ou guitarraLimpa/C/Cm.mp3</li>
+        <ul style="margin: 5px 0; padding-left: 20px;">
+          <li><b>guitarraLimpa/[nota]/[nota][tipo].mp3</b> → Ex: <code>A/A.mp3</code>, <code>C/Cm.mp3</code></li>
           <li><b>guitarraDistorcao/[nota]/[nota][tipo].mp3</b></li>
           <li><b>assets/bumbo.mp3</b>, <b>assets/caixa.mp3</b>, <b>assets/chimbal.mp3</b></li>
-          <li><b>assets/bass-A.mp3</b>, <b>assets/bass-AS.mp3</b>, etc. (A, AS, B, C, CS, ...)</li>
-          <li><b>assets/bass-muted.mp3</b> → para ghost note (x)</li>
+          <li><b>assets/bass-A.mp3</b>, <b>assets/bass-AS.mp3</b>, etc.</li>
+          <li><b>assets/bass-muted.mp3</b> → ghost note (x)</li>
+          <li><b>guitarraDistorcao/Melodia/[num][nota].mp3</b> → Ex: <code>13E.mp3</code>, <code>22CS.mp3</code></li>
         </ul>
       </div>
     </div>
 
-    <!-- --- MELODY ADDON: Painel da matriz de melodia --- -->
     <div class="panel melody-panel">
-      <h3>🎸 Melodia da Guitarra (notas individuais)</h3>
+      <h3>🎸 Melodia da Guitarra (Matriz)</h3>
       <div class="melody-toolbar">
-        <button id="btnMelodyAdd" class="primary">➕ Adicionar bloco de matriz</button>
-        <button id="btnMelodyClear" class="danger">🧹 Limpar blocos</button>
-        <span>As linhas: <b>Semibreve</b>, <b>Mínima</b>, <b>Semínima</b>, <b>Colcheia</b>, <b>Semicolcheia</b>.  
-        Use números (1–49), <b>x</b> (silêncio), <b>°</b> (mute imediato).</span>
+        <button id="btnMelodyAdd" class="primary">➕ Adicionar Bloco</button>
+        <button id="btnMelodyClear" class="danger">🧹 Limpar Blocos</button>
+        <span style="font-size: 0.9em; color: #aaa;">Linhas: Semibreve, Mínima, Semínima, Colcheia, Semicolcheia. Use <b>1–49</b>, <b>x</b>, <b>°</b>.</span>
       </div>
       <div id="melodyBlocks"></div>
-      <div class="footer">Os arquivos de nota devem estar em <code>guitarraDistorcao/Melodia/</code> com nomes como <code>13E.mp3</code>, <code>22CS.mp3</code>…</div>
+      <div class="footer">As notas devem estar em <code>guitarraDistorcao/Melodia/</code> como <code>13E.mp3</code>.</div>
     </div>
 
-    <div class="log mono" id="log"></div>
+    <div class="panel">
+      <h3>Log</h3>
+      <div class="mono" id="log" style="height: 100px; overflow-y: auto;"></div>
+    </div>
   </div>
 
   <script>
@@ -188,8 +393,6 @@
       volDrumsLabel: document.getElementById('volDrumsLabel'),
       volCleanLabel: document.getElementById('volCleanLabel'),
       volDistLabel: document.getElementById('volDistLabel'),
-
-      // --- MELODY ADDON ---
       melodyBlocks: document.getElementById('melodyBlocks'),
       btnMelodyAdd: document.getElementById('btnMelodyAdd'),
       btnMelodyClear: document.getElementById('btnMelodyClear')
@@ -212,19 +415,18 @@
 
     const DRUMS = {
       ba: 'bumbo-ataque',
-      cch:  'caixa-chimbal',
+      cch: 'caixa-chimbal',
       bch: 'bumbo-chimbal',
       bu: 'bumbo',
       ca: 'caixa',
       ch: 'chimbal'
     };
 
-    // Bass samples
     const BASS_SAMPLES = {};
     for (const p of PITCHES) {
       BASS_SAMPLES[p] = `assets/bass-${p}.mp3`;
     }
-    BASS_SAMPLES['x'] = 'assets/bass-muted.mp3'; // ghost note
+    BASS_SAMPLES['x'] = 'assets/bass-muted.mp3';
 
     const ALL_GROOVES = [
       {
@@ -255,7 +457,7 @@
       bpm: 100,
       sixteenthDur: 0.15,
       stepIndex: 0,
-      buffers: { drums: {}, bass: {}, guitar: {}, melody: {} }, // --- MELODY ADDON (melody)
+      buffers: { drums: {}, bass: {}, guitar: {}, melody: {} },
       bassPlan: [],
       chordPlan: [],
       signatureTag: '',
@@ -274,12 +476,10 @@
       lastBassGainNode: null,
       lastCleanSource: null,
       lastDistSource: null,
-
-      // --- MELODY ADDON ---
-      melodyBlocks: [], // cada bloco guarda inputs
-      melodyPlan: [],   // tokens por semicolcheia
       lastMelodySource: null,
-      lastMelodyGain: null
+      lastMelodyGain: null,
+      melodyBlocks: [],
+      melodyPlan: []
     };
 
     const mute = { bass: false, drums: false, clean: false, dist: false };
@@ -299,11 +499,9 @@
     }
 
     let initPromise = null;
-
     async function initAudio() {
       if (audio.ctx) return;
       if (initPromise) return initPromise;
-
       initPromise = (async () => {
         audio.ctx = new (window.AudioContext || window.webkitAudioContext)();
         audio.master = audio.ctx.createGain();
@@ -312,26 +510,20 @@
         audio.bassGain = audio.ctx.createGain();
         audio.cleanGain = audio.ctx.createGain();
         audio.distGain = audio.ctx.createGain();
-
         audio.master.gain.value = 0.9;
         audio.drumGain.gain.value = 0.6;
         audio.bassGain.gain.value = 0.45;
         audio.cleanGain.gain.value = 0.45;
         audio.distGain.gain.value = 0.35;
-
         audio.master.connect(audio.mix);
         audio.mix.connect(audio.ctx.destination);
-
         audio.drumGain.connect(audio.master);
         audio.bassGain.connect(audio.master);
         audio.cleanGain.connect(audio.master);
         audio.distGain.connect(audio.master);
-
         log('🔧 Inicializando áudio e pré-carregando básicos...');
         await ensureBasicSamples();
         log('✅ Básicos carregados.');
-
-        // Vincular sliders
         function updateVolume() {
           audio.bassGain.gain.value = parseFloat(ui.volBass.value);
           audio.drumGain.gain.value = parseFloat(ui.volDrums.value);
@@ -348,7 +540,6 @@
         ui.volClean.addEventListener('input', updateVolume);
         ui.volDist.addEventListener('input', updateVolume);
       })();
-
       return initPromise;
     }
 
@@ -399,26 +590,19 @@
       state.currentGroove = ALL_GROOVES[Math.floor(Math.random() * ALL_GROOVES.length)];
       state.signatureTag = state.currentGroove.name;
       log(`🎲 Levada sorteada: ${state.currentGroove.name}`);
-
       state.meter = ui.meter.value === 'auto' ? state.currentGroove.meter : ui.meter.value;
       const beats = meterToBeats(state.meter);
       const sixteenthsPerBar = beats * 4;
-
       state.keyIdx = Math.floor(Math.random() * PITCHES.length);
       state.key = PITCHES[state.keyIdx];
       state.quality = Math.random() > 0.5 ? 'maj' : 'min';
       state.chordProgression = PROGRESSIONS[Math.floor(Math.random() * PROGRESSIONS.length)];
-
       const totalBars = Math.min(state.chordProgression.length, 64);
       const totalSteps = sixteenthsPerBar * totalBars;
-
       state.chordDurations = Array(state.chordProgression.length).fill(1);
-
       const rhythm = expandRhythm(state.currentGroove.bassRhythm, totalSteps);
-
       const bassPlan = [];
       const chordPlan = [];
-
       for (let bar = 0; bar < totalBars; bar++) {
         const degree = state.chordProgression[bar];
         const rootOffset = DEGREE_TO_ROOT[degree] || 0;
@@ -426,23 +610,18 @@
         const rootNote = PITCHES[rootIdx];
         const chordType = state.quality === 'maj' ? '' : 'm';
         const chordDisplay = CHORD_NAMES[rootIdx] + chordType;
-
-        // Transpõe 3 semitons abaixo para exibição
         const displayedNote = transposeDown3Semitones(CHORD_NAMES[rootIdx]);
         const displayedChord = displayedNote + chordType;
-
         chordPlan.push({
           note: rootNote,
           type: chordType,
           display: chordDisplay,
           displayed: displayedChord
         });
-
         for (let stepInBar = 0; stepInBar < sixteenthsPerBar; stepInBar++) {
           const step = bar * sixteenthsPerBar + stepInBar;
           const sym = rhythm[step] || '-';
           let bassNote = null;
-
           if (sym === 'x') {
             bassNote = 'x';
           } else if (sym === '°') {
@@ -457,17 +636,13 @@
           } else {
             bassNote = rootNote;
           }
-
           bassPlan.push(bassNote);
         }
       }
-
       state.bassPlan = bassPlan;
       state.chordPlan = chordPlan;
       state.currentChordIndex = 0;
       state.barsInChord = 0;
-
-      // Gera a exibição da progressão completa (com transposição)
       const progEl = document.getElementById('chordProgression');
       if (progEl && state.chordPlan.length > 0) {
         const chordLabels = state.chordPlan.map(ch => ch.displayed);
@@ -475,7 +650,6 @@
           .map((label, i) => `<span class="chord-item" data-index="${i}">${label}</span>`)
           .join(' ');
       }
-
       const drumParsed = parsePattern(state.currentGroove.drumPattern.join(' '));
       const drumSeq = [...drumParsed.intro, ...drumParsed.loop];
       const drumExpanded = [];
@@ -486,16 +660,13 @@
         }
       }
       state.drumSeq = drumExpanded.slice(0, state.bassPlan.length);
-
       setStatePanel();
-
       const guitarUrls = new Set();
       for (const ch of state.chordPlan) {
         const base = `${ch.note}${ch.type}`;
         guitarUrls.add(`guitarraLimpa/${ch.note}/${base}.mp3`);
         guitarUrls.add(`guitarraDistorcao/${ch.note}/${base}.mp3`);
       }
-
       const preloadPromises = [];
       guitarUrls.forEach(url => {
         if (!state.buffers.guitar) state.buffers.guitar = {};
@@ -506,7 +677,6 @@
           preloadPromises.push(p);
         }
       });
-
       return Promise.all(preloadPromises).then(() => {
         log('✅ Guitarras pré-carregadas.');
       }).catch(() => {
@@ -518,7 +688,6 @@
       const result = { intro: [], loop: [] };
       const introMatch = patternText.match(/\[(.*?)\]/);
       const loopMatch = patternText.match(/\((.*?)\)/);
-
       if (introMatch) {
         result.intro = introMatch[1].trim().split(/\s+/).filter(s => s);
       }
@@ -549,50 +718,40 @@
     async function onPlay() {
       if (!audio.ctx) await initAudio();
       if (state.running && !state.paused) return;
-
       state.bpm = Number(ui.bpm.value) || 100;
       state.sixteenthDur = 60 / state.bpm / 4;
-
       try {
         await buildBassAndChordPlan();
       } catch (e) {
         log('⚠️ buildBassAndChordPlan falhou: ' + e.message);
       }
-
-      // --- MELODY ADDON: construir plano de melodia após termos os acordes ---
       try {
-        buildMelodyPlanFromBlocks();               // lê matrizes → plano por semicolcheia
-        await ensureMelodySamplesNeeded();         // pré-carrega somente os arquivos usados
+        buildMelodyPlanFromBlocks();
+        await ensureMelodySamplesNeeded();
         log('🎸 Melodia pronta.');
       } catch (e) {
         log('⚠️ Melodia: ' + e.message);
       }
-
       if (state.paused) {
         state.paused = false;
         log('▶ Retomando reprodução.');
         return;
       }
-
       state.running = false;
       state.stepIndex = 0;
       state.nextNoteTime = audio.ctx.currentTime + 0.05;
       const beats = meterToBeats(state.meter);
       const quarterDur = 60 / state.bpm;
-
       state.totalClicks = beats;
       state.clickCount = 0;
-
       const startTime = audio.ctx.currentTime + 0.05;
       for (let i = 0; i < state.totalClicks; i++) {
         const t = startTime + i * quarterDur;
         const isStrong = (i % beats) === 0;
         playClickAtTime(t, isStrong);
       }
-
       const schedulerStartTime = startTime + state.totalClicks * quarterDur;
       const msDelay = Math.max(0, (schedulerStartTime - audio.ctx.currentTime) * 1000 + 10);
-
       setTimeout(() => {
         state.running = true;
         state.nextNoteTime = schedulerStartTime;
@@ -622,7 +781,6 @@
       const sixteenthsPerBar = beats * 4;
       const isNewBar = (stepIdx % sixteenthsPerBar) === 0;
 
-      // DRUMS
       const drumToken = state.drumSeq[stepIdx % state.drumSeq.length];
       if (drumToken && !mute.drums) {
         let key = null;
@@ -632,21 +790,18 @@
         else if (/^(bu|bumbo)$/i.test(drumToken)) key = 'bu';
         else if (/^(ca|caixa)$/i.test(drumToken)) key = 'ca';
         else if (/^(ch|chimbal)$/i.test(drumToken)) key = 'ch';
-
         if (key && state.buffers.drums[key]) {
           const src = audio.ctx.createBufferSource();
           const g = audio.ctx.createGain();
           src.buffer = state.buffers.drums[key];
           src.connect(g);
           g.connect(audio.drumGain);
-
           g.gain.setValueAtTime(0.0, time);
           g.gain.linearRampToValueAtTime(1.0, time + 0.005);
           src.start(time);
         }
       }
 
-      // BASS
       const bassCommand = state.bassPlan[stepIdx % state.bassPlan.length];
       if (!mute.bass) {
         if (state.lastBassGainNode && bassCommand !== '-' && bassCommand !== '°' && bassCommand !== 'x') {
@@ -656,7 +811,6 @@
           state.lastBassSource = null;
           state.lastBassGainNode = null;
         }
-
         if (bassCommand === 'x') {
           const buf = state.buffers.bass['x'];
           if (buf) {
@@ -695,7 +849,6 @@
         }
       }
 
-      // GUITAR (acordes por compasso)
       if (isNewBar) {
         if (state.lastCleanSource) {
           state.lastCleanSource.stop(time);
@@ -705,37 +858,29 @@
           state.lastDistSource.stop(time);
           state.lastDistSource = null;
         }
-
         const chord = state.chordPlan[state.currentChordIndex];
         if (chord) {
-          // Mostra o acorde transposto
           ui.currentChord.textContent = chord.displayed;
-
           const barsLeft = state.chordDurations[state.currentChordIndex] - state.barsInChord;
           ui.chordTimer.textContent = `Próx: ${barsLeft} compasso(s)`;
-
-          // Destaca o acorde atual na progressão
           document.querySelectorAll('.chord-item.current').forEach(el => el.classList.remove('current'));
           const items = document.querySelectorAll('.chord-item');
           const currentIndex = state.currentChordIndex % items.length;
           if (items[currentIndex]) {
             items[currentIndex].classList.add('current');
           }
-
-          // Toca o acorde real (sem transposição)
           if (!mute.clean) playChord(time, chord.note, chord.type, false);
           if (!mute.dist) playChord(time, chord.note, chord.type, true);
         }
       }
 
-      // --- MELODY ADDON: tocar notas de melodia por semicolcheia ---
       const mTok = state.melodyPlan.length ? state.melodyPlan[stepIdx % state.melodyPlan.length] : null;
       if (mTok) {
         if (mTok.type === 'start') {
-          playMelodyNumber(time, mTok.number, /*short=*/false);
+          playMelodyNumber(time, mTok.number, false);
         } else if (mTok.type === 'mute') {
           stopMelodyAt(time);
-        } // 'sustain' e 'rest' não exigem ação (o sample continua)
+        }
       }
 
       state.stepIndex++;
@@ -746,7 +891,6 @@
           state.barsInChord = 0;
         }
       }
-
       state.nextNoteTime += state.sixteenthDur;
     }
 
@@ -755,9 +899,7 @@
       const base = `${note}${type}`;
       const url = `${folder}/${note}/${base}.mp3`;
       const buf = state.buffers.guitar?.[url] || null;
-
       if (time < audio.ctx.currentTime - 0.02) return;
-
       if (buf) {
         const src = audio.ctx.createBufferSource();
         const g = audio.ctx.createGain();
@@ -767,7 +909,6 @@
         g.gain.setValueAtTime(0.0, time);
         g.gain.linearRampToValueAtTime(1.0, time + 0.01);
         src.start(time);
-
         if (isDistorted) {
           state.lastDistSource = src;
         } else {
@@ -792,21 +933,17 @@
       ui.currentChord.textContent = '—';
       ui.chordTimer.textContent = '—';
       state.stepIndex = 0;
-
       if (state.lastBassSource) state.lastBassSource.stop(0);
       if (state.lastCleanSource) state.lastCleanSource.stop(0);
       if (state.lastDistSource) state.lastDistSource.stop(0);
-      if (state.lastMelodySource) state.lastMelodySource.stop(0); // --- MELODY ADDON
-
+      if (state.lastMelodySource) state.lastMelodySource.stop(0);
       state.lastBassSource = null;
       state.lastBassGainNode = null;
       state.lastCleanSource = null;
       state.lastDistSource = null;
       state.lastMelodySource = null;
       state.lastMelodyGain = null;
-
       document.querySelectorAll('.chord-item.current').forEach(el => el.classList.remove('current'));
-
       log('⏹ Stopped.');
     }
 
@@ -842,18 +979,7 @@
     ui.muteClean.addEventListener('click', () => toggleMute('clean', ui.muteClean));
     ui.muteDist.addEventListener('click', () => toggleMute('dist', ui.muteDist));
 
-    window.addEventListener('load', () => {
-      log('Carregando interface... preparando áudio (pré-carregando amostras básicas).');
-      initAudio();
-      // --- MELODY ADDON: começa com um bloco pronto ---
-      addMelodyBlock();
-    });
-
-    // =========================
-    // ===== MELODY ADDON =====
-    // =========================
-
-    // Mapeia 1..49 começando em E e subindo por semitons: E F FS G GS A AS B C CS D DS  (repete)
+    // MELODY ADDON
     const ORDER_E_UP = ['E','F','FS','G','GS','A','AS','B','C','CS','D','DS'];
     const NUM_TO_NAME = (() => {
       const map = {};
@@ -865,59 +991,49 @@
       return map;
     })();
 
-    // Converte nomes "C","CS","D" -> índice PITCHES
     function nameToPitchIndex(name) {
-      // PITCHES: ['A','AS','B','C','CS','D','DS','E','F','FS','G','GS']
       return PITCHES.indexOf(name);
     }
 
-    // Gera escala maior/natural menor em termos de PITCHES
     function chordScale(rootPitchName, quality) {
       const patternMaj = [0,2,4,5,7,9,11];
-      const patternMin = [0,2,3,5,7,8,10]; // natural minor
+      const patternMin = [0,2,3,5,7,8,10];
       const rootIdx = PITCHES.indexOf(rootPitchName);
       const pat = (quality === '' || quality === 'maj') ? patternMaj : patternMin;
       const set = new Set(pat.map(semi => PITCHES[(rootIdx + semi) % 12]));
-      return set; // ex.: Set{'A','B','CS',...}
+      return set;
     }
 
-    // Ajusta um número (1..49) para a próxima nota cujo pitch esteja na escala
     function fitNumberToScale(num, scaleSet) {
       if (typeof num !== 'number' || !isFinite(num)) return null;
       let tries = 0;
       let i = ((num - 1) % 49) + 1;
       while (tries < 49) {
-        const name = NUM_TO_NAME[i];     // E, F, FS...
-        const pc = name;                 // já no padrão PITCHES (S = sustenido)
-        if (scaleSet.has(pc)) return i;  // mantém número, respeita oitava
+        const name = NUM_TO_NAME[i];
+        const pc = name;
+        if (scaleSet.has(pc)) return i;
         i++; if (i > 49) i = 1;
         tries++;
       }
-      return num; // fallback
+      return num;
     }
 
-    // Durações por linha → em semicolcheias (¼ tempo)
     function durationStepsForRow(rowIndex) {
-      // 0: semibreve (4), 1: mínima (2), 2: semínima (1), 3: colcheia (1/2), 4: semicolcheia (1/4)
-      // Em semicolcheias: 16, 8, 4, 2, 1
       const map = [16, 8, 4, 2, 1];
       return map[rowIndex] || 1;
     }
 
     function addMelodyBlock() {
       const beats = meterToBeats(ui.meter.value === 'auto' ? (state.currentGroove?.meter || '4/4') : ui.meter.value);
-      const cols = beats * 4; // semicolcheias por compasso
+      const cols = beats * 4;
       const blockIdx = state.melodyBlocks.length;
-
       const div = document.createElement('div');
       div.className = 'melody-block';
       div.dataset.block = String(blockIdx);
-
       const caption = document.createElement('div');
       caption.className = 'melody-caption';
       caption.textContent = `Bloco #${blockIdx + 1} — ${beats}/4 (${cols} colunas de semicolcheia)`;
       div.appendChild(caption);
-
       const table = document.createElement('table');
       table.className = 'melody-table';
       const thead = document.createElement('thead');
@@ -925,22 +1041,21 @@
       const th0 = document.createElement('th');
       th0.textContent = 'Figura';
       trh.appendChild(th0);
-      for (let c=0;c<cols;c++){
+      for (let c = 0; c < cols; c++) {
         const th = document.createElement('th');
-        th.textContent = c+1;
+        th.textContent = c + 1;
         trh.appendChild(th);
       }
       thead.appendChild(trh);
       table.appendChild(thead);
-
-      const labels = ['Semibreve','Mínima','Semínima','Colcheia','Semicolcheia'];
+      const labels = ['Semibreve', 'Mínima', 'Semínima', 'Colcheia', 'Semicolcheia'];
       const tbody = document.createElement('tbody');
-      for (let r=0;r<5;r++){
+      for (let r = 0; r < 5; r++) {
         const tr = document.createElement('tr');
         const tdLabel = document.createElement('td');
         tdLabel.innerHTML = `<span class="line-label">${labels[r]}</span>`;
         tr.appendChild(tdLabel);
-        for (let c=0;c<cols;c++){
+        for (let c = 0; c < cols; c++) {
           const td = document.createElement('td');
           const input = document.createElement('input');
           input.type = 'text';
@@ -955,7 +1070,6 @@
       }
       table.appendChild(tbody);
       div.appendChild(table);
-
       ui.melodyBlocks.appendChild(div);
       state.melodyBlocks.push(div);
     }
@@ -968,19 +1082,16 @@
     ui.btnMelodyAdd.addEventListener('click', addMelodyBlock);
     ui.btnMelodyClear.addEventListener('click', clearMelodyBlocks);
 
-    // Lê todas as células e monta eventos (cada célula pode iniciar um evento)
     function readMelodyEvents() {
       const beats = meterToBeats(state.meter);
       const cols = beats * 4;
-      const events = []; // {absStep, durationSteps, raw: value}
-
+      const events = [];
       const blocks = state.melodyBlocks;
-      let baseStep = 0; // deslocamento em semicolcheias por bloco
-
+      let baseStep = 0;
       for (let b = 0; b < blocks.length; b++) {
         const div = blocks[b];
-        for (let r=0;r<5;r++){
-          for (let c=0;c<cols;c++){
+        for (let r = 0; r < 5; r++) {
+          for (let c = 0; c < cols; c++) {
             const input = div.querySelector(`input[data-row="${r}"][data-col="${c}"]`);
             if (!input) continue;
             const raw = input.value.trim();
@@ -992,12 +1103,10 @@
         }
         baseStep += cols;
       }
-      // Ordena por posição
-      events.sort((a,b)=> a.absStep - b.absStep);
+      events.sort((a, b) => a.absStep - b.absStep);
       return events;
     }
 
-    // Determina a escala (Set de pitch classes) no passo (considerando acorde do compasso)
     function scaleAtStep(absStep) {
       if (!state.chordPlan.length) return new Set(PITCHES);
       const beats = meterToBeats(state.meter);
@@ -1007,39 +1116,30 @@
       return chordScale(chord.note, chord.type || '');
     }
 
-    // Constrói o plano de melodia por semicolcheia: tokens: start/sustain/rest/mute
     function buildMelodyPlanFromBlocks() {
       const events = readMelodyEvents();
       if (!events.length) { state.melodyPlan = []; return; }
-
-      // Tamanho total: até o último evento terminar
       let totalSteps = 0;
       for (const ev of events) {
         totalSteps = Math.max(totalSteps, ev.absStep + ev.durationSteps);
       }
-
-      const plan = new Array(totalSteps).fill(null); // null = vazio (rest)
+      const plan = new Array(totalSteps).fill(null);
       for (const ev of events) {
         const raw = ev.raw.toLowerCase();
-        if (raw === '°') { // mute pontual
+        if (raw === '°') {
           plan[ev.absStep] = { type: 'mute' };
           continue;
         }
-        if (raw === 'x') { // silêncio
+        if (raw === 'x') {
           plan[ev.absStep] = { type: 'rest' };
           continue;
         }
-
-        // número → ajusta para escala do acorde do início
         const n = parseInt(raw, 10);
         if (!isFinite(n)) continue;
         const sc = scaleAtStep(ev.absStep);
         const fitted = fitNumberToScale(n, sc);
-
         plan[ev.absStep] = { type: 'start', number: fitted };
-
-        // sustenta até a duração (sem sobrescrever inícios existentes)
-        for (let k=1; k<ev.durationSteps; k++) {
+        for (let k = 1; k < ev.durationSteps; k++) {
           const idx = ev.absStep + k;
           if (idx >= plan.length) {
             plan.push({ type: 'sustain' });
@@ -1048,16 +1148,14 @@
           }
         }
       }
-
       state.melodyPlan = plan;
     }
 
-    // Pré-carrega apenas os arquivos realmente usados na melodia
     async function ensureMelodySamplesNeeded() {
       const need = new Set();
       for (const t of state.melodyPlan) {
         if (t && t.type === 'start' && typeof t.number === 'number') {
-          const name = NUM_TO_NAME[t.number]; // E, F, FS...
+          const name = NUM_TO_NAME[t.number];
           const url = `guitarraDistorcao/Melodia/${t.number}${name}.mp3`;
           need.add(url);
         }
@@ -1081,34 +1179,32 @@
       state.lastMelodyGain = null;
     }
 
-    function playMelodyNumber(time, number, short=false) {
+    function playMelodyNumber(time, number, short = false) {
       const name = NUM_TO_NAME[number];
       const url = `guitarraDistorcao/Melodia/${number}${name}.mp3`;
       const buf = state.buffers.melody[url];
       if (!buf) { log(`⚠️ Melodia ausente: ${url}`); return; }
-
-      // Encerra nota anterior (para evitar sobreposição indesejada)
       if (state.lastMelodyGain) {
         state.lastMelodyGain.gain.cancelScheduledValues(time);
         state.lastMelodyGain.gain.linearRampToValueAtTime(0.0, time + 0.01);
       }
-
       const src = audio.ctx.createBufferSource();
       const g = audio.ctx.createGain();
       src.buffer = buf;
       src.connect(g);
-      // usamos o mesmo bus da guitarra distorcida para facilitar mix (pode ajustar depois)
       g.connect(audio.distGain);
       g.gain.setValueAtTime(0.0, time);
       g.gain.linearRampToValueAtTime(1.0, time + 0.01);
-
-      // se "short", podemos encurtar (não usado agora)
-      // src.stop(time + (short ? state.sixteenthDur * 0.9 : buf.duration));
-
       src.start(time);
       state.lastMelodySource = src;
       state.lastMelodyGain = g;
     }
+
+    window.addEventListener('load', () => {
+      log('Carregando interface...');
+      initAudio();
+      addMelodyBlock();
+    });
   </script>
 </body>
 </html>
