@@ -119,7 +119,26 @@
       </div>
     </div>
 
-    
+    <div class="panel">
+      <h3>Estado atual</h3>
+      <div class="mono" id="state"></div>
+      <div class="footer">Ao clicar em <b>Play</b>, gera um novo playback aleatório.</div>
+    </div>
+
+    <div class="panel">
+      <h3>Arquivos esperados</h3>
+      <div class="mono">
+        <div>Coloque os áudios nas pastas:</div>
+        <ul>
+          <li><b>guitarraLimpa/[nota]/[nota][tipo].mp3</b> — Ex: guitarraLimpa/A/A.mp3 ou guitarraLimpa/C/Cm.mp3</li>
+          <li><b>guitarraDistorcao/[nota]/[nota][tipo].mp3</b></li>
+          <li><b>assets/bumbo.mp3</b>, <b>assets/caixa.mp3</b>, <b>assets/chimbal.mp3</b></li>
+          <li><b>assets/bass-A.mp3</b>, <b>assets/bass-AS.mp3</b>, etc. (A, AS, B, C, CS, ...)</li>
+          <li><b>assets/bass-muted.mp3</b> → para ghost note (x)</li>
+        </ul>
+      </div>
+    </div>
+
     <!-- --- MELODY ADDON: Painel da matriz de melodia --- -->
     <div class="panel melody-panel">
       <h3>🎸 Melodia da Guitarra (notas individuais)</h3>
@@ -133,7 +152,8 @@
       <div class="footer">Os arquivos de nota devem estar em <code>guitarraDistorcao/Melodia/</code> com nomes como <code>13E.mp3</code>, <code>22CS.mp3</code>…</div>
     </div>
 
-    </div>
+    <div class="log mono" id="log"></div>
+  </div>
 
   <script>
     // Função de transposição: 3 semitons abaixo
