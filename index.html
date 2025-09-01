@@ -2,10 +2,10 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Jam on – Playback Aleatório</title>
+  <title>Jam on – Playback Aleatório + Melodia por Números</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 20px; background: #f0f0f0; }
-    .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
     .grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
     .row { display: flex; align-items: center; margin: 10px 0; }
     .row label { width: 120px; }
@@ -19,9 +19,11 @@
     .footer { font-size: 0.8em; color: #666; margin-top: 10px; }
     .pill { display: inline-block; background: #000; color: #fff; padding: 4px 8px; border-radius: 12px; font-size: 0.8em; }
     #log { height: 120px; overflow:auto; white-space: pre-wrap; margin-top:10px; }
+
     .slider-row { display: flex; align-items: center; gap: 10px; margin: 5px 0; }
     .slider-row label { width: 100px; }
     .slider-row input[type=range] { flex: 1; }
+
     .chord-item {
       display: inline-block;
       padding: 6px 10px;
@@ -35,11 +37,61 @@
       color: white;
       font-weight: bold;
     }
+
+    /* Nova seção de melodia */
+    #melodyInputSection input[type="text"] {
+      padding: 8px;
+      margin-bottom: 10px;
+      width: 100%;
+    }
+
+    .matrix-container {
+      display: inline-block;
+      margin: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+
+    .matrix {
+      border-collapse: collapse;
+      font-size: 0.9em;
+      width: 100%;
+    }
+
+    .matrix td {
+      width: 40px;
+      height: 40px;
+      text-align: center;
+      border: 1px solid #eee;
+      position: relative;
+    }
+
+    .matrix td input {
+      width: 100%;
+      height: 100%;
+      border: none;
+      text-align: center;
+      font-size: 0.8em;
+      padding: 0;
+      outline: none;
+    }
+
+    .matrix thead th {
+      background: #444;
+      color: white;
+      padding: 6px;
+      font-weight: normal;
+    }
+
+    .matrix thead th:nth-child(1) { width: 100px; }
   </style>
 </head>
 <body>
   <header>
-    <h1>Jam on – Playback Aleatório (baixo + bateria + guitarra)</h1>
+    <h1>Jam on – Playback Aleatório (baixo + bateria + guitarra + melodia)</h1>
     <div class="pill">Cada pulso do BPM = semínima</div>
   </header>
 
@@ -122,9 +174,11 @@
         <ul>
           <li><b>guitarraLimpa/[nota]/[nota][tipo].mp3</b> — Ex: guitarraLimpa/A/A.mp3 ou guitarraLimpa/C/Cm.mp3</li>
           <li><b>guitarraDistorcao/[nota]/[nota][tipo].mp3</b></li>
+          <li><b>guitarraLimpa/Melodia/[num][nota].mp3</b> — ex: 1E.mp3, 2F.mp3</li>
+          <li><b>guitarraDistorcao/Melodia/[num][nota].mp3</b></li>
           <li><b>assets/bumbo.mp3</b>, <b>assets/caixa.mp3</b>, <b>assets/chimbal.mp3</b></li>
-          <li><b>assets/bass-A.mp3</b>, <b>assets/bass-AS.mp3</b>, etc. (A, AS, B, C, CS, ...)</li>
-          <li><b>assets/bass-muted.mp3</b> → para ghost note (x)</li>
+          <li><b>assets/bass-A.mp3</b>, <b>assets/bass-AS.mp3</b>, etc.</li>
+          <li><b>assets/bass-muted.mp3</b></li>
         </ul>
       </div>
     </div>
@@ -132,8 +186,176 @@
     <div class="log mono" id="log"></div>
   </div>
 
+  <!-- Nova seção: Entrada de Melodia -->
+  <div class="card" id="melodyInputSection">
+    <h3>Entrada de Melodia Aleatória</h3>
+    <p>Digite números separados por vírgula (ex: 3, 15, 27, 40)</p>
+    <input type="text" id="melodyInput" placeholder="Ex: 3, 15, 27, 40" />
+    <button id="addMatrix" class="primary">➕ Adicionar Compasso</button>
+    <button id="clearMatrices" class="danger">🗑 Limpar</button>
+    <div id="matricesContainer" style="margin-top: 20px; overflow-x: auto;"></div>
+  </div>
+
   <script>
-    // Função de transposição: 3 semitons abaixo
+    // ============ Mapeamento e Escalas ============
+
+    const SCALE_NOTES = {
+      'C': ['C', 'D', 'E', 'F', 'G', 'A', 'B'],
+      'Cm': ['C', 'D', 'Eb', 'F', 'G', 'Ab', 'Bb'],
+      'D': ['D', 'E', 'F#', 'G', 'A', 'B', 'C#'],
+      'Dm': ['D', 'E', 'F', 'G', 'A', 'Bb', 'C'],
+      'E': ['E', 'F#', 'G#', 'A', 'B', 'C#', 'D#'],
+      'Em': ['E', 'F#', 'G', 'A', 'B', 'C', 'D'],
+      'F': ['F', 'G', 'A', 'Bb', 'C', 'D', 'E'],
+      'Fm': ['F', 'G', 'Ab', 'Bb', 'C', 'Db', 'Eb'],
+      'G': ['G', 'A', 'B', 'C', 'D', 'E', 'F#'],
+      'Gm': ['G', 'A', 'Bb', 'C', 'D', 'Eb', 'F'],
+      'A': ['A', 'B', 'C#', 'D', 'E', 'F#', 'G#'],
+      'Am': ['A', 'B', 'C', 'D', 'E', 'F', 'G'],
+      'B': ['B', 'C#', 'D#', 'E', 'F#', 'G#', 'A#'],
+      'Bm': ['B', 'C#', 'D', 'E', 'F#', 'G', 'A']
+    };
+
+    function getNoteFromNumber(num) {
+      const noteMap = {
+        'E': ['1E', '13E', '25E', '37E', '49E'],
+        'F': ['2F', '14F', '26F', '38F'],
+        'FS': ['3FS', '15FS', '27FS', '39FS'],
+        'G': ['4G', '16G', '28G', '40G'],
+        'GS': ['5GS', '17GS', '29GS', '41GS'],
+        'A': ['6A', '18A', '30A', '42A'],
+        'AS': ['7AS', '19AS', '31AS', '43AS'],
+        'B': ['8B', '20B', '32B', '44B'],
+        'C': ['9C', '21C', '33C', '45C'],
+        'CS': ['10CS', '22CS', '34CS', '46CS'],
+        'D': ['11D', '23D', '35D', '47D'],
+        'DS': ['12DS', '24DS', '36DS', '48DS']
+      };
+      for (const [note, numbers] of Object.entries(noteMap)) {
+        if (numbers.includes(num.toString())) {
+          return { note: note.replace('S', '#'), num };
+        }
+      }
+      return null;
+    }
+
+    function snapToScale(note, chord) {
+      const chordType = chord.includes('m') ? 'm' : 'maj';
+      const root = chord.replace('m', '');
+      const key = root + (chordType === 'm' ? 'm' : '');
+      const scale = SCALE_NOTES[key] || SCALE_NOTES['C'];
+      const sharpNote = note.replace('S', '#').replace('b', 'B');
+
+      if (scale.includes(sharpNote)) return sharpNote;
+
+      const noteValues = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+      const targetIndex = noteValues.indexOf(sharpNote);
+      if (targetIndex === -1) return note;
+
+      for (let offset = 1; offset < 6; offset++) {
+        const up = noteValues[(targetIndex + offset) % 12];
+        const down = noteValues[(targetIndex - offset + 12) % 12];
+        if (scale.includes(up)) return up;
+        if (scale.includes(down)) return down;
+      }
+      return sharpNote;
+    }
+
+    function findClosestNumberForNote(note) {
+      const noteMap = {
+        'C': [9, 21, 33, 45],
+        'C#': [10, 22, 34, 46],
+        'D': [11, 23, 35, 47],
+        'D#': [12, 24, 36, 48],
+        'E': [1, 13, 25, 37, 49],
+        'F': [2, 14, 26, 38],
+        'F#': [3, 15, 27, 39],
+        'G': [4, 16, 28, 40],
+        'G#': [5, 17, 29, 41],
+        'A': [6, 18, 30, 42],
+        'A#': [7, 19, 31, 43],
+        'B': [8, 20, 32, 44]
+      };
+      const options = noteMap[note.replace('#', '')] || [1];
+      return options[Math.floor(Math.random() * options.length)];
+    }
+
+    // ============ Criação de Matriz ============
+
+    function getColumnsPerBar(meter) {
+      const beats = parseInt(meter.split('/')[0]);
+      return beats * 4;
+    }
+
+    function createMatrix(meter) {
+      const cols = getColumnsPerBar(meter);
+      const container = document.createElement('div');
+      container.className = 'matrix-container';
+
+      let tableHTML = `<table class="matrix"><thead><tr><th>Valor</th>`;
+      for (let i = 0; i < cols; i++) tableHTML += `<th>${i+1}</th>`;
+      tableHTML += `</tr></thead><tbody>`;
+
+      const durations = [
+        { name: 'Semibreve', dur: 4 },
+        { name: 'Mínima', dur: 2 },
+        { name: 'Semínima', dur: 1 },
+        { name: 'Colcheia', dur: 0.5 },
+        { name: 'Semicolcheia', dur: 0.25 }
+      ];
+
+      durations.forEach(d => {
+        tableHTML += `<tr><th>${d.name}</th>`;
+        for (let i = 0; i < cols; i++) {
+          tableHTML += `<td><input type="text" data-dur="${d.dur}" data-row="${d.name}"></td>`;
+        }
+        tableHTML += `</tr>`;
+      });
+
+      tableHTML += `</tbody></table>`;
+      container.innerHTML = tableHTML;
+      document.getElementById('matricesContainer').appendChild(container);
+      return container;
+    }
+
+    // ============ Tocar Nota ============
+
+    async function playMelodyNote(noteNum, duration, time) {
+      const noteObj = getNoteFromNumber(noteNum);
+      if (!noteObj) return;
+
+      const currentChord = state.chordPlan?.[state.currentChordIndex];
+      if (!currentChord) return;
+
+      const displayedChord = currentChord.displayed;
+      const snappedNote = snapToScale(noteObj.note, displayedChord);
+      const closestNum = findClosestNumberForNote(snappedNote);
+
+      const fileName = `${closestNum}${snappedNote.replace('#', 'S')}.mp3`;
+      const folder = Math.random() > 0.5 ? 'guitarraLimpa' : 'guitarraDistorcao';
+      const url = `${folder}/Melodia/${fileName}`;
+
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error();
+        const arrayBuffer = await response.arrayBuffer();
+        const buffer = await audio.ctx.decodeAudioData(arrayBuffer);
+
+        const src = audio.ctx.createBufferSource();
+        const g = audio.ctx.createGain();
+        src.buffer = buffer;
+        src.connect(g);
+        g.connect(audio.mix);
+        g.gain.setValueAtTime(0.8, time);
+        src.start(time);
+        src.stop(time + duration * state.sixteenthDur * 4);
+      } catch (e) {
+        console.log(`❌ Nota não encontrada: ${url}`);
+      }
+    }
+
+    // ============ Código Original (com pequenas adaptações) ============
+
     function transposeDown3Semitones(note) {
       const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
       const index = notes.indexOf(note);
@@ -191,26 +413,15 @@
       ch: 'chimbal'
     };
 
-    // Bass samples
     const BASS_SAMPLES = {};
     for (const p of PITCHES) {
       BASS_SAMPLES[p] = `assets/bass-${p}.mp3`;
     }
-    BASS_SAMPLES['x'] = 'assets/bass-muted.mp3'; // ghost note
+    BASS_SAMPLES['x'] = 'assets/bass-muted.mp3';
 
     const ALL_GROOVES = [
-      {
-        name: "Rock Básico",
-        meter: "4/4",
-        drumPattern: ["ba - ch - cch - ch - bch - ch - cch - ch bu", "ba - ch - cch - ch - bch - ch - cch - ch bu"],
-        bassRhythm: ["bo - sm - bo - sm - bo - sm - bo bo bo bo", "bo - sm - bo - sm - bo - sm - bo x bo bo"]
-      },
-      {
-        name: "Samba",
-        meter: "2/4",
-        drumPattern: ["bch - ch bu bch - ch bu", "bch - ch bu bch - ch -"],
-        bassRhythm: ["bo - - bo bo - - bo", "bo ° - bo bo x - bo"]
-      }
+      { name: "Rock Básico", meter: "4/4", drumPattern: ["ba - ch - cch - ch - bch - ch - cch - ch bu"], bassRhythm: ["bo - sm - bo - sm - bo - sm - bo bo bo bo"] },
+      { name: "Samba", meter: "2/4", drumPattern: ["bch - ch bu bch - ch bu"], bassRhythm: ["bo - - bo bo - - bo"] }
     ];
 
     const PROGRESSIONS = [
@@ -220,32 +431,12 @@
     ];
 
     const state = {
-      running: false,
-      paused: false,
-      nextNoteTime: 0,
-      meter: '4/4',
-      bpm: 100,
-      sixteenthDur: 0.15,
-      stepIndex: 0,
-      buffers: { drums: {}, bass: {}, guitar: {} },
-      bassPlan: [],
-      chordPlan: [],
-      signatureTag: '',
-      key: null,
-      keyIdx: 0,
-      quality: 'maj',
-      chordProgression: [],
-      chordDurations: [],
-      currentGroove: null,
-      currentChordIndex: 0,
-      barsInChord: 0,
-      clickCount: 0,
-      totalClicks: 0,
-      drumSeq: [],
-      lastBassSource: null,
-      lastBassGainNode: null,
-      lastCleanSource: null,
-      lastDistSource: null
+      running: false, paused: false, nextNoteTime: 0, meter: '4/4', bpm: 100,
+      sixteenthDur: 0.15, stepIndex: 0, buffers: { drums: {}, bass: {}, guitar: {} },
+      bassPlan: [], chordPlan: [], signatureTag: '', key: null, keyIdx: 0, quality: 'maj',
+      chordProgression: [], chordDurations: [], currentGroove: null, currentChordIndex: 0,
+      barsInChord: 0, clickCount: 0, totalClicks: 0, drumSeq: [],
+      lastBassSource: null, lastBassGainNode: null, lastCleanSource: null, lastDistSource: null
     };
 
     const mute = { bass: false, drums: false, clean: false, dist: false };
@@ -297,7 +488,6 @@
         await ensureBasicSamples();
         log('✅ Básicos carregados.');
 
-        // Vincular sliders
         function updateVolume() {
           audio.bassGain.gain.value = parseFloat(ui.volBass.value);
           audio.drumGain.gain.value = parseFloat(ui.volDrums.value);
@@ -393,37 +583,21 @@
         const chordType = state.quality === 'maj' ? '' : 'm';
         const chordDisplay = CHORD_NAMES[rootIdx] + chordType;
 
-        // Transpõe 3 semitons abaixo para exibição
         const displayedNote = transposeDown3Semitones(CHORD_NAMES[rootIdx]);
         const displayedChord = displayedNote + chordType;
 
-        chordPlan.push({
-          note: rootNote,
-          type: chordType,
-          display: chordDisplay,
-          displayed: displayedChord
-        });
+        chordPlan.push({ note: rootNote, type: chordType, display: chordDisplay, displayed: displayedChord });
 
         for (let stepInBar = 0; stepInBar < sixteenthsPerBar; stepInBar++) {
           const step = bar * sixteenthsPerBar + stepInBar;
           const sym = rhythm[step] || '-';
           let bassNote = null;
-
-          if (sym === 'x') {
-            bassNote = 'x';
-          } else if (sym === '°') {
-            bassNote = '°';
-          } else if (sym === 'sm' || sym === '-') {
-            bassNote = '-';
-          } else if (sym === 'bo') {
-            bassNote = rootNote;
-          } else if (sym === 'bs') {
-            const fifthIdx = (rootIdx + 7) % 12;
-            bassNote = PITCHES[fifthIdx];
-          } else {
-            bassNote = rootNote;
-          }
-
+          if (sym === 'x') bassNote = 'x';
+          else if (sym === '°') bassNote = '°';
+          else if (sym === 'sm' || sym === '-') bassNote = '-';
+          else if (sym === 'bo') bassNote = rootNote;
+          else if (sym === 'bs') bassNote = PITCHES[(rootIdx + 7) % 12];
+          else bassNote = rootNote;
           bassPlan.push(bassNote);
         }
       }
@@ -433,17 +607,14 @@
       state.currentChordIndex = 0;
       state.barsInChord = 0;
 
-      // Gera a exibição da progressão completa (com transposição)
       const progEl = document.getElementById('chordProgression');
       if (progEl && state.chordPlan.length > 0) {
         const chordLabels = state.chordPlan.map(ch => ch.displayed);
-        progEl.innerHTML = chordLabels
-          .map((label, i) => `<span class="chord-item" data-index="${i}">${label}</span>`)
-          .join(' ');
+        progEl.innerHTML = chordLabels.map((label, i) => `<span class="chord-item" data-index="${i}">${label}</span>`).join(' ');
       }
 
-      const drumParsed = parsePattern(state.currentGroove.drumPattern.join(' '));
-      const drumSeq = [...drumParsed.intro, ...drumParsed.loop];
+      const drumParsed = { loop: state.currentGroove.drumPattern[0].split(/\s+/).filter(s => s) };
+      const drumSeq = [...drumParsed.loop];
       const drumExpanded = [];
       while (drumExpanded.length < state.bassPlan.length) {
         for (const t of drumSeq) {
@@ -466,36 +637,14 @@
       guitarUrls.forEach(url => {
         if (!state.buffers.guitar) state.buffers.guitar = {};
         if (!state.buffers.guitar[url]) {
-          const p = loadBuffer(url).then(buf => {
-            if (buf) state.buffers.guitar[url] = buf;
-          }).catch(() => {});
+          const p = loadBuffer(url).then(buf => { if (buf) state.buffers.guitar[url] = buf; }).catch(() => {});
           preloadPromises.push(p);
         }
       });
 
       return Promise.all(preloadPromises).then(() => {
         log('✅ Guitarras pré-carregadas.');
-      }).catch(() => {
-        log('⚠️ Preload de guitarras terminou com erros.');
       });
-    }
-
-    function parsePattern(patternText) {
-      const result = { intro: [], loop: [] };
-      const introMatch = patternText.match(/\[(.*?)\]/);
-      const loopMatch = patternText.match(/\((.*?)\)/);
-
-      if (introMatch) {
-        result.intro = introMatch[1].trim().split(/\s+/).filter(s => s);
-      }
-      if (loopMatch) {
-        result.loop = loopMatch[1].trim().split(/\s+/).filter(s => s);
-      }
-      if (!introMatch && !loopMatch) {
-        result.loop = patternText.trim().split(/\s+/).filter(s => s);
-      }
-      if (!result.loop.length) result.loop = result.intro.slice();
-      return result;
     }
 
     function playClickAtTime(time, isStrong) {
@@ -565,10 +714,7 @@
       let safetyCounter = 0;
       while (state.nextNoteTime < currentTime + lookahead) {
         scheduleStep();
-        if (++safetyCounter > 100) {
-          log("⚠️ Loop de scheduler interrompido por segurança");
-          break;
-        }
+        if (++safetyCounter > 100) break;
       }
     }
 
@@ -596,7 +742,6 @@
           src.buffer = state.buffers.drums[key];
           src.connect(g);
           g.connect(audio.drumGain);
-
           g.gain.setValueAtTime(0.0, time);
           g.gain.linearRampToValueAtTime(1.0, time + 0.005);
           src.start(time);
@@ -654,35 +799,47 @@
 
       // GUITAR
       if (isNewBar) {
-        if (state.lastCleanSource) {
-          state.lastCleanSource.stop(time);
-          state.lastCleanSource = null;
-        }
-        if (state.lastDistSource) {
-          state.lastDistSource.stop(time);
-          state.lastDistSource = null;
-        }
+        if (state.lastCleanSource) state.lastCleanSource.stop(time);
+        if (state.lastDistSource) state.lastDistSource.stop(time);
+        state.lastCleanSource = null;
+        state.lastDistSource = null;
 
         const chord = state.chordPlan[state.currentChordIndex];
         if (chord) {
-          // Mostra o acorde transposto
           ui.currentChord.textContent = chord.displayed;
-
           const barsLeft = state.chordDurations[state.currentChordIndex] - state.barsInChord;
           ui.chordTimer.textContent = `Próx: ${barsLeft} compasso(s)`;
-
-          // Destaca o acorde atual na progressão
           document.querySelectorAll('.chord-item.current').forEach(el => el.classList.remove('current'));
           const items = document.querySelectorAll('.chord-item');
           const currentIndex = state.currentChordIndex % items.length;
-          if (items[currentIndex]) {
-            items[currentIndex].classList.add('current');
-          }
+          if (items[currentIndex]) items[currentIndex].classList.add('current');
 
-          // Toca o acorde real (sem transposição)
           if (!mute.clean) playChord(time, chord.note, chord.type, false);
           if (!mute.dist) playChord(time, chord.note, chord.type, true);
         }
+      }
+
+      // ====== TOCAR MELODIA ======
+      const matrices = document.querySelectorAll('#matricesContainer .matrix');
+      let totalStepsSoFar = 0;
+      for (const matrix of matrices) {
+        const rows = matrix.querySelectorAll('tr');
+        const cols = rows[0]?.querySelectorAll('td').length || 0;
+        for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
+          const inputs = rows[rowIdx].querySelectorAll('input');
+          for (let colIdx = 0; colIdx < cols; colIdx++) {
+            const input = inputs[colIdx];
+            const value = input.value.trim();
+            if (!value) continue;
+
+            const globalStep = totalStepsSoFar + colIdx;
+            if (state.stepIndex % state.bassPlan.length === globalStep) {
+              const dur = parseFloat(input.dataset.dur);
+              playMelodyNote(parseInt(value), dur, time);
+            }
+          }
+        }
+        totalStepsSoFar += cols;
       }
 
       state.stepIndex++;
@@ -693,7 +850,6 @@
           state.barsInChord = 0;
         }
       }
-
       state.nextNoteTime += state.sixteenthDur;
     }
 
@@ -714,14 +870,8 @@
         g.gain.setValueAtTime(0.0, time);
         g.gain.linearRampToValueAtTime(1.0, time + 0.01);
         src.start(time);
-
-        if (isDistorted) {
-          state.lastDistSource = src;
-        } else {
-          state.lastCleanSource = src;
-        }
-      } else {
-        log(`⚠️ Buffer de guitarra faltando: ${url}`);
+        if (isDistorted) state.lastDistSource = src;
+        else state.lastCleanSource = src;
       }
     }
 
@@ -739,35 +889,26 @@
       ui.currentChord.textContent = '—';
       ui.chordTimer.textContent = '—';
       state.stepIndex = 0;
-
       if (state.lastBassSource) state.lastBassSource.stop(0);
       if (state.lastCleanSource) state.lastCleanSource.stop(0);
       if (state.lastDistSource) state.lastDistSource.stop(0);
-
       state.lastBassSource = null;
       state.lastBassGainNode = null;
       state.lastCleanSource = null;
       state.lastDistSource = null;
-
       document.querySelectorAll('.chord-item.current').forEach(el => el.classList.remove('current'));
-
       log('⏹ Stopped.');
     }
 
     function startScheduler() {
       function tick() {
-        if (state.running && !state.paused) {
-          scheduler();
-        }
+        if (state.running && !state.paused) scheduler();
         requestAnimationFrame(tick);
       }
       tick();
     }
 
-    function stopScheduler() {
-      if (audio.schedulerTimer) clearInterval(audio.schedulerTimer);
-      audio.schedulerTimer = null;
-    }
+    function stopScheduler() {}
 
     function toggleMute(type, button) {
       mute[type] = !mute[type];
@@ -778,6 +919,30 @@
       button.classList.toggle('muted', mute[type]);
     }
 
+    // ====== Eventos da Melodia ======
+    document.getElementById('addMatrix').addEventListener('click', () => {
+      const meter = ui.meter.value === 'auto' ? '4/4' : ui.meter.value;
+      createMatrix(meter);
+    });
+
+    document.getElementById('clearMatrices').addEventListener('click', () => {
+      document.getElementById('matricesContainer').innerHTML = '';
+    });
+
+    document.getElementById('melodyInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        const nums = e.target.value.split(',').map(n => n.trim()).filter(n => n && !isNaN(n));
+        const meter = ui.meter.value === 'auto' ? '4/4' : ui.meter.value;
+        const matrix = createMatrix(meter);
+        const inputs = matrix.querySelectorAll('input');
+        nums.forEach((num, i) => {
+          if (inputs[i]) inputs[i].value = num;
+        });
+        e.target.value = '';
+      }
+    });
+
+    // ====== Eventos principais ======
     ui.play.addEventListener('click', onPlay);
     ui.pause.addEventListener('click', onPause);
     ui.stop.addEventListener('click', onStop);
@@ -787,7 +952,7 @@
     ui.muteDist.addEventListener('click', () => toggleMute('dist', ui.muteDist));
 
     window.addEventListener('load', () => {
-      log('Carregando interface... preparando áudio (pré-carregando amostras básicas).');
+      log('Carregando interface... preparando áudio.');
       initAudio();
     });
   </script>
