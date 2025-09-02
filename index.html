@@ -425,7 +425,8 @@
       lastMelodySource: null,
       lastMelodyGain: null,
       melodyBlocks: [],
-      melodyPlan: []
+      melodyPlan: [],
+      lastMelodyNote: null // Adicionado para rastrear a última nota de melodia
     };
 
     const mute = { bass: false, drums: false, clean: false, dist: false };
@@ -687,39 +688,35 @@
       }
     }
 
-     // DRUMS
-     function scheduleStep() {
-  const time = state.nextNoteTime;
-  const stepIdx = state.stepIndex;
-  const beats = meterToBeats(state.meter);
-  const sixteenthsPerBar = beats * 4;
-  const isNewBar = (stepIdx % sixteenthsPerBar) === 0;
+    function scheduleStep() {
+      const time = state.nextNoteTime;
+      const stepIdx = state.stepIndex;
+      const beats = meterToBeats(state.meter);
+      const sixteenthsPerBar = beats * 4;
+      const isNewBar = (stepIdx % sixteenthsPerBar) === 0;
 
-  // DRUMS
-  const drumToken = state.drumSeq[stepIdx % state.drumSeq.length];
-  if (drumToken && !mute.drums) {
-    let drumKey = null;
-    if (drumToken === 'bu' || drumToken === 'bumbo') drumKey = 'bu';
-    else if (drumToken === 'ca' || drumToken === 'caixa') drumKey = 'ca';
-    else if (drumToken === 'ch' || drumToken === 'chimbal') drumKey = 'ch';
-    else if (drumToken === 'ba' || drumToken === 'bumbo-ataque') drumKey = 'ba';
-    else if (drumToken === 'cch' || drumToken === 'caixa-chimbal') drumKey = 'cch';
-    else if (drumToken === 'bch' || drumToken === 'bumbo-chimbal') drumKey = 'bch';
+      // DRUMS
+      const drumToken = state.drumSeq[stepIdx % state.drumSeq.length];
+      if (drumToken && !mute.drums) {
+        let drumKey = null;
+        if (drumToken === 'bu' || drumToken === 'bumbo') drumKey = 'bu';
+        else if (drumToken === 'ca' || drumToken === 'caixa') drumKey = 'ca';
+        else if (drumToken === 'ch' || drumToken === 'chimbal') drumKey = 'ch';
+        else if (drumToken === 'ba' || drumToken === 'bumbo-ataque') drumKey = 'ba';
+        else if (drumToken === 'cch' || drumToken === 'caixa-chimbal') drumKey = 'cch';
+        else if (drumToken === 'bch' || drumToken === 'bumbo-chimbal') drumKey = 'bch';
 
-    if (drumKey && state.buffers.drums[drumKey]) {
-      const src = audio.ctx.createBufferSource();
-      const g = audio.ctx.createGain();
-      src.buffer = state.buffers.drums[drumKey];
-      src.connect(g);
-      g.connect(audio.drumGain);
-      g.gain.setValueAtTime(0.0, time);
-      g.gain.linearRampToValueAtTime(1.0, time + 0.005);
-      src.start(time);
-    }
-  }
-
-  // Restante do código (BASS, GUITAR, MELODY) permanece igual...
-  // (não mude nada abaixo)
+        if (drumKey && state.buffers.drums[drumKey]) {
+          const src = audio.ctx.createBufferSource();
+          const g = audio.ctx.createGain();
+          src.buffer = state.buffers.drums[drumKey];
+          src.connect(g);
+          g.connect(audio.drumGain);
+          g.gain.setValueAtTime(0.0, time);
+          g.gain.linearRampToValueAtTime(1.0, time + 0.005);
+          src.start(time);
+        }
+      }
 
       // BASS
       const bassCommand = state.bassPlan[stepIdx % state.bassPlan.length];
@@ -771,10 +768,15 @@
       if (melodyEvent && melodyEvent.type === 'start') {
         const baseNumber = melodyEvent.originalNumber;
         const chord = state.chordPlan[state.currentChordIndex];
-        const adaptedNumber = adaptNumberToChord(baseNumber, chord.note, chord.type);
+        
+        // Usar a versão modificada que evita repetições
+        const adaptedNumber = adaptNumberToChord(baseNumber, chord.note, chord.type, state.lastMelodyNote);
+        state.lastMelodyNote = adaptedNumber; // Registrar a nota tocada
+        
         playMelodyNumber(time, adaptedNumber, melodyEvent.instrument);
       } else if (melodyEvent && melodyEvent.type === 'mute') {
         stopMelodyAt(time);
+        state.lastMelodyNote = null; // Resetar quando a melodia para
       }
 
       state.stepIndex++;
@@ -783,6 +785,7 @@
         if (state.barsInChord >= state.chordDurations[state.currentChordIndex]) {
           state.currentChordIndex = (state.currentChordIndex + 1) % state.chordPlan.length;
           state.barsInChord = 0;
+          state.lastMelodyNote = null; // Resetar a última nota quando o acorde muda
         }
       }
       state.nextNoteTime += state.sixteenthDur;
@@ -825,6 +828,7 @@
       state.lastDistSource = null;
       state.lastMelodySource = null;
       state.lastMelodyGain = null;
+      state.lastMelodyNote = null;
       document.querySelectorAll('.chord-item.current').forEach(el => el.classList.remove('current'));
     }
 
@@ -889,30 +893,44 @@
       return Math.abs(i1 - i2);
     }
 
-    function adaptNumberToChord(number, root, type) {
+    function adaptNumberToChord(number, root, type, lastPlayedNote = null) {
       const baseName = NUM_TO_NAME[number];
       const triad = chordTriad(root, type);
-      let closest = triad[0];
-      let minDist = distanceBetweenNotes(baseName, closest);
-      for (const note of triad) {
-        const d = distanceBetweenNotes(baseName, note);
-        if (d < minDist) {
-          minDist = d;
-          closest = note;
+      
+      // Ordenar as notas do acorde por proximidade com a nota original
+      const noteDistances = triad.map(note => ({
+        note,
+        distance: distanceBetweenNotes(baseName, note)
+      })).sort((a, b) => a.distance - b.distance);
+      
+      // Se a última nota tocada for a mais próxima, escolha a segunda mais próxima
+      if (lastPlayedNote && noteDistances.length > 1) {
+        const lastNoteName = NUM_TO_NAME[lastPlayedNote];
+        if (noteDistances[0].note === lastNoteName) {
+          // Use a segunda opção mais próxima para evitar repetição
+          return findClosestNumber(number, noteDistances[1].note);
         }
       }
-      let bestNum = number;
+      
+      // Caso contrário, use a nota mais próxima
+      return findClosestNumber(number, noteDistances[0].note);
+    }
+
+    function findClosestNumber(targetNumber, targetNote) {
+      let bestNum = targetNumber;
       let bestDist = 100;
+      
       for (let n = 1; n <= 49; n++) {
         const name = NUM_TO_NAME[n];
-        if (name === closest) {
-          const dist = Math.abs(n - number);
+        if (name === targetNote) {
+          const dist = Math.abs(n - targetNumber);
           if (dist < bestDist) {
             bestDist = dist;
             bestNum = n;
           }
         }
       }
+      
       return bestNum;
     }
 
@@ -1045,40 +1063,40 @@
     }
 
     function playMelodyNumber(time, number, instrumentType) {
-  const name = NUM_TO_NAME[number];
-  let folder = 'guitarraDistorcao';
-  if (instrumentType === 'clean') folder = 'guitarraLimpa';
-  else if (instrumentType === 'piano') folder = 'pianoString';
-  const url = `${folder}/Melodia/${number}${name}.mp3`;
-  const buf = state.buffers.melody[url];
-  if (!buf) return;
+      const name = NUM_TO_NAME[number];
+      let folder = 'guitarraDistorcao';
+      if (instrumentType === 'clean') folder = 'guitarraLimpa';
+      else if (instrumentType === 'piano') folder = 'pianoString';
+      const url = `${folder}/Melodia/${number}${name}.mp3`;
+      const buf = state.buffers.melody[url];
+      if (!buf) return;
 
-  // Parar qualquer nota anterior antes de começar uma nova
-  if (state.lastMelodySource && !state.lastMelodySource.finished) {
-    state.lastMelodySource.stop(time);
-  }
+      // Parar qualquer nota anterior antes de começar uma nova
+      if (state.lastMelodySource && !state.lastMelodySource.finished) {
+        state.lastMelodySource.stop(time);
+      }
 
-  const src = audio.ctx.createBufferSource();
-  const g = audio.ctx.createGain();
-  src.buffer = buf;
-  src.connect(g);
-  g.connect(audio.distGain);
+      const src = audio.ctx.createBufferSource();
+      const g = audio.ctx.createGain();
+      src.buffer = buf;
+      src.connect(g);
+      g.connect(audio.distGain);
 
-  g.gain.setValueAtTime(0.0, time);
-  g.gain.linearRampToValueAtTime(1.0, time + 0.01);
+      g.gain.setValueAtTime(0.0, time);
+      g.gain.linearRampToValueAtTime(1.0, time + 0.01);
 
-  // Garantir que não toque além do necessário
-  const maxDuration = state.sixteenthDur * 2; // limite curto
-  src.start(time);
-  src.stop(time + Math.min(buf.duration, maxDuration)); // corta se for longo
+      // Garantir que não toque além do necessário
+      const maxDuration = state.sixteenthDur * 2; // limite curto
+      src.start(time);
+      src.stop(time + Math.min(buf.duration, maxDuration)); // corta se for longo
 
-  state.lastMelodySource = src;
-  state.lastMelodyGain = g;
+      state.lastMelodySource = src;
+      state.lastMelodyGain = g;
 
-  // Marcar quando termina
-  src.finished = false;
-  src.onended = () => { src.finished = true; };
-}
+      // Marcar quando termina
+      src.finished = false;
+      src.onended = () => { src.finished = true; };
+    }
 
     window.addEventListener('load', () => {
       initAudio();
