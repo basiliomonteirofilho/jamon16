@@ -687,28 +687,39 @@
       }
     }
 
-    function scheduleStep() {
-      const time = state.nextNoteTime;
-      const stepIdx = state.stepIndex;
-      const beats = meterToBeats(state.meter);
-      const sixteenthsPerBar = beats * 4;
-      const isNewBar = (stepIdx % sixteenthsPerBar) === 0;
+     // DRUMS
+     function scheduleStep() {
+  const time = state.nextNoteTime;
+  const stepIdx = state.stepIndex;
+  const beats = meterToBeats(state.meter);
+  const sixteenthsPerBar = beats * 4;
+  const isNewBar = (stepIdx % sixteenthsPerBar) === 0;
 
-      // DRUMS
-      const drumToken = state.drumSeq[stepIdx % state.drumSeq.length];
-      if (drumToken && !mute.drums) {
-        const key = Object.keys(DRUMS).find(k => DRUMS[k] === drumToken.toLowerCase());
-        if (key && state.buffers.drums[key]) {
-          const src = audio.ctx.createBufferSource();
-          const g = audio.ctx.createGain();
-          src.buffer = state.buffers.drums[key];
-          src.connect(g);
-          g.connect(audio.drumGain);
-          g.gain.setValueAtTime(0.0, time);
-          g.gain.linearRampToValueAtTime(1.0, time + 0.005);
-          src.start(time);
-        }
-      }
+  // DRUMS
+  const drumToken = state.drumSeq[stepIdx % state.drumSeq.length];
+  if (drumToken && !mute.drums) {
+    let drumKey = null;
+    if (drumToken === 'bu' || drumToken === 'bumbo') drumKey = 'bu';
+    else if (drumToken === 'ca' || drumToken === 'caixa') drumKey = 'ca';
+    else if (drumToken === 'ch' || drumToken === 'chimbal') drumKey = 'ch';
+    else if (drumToken === 'ba' || drumToken === 'bumbo-ataque') drumKey = 'ba';
+    else if (drumToken === 'cch' || drumToken === 'caixa-chimbal') drumKey = 'cch';
+    else if (drumToken === 'bch' || drumToken === 'bumbo-chimbal') drumKey = 'bch';
+
+    if (drumKey && state.buffers.drums[drumKey]) {
+      const src = audio.ctx.createBufferSource();
+      const g = audio.ctx.createGain();
+      src.buffer = state.buffers.drums[drumKey];
+      src.connect(g);
+      g.connect(audio.drumGain);
+      g.gain.setValueAtTime(0.0, time);
+      g.gain.linearRampToValueAtTime(1.0, time + 0.005);
+      src.start(time);
+    }
+  }
+
+  // Restante do código (BASS, GUITAR, MELODY) permanece igual...
+  // (não mude nada abaixo)
 
       // BASS
       const bassCommand = state.bassPlan[stepIdx % state.bassPlan.length];
@@ -1076,4 +1087,3 @@
   </script>
 </body>
 </html>
-
