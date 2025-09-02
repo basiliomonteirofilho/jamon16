@@ -1034,28 +1034,40 @@
     }
 
     function playMelodyNumber(time, number, instrumentType) {
-      const name = NUM_TO_NAME[number];
-      let folder = 'guitarraDistorcao';
-      if (instrumentType === 'clean') folder = 'guitarraLimpa';
-      else if (instrumentType === 'piano') folder = 'pianoString';
-      const url = `${folder}/Melodia/${number}${name}.mp3`;
-      const buf = state.buffers.melody[url];
-      if (!buf) return;
-      if (state.lastMelodyGain) {
-        state.lastMelodyGain.gain.cancelScheduledValues(time);
-        state.lastMelodyGain.gain.linearRampToValueAtTime(0.0, time + 0.01);
-      }
-      const src = audio.ctx.createBufferSource();
-      const g = audio.ctx.createGain();
-      src.buffer = buf;
-      src.connect(g);
-      g.connect(audio.distGain);
-      g.gain.setValueAtTime(0.0, time);
-      g.gain.linearRampToValueAtTime(1.0, time + 0.01);
-      src.start(time);
-      state.lastMelodySource = src;
-      state.lastMelodyGain = g;
-    }
+  const name = NUM_TO_NAME[number];
+  let folder = 'guitarraDistorcao';
+  if (instrumentType === 'clean') folder = 'guitarraLimpa';
+  else if (instrumentType === 'piano') folder = 'pianoString';
+  const url = `${folder}/Melodia/${number}${name}.mp3`;
+  const buf = state.buffers.melody[url];
+  if (!buf) return;
+
+  // Parar qualquer nota anterior antes de começar uma nova
+  if (state.lastMelodySource && !state.lastMelodySource.finished) {
+    state.lastMelodySource.stop(time);
+  }
+
+  const src = audio.ctx.createBufferSource();
+  const g = audio.ctx.createGain();
+  src.buffer = buf;
+  src.connect(g);
+  g.connect(audio.distGain);
+
+  g.gain.setValueAtTime(0.0, time);
+  g.gain.linearRampToValueAtTime(1.0, time + 0.01);
+
+  // Garantir que não toque além do necessário
+  const maxDuration = state.sixteenthDur * 2; // limite curto
+  src.start(time);
+  src.stop(time + Math.min(buf.duration, maxDuration)); // corta se for longo
+
+  state.lastMelodySource = src;
+  state.lastMelodyGain = g;
+
+  // Marcar quando termina
+  src.finished = false;
+  src.onended = () => { src.finished = true; };
+}
 
     window.addEventListener('load', () => {
       initAudio();
@@ -1064,3 +1076,4 @@
   </script>
 </body>
 </html>
+
