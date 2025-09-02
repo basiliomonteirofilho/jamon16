@@ -303,7 +303,7 @@
       <div class="melody-toolbar">
         <button id="btnMelodyAdd" class="primary">➕ Adicionar Bloco</button>
         <button id="btnMelodyClear" class="danger">🧹 Limpar Blocos</button>
-        <span style="font-size: 0.9em; color: #aaa;">Linhas 1–3: Notas adaptam-se ao acorde. Linhas 4–5: Livre.</span>
+        <span style="font-size: 0.9em; color: #aaa;">Todas as linhas adaptam-se ao acorde atual.</span>
       </div>
       <div id="melodyBlocks"></div>
     </div>
@@ -375,8 +375,18 @@
     BASS_SAMPLES['x'] = 'assets/bass-muted.mp3';
 
     const ALL_GROOVES = [
-      { name: "Rock Básico", meter: "4/4", drumPattern: ["ba - ch - cch - ch - bch - ch - cch - ch bu"], bassRhythm: ["bo - sm - bo - sm - bo - sm - bo bo bo bo"] },
-      { name: "Samba", meter: "2/4", drumPattern: ["bch - ch bu bch - ch bu"], bassRhythm: ["bo - - bo bo - - bo"] }
+      {
+        name: "Rock Básico",
+        meter: "4/4",
+        drumPattern: ["ba - ch - cch - ch - bch - ch - cch - ch bu"],
+        bassRhythm: ["bo - sm - bo - sm - bo - sm - bo bo bo bo"]
+      },
+      {
+        name: "Samba",
+        meter: "2/4",
+        drumPattern: ["bch - ch bu bch - ch bu"],
+        bassRhythm: ["bo - - bo bo - - bo"]
+      }
     ];
 
     const PROGRESSIONS = [
@@ -677,8 +687,6 @@
       }
     }
 
-    // --- NOTA: A LÓGICA DE MELODIA FOI MOVIDA PARA DENTRO DE scheduleStep ---
-
     function scheduleStep() {
       const time = state.nextNoteTime;
       const stepIdx = state.stepIndex;
@@ -747,20 +755,13 @@
         }
       }
 
-      // MELODY: Verifica se há um evento de melodia ativo
+      // MELODY: Adaptar a qualquer linha
       const melodyEvent = state.melodyPlan[stepIdx % state.melodyPlan.length];
       if (melodyEvent && melodyEvent.type === 'start') {
-        const baseNumber = melodyEvent.originalNumber; // número digitado
-        const row = melodyEvent.row; // 0=semibreve, 1=mínima, etc.
-        if (row < 3) {
-          // Adaptar ao acorde atual
-          const chord = state.chordPlan[state.currentChordIndex];
-          const adaptedNumber = adaptNumberToChord(baseNumber, chord.note, chord.type);
-          playMelodyNumber(time, adaptedNumber, melodyEvent.instrument);
-        } else {
-          // Linhas 3 e 4: tocam o número exato
-          playMelodyNumber(time, baseNumber, melodyEvent.instrument);
-        }
+        const baseNumber = melodyEvent.originalNumber;
+        const chord = state.chordPlan[state.currentChordIndex];
+        const adaptedNumber = adaptNumberToChord(baseNumber, chord.note, chord.type);
+        playMelodyNumber(time, adaptedNumber, melodyEvent.instrument);
       } else if (melodyEvent && melodyEvent.type === 'mute') {
         stopMelodyAt(time);
       }
@@ -889,7 +890,6 @@
           closest = note;
         }
       }
-      // Encontra o número correspondente à nota mais próxima
       let bestNum = number;
       let bestDist = 100;
       for (let n = 1; n <= 49; n++) {
@@ -938,7 +938,7 @@
           const td = document.createElement('td');
           const input = document.createElement('input');
           input.type = 'text';
-          input.placeholder = r < 3 ? '1–49 (adapta)' : '1–49/x/°';
+          input.placeholder = '1–49/x/°';
           input.dataset.block = String(blockIdx);
           input.dataset.row = String(r);
           input.dataset.col = String(c);
@@ -996,18 +996,10 @@
         }
         const n = parseInt(raw, 10);
         if (!isFinite(n)) continue;
-        if (ev.row < 3) {
-          plan[ev.absStep] = { type: 'start', originalNumber: n, row: ev.row, instrument: ui.melodyInstrument.value };
-          for (let k = 1; k < ev.durationSteps; k++) {
-            const idx = ev.absStep + k;
-            if (idx < plan.length) plan[idx] = { type: 'continue', originalNumber: n, row: ev.row, instrument: ui.melodyInstrument.value };
-          }
-        } else {
-          plan[ev.absStep] = { type: 'start', originalNumber: n, row: ev.row, instrument: ui.melodyInstrument.value };
-          for (let k = 1; k < ev.durationSteps; k++) {
-            const idx = ev.absStep + k;
-            if (idx < plan.length) plan[idx] = { type: 'sustain' };
-          }
+        plan[ev.absStep] = { type: 'start', originalNumber: n, instrument: ui.melodyInstrument.value };
+        for (let k = 1; k < ev.durationSteps; k++) {
+          const idx = ev.absStep + k;
+          if (idx < plan.length) plan[idx] = { type: 'continue', originalNumber: n, instrument: ui.melodyInstrument.value };
         }
       }
       state.melodyPlan = plan;
