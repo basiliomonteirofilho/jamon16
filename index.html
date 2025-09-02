@@ -213,6 +213,12 @@
       font-size: 0.8em;
       color: #aaa;
     }
+    .instructions {
+      font-size: 0.85em;
+      color: #aaa;
+      margin-top: 8px;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -303,7 +309,10 @@
       <div class="melody-toolbar">
         <button id="btnMelodyAdd" class="primary">➕ Adicionar Bloco</button>
         <button id="btnMelodyClear" class="danger">🧹 Limpar Blocos</button>
-        <span style="font-size: 0.9em; color: #aaa;">Todas as linhas adaptam-se ao acorde atual.</span>
+        <span style="font-size: 0.9em; color: #aaa;">Notas se estendem até próxima nota ou "x"</span>
+      </div>
+      <div class="instructions">
+        Digite números (1-49) para notas, "x" para pausa, ou deixe vazio para continuar nota anterior
       </div>
       <div id="melodyBlocks"></div>
     </div>
@@ -426,7 +435,7 @@
       lastMelodyGain: null,
       melodyBlocks: [],
       melodyPlan: [],
-      lastMelodyNote: null // Adicionado para rastrear a última nota de melodia
+      lastMelodyNote: null
     };
 
     const mute = { bass: false, drums: false, clean: false, dist: false };
@@ -934,10 +943,6 @@
       return bestNum;
     }
 
-    function durationStepsForRow(rowIndex) {
-      return [16, 8, 4, 2, 1][rowIndex] || 1;
-    }
-
     function addMelodyBlock() {
       const beats = meterToBeats(ui.meter.value === 'auto' ? (state.currentGroove?.meter || '4/4') : ui.meter.value);
       const cols = beats * 4;
@@ -949,33 +954,36 @@
       caption.className = 'melody-caption';
       caption.textContent = `Bloco #${blockIdx + 1} — ${beats}/4 (${cols} colunas)`;
       div.appendChild(caption);
+      
       const table = document.createElement('table');
       table.className = 'melody-table';
+      
+      // Cabeçalho com números das colunas
       const thead = document.createElement('thead');
       const trh = document.createElement('tr');
-      trh.innerHTML = '<th>Figura</th>' + Array(cols).fill().map((_, i) => `<th>${i+1}</th>`).join('');
+      trh.innerHTML = '<th>Notas</th>' + Array(cols).fill().map((_, i) => `<th>${i+1}</th>`).join('');
       thead.appendChild(trh);
       table.appendChild(thead);
-      const labels = ['Semibreve', 'Mínima', 'Semínima', 'Colcheia', 'Semicolcheia'];
+      
+      // Corpo com apenas uma linha
       const tbody = document.createElement('tbody');
-      for (let r = 0; r < 5; r++) {
-        const tr = document.createElement('tr');
-        const tdLabel = document.createElement('td');
-        tdLabel.innerHTML = `<span class="line-label">${labels[r]}</span>`;
-        tr.appendChild(tdLabel);
-        for (let c = 0; c < cols; c++) {
-          const td = document.createElement('td');
-          const input = document.createElement('input');
-          input.type = 'text';
-          input.placeholder = '1–49/x/°';
-          input.dataset.block = String(blockIdx);
-          input.dataset.row = String(r);
-          input.dataset.col = String(c);
-          td.appendChild(input);
-          tr.appendChild(td);
-        }
-        tbody.appendChild(tr);
+      const tr = document.createElement('tr');
+      const tdLabel = document.createElement('td');
+      tdLabel.innerHTML = `<span class="line-label">Notas (1-49) ou "x"</span>`;
+      tr.appendChild(tdLabel);
+      
+      for (let c = 0; c < cols; c++) {
+        const td = document.createElement('td');
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = '1–49/x';
+        input.dataset.block = String(blockIdx);
+        input.dataset.col = String(c);
+        td.appendChild(input);
+        tr.appendChild(td);
       }
+      
+      tbody.appendChild(tr);
       table.appendChild(tbody);
       div.appendChild(table);
       ui.melodyBlocks.appendChild(div);
@@ -996,41 +1004,55 @@
       const events = [];
       const blocks = state.melodyBlocks;
       let baseStep = 0;
+      
       for (let b = 0; b < blocks.length; b++) {
         const div = blocks[b];
-        for (let r = 0; r < 5; r++) {
-          for (let c = 0; c < cols; c++) {
-            const input = div.querySelector(`input[data-row="${r}"][data-col="${c}"]`);
-            if (!input) continue;
-            const raw = input.value.trim();
-            if (!raw) continue;
-            const dur = durationStepsForRow(r);
-            const absStep = baseStep + c;
-            events.push({ absStep, durationSteps: dur, raw, row: r });
+        let lastNote = null;
+        
+        for (let c = 0; c < cols; c++) {
+          const input = div.querySelector(`input[data-col="${c}"]`);
+          if (!input) continue;
+          
+          const raw = input.value.trim();
+          const absStep = baseStep + c;
+          
+          if (raw === 'x') {
+            // Pausa - para qualquer nota atual
+            events.push({ absStep, type: 'mute' });
+            lastNote = null;
+          } else if (raw) {
+            // Nova nota - para a anterior e inicia uma nova
+            const n = parseInt(raw, 10);
+            if (isFinite(n) && n >= 1 && n <= 49) {
+              events.push({ absStep, type: 'start', originalNumber: n, instrument: ui.melodyInstrument.value });
+              lastNote = n;
+            }
+          } else if (lastNote !== null) {
+            // Continua a nota anterior
+            events.push({ absStep, type: 'continue', originalNumber: lastNote, instrument: ui.melodyInstrument.value });
+          } else {
+            // Silêncio
+            events.push({ absStep, type: 'rest' });
           }
         }
+        
         baseStep += cols;
       }
-      events.sort((a,b) => a.absStep - b.absStep);
-      const plan = new Array(baseStep).fill(null);
+      
+      // Construir o plano de melodia
+      const totalSteps = baseStep;
+      const plan = new Array(totalSteps).fill(null);
+      
       for (const ev of events) {
-        const raw = ev.raw.toLowerCase();
-        if (raw === '°') {
-          plan[ev.absStep] = { type: 'mute' };
-          continue;
-        }
-        if (raw === 'x') {
-          plan[ev.absStep] = { type: 'rest' };
-          continue;
-        }
-        const n = parseInt(raw, 10);
-        if (!isFinite(n)) continue;
-        plan[ev.absStep] = { type: 'start', originalNumber: n, instrument: ui.melodyInstrument.value };
-        for (let k = 1; k < ev.durationSteps; k++) {
-          const idx = ev.absStep + k;
-          if (idx < plan.length) plan[idx] = { type: 'continue', originalNumber: n, instrument: ui.melodyInstrument.value };
+        if (ev.absStep < plan.length) {
+          plan[ev.absStep] = {
+            type: ev.type,
+            originalNumber: ev.originalNumber,
+            instrument: ev.instrument
+          };
         }
       }
+      
       state.melodyPlan = plan;
     }
 
@@ -1086,9 +1108,9 @@
       g.gain.linearRampToValueAtTime(1.0, time + 0.01);
 
       // Garantir que não toque além do necessário
-      const maxDuration = state.sixteenthDur * 2; // limite curto
+      const maxDuration = state.sixteenthDur * 16; // Notas podem durar até 4 tempos
       src.start(time);
-      src.stop(time + Math.min(buf.duration, maxDuration)); // corta se for longo
+      src.stop(time + Math.min(buf.duration, maxDuration));
 
       state.lastMelodySource = src;
       state.lastMelodyGain = g;
