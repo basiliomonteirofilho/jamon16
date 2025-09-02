@@ -320,7 +320,6 @@
   </div>
 
   <script>
-    // Transpõe 3 semitons abaixo para exibição
     function transposeDown3Semitones(note) {
       const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
       const index = notes.indexOf(note);
@@ -371,12 +370,12 @@
     const CHORD_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 
     const DRUMS = {
-      ba: 'bumbo-ataque',
-      cch: 'caixa-chimbal',
-      bch: 'bumbo-chimbal',
       bu: 'bumbo',
       ca: 'caixa',
-      ch: 'chimbal'
+      ch: 'chimbal',
+      ba: 'bumbo-ataque',
+      cch: 'caixa-chimbal',
+      bch: 'bumbo-chimbal'
     };
 
     const BASS_SAMPLES = {};
@@ -442,8 +441,7 @@
     const mute = { bass: false, drums: false, clean: false, dist: false };
 
     function log(msg) {
-      const now = new Date().toLocaleTimeString();
-      console.log(`[${now}] ${msg}`);
+      console.log(`[LOG] ${msg}`);
     }
 
     function meterToBeats(meter) {
@@ -477,7 +475,6 @@
         audio.bassGain.connect(audio.master);
         audio.cleanGain.connect(audio.master);
         audio.distGain.connect(audio.master);
-        log('Áudio inicializado.');
         await ensureBasicSamples();
         function updateVolume() {
           audio.bassGain.gain.value = parseFloat(ui.volBass.value);
@@ -505,7 +502,7 @@
         const arrayBuffer = await res.arrayBuffer();
         return await audio.ctx.decodeAudioData(arrayBuffer);
       } catch (e) {
-        log(`Erro ao carregar: ${url}`);
+        console.warn(`Erro ao carregar: ${url}`);
         return null;
       }
     }
@@ -597,9 +594,7 @@
       const progEl = document.getElementById('chordProgression');
       if (progEl && state.chordPlan.length > 0) {
         const chordLabels = state.chordPlan.map(ch => ch.displayed);
-        progEl.innerHTML = chordLabels
-          .map((label, i) => `<span class="chord-item" data-index="${i}">${label}</span>`)
-          .join(' ');
+        progEl.innerHTML = chordLabels.map((label, i) => `<span class="chord-item" data-index="${i}">${label}</span>`).join(' ');
       }
       const drumParsed = parsePattern(state.currentGroove.drumPattern.join(' '));
       const drumSeq = [...drumParsed.intro, ...drumParsed.loop];
@@ -662,13 +657,13 @@
       try {
         await buildBassAndChordPlan();
       } catch (e) {
-        log('Erro: ' + e.message);
+        console.error('Erro ao gerar plano:', e);
       }
       try {
         buildMelodyPlanFromBlocks();
         await ensureMelodySamplesNeeded();
       } catch (e) {
-        log('Melodia: ' + e.message);
+        console.error('Erro na melodia:', e);
       }
       if (state.paused) {
         state.paused = false;
@@ -679,14 +674,13 @@
       state.nextNoteTime = audio.ctx.currentTime + 0.05;
       const beats = meterToBeats(state.meter);
       const quarterDur = 60 / state.bpm;
-      state.totalClicks = beats;
       const startTime = audio.ctx.currentTime + 0.05;
-      for (let i = 0; i < state.totalClicks; i++) {
+      for (let i = 0; i < beats; i++) {
         const t = startTime + i * quarterDur;
         const isStrong = (i % beats) === 0;
         playClickAtTime(t, isStrong);
       }
-      const schedulerStartTime = startTime + state.totalClicks * quarterDur;
+      const schedulerStartTime = startTime + beats * quarterDur;
       setTimeout(() => {
         state.running = true;
         state.nextNoteTime = schedulerStartTime;
@@ -713,8 +707,7 @@
       // DRUMS
       const drumToken = state.drumSeq[stepIdx % state.drumSeq.length];
       if (drumToken && !mute.drums) {
-        const keyMap = { 'cch': 'cch', 'bch': 'bch', 'ba': 'ba', 'bu': 'bu', 'ca': 'ca', 'ch': 'ch' };
-        const key = keyMap[drumToken.toLowerCase()] || null;
+        const key = Object.keys(DRUMS).find(k => DRUMS[k] === drumToken.toLowerCase());
         if (key && state.buffers.drums[key]) {
           const src = audio.ctx.createBufferSource();
           const g = audio.ctx.createGain();
@@ -727,8 +720,12 @@
         }
       }
 
-      // BASS
+      // BASS: parar antes de tocar nova
       const bassCommand = state.bassPlan[stepIdx % state.bassPlan.length];
+      if (!mute.bass && state.lastBassSource) {
+        state.lastBassSource.stop(time);
+        state.lastBassSource = null;
+      }
       if (!mute.bass && bassCommand !== '-' && PITCHES.includes(bassCommand)) {
         const buf = state.buffers.bass[bassCommand];
         if (buf) {
@@ -740,11 +737,20 @@
           g.gain.setValueAtTime(0.0, time);
           g.gain.linearRampToValueAtTime(1.0, time + 0.01);
           src.start(time);
+          state.lastBassSource = src;
         }
       }
 
-      // GUITAR
+      // GUITAR: parar antes de tocar novo acorde
       if (isNewBar) {
+        if (state.lastCleanSource) {
+          state.lastCleanSource.stop(time);
+          state.lastCleanSource = null;
+        }
+        if (state.lastDistSource) {
+          state.lastDistSource.stop(time);
+          state.lastDistSource = null;
+        }
         const chord = state.chordPlan[state.currentChordIndex];
         if (chord) {
           ui.currentChord.textContent = chord.displayed;
@@ -761,12 +767,10 @@
 
       // MELODY
       const mTok = state.melodyPlan.length ? state.melodyPlan[stepIdx % state.melodyPlan.length] : null;
-      if (mTok) {
-        if (mTok.type === 'start') {
-          playMelodyNumber(time, mTok.number, mTok.instrument);
-        } else if (mTok.type === 'mute') {
-          stopMelodyAt(time);
-        }
+      if (mTok && mTok.type === 'start') {
+        playMelodyNumber(time, mTok.number, mTok.instrument);
+      } else if (mTok && mTok.type === 'mute') {
+        stopMelodyAt(time);
       }
 
       state.stepIndex++;
@@ -844,7 +848,7 @@
     ui.muteClean.addEventListener('click', () => toggleMute('clean', ui.muteClean));
     ui.muteDist.addEventListener('click', () => toggleMute('dist', ui.muteDist));
 
-    // MELODY SYSTEM
+    // --- MELODY SYSTEM ---
     const ORDER_E_UP = ['E','F','FS','G','GS','A','AS','B','C','CS','D','DS'];
     const NUM_TO_NAME = (() => {
       const map = {};
