@@ -591,12 +591,12 @@
       state.quality = Math.random() > 0.5 ? 'maj' : 'min';
 
       const grooveName = state.currentGroove.name;
-let styleKey = "Rock";
-if (grooveName.includes("Samba")) styleKey = "Samba";
-else if (grooveName.includes("Jazz")) styleKey = "Jazz";
-else if (grooveName.includes("Forró")) styleKey = "Forró";
-else if (grooveName.includes("Metal")) styleKey = "Metal";
-else if (grooveName.includes("Blues")) styleKey = "Blues";
+      let styleKey = "Rock";
+      if (grooveName.includes("Samba")) styleKey = "Samba";
+      else if (grooveName.includes("Jazz")) styleKey = "Jazz";
+      else if (grooveName.includes("Forró")) styleKey = "Forró";
+      else if (grooveName.includes("Metal")) styleKey = "Metal";
+      else if (grooveName.includes("Blues")) styleKey = "Blues";
 
       const progressions = STYLE_PROGRESSIONS[styleKey] || STYLE_PROGRESSIONS.Rock;
       state.chordProgression = progressions[Math.floor(Math.random() * progressions.length)];
