@@ -395,11 +395,11 @@
     // === GROOVES COM ESCALA DO BAIXO ===
     const ALL_GROOVES = [
       {
-        name: "Rock",
+        name: "Rock Básico",
         meter: "4/4",
         drumPattern: ["ba - ch - cch - ch - bch - ch - cch - ch bu"],
         bassRhythm: ["bo - sm - bo - sm - bo - sm - bo bo bo bo"],
-        bassScale: [1, 3, 5], // Arpejo
+        bassScale: [1, 3, 5],
         bassTechnique: "arpejo"
       },
       {
@@ -407,7 +407,7 @@
         meter: "2/4",
         drumPattern: ["bch - ch bu bch - ch bu"],
         bassRhythm: ["bo - - bo bo - - bo"],
-        bassScale: [1, 5], // Tônica + Quinta
+        bassScale: [1, 5],
         bassTechnique: "quinta fundamental"
       },
       {
@@ -415,7 +415,7 @@
         meter: "4/4",
         drumPattern: ["bch co co - bch co co ca bch co co - bch co co c"],
         bassRhythm: ["bo - - bo bo - - bo bo - - bo bo - -bo"],
-        bassScale: "chromatic", // Descendente cromática
+        bassScale: "chromatic",
         bassTechnique: "cromatica"
       }
     ];
@@ -554,7 +554,6 @@
       return out.slice(0, totalSteps);
     }
 
-    // === GERAÇÃO DE ACORDES COM BASE NO ESTILO ===
     async function buildBassAndChordPlan() {
       state.currentGroove = ALL_GROOVES[Math.floor(Math.random() * ALL_GROOVES.length)];
       state.signatureTag = state.currentGroove.name;
@@ -574,7 +573,6 @@
       state.key = PITCHES[state.keyIdx];
       state.quality = Math.random() > 0.5 ? 'maj' : 'min';
 
-      // Seleciona progressão baseada no estilo
       const grooveName = state.currentGroove.name;
       let styleKey = "Rock";
       if (grooveName.includes("Samba")) styleKey = "Samba";
@@ -592,7 +590,6 @@
       const bassPlan = [];
       const chordPlan = [];
 
-      // === GERA NOTAS DO BAIXO BASEADO NA ESCALA ===
       function getBassNotesFromScale(degree, scale, quality) {
         if (scale === "chromatic") {
           const rootIdx = (state.keyIdx + DEGREE_TO_ROOT[degree]) % 12;
@@ -613,7 +610,7 @@
           });
         }
 
-        return [PITCHES[(state.keyIdx + DEGREE_TO_ROOT[degree]) % 12]]; // Tônica
+        return [PITCHES[(state.keyIdx + DEGREE_TO_ROOT[degree]) % 12]];
       }
 
       for (let bar = 0; bar < totalBars; bar++) {
@@ -633,7 +630,6 @@
           displayed: displayedChord
         });
 
-        // Gera as notas do baixo para este acorde
         const bassNotes = getBassNotesFromScale(degree, state.currentGroove.bassScale, state.quality);
         const stepsInBar = sixteenthsPerBar;
         const notesPerBar = Math.ceil(stepsInBar / bassNotes.length);
@@ -660,6 +656,9 @@
       state.chordPlan = chordPlan;
       state.currentChordIndex = 0;
       state.barsInChord = 0;
+
+      // Correção: chordDurations deve ter o mesmo tamanho que chordPlan
+      state.chordDurations = Array(state.chordPlan.length).fill(1);
 
       const progEl = document.getElementById('chordProgression');
       if (progEl && state.chordPlan.length > 0) {
@@ -833,8 +832,7 @@
         const chord = state.chordPlan[state.currentChordIndex];
         if (chord) {
           ui.currentChord.textContent = chord.displayed;
-          const barsLeft = state.chordDurations[state.currentChordIndex] - state.barsInChord;
-          ui.chordTimer.textContent = `Próx: ${barsLeft} compasso(s)`;
+          ui.chordTimer.textContent = `Próx: ${state.chordPlan.length - state.currentChordIndex} compasso(s)`; // Atualizado
           document.querySelectorAll('.chord-item.current').forEach(el => el.classList.remove('current'));
           const items = document.querySelectorAll('.chord-item');
           const currentIndex = state.currentChordIndex % items.length;
@@ -859,12 +857,10 @@
 
       state.stepIndex++;
       if (isNewBar) {
-        state.barsInChord++;
-        if (state.barsInChord >= state.chordDurations[state.currentChordIndex]) {
-          state.currentChordIndex = (state.currentChordIndex + 1) % state.chordPlan.length;
-          state.barsInChord = 0;
-          state.lastMelodyNote = null;
-        }
+        // Avança para o próximo acorde a cada compasso
+        state.currentChordIndex = (state.currentChordIndex + 1) % state.chordPlan.length;
+        state.barsInChord = 0;
+        state.lastMelodyNote = null;
       }
       state.nextNoteTime += state.sixteenthDur;
     }
