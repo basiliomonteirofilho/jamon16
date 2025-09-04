@@ -383,25 +383,41 @@
     }
     BASS_SAMPLES['x'] = 'assets/bass-muted.mp3';
 
+    // === PROGRESSÕES POR ESTILO ===
+    const STYLE_PROGRESSIONS = {
+      Rock: [[1,5,6,4], [1,4,5,1], [1,5,6,4,1]],
+      Blues: [[1,1,1,1,4,4,1,1,5,4,1,1], [1,4,1,1,5,4,1,1]],
+      Forró: [[1,4,5,1], [1,4,1,5], [1,6,2,5]],
+      Samba: [[1,2,5,1], [1,4,5,1], [1,6,2,5]],
+      Jazz: [[1,2,5,1], [2,5,1,4], [3,6,2,5]]
+    };
+
+    // === GROOVES COM ESCALA DO BAIXO ===
     const ALL_GROOVES = [
       {
         name: "Rock Básico",
         meter: "4/4",
         drumPattern: ["ba - ch - cch - ch - bch - ch - cch - ch bu"],
-        bassRhythm: ["bo - sm - bo - sm - bo - sm - bo bo bo bo"]
+        bassRhythm: ["bo - sm - bo - sm - bo - sm - bo bo bo bo"],
+        bassScale: [1, 3, 5], // Arpejo
+        bassTechnique: "arpejo"
       },
       {
         name: "Samba",
         meter: "2/4",
         drumPattern: ["bch - ch bu bch - ch bu"],
-        bassRhythm: ["bo - - bo bo - - bo"]
+        bassRhythm: ["bo - - bo bo - - bo"],
+        bassScale: [1, 5], // Tônica + Quinta
+        bassTechnique: "quinta fundamental"
+      },
+      {
+        name: "Jazz",
+        meter: "4/4",
+        drumPattern: ["bch co co - bch co co ca bch co co - bch co co c"],
+        bassRhythm: ["bo - - bo bo - - bo bo - - bo bo - -bo"],
+        bassScale: "chromatic", // Descendente cromática
+        bassTechnique: "cromatica"
       }
-    ];
-
-    const PROGRESSIONS = [
-      [1, 1, 4, 4, 5, 5, 1, 1],
-      [1, 4, 5, 1],
-      [1, 3, 4, 5, 7, 1, 2, 3, 4, 5, 7]
     ];
 
     const state = {
@@ -538,22 +554,68 @@
       return out.slice(0, totalSteps);
     }
 
+    // === GERAÇÃO DE ACORDES COM BASE NO ESTILO ===
     async function buildBassAndChordPlan() {
       state.currentGroove = ALL_GROOVES[Math.floor(Math.random() * ALL_GROOVES.length)];
       state.signatureTag = state.currentGroove.name;
       state.meter = ui.meter.value === 'auto' ? state.currentGroove.meter : ui.meter.value;
+
+      // Ajusta BPM para Samba
+      if (state.currentGroove.name === "Samba") {
+        ui.bpm.value = 70;
+        state.bpm = 70;
+      } else {
+        state.bpm = Number(ui.bpm.value) || 100;
+      }
+
       const beats = meterToBeats(state.meter);
       const sixteenthsPerBar = beats * 4;
       state.keyIdx = Math.floor(Math.random() * PITCHES.length);
       state.key = PITCHES[state.keyIdx];
       state.quality = Math.random() > 0.5 ? 'maj' : 'min';
-      state.chordProgression = PROGRESSIONS[Math.floor(Math.random() * PROGRESSIONS.length)];
+
+      // Seleciona progressão baseada no estilo
+      const grooveName = state.currentGroove.name;
+      let styleKey = "Rock";
+      if (grooveName.includes("Samba")) styleKey = "Samba";
+      else if (grooveName.includes("Jazz")) styleKey = "Jazz";
+      else if (grooveName.includes("Forró")) styleKey = "Forró";
+      else if (grooveName.includes("Blues")) styleKey = "Blues";
+
+      const progressions = STYLE_PROGRESSIONS[styleKey] || STYLE_PROGRESSIONS.Rock;
+      state.chordProgression = progressions[Math.floor(Math.random() * progressions.length)];
+
       const totalBars = Math.min(state.chordProgression.length, 64);
       const totalSteps = sixteenthsPerBar * totalBars;
-      state.chordDurations = Array(state.chordProgression.length).fill(1);
       const rhythm = expandRhythm(state.currentGroove.bassRhythm, totalSteps);
+
       const bassPlan = [];
       const chordPlan = [];
+
+      // === GERA NOTAS DO BAIXO BASEADO NA ESCALA ===
+      function getBassNotesFromScale(degree, scale, quality) {
+        if (scale === "chromatic") {
+          const rootIdx = (state.keyIdx + DEGREE_TO_ROOT[degree]) % 12;
+          const rootNote = PITCHES[rootIdx];
+          const octave = 8;
+          return Array(8).fill().map((_, i) => {
+            const noteIdx = (rootIdx - i + 12) % 12;
+            return `${PITCHES[noteIdx]}${octave}`;
+          });
+        }
+
+        if (Array.isArray(scale)) {
+          const rootIdx = (state.keyIdx + DEGREE_TO_ROOT[degree]) % 12;
+          return scale.map(interval => {
+            const intervalOffset = DEGREE_TO_ROOT[interval] || 0;
+            const noteIdx = (rootIdx + intervalOffset) % 12;
+            return PITCHES[noteIdx];
+          });
+        }
+
+        return [PITCHES[(state.keyIdx + DEGREE_TO_ROOT[degree]) % 12]]; // Tônica
+      }
+
       for (let bar = 0; bar < totalBars; bar++) {
         const degree = state.chordProgression[bar];
         const rootOffset = DEGREE_TO_ROOT[degree] || 0;
@@ -563,39 +625,48 @@
         const chordDisplay = CHORD_NAMES[rootIdx] + chordType;
         const displayedNote = transposeDown3Semitones(CHORD_NAMES[rootIdx]);
         const displayedChord = displayedNote + chordType;
+
         chordPlan.push({
           note: rootNote,
           type: chordType,
           display: chordDisplay,
           displayed: displayedChord
         });
-        for (let stepInBar = 0; stepInBar < sixteenthsPerBar; stepInBar++) {
-          const step = bar * sixteenthsPerBar + stepInBar;
+
+        // Gera as notas do baixo para este acorde
+        const bassNotes = getBassNotesFromScale(degree, state.currentGroove.bassScale, state.quality);
+        const stepsInBar = sixteenthsPerBar;
+        const notesPerBar = Math.ceil(stepsInBar / bassNotes.length);
+        const fullBassNotes = Array(stepsInBar).fill().map((_, i) => bassNotes[Math.floor(i / notesPerBar)] || bassNotes[0]);
+
+        for (let stepInBar = 0; stepInBar < stepsInBar; stepInBar++) {
+          const step = bar * stepsInBar + stepInBar;
           const sym = rhythm[step] || '-';
           let bassNote = null;
           if (sym === 'x') {
             bassNote = 'x';
-          } else if (sym === '°') {
-            bassNote = '°';
-          } else if (sym === 'sm' || sym === '-') {
+          } else if (sym === '-' || sym === 'sm') {
             bassNote = '-';
           } else if (sym === 'bo') {
-            bassNote = rootNote;
+            bassNote = fullBassNotes[stepInBar];
           } else {
-            bassNote = rootNote;
+            bassNote = fullBassNotes[stepInBar];
           }
           bassPlan.push(bassNote);
         }
       }
+
       state.bassPlan = bassPlan;
       state.chordPlan = chordPlan;
       state.currentChordIndex = 0;
       state.barsInChord = 0;
+
       const progEl = document.getElementById('chordProgression');
       if (progEl && state.chordPlan.length > 0) {
         const chordLabels = state.chordPlan.map(ch => ch.displayed);
         progEl.innerHTML = chordLabels.map((label, i) => `<span class="chord-item" data-index="${i}">${label}</span>`).join(' ');
       }
+
       const drumParsed = parsePattern(state.currentGroove.drumPattern.join(' '));
       const drumSeq = [...drumParsed.intro, ...drumParsed.loop];
       const drumExpanded = [];
@@ -607,6 +678,7 @@
       }
       state.drumSeq = drumExpanded.slice(0, state.bassPlan.length);
       setStatePanel();
+
       const guitarUrls = new Set();
       for (const ch of state.chordPlan) {
         const base = `${ch.note}${ch.type}`;
@@ -733,8 +805,8 @@
         state.lastBassSource.stop(time);
         state.lastBassSource = null;
       }
-      if (!mute.bass && bassCommand !== '-' && PITCHES.includes(bassCommand)) {
-        const buf = state.buffers.bass[bassCommand];
+      if (!mute.bass && bassCommand !== '-' && bassCommand !== 'x') {
+        const buf = state.buffers.bass[bassCommand] || state.buffers.bass[bassCommand.replace(/\d/g, '')];
         if (buf) {
           const src = audio.ctx.createBufferSource();
           const g = audio.ctx.createGain();
@@ -772,20 +844,17 @@
         }
       }
 
-      // MELODY: Adaptar a qualquer linha
+      // MELODY
       const melodyEvent = state.melodyPlan[stepIdx % state.melodyPlan.length];
       if (melodyEvent && melodyEvent.type === 'start') {
         const baseNumber = melodyEvent.originalNumber;
         const chord = state.chordPlan[state.currentChordIndex];
-        
-        // Usar a versão modificada que evita repetições
         const adaptedNumber = adaptNumberToChord(baseNumber, chord.note, chord.type, state.lastMelodyNote);
-        state.lastMelodyNote = adaptedNumber; // Registrar a nota tocada
-        
+        state.lastMelodyNote = adaptedNumber;
         playMelodyNumber(time, adaptedNumber, melodyEvent.instrument);
       } else if (melodyEvent && melodyEvent.type === 'mute') {
         stopMelodyAt(time);
-        state.lastMelodyNote = null; // Resetar quando a melodia para
+        state.lastMelodyNote = null;
       }
 
       state.stepIndex++;
@@ -794,7 +863,7 @@
         if (state.barsInChord >= state.chordDurations[state.currentChordIndex]) {
           state.currentChordIndex = (state.currentChordIndex + 1) % state.chordPlan.length;
           state.barsInChord = 0;
-          state.lastMelodyNote = null; // Resetar a última nota quando o acorde muda
+          state.lastMelodyNote = null;
         }
       }
       state.nextNoteTime += state.sixteenthDur;
@@ -866,7 +935,6 @@
     ui.muteDist.addEventListener('click', () => toggleMute('dist', ui.muteDist));
 
     // --- MELODY SYSTEM ---
-
     const ORDER_E_UP = ['E','F','FS','G','GS','A','AS','B','C','CS','D','DS'];
     const NUM_TO_NAME = (() => {
       const map = {};
@@ -905,30 +973,23 @@
     function adaptNumberToChord(number, root, type, lastPlayedNote = null) {
       const baseName = NUM_TO_NAME[number];
       const triad = chordTriad(root, type);
-      
-      // Ordenar as notas do acorde por proximidade com a nota original
       const noteDistances = triad.map(note => ({
         note,
         distance: distanceBetweenNotes(baseName, note)
       })).sort((a, b) => a.distance - b.distance);
-      
-      // Se a última nota tocada for a mais próxima, escolha a segunda mais próxima
+
       if (lastPlayedNote && noteDistances.length > 1) {
         const lastNoteName = NUM_TO_NAME[lastPlayedNote];
         if (noteDistances[0].note === lastNoteName) {
-          // Use a segunda opção mais próxima para evitar repetição
           return findClosestNumber(number, noteDistances[1].note);
         }
       }
-      
-      // Caso contrário, use a nota mais próxima
       return findClosestNumber(number, noteDistances[0].note);
     }
 
     function findClosestNumber(targetNumber, targetNote) {
       let bestNum = targetNumber;
       let bestDist = 100;
-      
       for (let n = 1; n <= 49; n++) {
         const name = NUM_TO_NAME[n];
         if (name === targetNote) {
@@ -939,7 +1000,6 @@
           }
         }
       }
-      
       return bestNum;
     }
 
@@ -957,15 +1017,12 @@
       
       const table = document.createElement('table');
       table.className = 'melody-table';
-      
-      // Cabeçalho com números das colunas
       const thead = document.createElement('thead');
       const trh = document.createElement('tr');
       trh.innerHTML = '<th>Notas</th>' + Array(cols).fill().map((_, i) => `<th>${i+1}</th>`).join('');
       thead.appendChild(trh);
       table.appendChild(thead);
       
-      // Corpo com apenas uma linha
       const tbody = document.createElement('tbody');
       const tr = document.createElement('tr');
       const tdLabel = document.createElement('td');
@@ -1017,21 +1074,17 @@
           const absStep = baseStep + c;
           
           if (raw === 'x') {
-            // Pausa - para qualquer nota atual
             events.push({ absStep, type: 'mute' });
             lastNote = null;
           } else if (raw) {
-            // Nova nota - para a anterior e inicia uma nova
             const n = parseInt(raw, 10);
             if (isFinite(n) && n >= 1 && n <= 49) {
               events.push({ absStep, type: 'start', originalNumber: n, instrument: ui.melodyInstrument.value });
               lastNote = n;
             }
           } else if (lastNote !== null) {
-            // Continua a nota anterior
             events.push({ absStep, type: 'continue', originalNumber: lastNote, instrument: ui.melodyInstrument.value });
           } else {
-            // Silêncio
             events.push({ absStep, type: 'rest' });
           }
         }
@@ -1039,10 +1092,8 @@
         baseStep += cols;
       }
       
-      // Construir o plano de melodia
       const totalSteps = baseStep;
       const plan = new Array(totalSteps).fill(null);
-      
       for (const ev of events) {
         if (ev.absStep < plan.length) {
           plan[ev.absStep] = {
@@ -1093,7 +1144,6 @@
       const buf = state.buffers.melody[url];
       if (!buf) return;
 
-      // Parar qualquer nota anterior antes de começar uma nova
       if (state.lastMelodySource && !state.lastMelodySource.finished) {
         state.lastMelodySource.stop(time);
       }
@@ -1103,19 +1153,14 @@
       src.buffer = buf;
       src.connect(g);
       g.connect(audio.distGain);
-
       g.gain.setValueAtTime(0.0, time);
       g.gain.linearRampToValueAtTime(1.0, time + 0.01);
-
-      // Garantir que não toque além do necessário
-      const maxDuration = state.sixteenthDur * 16; // Notas podem durar até 4 tempos
+      const maxDuration = state.sixteenthDur * 16;
       src.start(time);
       src.stop(time + Math.min(buf.duration, maxDuration));
 
       state.lastMelodySource = src;
       state.lastMelodyGain = g;
-
-      // Marcar quando termina
       src.finished = false;
       src.onended = () => { src.finished = true; };
     }
