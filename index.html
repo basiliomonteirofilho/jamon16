@@ -381,6 +381,7 @@
     const BASS_SAMPLES = {};
     for (const p of PITCHES) {
       BASS_SAMPLES[p] = `assets/bass-${p}.mp3`;
+      BASS_SAMPLES[p + '8'] = `assets/bass-${p}8.mp3`;  // Oitava alta
     }
     BASS_SAMPLES['x'] = 'assets/bass-muted.mp3';
 
@@ -417,7 +418,6 @@
         meter: "4/4",
         drumPattern: ["ba bu ch bu cch bu ch bu bch bu ch bu cch bu ch bu"],
         bassRhythm: ["bo bo bo bo bo bo bo bo bo bo bo bo bo bo bo bo"],
-        
       },
       {
         name: "Samba",
@@ -431,7 +431,7 @@
         name: "Jazz",
         meter: "4/4",
         drumPattern: ["bch co co - bch co co ca bch co co - bch co co cch"],
-        bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo - bo - bo"],
+        bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo - bo - bo -"],
         bassScale: "chromatic",
         bassTechnique: "cromatica"
       }
@@ -623,10 +623,14 @@
           return scale.map(interval => {
             const intervalOffset = DEGREE_TO_ROOT[interval] || 0;
             const noteIdx = (rootIdx + intervalOffset) % 12;
-            return PITCHES[noteIdx];
+            const noteName = PITCHES[noteIdx];
+
+            // Tônica: sem oitava; demais: +8
+            return interval === 1 ? noteName : noteName + "8";
           });
         }
 
+        // Caso padrão: só tônica grave
         return [PITCHES[(state.keyIdx + DEGREE_TO_ROOT[degree]) % 12]];
       }
 
@@ -673,8 +677,6 @@
       state.chordPlan = chordPlan;
       state.currentChordIndex = 0;
       state.barsInChord = 0;
-
-      // Correção: chordDurations deve ter o mesmo tamanho que chordPlan
       state.chordDurations = Array(state.chordPlan.length).fill(1);
 
       const progEl = document.getElementById('chordProgression');
@@ -822,7 +824,7 @@
         state.lastBassSource = null;
       }
       if (!mute.bass && bassCommand !== '-' && bassCommand !== 'x') {
-        const buf = state.buffers.bass[bassCommand] || state.buffers.bass[bassCommand.replace(/\d/g, '')];
+        const buf = state.buffers.bass[bassCommand];
         if (buf) {
           const src = audio.ctx.createBufferSource();
           const g = audio.ctx.createGain();
@@ -849,7 +851,7 @@
         const chord = state.chordPlan[state.currentChordIndex];
         if (chord) {
           ui.currentChord.textContent = chord.displayed;
-          ui.chordTimer.textContent = `Próx: ${state.chordPlan.length - state.currentChordIndex} compasso(s)`; // Atualizado
+          ui.chordTimer.textContent = `Próx: ${state.chordPlan.length - state.currentChordIndex} compasso(s)`;
           document.querySelectorAll('.chord-item.current').forEach(el => el.classList.remove('current'));
           const items = document.querySelectorAll('.chord-item');
           const currentIndex = state.currentChordIndex % items.length;
@@ -874,7 +876,6 @@
 
       state.stepIndex++;
       if (isNewBar) {
-        // Avança para o próximo acorde a cada compasso
         state.currentChordIndex = (state.currentChordIndex + 1) % state.chordPlan.length;
         state.barsInChord = 0;
         state.lastMelodyNote = null;
