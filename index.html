@@ -595,6 +595,7 @@
       if (grooveName.includes("Samba")) styleKey = "Samba";
       else if (grooveName.includes("Jazz")) styleKey = "Jazz";
       else if (grooveName.includes("Forró")) styleKey = "Forró";
+      eslse if (grooveName.includes("Metal")) styleKey = "Metal";
       else if (grooveName.includes("Blues")) styleKey = "Blues";
 
       const progressions = STYLE_PROGRESSIONS[styleKey] || STYLE_PROGRESSIONS.Rock;
@@ -803,6 +804,7 @@
         else if (drumToken === 'ch' || drumToken === 'chimbal') drumKey = 'ch';
         else if (drumToken === 'ba' || drumToken === 'bumbo-ataque') drumKey = 'ba';
         else if (drumToken === 'cch' || drumToken === 'caixa-chimbal') drumKey = 'cch';
+        else if (drumToken === 'co' || drumToken === 'conducao') drumKey = 'co';
         else if (drumToken === 'bch' || drumToken === 'bumbo-chimbal') drumKey = 'bch';
 
         if (drumKey && state.buffers.drums[drumKey]) {
