@@ -1203,4 +1203,14 @@
 
       state.lastMelodySource = src;
       state.lastMelodyGain = g;
-      src.finished = fa
+      src.finished = false;
+      src.onended = () => { src.finished = true; };
+    }
+
+    window.addEventListener('load', () => {
+      initAudio();
+      addMelodyBlock();
+    });
+  </script>
+</body>
+</html>
