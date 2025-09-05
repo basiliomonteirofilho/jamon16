@@ -271,7 +271,6 @@
         <label>Melodia</label>
         <select id="melodyInstrument">
           <option value="dist">Guitarra Distorcida</option>
-          <option value="clean">Guitarra Limpa</option>
           <option value="piano">Piano/String</option>
           <option value="baixo">Baixo</option>
           <option value="sax">Sax</option>
@@ -484,7 +483,6 @@
         audio.cleanGain.connect(audio.master);
         audio.distGain.connect(audio.master);
 
-        // Garantir que os buffers estão inicializados
         if (!state.buffers.melody) state.buffers.melody = {};
 
         await ensureBasicSamples();
@@ -667,7 +665,6 @@
       const guitarUrls = new Set();
       for (const ch of state.chordPlan) {
         const base = `${ch.note}${ch.type}`;
-        guitarUrls.add(`guitarraLimpa/${ch.note}/${base}.mp3`);
         guitarUrls.add(`guitarraDistorcao/${ch.note}/${base}.mp3`);
       }
       const preloadPromises = [];
@@ -818,7 +815,6 @@
           const items = document.querySelectorAll('.chord-item');
           const currentIndex = state.currentChordIndex % items.length;
           if (items[currentIndex]) items[currentIndex].classList.add('current');
-          if (!mute.clean) playChord(time, chord.note, chord.type, false);
           if (!mute.dist) playChord(time, chord.note, chord.type, true);
         }
       }
@@ -846,7 +842,7 @@
     }
 
     function playChord(time, note, type, isDistorted) {
-      const folder = isDistorted ? 'guitarraDistorcao' : 'guitarraLimpa';
+      const folder = 'guitarraDistorcao';
       const base = `${note}${type}`;
       const url = `${folder}/${note}/${base}.mp3`;
       const buf = state.buffers.guitar?.[url] || null;
@@ -855,12 +851,11 @@
         const g = audio.ctx.createGain();
         src.buffer = buf;
         src.connect(g);
-        g.connect(isDistorted ? audio.distGain : audio.cleanGain);
+        g.connect(audio.distGain);
         g.gain.setValueAtTime(0.0, time);
         g.gain.linearRampToValueAtTime(1.0, time + 0.01);
         src.start(time);
-        if (isDistorted) state.lastDistSource = src;
-        else state.lastCleanSource = src;
+        state.lastDistSource = src;
       }
     }
 
@@ -874,11 +869,9 @@
       ui.currentChord.textContent = '—';
       ui.chordTimer.textContent = '—';
       if (state.lastBassSource) state.lastBassSource.stop(0);
-      if (state.lastCleanSource) state.lastCleanSource.stop(0);
       if (state.lastDistSource) state.lastDistSource.stop(0);
       if (state.lastMelodySource) state.lastMelodySource.stop(0);
       state.lastBassSource = null;
-      state.lastCleanSource = null;
       state.lastDistSource = null;
       state.lastMelodySource = null;
       state.lastMelodyGain = null;
@@ -1055,7 +1048,6 @@
         const name = NUM_TO_NAME[i];
         const folders = {
           dist: 'guitarraDistorcao/Melodia',
-          clean: 'guitarraLimpa/Melodia',
           piano: 'assets/PianoString',
           baixo: 'assets/BaixoMelodia',
           sax: 'assets/SaxMelodia'
@@ -1087,26 +1079,18 @@
 
     function playMelodyNumber(time, number, instrumentType) {
       const name = NUM_TO_NAME[number];
-      let folder, targetGain;
+      let folder, targetGain = audio.distGain;
 
       if (instrumentType === 'dist') {
         folder = 'guitarraDistorcao/Melodia';
-        targetGain = audio.distGain;
-      } else if (instrumentType === 'clean') {
-        folder = 'guitarraLimpa/Melodia';
-        targetGain = audio.cleanGain;
       } else if (instrumentType === 'piano') {
         folder = 'assets/PianoString';
-        targetGain = audio.distGain;
       } else if (instrumentType === 'baixo') {
         folder = 'assets/BaixoMelodia';
-        targetGain = audio.distGain;
       } else if (instrumentType === 'sax') {
         folder = 'assets/SaxMelodia';
-        targetGain = audio.distGain;
       } else {
         folder = 'guitarraDistorcao/Melodia';
-        targetGain = audio.distGain;
       }
 
       const url = `${folder}/${number}${name}.mp3`;
