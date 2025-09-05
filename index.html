@@ -273,6 +273,8 @@
           <option value="dist">Guitarra Distorcida</option>
           <option value="clean">Guitarra Limpa</option>
           <option value="piano">Piano/String</option>
+          <option value="baixo">Baixo</option>
+          <option value="sax">Sax</option>
         </select>
       </div>
 
@@ -379,20 +381,20 @@
     };
 
     // === CRIAÇÃO DOS SAMPLES COM SUSTENIDOS NO FINAL (C8S) ===
-const BASS_SAMPLES = {};
-for (const p of PITCHES) {
-  // Notas graves
-  BASS_SAMPLES[p] = `assets/bass-${p}.mp3`;
-  
-  // Notas agudas: se for sustenido, vira X8S (ex: C8S), senão X8 (ex: C8)
-  if (p.endsWith('S')) {
-    const base = p.replace('S', '');
-    BASS_SAMPLES[base + '8S'] = `assets/bass-${base}8S.mp3`;
-  } else {
-    BASS_SAMPLES[p + '8'] = `assets/bass-${p}8.mp3`;
-  }
-}
-BASS_SAMPLES['x'] = 'assets/bass-muted.mp3';
+    const BASS_SAMPLES = {};
+    for (const p of PITCHES) {
+      // Notas graves
+      BASS_SAMPLES[p] = `assets/bass-${p}.mp3`;
+      
+      // Notas agudas: se for sustenido, vira X8S (ex: C8S), senão X8 (ex: C8)
+      if (p.endsWith('S')) {
+        const base = p.replace('S', '');
+        BASS_SAMPLES[base + '8S'] = `assets/bass-${base}8S.mp3`;
+      } else {
+        BASS_SAMPLES[p + '8'] = `assets/bass-${p}8.mp3`;
+      }
+    }
+    BASS_SAMPLES['x'] = 'assets/bass-muted.mp3';
 
     // === PROGRESSÕES POR ESTILO ===
     const STYLE_PROGRESSIONS = {
@@ -600,12 +602,12 @@ BASS_SAMPLES['x'] = 'assets/bass-muted.mp3';
       state.quality = Math.random() > 0.5 ? 'maj' : 'min';
 
       const grooveName = state.currentGroove.name;
-let styleKey = "Rock";
-if (grooveName.includes("Samba")) styleKey = "Samba";
-else if (grooveName.includes("Jazz")) styleKey = "Jazz";
-else if (grooveName.includes("Forró")) styleKey = "Forró";
-else if (grooveName.includes("Metal")) styleKey = "Metal";
-else if (grooveName.includes("Blues")) styleKey = "Blues";
+      let styleKey = "Rock";
+      if (grooveName.includes("Samba")) styleKey = "Samba";
+      else if (grooveName.includes("Jazz")) styleKey = "Jazz";
+      else if (grooveName.includes("Forró")) styleKey = "Forró";
+      else if (grooveName.includes("Metal")) styleKey = "Metal";
+      else if (grooveName.includes("Blues")) styleKey = "Blues";
 
       const progressions = STYLE_PROGRESSIONS[styleKey] || STYLE_PROGRESSIONS.Rock;
       state.chordProgression = progressions[Math.floor(Math.random() * progressions.length)];
@@ -617,38 +619,37 @@ else if (grooveName.includes("Blues")) styleKey = "Blues";
       const bassPlan = [];
       const chordPlan = [];
 
-      // === FUNÇÃO CORRIGIDA: getBassNotesFromScale ===
-function getBassNotesFromScale(degree, scale, quality) {
-  if (scale === "chromatic") {
-    const rootIdx = (state.keyIdx + DEGREE_TO_ROOT[degree]) % 12;
-    const rootNote = PITCHES[rootIdx];
-    const octave = 8;
-    return Array(8).fill().map((_, i) => {
-      const noteIdx = (rootIdx - i + 12) % 12;
-      const p = PITCHES[noteIdx];
-      return p.endsWith('S') ? `${p.replace('S', '')}${octave}S` : `${p}${octave}`;
-    });
-  }
+      function getBassNotesFromScale(degree, scale, quality) {
+        if (scale === "chromatic") {
+          const rootIdx = (state.keyIdx + DEGREE_TO_ROOT[degree]) % 12;
+          const rootNote = PITCHES[rootIdx];
+          const octave = 8;
+          return Array(8).fill().map((_, i) => {
+            const noteIdx = (rootIdx - i + 12) % 12;
+            const p = PITCHES[noteIdx];
+            return p.endsWith('S') ? `${p.replace('S', '')}${octave}S` : `${p}${octave}`;
+          });
+        }
 
-  if (Array.isArray(scale)) {
-    const rootIdx = (state.keyIdx + DEGREE_TO_ROOT[degree]) % 12;
-    return scale.map(interval => {
-      const intervalOffset = DEGREE_TO_ROOT[interval] || 0;
-      const noteIdx = (rootIdx + intervalOffset) % 12;
-      const noteName = PITCHES[noteIdx];
+        if (Array.isArray(scale)) {
+          const rootIdx = (state.keyIdx + DEGREE_TO_ROOT[degree]) % 12;
+          return scale.map(interval => {
+            const intervalOffset = DEGREE_TO_ROOT[interval] || 0;
+            const noteIdx = (rootIdx + intervalOffset) % 12;
+            const noteName = PITCHES[noteIdx];
 
-      if (interval === 1) {
-        return noteName; // tônica grave
-      } else {
-        return noteName.endsWith('S')
-          ? `${noteName.replace('S', '')}8S`
-          : `${noteName}8`;
+            if (interval === 1) {
+              return noteName; // tônica grave
+            } else {
+              return noteName.endsWith('S')
+                ? `${noteName.replace('S', '')}8S`
+                : `${noteName}8`;
+            }
+          });
+        }
+
+        return [PITCHES[(state.keyIdx + DEGREE_TO_ROOT[degree]) % 12]];
       }
-    });
-  }
-
-  return [PITCHES[(state.keyIdx + DEGREE_TO_ROOT[degree]) % 12]];
-}
 
       for (let bar = 0; bar < totalBars; bar++) {
         const degree = state.chordProgression[bar];
@@ -1142,7 +1143,14 @@ function getBassNotesFromScale(degree, scale, quality) {
       const need = new Set();
       for (let i = 1; i <= 49; i++) {
         const name = NUM_TO_NAME[i];
-        ['guitarraDistorcao', 'guitarraLimpa', 'pianoString'].forEach(folder => {
+        const folders = {
+          dist: 'guitarraDistorcao',
+          clean: 'guitarraLimpa',
+          piano: 'Assets/PianoString',
+          baixo: 'Assets/BaixoMelodia',
+          sax: 'Assets/SaxMelodia'
+        };
+        Object.values(folders).forEach(folder => {
           const url = `${folder}/Melodia/${i}${name}.mp3`;
           need.add(url);
         });
@@ -1170,7 +1178,10 @@ function getBassNotesFromScale(degree, scale, quality) {
       const name = NUM_TO_NAME[number];
       let folder = 'guitarraDistorcao';
       if (instrumentType === 'clean') folder = 'guitarraLimpa';
-      else if (instrumentType === 'piano') folder = 'pianoString';
+      else if (instrumentType === 'piano') folder = 'Assets/PianoString';
+      else if (instrumentType === 'baixo') folder = 'Assets/BaixoMelodia';
+      else if (instrumentType === 'sax') folder = 'Assets/SaxMelodia';
+
       const url = `${folder}/Melodia/${number}${name}.mp3`;
       const buf = state.buffers.melody[url];
       if (!buf) return;
@@ -1192,14 +1203,4 @@ function getBassNotesFromScale(degree, scale, quality) {
 
       state.lastMelodySource = src;
       state.lastMelodyGain = g;
-      src.finished = false;
-      src.onended = () => { src.finished = true; };
-    }
-
-    window.addEventListener('load', () => {
-      initAudio();
-      addMelodyBlock();
-    });
-  </script>
-</body>
-</html>
+      src.finished = fa
