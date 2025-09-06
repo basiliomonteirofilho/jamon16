@@ -415,7 +415,7 @@
     const ALL_GROOVES = [
       { name: "Rock", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch bu"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 8] },
       { name: "Rock2", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 5] },
-      { name: "Rock3", meter: "4/4", drumPattern: ["bch - ch bu cch bu ch - bch - ch - cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo bo bo -"], bassScale: [1, 1, 1, 1] },
+      { name: "Rock3", meter: "4/4", drumPattern: ["bch - ch bu cch bu ch - bch - ch - cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo bo bo -"], bassScale: [1, 1, 1, 1] },
       { name: "Rock4", meter: "4/4", drumPattern: ["ba - co - cco - co - bco - co - cco bu bco bu"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 7, 8, 7, 5, 3] },
       { name: "Rock5", meter: "4/4", drumPattern: ["bch ch ch ch cch ch ch ch bch ch ch ch cch ch ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo x bo x bo x"], bassScale: [1, 3, 1, 5] },
       { name: "Rock6", meter: "4/4", drumPattern: ["bco co co co cco co co co bco co co co cco co co co"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [8, 8, 1, 1] },
@@ -459,7 +459,7 @@
       signatureTag: '',
       key: null,
       keyIdx: 0,
-      quality: 'maj',
+      quality: 'maj', // Sempre maior, como solicitado
       chordProgression: [],
       chordDurations: [],
       currentGroove: null,
@@ -585,7 +585,7 @@
       const sixteenthsPerBar = beats * 4;
       state.keyIdx = Math.floor(Math.random() * PITCHES.length);
       state.key = PITCHES[state.keyIdx];
-      // Removido o campo harmônico menor, agora é sempre maior
+      // Campo harmônico é sempre maior, como solicitado
       state.quality = 'maj';
       const grooveName = state.currentGroove.name;
       let styleKey = "Rock";
@@ -650,8 +650,8 @@
             chordType = chordVariation;
             break;
           case 7:
-            // Acorde diminuto
-            chordType = 'º';
+            // Acorde diminuto (usando "dim" conforme sua lista AVAILABLE_CHORDS)
+            chordType = 'dim';
             break;
           default:
             chordType = '';
@@ -697,8 +697,7 @@
       setStatePanel();
       const guitarUrls = new Set();
       for (const ch of state.chordPlan) {
-        // Modificamos a lógica aqui para lidar com os novos tipos de acordes
-        // O arquivo base será apenas a nota raiz, ignorando as extensões para carregamento
+        // Para o carregamento, usamos apenas a nota raiz, ignorando as extensões
         const base = `${ch.note}`;
         guitarUrls.add(`guitarraDistorcao/${ch.note}/${base}.mp3`);
       }
@@ -944,7 +943,7 @@
       let basicQuality = 'maj';
       if (quality.includes('m') && !quality.includes('maj')) {
         basicQuality = 'min';
-      } else if (quality.includes('º')) {
+      } else if (quality.includes('dim')) {
         basicQuality = 'dim';
       }
       if (basicQuality === 'min') {
