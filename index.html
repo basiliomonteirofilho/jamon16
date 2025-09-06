@@ -869,23 +869,30 @@
       state.nextNoteTime += state.sixteenthDur;
     }
     function playChord(time, note, type, isDistorted) {
-      const folder = 'guitarraDistorcao';
-      // Para o carregamento, usamos apenas a nota raiz, ignorando as extensões
-      const base = `${note}`;
-      const url = `${folder}/${note}/${base}.mp3`;
-      const buf = state.buffers.guitar?.[url] || null;
-      if (buf && time >= audio.ctx.currentTime - 0.02) {
-        const src = audio.ctx.createBufferSource();
-        const g = audio.ctx.createGain();
-        src.buffer = buf;
-        src.connect(g);
-        g.connect(audio.distGain);
-        g.gain.setValueAtTime(0.0, time);
-        g.gain.linearRampToValueAtTime(1.0, time + 0.01);
-        src.start(time);
-        state.lastDistSource = src;
-      }
-    }
+  // Constrói o nome completo do acorde
+  const fullChordName = note + type;
+
+  // Monta a URL: pasta do acorde COMPLETO, nome do arquivo COMPLETO
+  // AJUSTE ESTA LINHA SE SEUS ARQUIVOS ESTIVEREM DENTRO DA PASTA DA NOTA RAIZ (ex: /F/F75+.mp3)
+  const folder = 'guitarraDistorcao';
+  const url = `${folder}/${fullChordName}/${fullChordName}.mp3`;
+
+  const buf = state.buffers.guitar?.[url] || null;
+
+  if (buf && time >= audio.ctx.currentTime - 0.02) {
+    const src = audio.ctx.createBufferSource();
+    const g = audio.ctx.createGain();
+    src.buffer = buf;
+    src.connect(g);
+    g.connect(audio.distGain);
+    g.gain.setValueAtTime(0.0, time);
+    g.gain.linearRampToValueAtTime(1.0, time + 0.01);
+    src.start(time);
+    state.lastDistSource = src;
+  } else {
+    console.warn(`Buffer não carregado para o acorde: ${fullChordName} | URL: ${url}`);
+  }
+}
     function onPause() {
       if (state.running && !state.paused) state.paused = true;
     }
