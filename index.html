@@ -443,7 +443,7 @@
       { name: "Metal3", meter: "4/4", drumPattern: ["bch bu bch - cch - ch - bch bu ch bu cch - ch -"], bassRhythm: ["bo bo bo - - - - - bo bo - bo - - - -"] },
       { name: "Metal4", meter: "4/4", drumPattern: ["bch bu cch - bu bu cch - bu bu cch - bu bu cch -"], bassRhythm: ["bo bo bo - bo bo bo - bo bo bo - bo bo bo -"] },
       { name: "Samba", meter: "2/4", drumPattern: ["bch - ch bu bch - ch bu"], bassRhythm: ["bo - - x bo - - x"], bassScale: [8, 5] },
-      { name: "Jazz", meter: "4/4", drumPattern: ["bch co co - co co co ca bch co co - bch co co cch"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: "chromatic" },
+      { name: "Jazz", meter: "4/4", drumPattern: ["bch co co - co co co ca bch co co - bch co co cch"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: "chromatic" },
     ];
     const state = {
       running: false,
@@ -624,6 +624,17 @@
         }
         return [PITCHES[(state.keyIdx + DEGREE_TO_ROOT[degree]) % 12]];
       }
+      // --- NOVA LÓGICA AQUI ---
+      // Determina a variação única para toda a progressão
+      let globalChordVariation = '';
+      if (styleKey === "Blues") {
+        // Para Blues, força todos os acordes a serem sétima
+        globalChordVariation = '7';
+      } else {
+        // Para outros estilos, sorteia UMA variação para toda a progressão
+        const allVariations = ['', '11', '13', '4', '45+', '5', '5+', '6', '7', '75+', '9', '95+', 'm', 'm4', 'm5', 'm5+', 'm6', 'm7', 'm75+', 'm79', 'm9', 'dim'];
+        globalChordVariation = allVariations[Math.floor(Math.random() * allVariations.length)];
+      }
       for (let bar = 0; bar < totalBars; bar++) {
         const degree = state.chordProgression[bar];
         const rootOffset = DEGREE_TO_ROOT[degree] || 0;
@@ -631,30 +642,44 @@
         const rootNote = PITCHES[rootIdx];
         // Define o tipo de acorde baseado na lógica do campo harmônico maior: I-maj, II-min, III-min, IV-maj, V-maj, VI-min, VII-dim
         let chordType = '';
-        let chordVariation = '';
-        switch(degree) {
-          case 1:
-          case 4:
-          case 5:
-            // Acordes maiores com variações
-            const majorVariations = ['', '11', '13', '4', '45+', '5', '5+', '6', '7', '75+', '9', '95+'];
-            chordVariation = majorVariations[Math.floor(Math.random() * majorVariations.length)];
-            chordType = chordVariation;
-            break;
-          case 2:
-          case 3:
-          case 6:
-            // Acordes menores com variações
-            const minorVariations = ['m', 'm4', 'm5', 'm5+', 'm6', 'm7', 'm75+', 'm79', 'm9'];
-            chordVariation = minorVariations[Math.floor(Math.random() * minorVariations.length)];
-            chordType = chordVariation;
-            break;
-          case 7:
-            // Acorde diminuto (usando "dim" conforme sua lista AVAILABLE_CHORDS)
-            chordType = 'dim';
-            break;
-          default:
-            chordType = '';
+        // --- APLICA A VARIAÇÃO GLOBAL ---
+        if (styleKey === "Blues") {
+          // No Blues, todos são 7, independente do grau
+          chordType = globalChordVariation;
+        } else {
+          // Em outros estilos, aplica a variação global, mas respeita a natureza do grau
+          switch(degree) {
+            case 1:
+            case 4:
+            case 5:
+              // Acordes maiores
+              // Usa a variação global apenas se for compatível com acorde maior
+              if (globalChordVariation === '' || globalChordVariation.startsWith('m') === false) {
+                chordType = globalChordVariation;
+              } else {
+                // Se a variação global é menor, força a ser maior (vazio ou 7, por exemplo)
+                chordType = '';
+              }
+              break;
+            case 2:
+            case 3:
+            case 6:
+              // Acordes menores
+              // Usa a variação global apenas se for compatível com acorde menor
+              if (globalChordVariation.startsWith('m') || globalChordVariation === 'dim') {
+                chordType = globalChordVariation;
+              } else {
+                // Se a variação global é maior, força a ser menor (m ou m7, por exemplo)
+                chordType = 'm';
+              }
+              break;
+            case 7:
+              // Acorde diminuto
+              chordType = 'dim';
+              break;
+            default:
+              chordType = '';
+          }
         }
         const chordDisplay = CHORD_NAMES[rootIdx] + chordType;
         const displayedNote = transposeDown3Semitones(CHORD_NAMES[rootIdx]);
