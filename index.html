@@ -734,23 +734,23 @@ async function buildBassAndChordPlan() {
   state.drumSeq = drumExpanded.slice(0, state.bassPlan.length);
   setStatePanel();
   // --- CORREÇÃO PARA CARREGAR TODOS OS TIPOS DE SAMPLES (ab, de, so) ---
-  const guitarUrls = new Set();
-  for (const ch of state.chordPlan) {
-    const fullChordName = ch.note + ch.type;
-    // Adiciona URLs para os três tipos de samples de guitarra
-    guitarUrls.add(`guitarraDistorcao/${fullChordName}/${fullChordName}.mp3`); // "so" - solto (padrão)
-    guitarUrls.add(`guitarraDistorcao/abafadas/${fullChordName}/${fullChordName}.mp3`); // "ab" - abafado
-    guitarUrls.add(`guitarraDistorcao/dedilhada/${fullChordName}/${fullChordName}.mp3`); // "de" - dedilhado
+const guitarUrls = new Set();
+for (const ch of state.chordPlan) {
+  const fullChordName = ch.note + ch.type;
+  // CORREÇÃO AQUI: Gera as URLs usando a nota raiz (ch.note) como pasta, e o nome completo (fullChordName) como arquivo
+  guitarUrls.add(`guitarraDistorcao/${ch.note}/${fullChordName}.mp3`); // "so" - solto (padrão)
+  guitarUrls.add(`guitarraDistorcao/abafadas/${ch.note}/${fullChordName}.mp3`); // "ab" - abafado
+  guitarUrls.add(`guitarraDistorcao/dedilhada/${ch.note}/${fullChordName}.mp3`); // "de" - dedilhado
+}
+const preloadPromises = [];
+guitarUrls.forEach(url => {
+  if (!state.buffers.guitar) state.buffers.guitar = {};
+  if (!state.buffers.guitar[url]) {
+    const p = loadBuffer(url).then(buf => { if (buf) state.buffers.guitar[url] = buf; });
+    preloadPromises.push(p);
   }
-  const preloadPromises = [];
-  guitarUrls.forEach(url => {
-    if (!state.buffers.guitar) state.buffers.guitar = {};
-    if (!state.buffers.guitar[url]) {
-      const p = loadBuffer(url).then(buf => { if (buf) state.buffers.guitar[url] = buf; });
-      preloadPromises.push(p);
-    }
-  });
-  await Promise.all(preloadPromises);
+});
+await Promise.all(preloadPromises);
 }
 function parsePattern(patternText) {
   const result = { intro: [], loop: [] };
