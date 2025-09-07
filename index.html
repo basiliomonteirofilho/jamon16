@@ -5,220 +5,342 @@
   <title>Jam On – Playback Aleatório</title>
   <style>
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-      background: #121212;
-      color: #e0e0e0;
-      margin: 0;
-      padding: 20px;
-    }
-    header {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    h1 {
-      color: #5eead4;
-      font-size: 1.8em;
-      margin: 0;
-    }
-    .pill {
-      display: inline-block;
-      background: #333;
-      color: #aaa;
-      font-size: 0.75em;
-      padding: 4px 10px;
-      border-radius: 12px;
-    }
-    .card {
-      max-width: 800px;
-      margin: 0 auto;
-      background: #1e1e1e;
-      border-radius: 16px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-      overflow: hidden;
-      padding: 20px;
-      text-align: left;
-    }
-    .chord-display {
-      text-align: center;
-      margin: 20px 0;
-    }
-    .chord-name {
-      font-size: 3em;
-      color: #5eead4;
-      margin: 0;
-      font-weight: bold;
-    }
-    #chordTimer {
-      font-size: 1.1em;
-      color: #aaa;
-    }
-    #chordProgression {
-      margin-top: 12px;
-      font-family: monospace;
-      font-size: 1.1em;
-      white-space: nowrap;
-      overflow-x: auto;
-      padding: 8px 0;
-    }
-    .chord-item {
-      display: inline-block;
-      padding: 6px 10px;
-      margin: 0 4px;
-      border-radius: 6px;
-      background: #333;
-      transition: background 0.3s;
-    }
-    .chord-item.current {
-      background: #5eead4;
-      color: #121212;
-      font-weight: bold;
-    }
-    .controls {
-      display: grid;
-      gap: 15px;
-      margin-bottom: 20px;
-    }
-    .btn-row {
-      display: flex;
-      justify-content: center;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-    button {
-      padding: 12px 20px;
-      border: none;
-      border-radius: 8px;
-      font-weight: bold;
-      cursor: pointer;
-      font-size: 1em;
-    }
-    button.primary {
-      background: #5eead4;
-      color: #121212;
-    }
-    button.danger {
-      background: #f44336;
-      color: white;
-    }
-    button:hover {
-      opacity: 0.9;
-    }
-    .mute-buttons {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin: 10px 0;
-    }
-    .mute-buttons button {
-      padding: 8px 14px;
-      font-size: 0.9em;
-    }
-    .mute-buttons button.muted {
-      opacity: 0.5;
-    }
-    .row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      justify-content: center;
-    }
-    .row label {
-      width: 100px;
-      text-align: right;
-      color: #ccc;
-    }
-    input[type="number"], select {
-      padding: 8px;
-      border-radius: 6px;
-      border: 1px solid #444;
-      background: #2a2a2a;
-      color: #fff;
-      width: 90px;
-    }
-    select {
-      width: auto;
-      min-width: 120px;
-    }
-    .slider-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      justify-content: center;
-    }
-    .slider-row label {
-      width: 80px;
-      text-align: right;
-      font-size: 0.9em;
-    }
-    input[type="range"] {
-      width: 180px;
-      accent-color: #5eead4;
-    }
-    .slider-value {
-      width: 40px;
-      text-align: left;
-      font-size: 0.9em;
-      color: #aaa;
-    }
-    .panel {
-      margin-top: 20px;
-    }
-    .panel h3 {
-      color: #5eead4;
-      margin-top: 0;
-    }
-    .melody-panel {
-      margin-top: 20px;
-    }
-    .melody-toolbar {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      flex-wrap: wrap;
-      justify-content: center;
-      margin-bottom: 10px;
-    }
-    .melody-block {
-      border: 1px solid #444;
-      border-radius: 8px;
-      padding: 10px;
-      margin-bottom: 12px;
-      background: #222;
-    }
-    .melody-caption {
-      font-size: 0.9em;
-      color: #ccc;
-      margin-bottom: 6px;
-    }
-    .melody-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.85em;
-    }
-    .melody-table th, .melody-table td {
-      border: 1px solid #555;
-      padding: 2px;
-    }
-    .melody-table input {
-      width: 100%;
-      padding: 4px;
-      text-align: center;
-      background: #333;
-      border: 1px solid #555;
-      color: white;
-      border-radius: 4px;
-    }
-    .line-label {
-      font-size: 0.8em;
-      color: #aaa;
-    }
-    .instructions {
-      font-size: 0.85em;
-      color: #aaa;
-      margin-top: 8px;
-      text-align: center;
-    }
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  background: #121212;
+  color: #e0e0e0;
+  margin: 0;
+  padding: 20px;
+}
+header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+h1 {
+  color: #5eead4;
+  font-size: 1.8em;
+  margin: 0;
+}
+.pill {
+  display: inline-block;
+  background: #333;
+  color: #aaa;
+  font-size: 0.75em;
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+.card {
+  max-width: 800px;
+  margin: 0 auto;
+  background: #1e1e1e;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  overflow: hidden;
+  padding: 20px;
+  text-align: left;
+}
+.chord-display {
+  text-align: center;
+  margin: 20px 0;
+}
+.chord-name {
+  font-size: 3em;
+  color: #5eead4;
+  margin: 0;
+  font-weight: bold;
+}
+#chordTimer {
+  font-size: 1.1em;
+  color: #aaa;
+}
+#chordProgression {
+  margin-top: 12px;
+  font-family: monospace;
+  font-size: 1.1em;
+  white-space: nowrap;
+  overflow-x: auto;
+  padding: 8px 0;
+}
+.chord-item {
+  display: inline-block;
+  padding: 6px 10px;
+  margin: 0 4px;
+  border-radius: 6px;
+  background: #333;
+  transition: background 0.3s;
+}
+.chord-item.current {
+  background: #5eead4;
+  color: #121212;
+  font-weight: bold;
+}
+.controls {
+  display: grid;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+.btn-row {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+button {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 1em;
+}
+button.primary {
+  background: #5eead4;
+  color: #121212;
+}
+button.danger {
+  background: #f44336;
+  color: white;
+}
+button:hover {
+  opacity: 0.9;
+}
+.mute-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 10px 0;
+}
+.mute-buttons button {
+  padding: 8px 14px;
+  font-size: 0.9em;
+}
+.mute-buttons button.muted {
+  opacity: 0.5;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+}
+.row label {
+  width: 100px;
+  text-align: right;
+  color: #ccc;
+}
+input[type="number"], select {
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background: #2a2a2a;
+  color: #fff;
+  width: 90px;
+}
+select {
+  width: auto;
+  min-width: 120px;
+}
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+}
+.slider-row label {
+  width: 80px;
+  text-align: right;
+  font-size: 0.9em;
+}
+input[type="range"] {
+  width: 180px;
+  accent-color: #5eead4;
+}
+.slider-value {
+  width: 40px;
+  text-align: left;
+  font-size: 0.9em;
+  color: #aaa;
+}
+.panel {
+  margin-top: 20px;
+}
+.panel h3 {
+  color: #5eead4;
+  margin-top: 0;
+}
+.melody-panel {
+  margin-top: 20px;
+}
+.melody-toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+.melody-block {
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 12px;
+  background: #222;
+}
+.melody-caption {
+  font-size: 0.9em;
+  color: #ccc;
+  margin-bottom: 6px;
+}
+.melody-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85em;
+}
+.melody-table th, .melody-table td {
+  border: 1px solid #555;
+  padding: 2px;
+}
+.melody-table input {
+  width: 100%;
+  padding: 4px;
+  text-align: center;
+  background: #333;
+  border: 1px solid #555;
+  color: white;
+  border-radius: 4px;
+}
+.line-label {
+  font-size: 0.8em;
+  color: #aaa;
+}
+.instructions {
+  font-size: 0.85em;
+  color: #aaa;
+  margin-top: 8px;
+  text-align: center;
+}
+
+/* === ESTILOS PARA MOBILE === */
+@media (max-width: 768px) {
+  body {
+    padding: 10px;
+  }
+  .card {
+    padding: 15px;
+    border-radius: 12px;
+  }
+  h1 {
+    font-size: 1.5em;
+  }
+  .chord-name {
+    font-size: 2em;
+  }
+  button {
+    padding: 14px 22px; /* Aumentado para toque */
+    font-size: 1em;
+  }
+  .row label {
+    width: 80px;
+    font-size: 0.9em;
+  }
+  input[type="number"], select {
+    width: 70px;
+    font-size: 0.9em;
+    padding: 10px; /* Aumentado para toque */
+  }
+  .slider-row label {
+    width: 60px;
+    font-size: 0.8em;
+  }
+  input[type="range"] {
+    width: 140px;
+  }
+  .slider-value {
+    width: 35px;
+    font-size: 0.8em;
+  }
+  .melody-table {
+    font-size: 0.9em; /* Aumentado para melhor leitura */
+  }
+  .melody-table input {
+    height: 40px; /* Aumentado para toque */
+    font-size: 0.9em;
+    padding: 8px; /* Aumentado para toque */
+  }
+  .melody-caption {
+    font-size: 0.85em;
+  }
+}
+
+/* === ESTILOS DO PICKER DE NÚMEROS === */
+#numberPicker {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: #1e1e1e;
+  border-top: 2px solid #5eead4;
+  padding: 15px;
+  box-shadow: 0 -4px 10px rgba(0,0,0,0.5);
+  z-index: 1000;
+  animation: slideUp 0.3s ease-out;
+  /* --- NOVO: Usa grid para 4 colunas --- */
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+#numberPicker h3 {
+  color: #5eead4;
+  text-align: center;
+  margin-top: 0;
+  margin-bottom: 15px;
+  /* --- NOVO: Ocupa todas as 4 colunas --- */
+  grid-column: span 4;
+}
+
+#numberGrid {
+  /* --- REMOVIDO: O grid agora está no #numberPicker --- */
+}
+
+.number-btn {
+  background: #333;
+  color: #e0e0e0;
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 12px 0; /* Aumentado para toque */
+  font-size: 1em;
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.number-btn:hover {
+  background: #444;
+}
+
+.number-btn:active {
+  transform: scale(0.95);
+  background: #5eead4;
+  color: #121212;
+}
+
+.close-btn {
+  /* --- NOVO: Ocupa todas as 4 colunas --- */
+  grid-column: span 4;
+  background: #f44336;
+  color: white;
+  font-weight: bold;
+}
   </style>
 </head>
 <body>
@@ -309,18 +431,16 @@
     </div>
   </div>
   <script>
-    function transposeDown3Semitones(note) {
+   function transposeDown3Semitones(note) {
   const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
   const index = notes.indexOf(note);
   if (index === -1) return note;
   return notes[(index - 3 + 12) % 12];
 }
-
 // Função para detectar se é um dispositivo móvel
 function isMobileDevice() {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
-
 const ui = {
   play: document.getElementById('btnPlay'),
   pause: document.getElementById('btnPause'),
@@ -349,7 +469,6 @@ const ui = {
   numberPicker: document.getElementById('numberPicker'),
   numberGrid: document.getElementById('numberGrid')
 };
-
 const audio = {
   ctx: null,
   master: null,
@@ -491,7 +610,6 @@ const state = {
   activeInput: null // Armazena o input ativo no mobile
 };
 const mute = { bass: false, drums: false, clean: false, dist: false };
-
 function log(msg) {
   console.log(`[LOG] ${msg}`);
 }
@@ -608,7 +726,14 @@ async function buildBassAndChordPlan() {
   else if (grooveName.includes("Metal")) styleKey = "Metal";
   else if (grooveName.includes("Blues")) styleKey = "Blues";
   const progressions = STYLE_PROGRESSIONS[styleKey] || STYLE_PROGRESSIONS.Rock;
-  state.chordProgression = progressions[Math.floor(Math.random() * progressions.length)];
+  // --- NOVA LÓGICA AQUI ---
+  // Seleciona uma progressão que NÃO comece com o grau 7 (diminuto)
+  let availableProgressions = progressions.filter(prog => prog[0] !== 7);
+  // Se todas as progressões começarem com 7 (improvável), usa a lista original como fallback
+  if (availableProgressions.length === 0) {
+    availableProgressions = progressions;
+  }
+  state.chordProgression = availableProgressions[Math.floor(Math.random() * availableProgressions.length)];
   const totalBars = Math.min(state.chordProgression.length, 64);
   const totalSteps = sixteenthsPerBar * totalBars;
   const rhythm = expandRhythm(state.currentGroove.bassRhythm, totalSteps);
@@ -734,23 +859,23 @@ async function buildBassAndChordPlan() {
   state.drumSeq = drumExpanded.slice(0, state.bassPlan.length);
   setStatePanel();
   // --- CORREÇÃO PARA CARREGAR TODOS OS TIPOS DE SAMPLES (ab, de, so) ---
-const guitarUrls = new Set();
-for (const ch of state.chordPlan) {
-  const fullChordName = ch.note + ch.type;
-  // CORREÇÃO AQUI: Gera as URLs usando a nota raiz (ch.note) como pasta, e o nome completo (fullChordName) como arquivo
-  guitarUrls.add(`guitarraDistorcao/${ch.note}/${fullChordName}.mp3`); // "so" - solto (padrão)
-  guitarUrls.add(`guitarraDistorcao/abafadas/${ch.note}/${fullChordName}.mp3`); // "ab" - abafado
-  guitarUrls.add(`guitarraDistorcao/dedilhada/${ch.note}/${fullChordName}.mp3`); // "de" - dedilhado
-}
-const preloadPromises = [];
-guitarUrls.forEach(url => {
-  if (!state.buffers.guitar) state.buffers.guitar = {};
-  if (!state.buffers.guitar[url]) {
-    const p = loadBuffer(url).then(buf => { if (buf) state.buffers.guitar[url] = buf; });
-    preloadPromises.push(p);
+  const guitarUrls = new Set();
+  for (const ch of state.chordPlan) {
+    const fullChordName = ch.note + ch.type;
+    // CORREÇÃO AQUI: Gera as URLs usando a nota raiz (ch.note) como pasta, e o nome completo (fullChordName) como arquivo
+    guitarUrls.add(`guitarraDistorcao/${ch.note}/${fullChordName}.mp3`); // "so" - solto (padrão)
+    guitarUrls.add(`guitarraDistorcao/abafadas/${ch.note}/${fullChordName}.mp3`); // "ab" - abafado
+    guitarUrls.add(`guitarraDistorcao/dedilhada/${ch.note}/${fullChordName}.mp3`); // "de" - dedilhado
   }
-});
-await Promise.all(preloadPromises);
+  const preloadPromises = [];
+  guitarUrls.forEach(url => {
+    if (!state.buffers.guitar) state.buffers.guitar = {};
+    if (!state.buffers.guitar[url]) {
+      const p = loadBuffer(url).then(buf => { if (buf) state.buffers.guitar[url] = buf; });
+      preloadPromises.push(p);
+    }
+  });
+  await Promise.all(preloadPromises);
 }
 function parsePattern(patternText) {
   const result = { intro: [], loop: [] };
@@ -875,89 +1000,88 @@ function scheduleStep() {
     }
   }
   // GUITAR (Ritmo Editável)
-  // GUITAR (Ritmo Editável)
-if (state.currentGroove && state.currentGroove.guitarRhythm) {
-  const beats = meterToBeats(state.meter);
-  const sixteenthsPerBar = beats * 4;
-  const barIndex = Math.floor(state.stepIndex / sixteenthsPerBar);
-  const stepInBar = state.stepIndex % sixteenthsPerBar;
-  // Expande o padrão de guitarra para cobrir o comprimento total do plano de baixo
-  if (!state.guitarPlan) {
-    state.guitarPlan = expandRhythm(state.currentGroove.guitarRhythm, state.bassPlan.length);
-  }
-  const guitarCommand = state.guitarPlan[state.stepIndex % state.guitarPlan.length];
-  // Se for um novo compasso, reseta a nota da guitarra (para tocar o acorde completo)
-  if (isNewBar) {
-    if (state.lastDistSource) state.lastDistSource.stop(time);
-    const chord = state.chordPlan[state.currentChordIndex];
-    if (chord) {
-      ui.currentChord.textContent = chord.displayed;
-      ui.chordTimer.textContent = `Próx: ${state.chordPlan.length - state.currentChordIndex} compasso(s)`;
-      document.querySelectorAll('.chord-item.current').forEach(el => el.classList.remove('current'));
-      const items = document.querySelectorAll('.chord-item');
-      const currentIndex = state.currentChordIndex % items.length;
-      if (items[currentIndex]) items[currentIndex].classList.add('current');
+  if (state.currentGroove && state.currentGroove.guitarRhythm) {
+    const beats = meterToBeats(state.meter);
+    const sixteenthsPerBar = beats * 4;
+    const barIndex = Math.floor(state.stepIndex / sixteenthsPerBar);
+    const stepInBar = state.stepIndex % sixteenthsPerBar;
+    // Expande o padrão de guitarra para cobrir o comprimento total do plano de baixo
+    if (!state.guitarPlan) {
+      state.guitarPlan = expandRhythm(state.currentGroove.guitarRhythm, state.bassPlan.length);
     }
-  }
-  // Interpreta o comando de guitarra
-  if (guitarCommand && guitarCommand !== '-' && !mute.dist) {
-    const chord = state.chordPlan[state.currentChordIndex];
-    if (chord) {
-      let baseFolder = 'guitarraDistorcao';
-      let url = '';
-      // Define a subpasta baseado no comando
-      if (guitarCommand === 'ab') {
-        baseFolder = 'guitarraDistorcao/abafadas';
-      } else if (guitarCommand === 'de') {
-        baseFolder = 'guitarraDistorcao/dedilhada';
-      } else if (guitarCommand === 'so') {
-        baseFolder = 'guitarraDistorcao'; // Pasta padrão
-      } else {
-        // Se for um comando desconhecido, ignora
-        return;
+    const guitarCommand = state.guitarPlan[state.stepIndex % state.guitarPlan.length];
+    // Se for um novo compasso, reseta a nota da guitarra (para tocar o acorde completo)
+    if (isNewBar) {
+      if (state.lastDistSource) state.lastDistSource.stop(time);
+      const chord = state.chordPlan[state.currentChordIndex];
+      if (chord) {
+        ui.currentChord.textContent = chord.displayed;
+        ui.chordTimer.textContent = `Próx: ${state.chordPlan.length - state.currentChordIndex} compasso(s)`;
+        document.querySelectorAll('.chord-item.current').forEach(el => el.classList.remove('current'));
+        const items = document.querySelectorAll('.chord-item');
+        const currentIndex = state.currentChordIndex % items.length;
+        if (items[currentIndex]) items[currentIndex].classList.add('current');
       }
-      const fullChordName = chord.note + chord.type;
-      // CORREÇÃO AQUI: A pasta é a nota raiz (chord.note), o arquivo é o nome completo do acorde (fullChordName)
-      url = `${baseFolder}/${chord.note}/${fullChordName}.mp3`;
-      const buf = state.buffers.guitar?.[url] || null;
-      if (buf && time >= audio.ctx.currentTime - 0.02) {
-        // --- NOVA LINHA AQUI ---
-        // Para de tocar o sample anterior antes de tocar o novo
-        if (state.lastDistSource) {
-          state.lastDistSource.stop(time);
+    }
+    // Interpreta o comando de guitarra
+    if (guitarCommand && guitarCommand !== '-' && !mute.dist) {
+      const chord = state.chordPlan[state.currentChordIndex];
+      if (chord) {
+        let baseFolder = 'guitarraDistorcao';
+        let url = '';
+        // Define a subpasta baseado no comando
+        if (guitarCommand === 'ab') {
+          baseFolder = 'guitarraDistorcao/abafadas';
+        } else if (guitarCommand === 'de') {
+          baseFolder = 'guitarraDistorcao/dedilhada';
+        } else if (guitarCommand === 'so') {
+          baseFolder = 'guitarraDistorcao'; // Pasta padrão
+        } else {
+          // Se for um comando desconhecido, ignora
+          return;
         }
-        // --- FIM DA NOVA LINHA ---
-        const src = audio.ctx.createBufferSource();
-        const g = audio.ctx.createGain();
-        src.buffer = buf;
-        src.connect(g);
-        g.connect(audio.distGain);
-        g.gain.setValueAtTime(0.0, time);
-        g.gain.linearRampToValueAtTime(1.0, time + 0.01);
-        src.start(time);
-        state.lastDistSource = src;
-      } else {
-        console.warn(`Buffer não carregado para o acorde: ${fullChordName} | URL: ${url}`);
+        const fullChordName = chord.note + chord.type;
+        // CORREÇÃO AQUI: A pasta é a nota raiz (chord.note), o arquivo é o nome completo do acorde (fullChordName)
+        url = `${baseFolder}/${chord.note}/${fullChordName}.mp3`;
+        const buf = state.buffers.guitar?.[url] || null;
+        if (buf && time >= audio.ctx.currentTime - 0.02) {
+          // --- NOVA LINHA AQUI ---
+          // Para de tocar o sample anterior antes de tocar o novo
+          if (state.lastDistSource) {
+            state.lastDistSource.stop(time);
+          }
+          // --- FIM DA NOVA LINHA ---
+          const src = audio.ctx.createBufferSource();
+          const g = audio.ctx.createGain();
+          src.buffer = buf;
+          src.connect(g);
+          g.connect(audio.distGain);
+          g.gain.setValueAtTime(0.0, time);
+          g.gain.linearRampToValueAtTime(1.0, time + 0.01);
+          src.start(time);
+          state.lastDistSource = src;
+        } else {
+          console.warn(`Buffer não carregado para o acorde: ${fullChordName} | URL: ${url}`);
+        }
+      }
+    }
+  } else {
+    // Comportamento antigo (para grooves sem guitarRhythm definido)
+    if (isNewBar) {
+      if (state.lastCleanSource) state.lastCleanSource.stop(time);
+      if (state.lastDistSource) state.lastDistSource.stop(time);
+      const chord = state.chordPlan[state.currentChordIndex];
+      if (chord) {
+        ui.currentChord.textContent = chord.displayed;
+        ui.chordTimer.textContent = `Próx: ${state.chordPlan.length - state.currentChordIndex} compasso(s)`;
+        document.querySelectorAll('.chord-item.current').forEach(el => el.classList.remove('current'));
+        const items = document.querySelectorAll('.chord-item');
+        const currentIndex = state.currentChordIndex % items.length;
+        if (items[currentIndex]) items[currentIndex].classList.add('current');
+        if (!mute.dist) playChord(time, chord.note, chord.type, true);
       }
     }
   }
-} else {
-  // Comportamento antigo (para grooves sem guitarRhythm definido)
-  if (isNewBar) {
-    if (state.lastCleanSource) state.lastCleanSource.stop(time);
-    if (state.lastDistSource) state.lastDistSource.stop(time);
-    const chord = state.chordPlan[state.currentChordIndex];
-    if (chord) {
-      ui.currentChord.textContent = chord.displayed;
-      ui.chordTimer.textContent = `Próx: ${state.chordPlan.length - state.currentChordIndex} compasso(s)`;
-      document.querySelectorAll('.chord-item.current').forEach(el => el.classList.remove('current'));
-      const items = document.querySelectorAll('.chord-item');
-      const currentIndex = state.currentChordIndex % items.length;
-      if (items[currentIndex]) items[currentIndex].classList.add('current');
-      if (!mute.dist) playChord(time, chord.note, chord.type, true);
-    }
-  }
-}
   // MELODY
   const melodyEvent = state.melodyPlan[stepIdx % state.melodyPlan.length];
   if (melodyEvent && melodyEvent.type === 'start') {
@@ -979,7 +1103,6 @@ if (state.currentGroove && state.currentGroove.guitarRhythm) {
   }
   state.nextNoteTime += state.sixteenthDur;
 }
-
 // --- CORREÇÃO DA FUNÇÃO playChord PARA O COMPORTAMENTO ANTIGO ---
 // Esta função é usada apenas quando o groove NÃO tem `guitarRhythm` definido.
 function playChord(time, note, type, isDistorted) {
@@ -1003,7 +1126,6 @@ function playChord(time, note, type, isDistorted) {
     console.warn(`Buffer não carregado para o acorde: ${fullChordName} | URL: ${url}`);
   }
 }
-
 function onPause() {
   if (state.running && !state.paused) state.paused = true;
 }
@@ -1037,7 +1159,6 @@ function toggleMute(type, button) {
   button.textContent = `${icon} ${labelMap[type]}`;
   button.classList.toggle('muted', mute[type]);
 }
-
 ui.play.addEventListener('click', onPlay);
 ui.pause.addEventListener('click', onPause);
 ui.stop.addEventListener('click', onStop);
@@ -1045,7 +1166,6 @@ ui.muteBass.addEventListener('click', () => toggleMute('bass', ui.muteBass));
 ui.muteDrums.addEventListener('click', () => toggleMute('drums', ui.muteDrums));
 ui.muteClean.addEventListener('click', () => toggleMute('clean', ui.muteClean));
 ui.muteDist.addEventListener('click', () => toggleMute('dist', ui.muteDist));
-
 // --- MELODY SYSTEM ---
 const ORDER_E_UP = ['E','F','FS','G','GS','A','AS','B','C','CS','D','DS'];
 const NUM_TO_NAME = (() => {
@@ -1136,13 +1256,14 @@ function addMelodyBlock() {
     input.dataset.col = String(c);
     td.appendChild(input);
     inputRow.appendChild(td);
-
     // Adiciona o evento de foco apenas se for um dispositivo móvel
     if (isMobileDevice()) {
       input.addEventListener('focus', (e) => {
         state.activeInput = e.target;
         showNumberPicker();
       });
+      // Evento de duplo clique para limpar o campo (já estava aqui, mantido)
+      input.addEventListener('dblclick', (e) => { e.target.value = ''; });
     }
   }
   table.appendChild(inputRow);
@@ -1156,7 +1277,6 @@ function clearMelodyBlocks() {
 }
 ui.btnMelodyAdd.addEventListener('click', addMelodyBlock);
 ui.btnMelodyClear.addEventListener('click', clearMelodyBlocks);
-
 // --- FUNÇÕES DO PICKER DE NÚMEROS PARA MOBILE ---
 function initializeNumberPicker() {
   // Cria os botões de 1 a 49
@@ -1168,7 +1288,6 @@ function initializeNumberPicker() {
     btn.addEventListener('click', handleNumberSelection);
     ui.numberGrid.appendChild(btn);
   }
-
   // Cria o botão de fechar
   const closeBtn = document.createElement('button');
   closeBtn.className = 'number-btn close-btn';
@@ -1176,16 +1295,13 @@ function initializeNumberPicker() {
   closeBtn.addEventListener('click', hideNumberPicker);
   ui.numberGrid.appendChild(closeBtn);
 }
-
 function showNumberPicker() {
   if (!isMobileDevice()) return;
-  ui.numberPicker.style.display = 'block';
+  ui.numberPicker.style.display = 'grid'; // Alterado de 'block' para 'grid' para melhor controle do layout
 }
-
 function hideNumberPicker() {
   ui.numberPicker.style.display = 'none';
 }
-
 function handleNumberSelection(e) {
   const number = e.target.dataset.number;
   if (state.activeInput) {
@@ -1197,9 +1313,8 @@ function handleNumberSelection(e) {
     state.activeInput.blur();
     state.activeInput = null;
   }
-  hideNumberPicker();
+  hideNumberPicker(); // Fecha o picker automaticamente após a seleção
 }
-
 function buildMelodyPlanFromBlocks() {
   const beats = meterToBeats(state.meter || '4/4');
   const cols = beats * 4;
@@ -1308,11 +1423,9 @@ function playMelodyNumber(time, number, instrumentType) {
   src.finished = false;
   src.onended = () => { src.finished = true; };
 }
-
 window.addEventListener('load', () => {
   initAudio();
   addMelodyBlock();
-
   // Inicializa o picker de números se for um dispositivo móvel
   if (isMobileDevice()) {
     initializeNumberPicker();
