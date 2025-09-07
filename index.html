@@ -443,7 +443,7 @@
       { name: "Metal3", meter: "4/4", drumPattern: ["bch bu bch - cch - ch - bch bu ch bu cch - ch -"], bassRhythm: ["bo bo bo - - - - - bo bo - bo - - - -"] },
       { name: "Metal4", meter: "4/4", drumPattern: ["bch bu cch - bu bu cch - bu bu cch - bu bu cch -"], bassRhythm: ["bo bo bo - bo bo bo - bo bo bo - bo bo bo -"] },
       { name: "Samba", meter: "2/4", drumPattern: ["bch - ch bu bch - ch bu"], bassRhythm: ["bo - - x bo - - x"], bassScale: [8, 5] },
-      { name: "Jazz", meter: "4/4", drumPattern: ["bch co co - co co co ca bch co co - bch co co cch"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: "chromatic" },
+      { name: "Jazz", meter: "4/4", drumPattern: ["bch co co - co co co ca bch co co - bch co co cch"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: "chromatic" },
     ];
     const state = {
       running: false,
@@ -695,11 +695,13 @@
       }
       state.drumSeq = drumExpanded.slice(0, state.bassPlan.length);
       setStatePanel();
+      // --- CORREÇÃO AQUI ---
+      // Para o carregamento, a pasta é a nota raiz (ch.note), e o arquivo é o nome completo do acorde (ch.note + ch.type)
       const guitarUrls = new Set();
       for (const ch of state.chordPlan) {
-        // Para o carregamento, usamos apenas a nota raiz, ignorando as extensões
-        const base = `${ch.note}`;
-        guitarUrls.add(`guitarraDistorcao/${ch.note}/${base}.mp3`);
+        const folder = ch.note; // Pasta é a nota raiz
+        const fileName = ch.note + ch.type; // Nome do arquivo é a nota + extensão
+        guitarUrls.add(`guitarraDistorcao/${folder}/${fileName}.mp3`);
       }
       const preloadPromises = [];
       guitarUrls.forEach(url => {
@@ -868,17 +870,17 @@
       }
       state.nextNoteTime += state.sixteenthDur;
     }
+    // --- CORREÇÃO AQUI ---
+    // A função playChord agora constrói a URL corretamente:
+    // Pasta: guitarraDistorcao/<nota_raiz>/
+    // Arquivo: <nota_raiz><extensão>.mp3
     function playChord(time, note, type, isDistorted) {
       // Constrói o nome completo do acorde
       const fullChordName = note + type;
-
-      // Monta a URL: pasta do acorde COMPLETO, nome do arquivo COMPLETO
-      // AJUSTE ESTA LINHA SE SEUS ARQUIVOS ESTIVEREM DENTRO DA PASTA DA NOTA RAIZ (ex: /F/F75+.mp3)
+      // Monta a URL: pasta da nota raiz, nome do arquivo completo
       const folder = 'guitarraDistorcao';
-      const url = `${folder}/${fullChordName}/${fullChordName}.mp3`;
-
+      const url = `${folder}/${note}/${fullChordName}.mp3`; // <-- CORREÇÃO PRINCIPAL
       const buf = state.buffers.guitar?.[url] || null;
-
       if (buf && time >= audio.ctx.currentTime - 0.02) {
         const src = audio.ctx.createBufferSource();
         const g = audio.ctx.createGain();
