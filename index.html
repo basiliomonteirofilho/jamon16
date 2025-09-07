@@ -921,6 +921,12 @@ if (state.currentGroove && state.currentGroove.guitarRhythm) {
       url = `${baseFolder}/${chord.note}/${fullChordName}.mp3`;
       const buf = state.buffers.guitar?.[url] || null;
       if (buf && time >= audio.ctx.currentTime - 0.02) {
+        // --- NOVA LINHA AQUI ---
+        // Para de tocar o sample anterior antes de tocar o novo
+        if (state.lastDistSource) {
+          state.lastDistSource.stop(time);
+        }
+        // --- FIM DA NOVA LINHA ---
         const src = audio.ctx.createBufferSource();
         const g = audio.ctx.createGain();
         src.buffer = buf;
