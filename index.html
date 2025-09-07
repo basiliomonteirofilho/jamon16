@@ -1000,88 +1000,92 @@ function scheduleStep() {
     }
   }
   // GUITAR (Ritmo Editável)
-  if (state.currentGroove && state.currentGroove.guitarRhythm) {
-    const beats = meterToBeats(state.meter);
-    const sixteenthsPerBar = beats * 4;
-    const barIndex = Math.floor(state.stepIndex / sixteenthsPerBar);
-    const stepInBar = state.stepIndex % sixteenthsPerBar;
-    // Expande o padrão de guitarra para cobrir o comprimento total do plano de baixo
-    if (!state.guitarPlan) {
-      state.guitarPlan = expandRhythm(state.currentGroove.guitarRhythm, state.bassPlan.length);
+if (state.currentGroove && state.currentGroove.guitarRhythm) {
+  const beats = meterToBeats(state.meter);
+  const sixteenthsPerBar = beats * 4;
+  const barIndex = Math.floor(state.stepIndex / sixteenthsPerBar);
+  const stepInBar = state.stepIndex % sixteenthsPerBar;
+  // Expande o padrão de guitarra para cobrir o comprimento total do plano de baixo
+  if (!state.guitarPlan) {
+    state.guitarPlan = expandRhythm(state.currentGroove.guitarRhythm, state.bassPlan.length);
+  }
+  const guitarCommand = state.guitarPlan[state.stepIndex % state.guitarPlan.length];
+  // Se for um novo compasso, reseta a nota da guitarra (para tocar o acorde completo)
+  if (isNewBar) {
+    if (state.lastDistSource) state.lastDistSource.stop(time);
+    const chord = state.chordPlan[state.currentChordIndex];
+    if (chord) {
+      ui.currentChord.textContent = chord.displayed;
+      ui.chordTimer.textContent = `Próx: ${state.chordPlan.length - state.currentChordIndex} compasso(s)`;
+      document.querySelectorAll('.chord-item.current').forEach(el => el.classList.remove('current'));
+      const items = document.querySelectorAll('.chord-item');
+      const currentIndex = state.currentChordIndex % items.length;
+      if (items[currentIndex]) items[currentIndex].classList.add('current');
     }
-    const guitarCommand = state.guitarPlan[state.stepIndex % state.guitarPlan.length];
-    // Se for um novo compasso, reseta a nota da guitarra (para tocar o acorde completo)
-    if (isNewBar) {
-      if (state.lastDistSource) state.lastDistSource.stop(time);
-      const chord = state.chordPlan[state.currentChordIndex];
-      if (chord) {
-        ui.currentChord.textContent = chord.displayed;
-        ui.chordTimer.textContent = `Próx: ${state.chordPlan.length - state.currentChordIndex} compasso(s)`;
-        document.querySelectorAll('.chord-item.current').forEach(el => el.classList.remove('current'));
-        const items = document.querySelectorAll('.chord-item');
-        const currentIndex = state.currentChordIndex % items.length;
-        if (items[currentIndex]) items[currentIndex].classList.add('current');
+  }
+  // Interpreta o comando de guitarra
+  if (guitarCommand && guitarCommand !== '-' && !mute.dist) {
+    const chord = state.chordPlan[state.currentChordIndex];
+    if (chord) {
+      let baseFolder = 'guitarraDistorcao';
+      let url = '';
+      // Define a subpasta baseado no comando
+      if (guitarCommand === 'ab') {
+        baseFolder = 'guitarraDistorcao/abafadas';
+      } else if (guitarCommand === 'de') {
+        baseFolder = 'guitarraDistorcao/dedilhada';
+      } else if (guitarCommand === 'so') {
+        baseFolder = 'guitarraDistorcao'; // Pasta padrão
+      } else {
+        // Se for um comando desconhecido, ignora
+        return;
       }
-    }
-    // Interpreta o comando de guitarra
-    if (guitarCommand && guitarCommand !== '-' && !mute.dist) {
-      const chord = state.chordPlan[state.currentChordIndex];
-      if (chord) {
-        let baseFolder = 'guitarraDistorcao';
-        let url = '';
-        // Define a subpasta baseado no comando
-        if (guitarCommand === 'ab') {
-          baseFolder = 'guitarraDistorcao/abafadas';
-        } else if (guitarCommand === 'de') {
-          baseFolder = 'guitarraDistorcao/dedilhada';
-        } else if (guitarCommand === 'so') {
-          baseFolder = 'guitarraDistorcao'; // Pasta padrão
-        } else {
-          // Se for um comando desconhecido, ignora
-          return;
+      const fullChordName = chord.note + chord.type;
+      // CORREÇÃO AQUI: A pasta é a nota raiz (chord.note), o arquivo é o nome completo do acorde (fullChordName)
+      url = `${baseFolder}/${chord.note}/${fullChordName}.mp3`;
+      const buf = state.buffers.guitar?.[url] || null;
+      if (buf && time >= audio.ctx.currentTime - 0.02) {
+        // --- NOVA LINHA AQUI ---
+        // Para de tocar o sample anterior antes de tocar o novo
+        if (state.lastDistSource) {
+          state.lastDistSource.stop(time);
         }
-        const fullChordName = chord.note + chord.type;
-        // CORREÇÃO AQUI: A pasta é a nota raiz (chord.note), o arquivo é o nome completo do acorde (fullChordName)
-        url = `${baseFolder}/${chord.note}/${fullChordName}.mp3`;
-        const buf = state.buffers.guitar?.[url] || null;
-        if (buf && time >= audio.ctx.currentTime - 0.02) {
-          // --- NOVA LINHA AQUI ---
-          // Para de tocar o sample anterior antes de tocar o novo
-          if (state.lastDistSource) {
-            state.lastDistSource.stop(time);
-          }
-          // --- FIM DA NOVA LINHA ---
-          const src = audio.ctx.createBufferSource();
-          const g = audio.ctx.createGain();
-          src.buffer = buf;
-          src.connect(g);
-          g.connect(audio.distGain);
-          g.gain.setValueAtTime(0.0, time);
-          g.gain.linearRampToValueAtTime(1.0, time + 0.01);
-          src.start(time);
-          state.lastDistSource = src;
-        } else {
-          console.warn(`Buffer não carregado para o acorde: ${fullChordName} | URL: ${url}`);
-        }
-      }
-    }
-  } else {
-    // Comportamento antigo (para grooves sem guitarRhythm definido)
-    if (isNewBar) {
-      if (state.lastCleanSource) state.lastCleanSource.stop(time);
-      if (state.lastDistSource) state.lastDistSource.stop(time);
-      const chord = state.chordPlan[state.currentChordIndex];
-      if (chord) {
-        ui.currentChord.textContent = chord.displayed;
-        ui.chordTimer.textContent = `Próx: ${state.chordPlan.length - state.currentChordIndex} compasso(s)`;
-        document.querySelectorAll('.chord-item.current').forEach(el => el.classList.remove('current'));
-        const items = document.querySelectorAll('.chord-item');
-        const currentIndex = state.currentChordIndex % items.length;
-        if (items[currentIndex]) items[currentIndex].classList.add('current');
-        if (!mute.dist) playChord(time, chord.note, chord.type, true);
+        // --- FIM DA NOVA LINHA ---
+        const src = audio.ctx.createBufferSource();
+        const g = audio.ctx.createGain();
+        src.buffer = buf;
+        src.connect(g);
+        g.connect(audio.distGain);
+        // --- AJUSTE DE TEMPO AQUI ---
+        // Antecipa o início do sample em 10ms para compensar a latência/percepção
+        const adjustedTime = time - 0.01;
+        g.gain.setValueAtTime(0.0, adjustedTime);
+        g.gain.linearRampToValueAtTime(1.0, adjustedTime + 0.01);
+        src.start(adjustedTime);
+        state.lastDistSource = src;
+        // --- FIM DO AJUSTE DE TEMPO ---
+      } else {
+        console.warn(`Buffer não carregado para o acorde: ${fullChordName} | URL: ${url}`);
       }
     }
   }
+} else {
+  // Comportamento antigo (para grooves sem guitarRhythm definido)
+  if (isNewBar) {
+    if (state.lastCleanSource) state.lastCleanSource.stop(time);
+    if (state.lastDistSource) state.lastDistSource.stop(time);
+    const chord = state.chordPlan[state.currentChordIndex];
+    if (chord) {
+      ui.currentChord.textContent = chord.displayed;
+      ui.chordTimer.textContent = `Próx: ${state.chordPlan.length - state.currentChordIndex} compasso(s)`;
+      document.querySelectorAll('.chord-item.current').forEach(el => el.classList.remove('current'));
+      const items = document.querySelectorAll('.chord-item');
+      const currentIndex = state.currentChordIndex % items.length;
+      if (items[currentIndex]) items[currentIndex].classList.add('current');
+      if (!mute.dist) playChord(time, chord.note, chord.type, true);
+    }
+  }
+}
   // MELODY
   const melodyEvent = state.melodyPlan[stepIdx % state.melodyPlan.length];
   if (melodyEvent && melodyEvent.type === 'start') {
