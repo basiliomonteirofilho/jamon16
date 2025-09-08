@@ -1496,50 +1496,25 @@ function playMelodyNumber(time, number, instrumentType) {
 }
 
 // ===============================
-// FUNÇÃO DE EXPORTAÇÃO DE PARTITURA
+// FUNÇÃO DE EXPORTAÇÃO DE PARTITURA (CORRIGIDA)
 // ===============================
 function exportarPartitura() {
-  // Coleta todos os inputs de melodia
-  const allInputs = Array.from(document.querySelectorAll('#melodyBlocks input'));
-  if (allInputs.length === 0) {
+  // Coleta todos os blocos de melodia
+  const melodyBlocks = document.querySelectorAll('.melody-block');
+  if (melodyBlocks.length === 0) {
     alert('Adicione pelo menos um bloco de melodia primeiro.');
     return;
-  }
-
-  // Agrupa os inputs por bloco (linha)
-  const blocks = [];
-  let currentBlock = [];
-  let currentBlockLength = 0;
-
-  for (const input of allInputs) {
-    const blockIdx = parseInt(input.dataset.block, 10);
-    const colIdx = parseInt(input.dataset.col, 10);
-
-    // Se é um novo bloco, salva o anterior e começa um novo
-    if (blocks.length <= blockIdx) {
-      if (currentBlock.length > 0) {
-        blocks.push(currentBlock);
-        currentBlock = [];
-      }
-      // Calcula o número de colunas deste bloco
-      currentBlockLength = document.querySelectorAll(`input[data-block="${blockIdx}"]`).length;
-    }
-
-    // Adiciona o valor ao bloco atual
-    currentBlock.push(input.value.trim());
-  }
-
-  // Adiciona o último bloco
-  if (currentBlock.length > 0) {
-    blocks.push(currentBlock);
   }
 
   // Traduz os valores para notas VexFlow
   const vexflowVoices = [];
 
-  for (const block of blocks) {
+  melodyBlocks.forEach(block => {
+    const inputs = block.querySelectorAll('input');
     const notes = [];
-    for (const val of block) {
+
+    inputs.forEach(input => {
+      const val = input.value.trim();
       if (val === '' || val === null) {
         // Nota de ligadura (continuação da anterior)
         notes.push("b/4"); // Placeholder, será tratado depois
@@ -1551,7 +1526,6 @@ function exportarPartitura() {
         if (!isNaN(num) && num >= 1 && num <= 49) {
           const noteName = NUM_TO_NAME[num];
           // Converte para notação VexFlow (ex: C/4, D/4)
-          // Assumindo oitava 4 para simplificação
           let vexNote = noteName.replace('S', '#') + "/4";
           notes.push(vexNote);
         } else {
@@ -1559,9 +1533,10 @@ function exportarPartitura() {
           notes.push("r/4");
         }
       }
-    }
+    });
+
     vexflowVoices.push(notes);
-  }
+  });
 
   // Cria o modal e o canvas
   const modal = document.getElementById('sheetModal');
@@ -1573,6 +1548,9 @@ function exportarPartitura() {
   renderer.resize(750, 300);
   const context = renderer.getContext();
   context.setFont("Arial", 10, "").setBackgroundFillStyle("#ffffff");
+
+  // Limpa o canvas antes de desenhar
+  context.clearRect(0, 0, canvas.width, canvas.height);
 
   // Cria a partitura
   const staveWidth = 600;
@@ -1598,9 +1576,9 @@ function exportarPartitura() {
         if (currentNote) {
           // Aumenta a duração da última nota
           const durations = {
-            "4": 2, // semínima vira mínima
-            "2": 1, // mínima vira semibreve
-            "1": 0.5 // semibreve vira breve (não suportado, mantém semibreve)
+            "4": "2",  // semínima vira mínima
+            "2": "1",  // mínima vira semibreve
+            "1": "0.5" // semibreve vira breve (não suportado, mantém semibreve)
           };
           const currentDur = currentNote.split("/")[1];
           const newDur = durations[currentDur] || currentDur;
@@ -1619,11 +1597,14 @@ function exportarPartitura() {
     }
 
     // Cria as notas do VexFlow
-    const vexNotes = processedNotes.map(noteStr => new Vex.Flow.StaveNote({
-      clef: "treble",
-      keys: [noteStr.split("/")[0]],
-      duration: noteStr.split("/")[1]
-    }));
+    const vexNotes = processedNotes.map(noteStr => {
+      const parts = noteStr.split("/");
+      return new Vex.Flow.StaveNote({
+        clef: "treble",
+        keys: [parts[0]],
+        duration: parts[1]
+      });
+    });
 
     // Cria a voz
     const voice = new Vex.Flow.Voice({
@@ -1635,8 +1616,14 @@ function exportarPartitura() {
     voice.addTickables(vexNotes);
 
     // Formata e desenha
-    const formatter = new Vex.Flow.Formatter().joinVoices([voice]).format([voice], staveWidth - 100);
-    voice.draw(context, stave);
+    try {
+      const formatter = new Vex.Flow.Formatter().joinVoices([voice]).format([voice], staveWidth - 100);
+      voice.draw(context, stave);
+    } catch (e) {
+      console.error("Erro ao formatar a partitura:", e);
+      alert("Erro ao gerar a partitura. Verifique os valores inseridos.");
+      return;
+    }
 
     // Atualiza o offset Y para o próximo bloco
     yOffset += 120;
