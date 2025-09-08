@@ -1097,9 +1097,14 @@ function scheduleStep() {
     playMelodyNumber(time, melodyEvent.adaptedNumber, melodyEvent.instrument);
   } else if (melodyEvent && melodyEvent.type === 'continue') {
     // Para 'continue', precisamos encontrar o último evento 'start' válido
+      } else if (melodyEvent && melodyEvent.type === 'continue') {
+    // Para 'continue', precisamos encontrar o último evento 'start' válido, buscando CIRCULARMENTE para trás
     let lastStartEvent = null;
-    for (let i = stepIdx - 1; i >= 0; i--) {
-      const ev = state.melodyPlan[i % state.melodyPlan.length];
+    const planLength = state.melodyPlan.length;
+    // Começa do passo anterior e vai para trás, circularmente
+    for (let offset = 1; offset < planLength; offset++) {
+      const checkIndex = (stepIdx - offset + planLength) % planLength;
+      const ev = state.melodyPlan[checkIndex];
       if (ev && ev.type === 'start' && ev.adaptedNumber !== null) {
         lastStartEvent = ev;
         break;
@@ -1107,6 +1112,12 @@ function scheduleStep() {
         break; // Encontrou um mute, então não há nota para continuar
       }
     }
+    if (lastStartEvent) {
+      // Toca o número adaptado do último 'start'
+      playMelodyNumber(time, lastStartEvent.adaptedNumber, lastStartEvent.instrument);
+    }
+    // NÃO atualiza state.lastMelodyNote para 'continue', apenas para 'start'
+  }
     if (lastStartEvent) {
       // Toca o número adaptado do último 'start'
       playMelodyNumber(time, lastStartEvent.adaptedNumber, lastStartEvent.instrument);
