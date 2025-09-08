@@ -1121,13 +1121,37 @@ function scheduleStep() {
   }
   state.stepIndex++;
   if (isNewBar) {
-    state.currentChordIndex = (state.currentChordIndex + 1) % state.chordPlan.length;
-    state.barsInChord = 0;
-    state.lastMelodyNote = null;
-    state.guitarPlan = null; // Reseta o plano da guitarra para recalcular no próximo loop
+  // Avança para o próximo acorde da progressão
+  state.currentChordIndex = (state.currentChordIndex + 1) % state.chordPlan.length;
+  state.barsInChord = 0;
+
+  // Atualiza exibição do acorde atual na interface
+  const chord = state.chordPlan[state.currentChordIndex];
+  if (chord) {
+    ui.currentChord.textContent = chord.displayed;
+    ui.chordTimer.textContent = `Próx: ${state.chordPlan.length - state.currentChordIndex} compasso(s)`;
+    document.querySelectorAll('.chord-item.current').forEach(el => el.classList.remove('current'));
+    const items = document.querySelectorAll('.chord-item');
+    const currentIndex = state.currentChordIndex % items.length;
+    if (items[currentIndex]) items[currentIndex].classList.add('current');
   }
-  state.nextNoteTime += state.sixteenthDur;
+
+  // 👉 Se havia nota sustentada, força reavaliação no novo acorde
+  if (state.lastMelodyNote !== null) {
+    const chordNow = state.chordPlan[state.currentChordIndex];
+    if (chordNow) {
+      state.lastMelodyNote = adaptNumberToChord(
+        state.lastMelodyNote,
+        chordNow.note,
+        chordNow.type
+      );
+    }
+  }
+
+  // Reseta o plano da guitarra para recalcular no próximo loop
+  state.guitarPlan = null;
 }
+
 // --- CORREÇÃO DA FUNÇÃO playChord PARA O COMPORTAMENTO ANTIGO ---
 // Esta função é usada apenas quando o groove NÃO tem `guitarRhythm` definido.
 function playChord(time, note, type, isDistorted) {
@@ -1276,18 +1300,34 @@ function distanceBetweenNotes(n1, n2) {
   return i1 === -1 || i2 === -1 ? 100 : Math.abs(i1 - i2);
 }
 function adaptNumberToChord(number, root, type, lastPlayedNote = null) {
-  const baseName = NUM_TO_NAME[number];
-  const triad = chordTriad(root, type);
-  const noteDistances = triad.map(note => ({ note, distance: distanceBetweenNotes(baseName, note) }))
-    .sort((a, b) => a.distance - b.distance);
+  const baseName = NUM_TO_NAME[number]; // nota que o usuário "quer"
+  const chordNotes = chordTriad(root, type); // notas do acorde em vigor
+
+  // 1. Se a nota já está no acorde, mantém
+  if (chordNotes.includes(baseName)) {
+    return findClosestNumber(number, baseName);
+  }
+
+  // 2. Se não está, pega a nota do acorde mais próxima
+  const noteDistances = chordNotes.map(note => ({
+    note,
+    distance: distanceBetweenNotes(baseName, note)
+  }));
+
+  noteDistances.sort((a, b) => a.distance - b.distance);
+
+  // 3. Se houver última nota tocada e a mais próxima for igual, pega a segunda
   if (lastPlayedNote && noteDistances.length > 1) {
     const lastNoteName = NUM_TO_NAME[lastPlayedNote];
     if (noteDistances[0].note === lastNoteName) {
       return findClosestNumber(number, noteDistances[1].note);
     }
   }
+
+  // 4. Retorna a mais próxima
   return findClosestNumber(number, noteDistances[0].note);
 }
+
 function findClosestNumber(targetNumber, targetNote) {
   let bestNum = targetNumber;
   let bestDist = 100;
