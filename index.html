@@ -1370,12 +1370,7 @@ function handleNumberSelection(e) {
   hideNumberPicker(); // Fecha o picker automaticamente após a seleção
 }
 
-document.getElementById('startBtn').addEventListener('click', () => {
-  buildMelodyPlanFromBlocks(); // monta a melodia
-  state.stepIndex = 0;
-  state.nextNoteTime = audio.ctx.currentTime;
-  scheduler();
-});
+
 function buildMelodyPlanFromBlocks() {
   const plan = [];
 
@@ -1487,151 +1482,11 @@ function playMelodyNumber(time, number, instrumentType) {
   src.finished = false;
   src.onended = () => { src.finished = true; };
 }
-window.addEventListener('load', () => {
-  initAudio();
-  addMelodyBlock();
-  // Inicializa o picker de números se for um dispositivo móvel
-  if (isMobileDevice()) {
-    initializeNumberPicker();
-  }
-});
-// === EXPORTAÇÃO DE PARTITURA EM JPEG ===
-document.getElementById("btnExportPartitura").addEventListener("click", () => {
-  // Container temporário
-  const div = document.createElement("div");
-  div.style.background = "white";
-  div.style.padding = "20px";
-
-  // Criar renderer
-  const renderer = new Vex.Flow.Renderer(div, Vex.Flow.Renderer.Backends.SVG);
-  renderer.resize(1000, 400);
-  const context = renderer.getContext();
-
-  // Verifica qual clave usar (baixo => Fá, senão => Sol)
-  const instrument = ui.melodyInstrument.value;
-  const clef = instrument === "baixo" ? "bass" : "treble";
-
-  // Cria pauta
-  const stave = new Vex.Flow.Stave(10, 40, 900);
-  stave.addClef(clef).addTimeSignature(state.meter);
-  stave.setContext(context).draw();
-
-  // Coletar até 8 notas da melodia adaptada
-  const melodyNotes = state.melodyPlan
-    .filter(ev => ev && ev.type === "start")
-    .slice(0, 8) // apenas primeiras 8 p/ caber na linha
-    .map(ev => {
-      const noteName = NUM_TO_NAME[ev.adaptedNumber].toLowerCase();
-      return new Vex.Flow.StaveNote({ keys: [`${noteName}/4`], duration: "q" });
-    });
-
-  if (melodyNotes.length > 0) {
-    Vex.Flow.Formatter.FormatAndDraw(context, stave, melodyNotes);
-  }
-
-  // Exportar SVG → JPEG
-  const svgData = new XMLSerializer().serializeToString(div.querySelector("svg"));
-  const canvas = document.createElement("canvas");
-  canvas.width = 1000;
-  canvas.height = 400;
-  const ctx = canvas.getContext("2d");
-  const img = new Image();
-  img.onload = function () {
-    ctx.drawImage(img, 0, 0);
-    const jpeg = canvas.toDataURL("image/jpeg");
-const win = window.open("");
-if (win) {
-  win.document.write("<html><head><title>Partitura</title></head><body style='margin:0'>");
-  win.document.write(`<img src="${jpeg}" style="width:100%;height:auto;"/>`);
-  win.document.write("</body></html>");
-  win.document.close();
-}
-  };
-  img.src = "data:image/svg+xml;base64," + btoa(svgData);
-});
-
-// === EXPORTAÇÃO DE PARTITURA EM NOVA JANELA COM CIFRAS ===
-const btnExport = document.getElementById("btnExportPartitura");
-if (btnExport) {
-  btnExport.addEventListener("click", () => {
-    // Container temporário
-    const div = document.createElement("div");
-    div.style.background = "white";
-    div.style.padding = "20px";
-
-    // Criar renderer do VexFlow
-    const renderer = new Vex.Flow.Renderer(div, Vex.Flow.Renderer.Backends.SVG);
-    renderer.resize(1000, 400);
-    const context = renderer.getContext();
-
-    // Escolhe clave (baixo → Fá, senão → Sol)
-    const instrument = ui.melodyInstrument.value;
-    const clef = instrument === "baixo" ? "bass" : "treble";
-
-    // Cria pauta
-    const stave = new Vex.Flow.Stave(10, 40, 900);
-    stave.addClef(clef).addTimeSignature(state.meter);
-    stave.setContext(context).draw();
-
-    // Melodia (primeiras 8 notas)
-    const melodyNotes = state.melodyPlan
-      .filter(ev => ev && ev.type === "start")
-      .slice(0, 8)
-      .map(ev => {
-        const noteName = NUM_TO_NAME[ev.adaptedNumber].toLowerCase();
-        return new Vex.Flow.StaveNote({ keys: [`${noteName}/4`], duration: "q" });
-      });
-
-    // Adiciona cifras como TextNotes
-    const chordLabels = state.chordPlan
-      .slice(0, melodyNotes.length) // limitar ao número de notas
-      .map(ch => ch.display);
-
-    const chordTexts = chordLabels.map((label, i) => {
-      return new Vex.Flow.TextNote({
-        text: label,
-        duration: "q",
-        line: -1, // coloca acima da pauta
-      }).setJustification(Vex.Flow.TextNote.Justification.CENTER);
-    });
-
-    // Mistura notas + cifras (uma voz com melodia, outra com textos)
-    const voice1 = new Vex.Flow.Voice({ num_beats: melodyNotes.length, beat_value: 4 });
-    voice1.addTickables(melodyNotes);
-
-    const voice2 = new Vex.Flow.Voice({ num_beats: chordTexts.length, beat_value: 4 });
-    voice2.addTickables(chordTexts);
-
-    new Vex.Flow.Formatter().joinVoices([voice1, voice2]).format([voice1, voice2], 800);
-
-    voice1.draw(context, stave);
-    voice2.draw(context, stave);
-
-    // Abre nova janela com a imagem
-    const svgData = new XMLSerializer().serializeToString(div.querySelector("svg"));
-    const canvas = document.createElement("canvas");
-    canvas.width = 1000;
-    canvas.height = 400;
-    const ctx = canvas.getContext("2d");
-    const img = new Image();
-    img.onload = function () {
-      ctx.drawImage(img, 0, 0);
-      const jpeg = canvas.toDataURL("image/jpeg");
-      const win = window.open("");
-      if (win) {
-        win.document.write("<html><head><title>Partitura</title></head><body style='margin:0'>");
-        win.document.write(`<img src="${jpeg}" style="width:100%;height:auto;"/>`);
-        win.document.write("</body></html>");
-        win.document.close();
-      }
-    };
-    img.src = "data:image/svg+xml;base64," + btoa(svgData);
-  });
-}
+window.addEventListener
 
 
   </script>
   <script src="https://unpkg.com/vexflow/releases/vexflow-min.js"></script>
-
+<script src="seu-arquivo.js" defer></script>
 </body>
 </html>
