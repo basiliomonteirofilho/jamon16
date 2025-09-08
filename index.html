@@ -1539,10 +1539,13 @@ document.getElementById("btnExportPartitura").addEventListener("click", () => {
   img.onload = function () {
     ctx.drawImage(img, 0, 0);
     const jpeg = canvas.toDataURL("image/jpeg");
-    const a = document.createElement("a");
-    a.href = jpeg;
-    a.download = "partitura.jpg";
-    a.click();
+const win = window.open("");
+if (win) {
+  win.document.write("<html><head><title>Partitura</title></head><body style='margin:0'>");
+  win.document.write(`<img src="${jpeg}" style="width:100%;height:auto;"/>`);
+  win.document.write("</body></html>");
+  win.document.close();
+}
   };
   img.src = "data:image/svg+xml;base64," + btoa(svgData);
 });
