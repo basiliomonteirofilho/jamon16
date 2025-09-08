@@ -420,6 +420,8 @@ input[type="range"] {
     <div class="panel melody-panel">
       <h3>🎸 Melodia Adaptativa</h3>
       <div class="melody-toolbar">
+        <button id="btnExportPartitura">📄 Exportar Partitura</button>
+
         <button id="btnMelodyAdd" class="primary">➕ Adicionar Bloco</button>
         <button id="btnMelodyClear" class="danger">🧹 Limpar Blocos</button>
         <span style="font-size: 0.9em; color: #aaa;">Notas se estendem até próxima nota ou "x"</span>
@@ -1493,6 +1495,60 @@ window.addEventListener('load', () => {
     initializeNumberPicker();
   }
 });
+// === EXPORTAÇÃO DE PARTITURA EM JPEG ===
+document.getElementById("btnExportPartitura").addEventListener("click", () => {
+  // Container temporário
+  const div = document.createElement("div");
+  div.style.background = "white";
+  div.style.padding = "20px";
+
+  // Criar renderer
+  const renderer = new Vex.Flow.Renderer(div, Vex.Flow.Renderer.Backends.SVG);
+  renderer.resize(1000, 400);
+  const context = renderer.getContext();
+
+  // Verifica qual clave usar (baixo => Fá, senão => Sol)
+  const instrument = ui.melodyInstrument.value;
+  const clef = instrument === "baixo" ? "bass" : "treble";
+
+  // Cria pauta
+  const stave = new Vex.Flow.Stave(10, 40, 900);
+  stave.addClef(clef).addTimeSignature(state.meter);
+  stave.setContext(context).draw();
+
+  // Coletar até 8 notas da melodia adaptada
+  const melodyNotes = state.melodyPlan
+    .filter(ev => ev && ev.type === "start")
+    .slice(0, 8) // apenas primeiras 8 p/ caber na linha
+    .map(ev => {
+      const noteName = NUM_TO_NAME[ev.adaptedNumber].toLowerCase();
+      return new Vex.Flow.StaveNote({ keys: [`${noteName}/4`], duration: "q" });
+    });
+
+  if (melodyNotes.length > 0) {
+    Vex.Flow.Formatter.FormatAndDraw(context, stave, melodyNotes);
+  }
+
+  // Exportar SVG → JPEG
+  const svgData = new XMLSerializer().serializeToString(div.querySelector("svg"));
+  const canvas = document.createElement("canvas");
+  canvas.width = 1000;
+  canvas.height = 400;
+  const ctx = canvas.getContext("2d");
+  const img = new Image();
+  img.onload = function () {
+    ctx.drawImage(img, 0, 0);
+    const jpeg = canvas.toDataURL("image/jpeg");
+    const a = document.createElement("a");
+    a.href = jpeg;
+    a.download = "partitura.jpg";
+    a.click();
+  };
+  img.src = "data:image/svg+xml;base64," + btoa(svgData);
+});
+
   </script>
+  <script src="https://unpkg.com/vexflow/releases/vexflow-min.js"></script>
+
 </body>
 </html>
