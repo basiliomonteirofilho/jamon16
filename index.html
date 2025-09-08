@@ -1377,37 +1377,42 @@ document.getElementById('startBtn').addEventListener('click', () => {
 function buildMelodyPlanFromBlocks() {
   const plan = [];
 
+  let chordIdx = 0; // índice para sincronizar melodia com acorde
+  const stepsPerBar = meterToBeats(state.meter) * 4;
+
   for (const block of state.melodyBlocks) {
     const inputs = block.querySelectorAll('input');
-    for (const input of inputs) {
+    inputs.forEach((input, step) => {
       const value = input.value.trim();
 
       if (value === '') {
-        // Campo vazio → nada acontece, só mantém o sustain natural
         plan.push(null);
       } else if (value.toLowerCase() === 'x') {
-        // "x" → muta a nota
         plan.push({ type: 'mute' });
       } else {
         const num = parseInt(value, 10);
         if (!isNaN(num) && num >= 1 && num <= 49) {
-          // Número válido → dispara a nota
+          // 🔑 Pega o acorde correspondente ao passo
+          chordIdx = Math.floor(plan.length / stepsPerBar) % state.chordPlan.length;
+          const chord = state.chordPlan[chordIdx];
+
+          // 🔑 Já adapta o número de acordo com o acorde
+          const adapted = adaptNumberToChord(num, chord.note, chord.type);
+
           plan.push({
             type: 'start',
             originalNumber: num,
-            adaptedNumber: null,
+            adaptedNumber: adapted,
             instrument: ui.melodyInstrument.value
           });
-        } else {
-          // Valor inválido → ignora
-          plan.push(null);
         }
       }
-    }
+    });
   }
 
   state.melodyPlan = plan;
 }
+
 
 async function ensureMelodySamplesNeeded() {
   const need = new Set();
