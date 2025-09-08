@@ -1391,44 +1391,40 @@ function handleNumberSelection(e) {
   hideNumberPicker(); // Fecha o picker automaticamente após a seleção
 }
 function buildMelodyPlanFromBlocks() {
-  const beats = meterToBeats(state.meter || '4/4');
-  const cols = beats * 4;
-  const events = [];
-  const blocks = state.melodyBlocks;
-  let baseStep = 0;
-  for (let b = 0; b < blocks.length; b++) {
-    const div = blocks[b];
-    let lastNote = null;
-    for (let c = 0; c < cols; c++) {
-      const input = div.querySelector(`input[data-col="${c}"]`);
-      if (!input) continue;
-      const raw = input.value.trim();
-      const absStep = baseStep + c;
-      if (raw === 'x') {
-        events.push({ absStep, type: 'mute', instrument: ui.melodyInstrument.value, adaptedNumber: null });
-        lastNote = null;
-      } else if (raw) {
-        const n = parseInt(raw, 10);
-        if (n >= 1 && n <= 49) {
-          // Cria o evento 'start' com adaptedNumber = null (será calculado em scheduleStep)
-          events.push({ absStep, type: 'start', originalNumber: n, instrument: ui.melodyInstrument.value, adaptedNumber: null });
-          lastNote = n;
-        }
-      } else if (lastNote !== null) {
-        // Evento 'continue' aponta para o originalNumber da nota que está continuando
-        events.push({ absStep, type: 'continue', originalNumber: lastNote, instrument: ui.melodyInstrument.value, adaptedNumber: null });
+  const plan = [];
+
+  for (const block of state.melodyBlocks) {
+    const inputs = block.querySelectorAll('input');
+    for (const input of inputs) {
+      const value = input.value.trim();
+
+      if (value === '') {
+        // Campo vazio → nada acontece, só mantém o sustain natural
+        plan.push(null);
+      } else if (value.toLowerCase() === 'x') {
+        // "x" → muta a nota
+        plan.push({ type: 'mute' });
       } else {
-        events.push({ absStep, type: 'rest', adaptedNumber: null });
+        const num = parseInt(value, 10);
+        if (!isNaN(num) && num >= 1 && num <= 49) {
+          // Número válido → dispara a nota
+          plan.push({
+            type: 'start',
+            originalNumber: num,
+            adaptedNumber: null,
+            instrument: ui.melodyInstrument.value
+          });
+        } else {
+          // Valor inválido → ignora
+          plan.push(null);
+        }
       }
     }
-    baseStep += cols;
   }
-  const plan = new Array(baseStep).fill(null);
-  events.forEach(ev => {
-    if (ev.absStep < plan.length) plan[ev.absStep] = { ...ev }; // Copia o evento para o plano
-  });
+
   state.melodyPlan = plan;
 }
+
 async function ensureMelodySamplesNeeded() {
   const need = new Set();
   for (let i = 1; i <= 49; i++) {
