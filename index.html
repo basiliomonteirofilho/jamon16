@@ -219,7 +219,6 @@ input[type="range"] {
   margin-top: 8px;
   text-align: center;
 }
-
 /* === ESTILOS PARA MOBILE === */
 @media (max-width: 768px) {
   body {
@@ -271,7 +270,6 @@ input[type="range"] {
     font-size: 0.85em;
   }
 }
-
 /* === ESTILOS DO PICKER DE NÚMEROS === */
 #numberPicker {
   display: none;
@@ -290,7 +288,6 @@ input[type="range"] {
   grid-template-columns: repeat(4, 1fr);
   gap: 10px;
 }
-
 @keyframes slideUp {
   from {
     transform: translateY(100%);
@@ -299,7 +296,6 @@ input[type="range"] {
     transform: translateY(0);
   }
 }
-
 #numberPicker h3 {
   color: #5eead4;
   text-align: center;
@@ -308,11 +304,9 @@ input[type="range"] {
   /* --- NOVO: Ocupa todas as 4 colunas --- */
   grid-column: span 4;
 }
-
 #numberGrid {
   /* --- REMOVIDO: O grid agora está no #numberPicker --- */
 }
-
 .number-btn {
   background: #333;
   color: #e0e0e0;
@@ -323,23 +317,65 @@ input[type="range"] {
   cursor: pointer;
   transition: all 0.1s ease;
 }
-
 .number-btn:hover {
   background: #444;
 }
-
 .number-btn:active {
   transform: scale(0.95);
   background: #5eead4;
   color: #121212;
 }
-
 .close-btn {
   /* --- NOVO: Ocupa todas as 4 colunas --- */
   grid-column: span 4;
   background: #f44336;
   color: white;
   font-weight: bold;
+}
+
+/* Estilo para o modal da partitura */
+#sheetModal {
+  display: none;
+  position: fixed;
+  z-index: 1001;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.8);
+}
+#sheetContent {
+  background-color: #222;
+  margin: 5% auto;
+  padding: 20px;
+  border: 1px solid #5eead4;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 800px;
+  text-align: center;
+}
+#sheetCanvas {
+  background: white;
+  margin: 20px auto;
+  display: block;
+  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+#closeSheet, #downloadSheet {
+  margin: 10px 5px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1em;
+}
+#closeSheet {
+  background-color: #f44336;
+  color: white;
+}
+#downloadSheet {
+  background-color: #5eead4;
+  color: #121212;
 }
   </style>
 </head>
@@ -421,7 +457,6 @@ input[type="range"] {
       <h3>🎸 Melodia Adaptativa</h3>
       <div class="melody-toolbar">
         <button id="btnExportPartitura">📄 Exportar Partitura</button>
-
         <button id="btnMelodyAdd" class="primary">➕ Adicionar Bloco</button>
         <button id="btnMelodyClear" class="danger">🧹 Limpar Blocos</button>
         <span style="font-size: 0.9em; color: #aaa;">Notas se estendem até próxima nota ou "x"</span>
@@ -432,6 +467,18 @@ input[type="range"] {
       <div id="melodyBlocks"></div>
     </div>
   </div>
+
+  <!-- Modal para exibir a partitura -->
+  <div id="sheetModal">
+    <div id="sheetContent">
+      <h2>Partitura Gerada</h2>
+      <canvas id="sheetCanvas" width="750" height="300"></canvas>
+      <br>
+      <button id="downloadSheet">💾 Baixar PNG</button>
+      <button id="closeSheet">✖ Fechar</button>
+    </div>
+  </div>
+
   <script>
    function transposeDown3Semitones(note) {
   const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
@@ -467,6 +514,7 @@ const ui = {
   melodyBlocks: document.getElementById('melodyBlocks'),
   btnMelodyAdd: document.getElementById('btnMelodyAdd'),
   btnMelodyClear: document.getElementById('btnMelodyClear'),
+  btnExportPartitura: document.getElementById('btnExportPartitura'), // Adicionado
   melodyInstrument: document.getElementById('melodyInstrument'),
   numberPicker: document.getElementById('numberPicker'),
   numberGrid: document.getElementById('numberGrid')
@@ -525,7 +573,7 @@ const STYLE_PROGRESSIONS = {
   Rock_Progressivo4: [[4,5,1,1,4,5,7,5], [1,4,1,4,5,6,5,7], [1,4,5,6,3,5,4,5]],
   Rock_Progressivo5: [[4,5,1,1,4,5,7], [1,4,1,4,5,6,5], [1,4,5,6,3,5,4]], 
   Rock_Progressivo6: [[1,4,5,6,3,5], [1,4,1,4,5,6,5]],
-  Rock_Progressivo7: [[4,5,1,1], [1,5,6,4]],      
+  Rock_Progressivo7: [[4,5,1,1], [1,4,5,1]],      
   Blues: [[1,4,5,4,1,4,5,4,1,4,5,4], [1,4,5,1]],
   Blues2: [[1,4,5,4,1,4,5,4,1,4,5,4], [1,4,5,1]],
   Blues3: [[1,4,5,4,1,4,5,4,1,4,5,4], [1,4,5,7]],
@@ -545,7 +593,7 @@ const STYLE_PROGRESSIONS = {
 const ALL_GROOVES = [
   { name: "Rock", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch bu"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 8] },
   { name: "Rock2", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 5] },
-  { name: "Rock3", meter: "4/4", drumPattern: ["bch - ch bu cch bu ch - bch - ch - cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo bo bo -"], bassScale: [1, 1, 1, 1] },
+  { name: "Rock3", meter: "4/4", drumPattern: ["bch - ch bu cch bu ch - bch - ch - cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo x bo x bo x"], bassScale: [1, 1, 1, 1] },
   { name: "Rock4", meter: "4/4", drumPattern: ["ba - co - cco - co - bco - co - cco bu bco bu"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 7, 8, 7, 5, 3] },
   { name: "Rock5", meter: "4/4", drumPattern: ["bch ch ch ch cch ch ch ch bch ch ch ch cch ch ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo x bo x bo x"], bassScale: [1, 3, 1, 5] },
   { name: "Rock6", meter: "4/4", drumPattern: ["bco co co co cco co co co bco co co co cco co co co"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [8, 8, 1, 1] },
@@ -954,7 +1002,6 @@ function scheduleStep() {
   const beats = meterToBeats(state.meter);
   const sixteenthsPerBar = beats * 4;
   const isNewBar = (stepIdx % sixteenthsPerBar) === 0;
-
   // 🎵 DRUMS
   const drumToken = state.drumSeq[stepIdx % state.drumSeq.length];
   if (drumToken && !mute.drums) {
@@ -971,7 +1018,6 @@ function scheduleStep() {
     else if (['to2', 'tom-2'].includes(drumToken)) drumKey = 'to2';
     else if (['su', 'surdo'].includes(drumToken)) drumKey = 'su';
     else if (['bch', 'bumbo-chimbal'].includes(drumToken)) drumKey = 'bch';
-
     if (drumKey && state.buffers.drums[drumKey]) {
       const src = audio.ctx.createBufferSource();
       const g = audio.ctx.createGain();
@@ -983,7 +1029,6 @@ function scheduleStep() {
       src.start(time);
     }
   }
-
   // 🎸 BASS
   const bassCommand = state.bassPlan[stepIdx % state.bassPlan.length];
   if (!mute.bass && state.lastBassSource) {
@@ -1004,7 +1049,6 @@ function scheduleStep() {
       state.lastBassSource = src;
     }
   }
-
   // 🎸 GUITAR
   if (state.currentGroove && state.currentGroove.guitarRhythm) {
     if (!state.guitarPlan) {
@@ -1045,7 +1089,6 @@ function scheduleStep() {
       }
     }
   }
-
   // 🎼 MELODY
   const melodyEvent = state.melodyPlan[stepIdx % state.melodyPlan.length];
   if (melodyEvent && melodyEvent.type === 'start') {
@@ -1065,14 +1108,11 @@ function scheduleStep() {
     stopMelodyAt(time);
     state.lastMelodyNote = null;
   }
-
   state.stepIndex++;
-
   // ⏩ Troca de compasso
   if (isNewBar) {
     state.currentChordIndex = (state.currentChordIndex + 1) % state.chordPlan.length;
     state.barsInChord = 0;
-
     // 👉 readapta nota sustentada
     if (state.lastMelodyNote !== null) {
       const chordNow = state.chordPlan[state.currentChordIndex];
@@ -1084,13 +1124,10 @@ function scheduleStep() {
         );
       }
     }
-
     state.guitarPlan = null;
   }
-
   state.nextNoteTime += state.sixteenthDur;
 }
-
 // --- CORREÇÃO DA FUNÇÃO playChord PARA O COMPORTAMENTO ANTIGO ---
 // Esta função é usada apenas quando o groove NÃO tem `guitarRhythm` definido.
 function playChord(time, note, type, isDistorted) {
@@ -1168,31 +1205,25 @@ const NUM_TO_NAME = (() => {
 function chordTriad(rootPitchName, quality) {
   const rootIdx = PITCHES.indexOf(rootPitchName);
   if (rootIdx === -1) return [rootPitchName]; // fallback
-
   // Extrai a qualidade básica (maj, min, dim) e as extensões (7, 9, etc)
   let basicQuality = 'maj';
   let hasSeventh = false;
   let hasNinth = false;
-
   if (quality.includes('m') && !quality.includes('maj')) {
     basicQuality = 'min';
   } else if (quality.includes('dim')) {
     basicQuality = 'dim';
   }
-
   // Verifica se o acorde tem sétima (7, m7, dim7, etc.)
   if (quality.includes('7')) {
     hasSeventh = true;
   }
-
   // Verifica se o acorde tem nona (9, m9, 79, m79, etc.)
   // Procura por '9' que não seja precedido por '1' (para evitar confundir com '19')
   if (/[^1]9/.test(quality) || quality.endsWith('9')) {
     hasNinth = true;
   }
-
   let chordNotes = [];
-
   // Constrói a tríade básica
   if (basicQuality === 'min') {
     chordNotes = [
@@ -1213,7 +1244,6 @@ function chordTriad(rootPitchName, quality) {
       PITCHES[(rootIdx + 7) % 12] // 5ª justa
     ];
   }
-
   // Adiciona a 7ª, se presente
   if (hasSeventh) {
     if (basicQuality === 'min' || basicQuality === 'dim') {
@@ -1224,13 +1254,11 @@ function chordTriad(rootPitchName, quality) {
       chordNotes.push(PITCHES[(rootIdx + 11) % 12]);
     }
   }
-
   // Adiciona a 9ª, se presente
   if (hasNinth) {
     // A 9ª é a mesma nota da 2ª, uma oitava acima (2 semitons da tônica)
     chordNotes.push(PITCHES[(rootIdx + 2) % 12]);
   }
-
   return chordNotes;
 }
 function distanceBetweenNotes(n1, n2) {
@@ -1241,20 +1269,16 @@ function distanceBetweenNotes(n1, n2) {
 function adaptNumberToChord(number, root, type, lastPlayedNote = null) {
   const baseName = NUM_TO_NAME[number]; // nota que o usuário "quer"
   const chordNotes = chordTriad(root, type); // notas do acorde em vigor
-
   // 1. Se a nota já está no acorde, mantém
   if (chordNotes.includes(baseName)) {
     return findClosestNumber(number, baseName);
   }
-
   // 2. Se não está, pega a nota do acorde mais próxima
   const noteDistances = chordNotes.map(note => ({
     note,
     distance: distanceBetweenNotes(baseName, note)
   }));
-
   noteDistances.sort((a, b) => a.distance - b.distance);
-
   // 3. Se houver última nota tocada e a mais próxima for igual, pega a segunda
   if (lastPlayedNote && noteDistances.length > 1) {
     const lastNoteName = NUM_TO_NAME[lastPlayedNote];
@@ -1262,11 +1286,9 @@ function adaptNumberToChord(number, root, type, lastPlayedNote = null) {
       return findClosestNumber(number, noteDistances[1].note);
     }
   }
-
   // 4. Retorna a mais próxima
   return findClosestNumber(number, noteDistances[0].note);
 }
-
 function findClosestNumber(targetNumber, targetNote) {
   let bestNum = targetNumber;
   let bestDist = 100;
@@ -1369,19 +1391,14 @@ function handleNumberSelection(e) {
   }
   hideNumberPicker(); // Fecha o picker automaticamente após a seleção
 }
-
-
 function buildMelodyPlanFromBlocks() {
   const plan = [];
-
   let chordIdx = 0; // índice para sincronizar melodia com acorde
   const stepsPerBar = meterToBeats(state.meter) * 4;
-
   for (const block of state.melodyBlocks) {
     const inputs = block.querySelectorAll('input');
     inputs.forEach((input, step) => {
       const value = input.value.trim();
-
       if (value === '') {
         plan.push(null);
       } else if (value.toLowerCase() === 'x') {
@@ -1392,10 +1409,8 @@ function buildMelodyPlanFromBlocks() {
           // 🔑 Pega o acorde correspondente ao passo
           chordIdx = Math.floor(plan.length / stepsPerBar) % state.chordPlan.length;
           const chord = state.chordPlan[chordIdx];
-
           // 🔑 Já adapta o número de acordo com o acorde
           const adapted = adaptNumberToChord(num, chord.note, chord.type);
-
           plan.push({
             type: 'start',
             originalNumber: num,
@@ -1406,11 +1421,8 @@ function buildMelodyPlanFromBlocks() {
       }
     });
   }
-
   state.melodyPlan = plan;
 }
-
-
 async function ensureMelodySamplesNeeded() {
   const need = new Set();
   for (let i = 1; i <= 49; i++) {
@@ -1482,11 +1494,190 @@ function playMelodyNumber(time, number, instrumentType) {
   src.finished = false;
   src.onended = () => { src.finished = true; };
 }
-window.addEventListener
 
+// ===============================
+// FUNÇÃO DE EXPORTAÇÃO DE PARTITURA
+// ===============================
+function exportarPartitura() {
+  // Coleta todos os inputs de melodia
+  const allInputs = Array.from(document.querySelectorAll('#melodyBlocks input'));
+  if (allInputs.length === 0) {
+    alert('Adicione pelo menos um bloco de melodia primeiro.');
+    return;
+  }
+
+  // Agrupa os inputs por bloco (linha)
+  const blocks = [];
+  let currentBlock = [];
+  let currentBlockLength = 0;
+
+  for (const input of allInputs) {
+    const blockIdx = parseInt(input.dataset.block, 10);
+    const colIdx = parseInt(input.dataset.col, 10);
+
+    // Se é um novo bloco, salva o anterior e começa um novo
+    if (blocks.length <= blockIdx) {
+      if (currentBlock.length > 0) {
+        blocks.push(currentBlock);
+        currentBlock = [];
+      }
+      // Calcula o número de colunas deste bloco
+      currentBlockLength = document.querySelectorAll(`input[data-block="${blockIdx}"]`).length;
+    }
+
+    // Adiciona o valor ao bloco atual
+    currentBlock.push(input.value.trim());
+  }
+
+  // Adiciona o último bloco
+  if (currentBlock.length > 0) {
+    blocks.push(currentBlock);
+  }
+
+  // Traduz os valores para notas VexFlow
+  const vexflowVoices = [];
+
+  for (const block of blocks) {
+    const notes = [];
+    for (const val of block) {
+      if (val === '' || val === null) {
+        // Nota de ligadura (continuação da anterior)
+        notes.push("b/4"); // Placeholder, será tratado depois
+      } else if (val.toLowerCase() === 'x') {
+        // Pausa
+        notes.push("r/4");
+      } else {
+        const num = parseInt(val, 10);
+        if (!isNaN(num) && num >= 1 && num <= 49) {
+          const noteName = NUM_TO_NAME[num];
+          // Converte para notação VexFlow (ex: C/4, D/4)
+          // Assumindo oitava 4 para simplificação
+          let vexNote = noteName.replace('S', '#') + "/4";
+          notes.push(vexNote);
+        } else {
+          // Valor inválido, trata como pausa
+          notes.push("r/4");
+        }
+      }
+    }
+    vexflowVoices.push(notes);
+  }
+
+  // Cria o modal e o canvas
+  const modal = document.getElementById('sheetModal');
+  const canvas = document.getElementById('sheetCanvas');
+  const ctx = canvas.getContext('2d');
+  const renderer = new Vex.Flow.Renderer(canvas, Vex.Flow.Renderer.Backends.CANVAS);
+
+  // Configura o renderizador
+  renderer.resize(750, 300);
+  const context = renderer.getContext();
+  context.setFont("Arial", 10, "").setBackgroundFillStyle("#ffffff");
+
+  // Cria a partitura
+  const staveWidth = 600;
+  let yOffset = 20;
+
+  for (let blockIdx = 0; blockIdx < vexflowVoices.length; blockIdx++) {
+    const notes = vexflowVoices[blockIdx];
+
+    // Cria o pentagrama
+    const stave = new Vex.Flow.Stave(50, yOffset, staveWidth);
+    stave.addClef("treble").addTimeSignature("4/4");
+    stave.setContext(context).draw();
+
+    // Processa as notas para lidar com ligaduras
+    const processedNotes = [];
+    let currentNote = null;
+
+    for (let i = 0; i < notes.length; i++) {
+      const note = notes[i];
+
+      if (note === "b/4") {
+        // É uma ligadura, aumenta a duração da nota anterior
+        if (currentNote) {
+          // Aumenta a duração da última nota
+          const durations = {
+            "4": 2, // semínima vira mínima
+            "2": 1, // mínima vira semibreve
+            "1": 0.5 // semibreve vira breve (não suportado, mantém semibreve)
+          };
+          const currentDur = currentNote.split("/")[1];
+          const newDur = durations[currentDur] || currentDur;
+          currentNote = currentNote.split("/")[0] + "/" + newDur;
+          // Atualiza a última nota no array
+          processedNotes[processedNotes.length - 1] = currentNote;
+        } else {
+          // Se não há nota anterior, trata como pausa
+          processedNotes.push("r/4");
+          currentNote = "r/4";
+        }
+      } else {
+        processedNotes.push(note);
+        currentNote = note;
+      }
+    }
+
+    // Cria as notas do VexFlow
+    const vexNotes = processedNotes.map(noteStr => new Vex.Flow.StaveNote({
+      clef: "treble",
+      keys: [noteStr.split("/")[0]],
+      duration: noteStr.split("/")[1]
+    }));
+
+    // Cria a voz
+    const voice = new Vex.Flow.Voice({
+      num_beats: 4,
+      beat_value: 4,
+      resolution: Vex.Flow.RESOLUTION
+    });
+
+    voice.addTickables(vexNotes);
+
+    // Formata e desenha
+    const formatter = new Vex.Flow.Formatter().joinVoices([voice]).format([voice], staveWidth - 100);
+    voice.draw(context, stave);
+
+    // Atualiza o offset Y para o próximo bloco
+    yOffset += 120;
+  }
+
+  // Mostra o modal
+  modal.style.display = "block";
+
+  // Configura os botões do modal
+  document.getElementById('closeSheet').onclick = function() {
+    modal.style.display = "none";
+  };
+
+  document.getElementById('downloadSheet').onclick = function() {
+    const link = document.createElement('a');
+    link.download = 'partitura-jam-on.png';
+    link.href = canvas.toDataURL();
+    link.click();
+  };
+
+  // Fecha ao clicar fora
+  window.onclick = function(event) {
+    if (event.target == modal) {
+      modal.style.display = "none";
+    }
+  };
+}
+
+// Vincula a função ao botão
+ui.btnExportPartitura.addEventListener('click', exportarPartitura);
+
+// Inicializa o picker de números se for mobile
+if (isMobileDevice()) {
+  initializeNumberPicker();
+}
+
+window.addEventListener('load', function() {
+  // Código de inicialização, se necessário
+});
 
   </script>
   <script src="https://unpkg.com/vexflow/releases/vexflow-min.js"></script>
-
 </body>
 </html>
