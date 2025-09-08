@@ -1183,21 +1183,71 @@ const NUM_TO_NAME = (() => {
 })();
 function chordTriad(rootPitchName, quality) {
   const rootIdx = PITCHES.indexOf(rootPitchName);
-  // Agora a função considera a qualidade do acorde completo (incluindo variações)
-  // Para simplificar, vamos extrair apenas a qualidade básica (maj, min, dim)
+  if (rootIdx === -1) return [rootPitchName]; // fallback
+
+  // Extrai a qualidade básica (maj, min, dim) e as extensões (7, 9, etc)
   let basicQuality = 'maj';
+  let hasSeventh = false;
+  let hasNinth = false;
+
   if (quality.includes('m') && !quality.includes('maj')) {
     basicQuality = 'min';
   } else if (quality.includes('dim')) {
     basicQuality = 'dim';
   }
-  if (basicQuality === 'min') {
-    return [PITCHES[rootIdx], PITCHES[(rootIdx + 3) % 12], PITCHES[(rootIdx + 7) % 12]];
-  } else if (basicQuality === 'dim') {
-    return [PITCHES[rootIdx], PITCHES[(rootIdx + 3) % 12], PITCHES[(rootIdx + 6) % 12]];
-  } else {
-    return [PITCHES[rootIdx], PITCHES[(rootIdx + 4) % 12], PITCHES[(rootIdx + 7) % 12]];
+
+  // Verifica se o acorde tem sétima (7, m7, dim7, etc.)
+  if (quality.includes('7')) {
+    hasSeventh = true;
   }
+
+  // Verifica se o acorde tem nona (9, m9, 79, m79, etc.)
+  // Procura por '9' que não seja precedido por '1' (para evitar confundir com '19')
+  if (/[^1]9/.test(quality) || quality.endsWith('9')) {
+    hasNinth = true;
+  }
+
+  let chordNotes = [];
+
+  // Constrói a tríade básica
+  if (basicQuality === 'min') {
+    chordNotes = [
+      PITCHES[rootIdx], // 1ª
+      PITCHES[(rootIdx + 3) % 12], // 3ª menor
+      PITCHES[(rootIdx + 7) % 12] // 5ª justa
+    ];
+  } else if (basicQuality === 'dim') {
+    chordNotes = [
+      PITCHES[rootIdx], // 1ª
+      PITCHES[(rootIdx + 3) % 12], // 3ª menor
+      PITCHES[(rootIdx + 6) % 12] // 5ª diminuta
+    ];
+  } else {
+    chordNotes = [
+      PITCHES[rootIdx], // 1ª
+      PITCHES[(rootIdx + 4) % 12], // 3ª maior
+      PITCHES[(rootIdx + 7) % 12] // 5ª justa
+    ];
+  }
+
+  // Adiciona a 7ª, se presente
+  if (hasSeventh) {
+    if (basicQuality === 'min' || basicQuality === 'dim') {
+      // Para acordes menores e diminutos, a 7ª é menor (10 semitons da tônica)
+      chordNotes.push(PITCHES[(rootIdx + 10) % 12]);
+    } else {
+      // Para acordes maiores, a 7ª é maior (11 semitons da tônica)
+      chordNotes.push(PITCHES[(rootIdx + 11) % 12]);
+    }
+  }
+
+  // Adiciona a 9ª, se presente
+  if (hasNinth) {
+    // A 9ª é a mesma nota da 2ª, uma oitava acima (2 semitons da tônica)
+    chordNotes.push(PITCHES[(rootIdx + 2) % 12]);
+  }
+
+  return chordNotes;
 }
 function distanceBetweenNotes(n1, n2) {
   const i1 = ORDER_E_UP.indexOf(n1);
