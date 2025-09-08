@@ -969,6 +969,7 @@ function scheduleStep() {
     else if (['to2', 'tom-2'].includes(drumToken)) drumKey = 'to2';
     else if (['su', 'surdo'].includes(drumToken)) drumKey = 'su';
     else if (['bch', 'bumbo-chimbal'].includes(drumToken)) drumKey = 'bch';
+
     if (drumKey && state.buffers.drums[drumKey]) {
       const src = audio.ctx.createBufferSource();
       const g = audio.ctx.createGain();
@@ -1002,21 +1003,12 @@ function scheduleStep() {
     }
   }
 
-  // 🎸 GUITAR (ritmo editável ou acorde direto)
+  // 🎸 GUITAR
   if (state.currentGroove && state.currentGroove.guitarRhythm) {
     if (!state.guitarPlan) {
       state.guitarPlan = expandRhythm(state.currentGroove.guitarRhythm, state.bassPlan.length);
     }
     const guitarCommand = state.guitarPlan[state.stepIndex % state.guitarPlan.length];
-    if (isNewBar) {
-      const chord = state.chordPlan[state.currentChordIndex];
-      ui.currentChord.textContent = chord?.displayed || '—';
-      ui.chordTimer.textContent = `Próx: ${state.chordPlan.length - state.currentChordIndex} compasso(s)`;
-      document.querySelectorAll('.chord-item.current').forEach(el => el.classList.remove('current'));
-      const items = document.querySelectorAll('.chord-item');
-      const currentIndex = state.currentChordIndex % items.length;
-      if (items[currentIndex]) items[currentIndex].classList.add('current');
-    }
     if (guitarCommand && guitarCommand !== '-' && !mute.dist) {
       const chord = state.chordPlan[state.currentChordIndex];
       if (chord) {
@@ -1046,14 +1038,8 @@ function scheduleStep() {
       if (state.lastCleanSource) state.lastCleanSource.stop(time);
       if (state.lastDistSource) state.lastDistSource.stop(time);
       const chord = state.chordPlan[state.currentChordIndex];
-      if (chord) {
-        ui.currentChord.textContent = chord.displayed;
-        ui.chordTimer.textContent = `Próx: ${state.chordPlan.length - state.currentChordIndex} compasso(s)`;
-        document.querySelectorAll('.chord-item.current').forEach(el => el.classList.remove('current'));
-        const items = document.querySelectorAll('.chord-item');
-        const currentIndex = state.currentChordIndex % items.length;
-        if (items[currentIndex]) items[currentIndex].classList.add('current');
-        if (!mute.dist) playChord(time, chord.note, chord.type, true);
+      if (chord && !mute.dist) {
+        playChord(time, chord.note, chord.type, true);
       }
     }
   }
@@ -1063,7 +1049,12 @@ function scheduleStep() {
   if (melodyEvent && melodyEvent.type === 'start') {
     if (melodyEvent.adaptedNumber === null) {
       const chord = state.chordPlan[state.currentChordIndex];
-      const adaptedNumber = adaptNumberToChord(melodyEvent.originalNumber, chord.note, chord.type, state.lastMelodyNote);
+      const adaptedNumber = adaptNumberToChord(
+        melodyEvent.originalNumber,
+        chord.note,
+        chord.type,
+        state.lastMelodyNote
+      );
       melodyEvent.adaptedNumber = adaptedNumber;
       state.lastMelodyNote = adaptedNumber;
     }
@@ -1075,12 +1066,12 @@ function scheduleStep() {
 
   state.stepIndex++;
 
-  // ⏩ Troca de compasso (isNewBar)
+  // ⏩ Troca de compasso
   if (isNewBar) {
     state.currentChordIndex = (state.currentChordIndex + 1) % state.chordPlan.length;
     state.barsInChord = 0;
 
-    // 👉 Reavalia nota sustentada conforme novo acorde
+    // 👉 readapta nota sustentada
     if (state.lastMelodyNote !== null) {
       const chordNow = state.chordPlan[state.currentChordIndex];
       if (chordNow) {
@@ -1092,12 +1083,11 @@ function scheduleStep() {
       }
     }
 
-    state.guitarPlan = null; // reseta o plano da guitarra
+    state.guitarPlan = null;
   }
 
   state.nextNoteTime += state.sixteenthDur;
 }
-
 
 // --- CORREÇÃO DA FUNÇÃO playChord PARA O COMPORTAMENTO ANTIGO ---
 // Esta função é usada apenas quando o groove NÃO tem `guitarRhythm` definido.
@@ -1377,6 +1367,13 @@ function handleNumberSelection(e) {
   }
   hideNumberPicker(); // Fecha o picker automaticamente após a seleção
 }
+
+document.getElementById('startBtn').addEventListener('click', () => {
+  buildMelodyPlanFromBlocks(); // monta a melodia
+  state.stepIndex = 0;
+  state.nextNoteTime = audio.ctx.currentTime;
+  scheduler();
+});
 function buildMelodyPlanFromBlocks() {
   const plan = [];
 
