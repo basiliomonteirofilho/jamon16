@@ -219,6 +219,7 @@ input[type="range"] {
   margin-top: 8px;
   text-align: center;
 }
+
 /* === ESTILOS PARA MOBILE === */
 @media (max-width: 768px) {
   body {
@@ -270,6 +271,7 @@ input[type="range"] {
     font-size: 0.85em;
   }
 }
+
 /* === ESTILOS DO PICKER DE NÚMEROS === */
 #numberPicker {
   display: none;
@@ -288,6 +290,7 @@ input[type="range"] {
   grid-template-columns: repeat(4, 1fr);
   gap: 10px;
 }
+
 @keyframes slideUp {
   from {
     transform: translateY(100%);
@@ -296,6 +299,7 @@ input[type="range"] {
     transform: translateY(0);
   }
 }
+
 #numberPicker h3 {
   color: #5eead4;
   text-align: center;
@@ -304,9 +308,11 @@ input[type="range"] {
   /* --- NOVO: Ocupa todas as 4 colunas --- */
   grid-column: span 4;
 }
+
 #numberGrid {
   /* --- REMOVIDO: O grid agora está no #numberPicker --- */
 }
+
 .number-btn {
   background: #333;
   color: #e0e0e0;
@@ -317,14 +323,17 @@ input[type="range"] {
   cursor: pointer;
   transition: all 0.1s ease;
 }
+
 .number-btn:hover {
   background: #444;
 }
+
 .number-btn:active {
   transform: scale(0.95);
   background: #5eead4;
   color: #121212;
 }
+
 .close-btn {
   /* --- NOVO: Ocupa todas as 4 colunas --- */
   grid-column: span 4;
@@ -468,14 +477,6 @@ const audio = {
   bassGain: null,
   cleanGain: null,
   distGain: null,
-  // --- NOVOS NÓS DE ÁUDIO ---
-  compressor: null,
-  reverb: null,
-  bassReverbSend: null,
-  cleanReverbSend: null,
-  distReverbSend: null,
-  melodyReverbSend: null,
-  // --- FIM DOS NOVOS NÓS ---
   schedulerTimer: null
 };
 const PITCHES = ['A','AS','B','C','CS','D','DS','E','F','FS','G','GS'];
@@ -630,88 +631,19 @@ async function initAudio() {
     audio.bassGain = audio.ctx.createGain();
     audio.cleanGain = audio.ctx.createGain();
     audio.distGain = audio.ctx.createGain();
-
-    // --- NOVOS NÓS ---
-    // 1. Compressor Master
-    audio.compressor = audio.ctx.createDynamicsCompressor();
-    audio.compressor.threshold.value = -20; // dB
-    audio.compressor.knee.value = 10;      // dB
-    audio.compressor.ratio.value = 4;      // 4:1
-    audio.compressor.attack.value = 0.01;  // segundos
-    audio.compressor.release.value = 0.2;  // segundos
-
-    // 2. Reverb (Convolver)
-    audio.reverb = audio.ctx.createConvolver();
-    // Tenta carregar o Impulse Response
-    try {
-      const irResponse = await fetch('assets/reverb-hall.mp3');
-      const irArrayBuffer = await irResponse.arrayBuffer();
-      const irBuffer = await audio.ctx.decodeAudioData(irArrayBuffer);
-      audio.reverb.buffer = irBuffer;
-      console.log('✅ Reverb carregado com sucesso!');
-    } catch (error) {
-      console.warn('⚠️ Não foi possível carregar o arquivo de reverb (assets/reverb-hall.mp3). O efeito de reverb será desativado.');
-      // Mesmo sem o buffer, o nó existe. Samples não serão processados, mas não quebra.
-    }
-
-    // 3. Sends de Reverb por Instrumento
-    audio.bassReverbSend = audio.ctx.createGain();
-    audio.cleanReverbSend = audio.ctx.createGain();
-    audio.distReverbSend = audio.ctx.createGain();
-    audio.melodyReverbSend = audio.ctx.createGain();
-
-    // Define níveis iniciais de reverb (0.2 = 20% do sinal seco)
-    audio.bassReverbSend.gain.value = 0.2;
-    audio.cleanReverbSend.gain.value = 0.3;
-    audio.distReverbSend.gain.value = 0.25;
-    audio.melodyReverbSend.gain.value = 0.4;
-
-    // --- FIM DOS NOVOS NÓS ---
-
-    // --- REORGANIZAÇÃO DAS CONEXÕES ---
-    // Ganho Master -> Compressor -> Mix -> Saída
     audio.master.gain.value = 0.9;
-    audio.master.connect(audio.compressor);
-    audio.compressor.connect(audio.mix);
-    audio.mix.connect(audio.ctx.destination);
-
-    // Conexões dos instrumentos:
-    // Cada instrumento se conecta ao seu ganho PRINCIPAL e ao seu ganho de REVERB SEND.
-
-    // Bateria (geralmente sem reverb, mas está aqui para consistência)
-    audio.drumGain.connect(audio.master); // Sinal seco
-    audio.drumGain.connect(audio.cleanReverbSend); // Envia para o reverb (pode ser ajustado)
-
-    // Baixo
-    audio.bassGain.connect(audio.master); // Sinal seco
-    audio.bassGain.connect(audio.bassReverbSend); // Envia para o reverb
-
-    // Guitarra Limpa
-    audio.cleanGain.connect(audio.master); // Sinal seco
-    audio.cleanGain.connect(audio.cleanReverbSend); // Envia para o reverb
-
-    // Guitarra Distorcida
-    audio.distGain.connect(audio.master); // Sinal seco
-    audio.distGain.connect(audio.distReverbSend); // Envia para o reverb
-
-    // --- Conecta os Sends ao Reverb ---
-    audio.bassReverbSend.connect(audio.reverb);
-    audio.cleanReverbSend.connect(audio.reverb);
-    audio.distReverbSend.connect(audio.reverb);
-    audio.melodyReverbSend.connect(audio.reverb);
-
-    // --- Conecta o Reverb ao Master (para ser ouvido) ---
-    audio.reverb.connect(audio.master);
-
-    // Valores de volume iniciais
     audio.drumGain.gain.value = 0.6;
     audio.bassGain.gain.value = 0.45;
     audio.cleanGain.gain.value = 0.45;
     audio.distGain.gain.value = 0.35;
-
+    audio.master.connect(audio.mix);
+    audio.mix.connect(audio.ctx.destination);
+    audio.drumGain.connect(audio.master);
+    audio.bassGain.connect(audio.master);
+    audio.cleanGain.connect(audio.master);
+    audio.distGain.connect(audio.master);
     if (!state.buffers.melody) state.buffers.melody = {};
     await ensureBasicSamples();
-
     function updateVolume() {
       audio.bassGain.gain.value = parseFloat(ui.volBass.value);
       audio.drumGain.gain.value = parseFloat(ui.volDrums.value);
@@ -1045,8 +977,6 @@ function scheduleStep() {
       g.gain.setValueAtTime(0.0, time);
       g.gain.linearRampToValueAtTime(1.0, time + 0.005);
       src.start(time);
-      // --- DRUMS: Fade-out opcional (geralmente não necessário por ser percussivo) ---
-      // Se quiser, pode adicionar aqui. Por padrão, baterias são curtos e não precisam.
     }
   }
   // BASS
@@ -1063,24 +993,9 @@ function scheduleStep() {
       src.buffer = buf;
       src.connect(g);
       g.connect(audio.bassGain);
-      // --- FADE-IN ---
       g.gain.setValueAtTime(0.0, time);
       g.gain.linearRampToValueAtTime(1.0, time + 0.01);
-
       src.start(time);
-
-      // --- FADE-OUT (Crucial para Baixo) ---
-      const fadeOutStart = time + state.sixteenthDur - 0.03; // Começa 30ms antes do próximo
-      const fadeOutEnd = time + state.sixteenthDur - 0.005; // Termina 5ms antes do próximo
-
-      if (fadeOutStart > time) {
-        g.gain.setValueAtTime(1.0, fadeOutStart);
-        g.gain.linearRampToValueAtTime(0.0, fadeOutEnd);
-      }
-
-      // Para o sample exatamente no tempo do próximo passo
-      src.stop(time + state.sixteenthDur);
-
       state.lastBassSource = src;
     }
   }
@@ -1139,23 +1054,9 @@ function scheduleStep() {
           src.buffer = buf;
           src.connect(g);
           g.connect(audio.distGain);
-          // --- FADE-IN ---
           g.gain.setValueAtTime(0.0, time);
           g.gain.linearRampToValueAtTime(1.0, time + 0.01);
-
           src.start(time);
-
-          // --- FADE-OUT (Crucial para Guitarra) ---
-          const fadeOutStart = time + state.sixteenthDur - 0.03;
-          const fadeOutEnd = time + state.sixteenthDur - 0.005;
-
-          if (fadeOutStart > time) {
-            g.gain.setValueAtTime(1.0, fadeOutStart);
-            g.gain.linearRampToValueAtTime(0.0, fadeOutEnd);
-          }
-
-          src.stop(time + state.sixteenthDur);
-
           state.lastDistSource = src;
         } else {
           console.warn(`Buffer não carregado para o acorde: ${fullChordName} | URL: ${url}`);
@@ -1217,23 +1118,9 @@ function playChord(time, note, type, isDistorted) {
     src.buffer = buf;
     src.connect(g);
     g.connect(audio.distGain);
-    // --- FADE-IN ---
     g.gain.setValueAtTime(0.0, time);
     g.gain.linearRampToValueAtTime(1.0, time + 0.01);
-
     src.start(time);
-
-    // --- FADE-OUT ---
-    const fadeOutStart = time + state.sixteenthDur - 0.03;
-    const fadeOutEnd = time + state.sixteenthDur - 0.005;
-
-    if (fadeOutStart > time) {
-      g.gain.setValueAtTime(1.0, fadeOutStart);
-      g.gain.linearRampToValueAtTime(0.0, fadeOutEnd);
-    }
-
-    src.stop(time + state.sixteenthDur);
-
     state.lastDistSource = src;
   } else {
     console.warn(`Buffer não carregado para o acorde: ${fullChordName} | URL: ${url}`);
@@ -1293,25 +1180,31 @@ const NUM_TO_NAME = (() => {
 function chordTriad(rootPitchName, quality) {
   const rootIdx = PITCHES.indexOf(rootPitchName);
   if (rootIdx === -1) return [rootPitchName]; // fallback
+
   // Extrai a qualidade básica (maj, min, dim) e as extensões (7, 9, etc)
   let basicQuality = 'maj';
   let hasSeventh = false;
   let hasNinth = false;
+
   if (quality.includes('m') && !quality.includes('maj')) {
     basicQuality = 'min';
   } else if (quality.includes('dim')) {
     basicQuality = 'dim';
   }
+
   // Verifica se o acorde tem sétima (7, m7, dim7, etc.)
   if (quality.includes('7')) {
     hasSeventh = true;
   }
+
   // Verifica se o acorde tem nona (9, m9, 79, m79, etc.)
   // Procura por '9' que não seja precedido por '1' (para evitar confundir com '19')
   if (/[^1]9/.test(quality) || quality.endsWith('9')) {
     hasNinth = true;
   }
+
   let chordNotes = [];
+
   // Constrói a tríade básica
   if (basicQuality === 'min') {
     chordNotes = [
@@ -1332,6 +1225,7 @@ function chordTriad(rootPitchName, quality) {
       PITCHES[(rootIdx + 7) % 12] // 5ª justa
     ];
   }
+
   // Adiciona a 7ª, se presente
   if (hasSeventh) {
     if (basicQuality === 'min' || basicQuality === 'dim') {
@@ -1342,11 +1236,13 @@ function chordTriad(rootPitchName, quality) {
       chordNotes.push(PITCHES[(rootIdx + 11) % 12]);
     }
   }
+
   // Adiciona a 9ª, se presente
   if (hasNinth) {
     // A 9ª é a mesma nota da 2ª, uma oitava acima (2 semitons da tônica)
     chordNotes.push(PITCHES[(rootIdx + 2) % 12]);
   }
+
   return chordNotes;
 }
 function distanceBetweenNotes(n1, n2) {
@@ -1567,24 +1463,11 @@ function playMelodyNumber(time, number, instrumentType) {
   src.buffer = buf;
   src.connect(g);
   g.connect(targetGain);
-  // --- FADE-IN ---
   g.gain.setValueAtTime(0.0, time);
   g.gain.linearRampToValueAtTime(1.0, time + 0.01);
-
   const maxDur = state.sixteenthDur * 16;
   src.start(time);
-
-  // --- FADE-OUT (para a melodia também) ---
-  const fadeOutStart = time + maxDur - 0.03;
-  const fadeOutEnd = time + maxDur - 0.005;
-
-  if (fadeOutStart > time) {
-    g.gain.setValueAtTime(1.0, fadeOutStart);
-    g.gain.linearRampToValueAtTime(0.0, fadeOutEnd);
-  }
-
-  src.stop(time + maxDur);
-
+  src.stop(time + Math.min(buf.duration, maxDur));
   state.lastMelodySource = src;
   state.lastMelodyGain = g;
   src.finished = false;
