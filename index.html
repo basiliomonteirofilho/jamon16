@@ -952,7 +952,8 @@ function scheduleStep() {
   const beats = meterToBeats(state.meter);
   const sixteenthsPerBar = beats * 4;
   const isNewBar = (stepIdx % sixteenthsPerBar) === 0;
-  // DRUMS
+
+  // 🎵 DRUMS
   const drumToken = state.drumSeq[stepIdx % state.drumSeq.length];
   if (drumToken && !mute.drums) {
     let drumKey = null;
@@ -979,7 +980,8 @@ function scheduleStep() {
       src.start(time);
     }
   }
-  // BASS
+
+  // 🎸 BASS
   const bassCommand = state.bassPlan[stepIdx % state.bassPlan.length];
   if (!mute.bass && state.lastBassSource) {
     state.lastBassSource.stop(time);
@@ -999,56 +1001,34 @@ function scheduleStep() {
       state.lastBassSource = src;
     }
   }
-  // GUITAR (Ritmo Editável)
+
+  // 🎸 GUITAR (ritmo editável ou acorde direto)
   if (state.currentGroove && state.currentGroove.guitarRhythm) {
-    const beats = meterToBeats(state.meter);
-    const sixteenthsPerBar = beats * 4;
-    const barIndex = Math.floor(state.stepIndex / sixteenthsPerBar);
-    const stepInBar = state.stepIndex % sixteenthsPerBar;
-    // Expande o padrão de guitarra para cobrir o comprimento total do plano de baixo
     if (!state.guitarPlan) {
       state.guitarPlan = expandRhythm(state.currentGroove.guitarRhythm, state.bassPlan.length);
     }
     const guitarCommand = state.guitarPlan[state.stepIndex % state.guitarPlan.length];
-    // --- CORREÇÃO AQUI ---
-    // Move a lógica de isNewBar PARA DENTRO deste bloco, mas NÃO toca o acorde completo.
-    // Apenas atualiza a UI e reseta o plano se necessário.
     if (isNewBar) {
-      // Apenas atualiza a interface e reseta o plano, SEM tocar o acorde
-      ui.currentChord.textContent = state.chordPlan[state.currentChordIndex]?.displayed || '—';
+      const chord = state.chordPlan[state.currentChordIndex];
+      ui.currentChord.textContent = chord?.displayed || '—';
       ui.chordTimer.textContent = `Próx: ${state.chordPlan.length - state.currentChordIndex} compasso(s)`;
       document.querySelectorAll('.chord-item.current').forEach(el => el.classList.remove('current'));
       const items = document.querySelectorAll('.chord-item');
       const currentIndex = state.currentChordIndex % items.length;
       if (items[currentIndex]) items[currentIndex].classList.add('current');
-      // Não chamamos playChord aqui!
     }
-    // Interpreta o comando de guitarra
     if (guitarCommand && guitarCommand !== '-' && !mute.dist) {
       const chord = state.chordPlan[state.currentChordIndex];
       if (chord) {
         let baseFolder = 'guitarraDistorcao';
-        let url = '';
-        // Define a subpasta baseado no comando
-        if (guitarCommand === 'ab') {
-          baseFolder = 'guitarraDistorcao/abafadas';
-        } else if (guitarCommand === 'de') {
-          baseFolder = 'guitarraDistorcao/dedilhada';
-        } else if (guitarCommand === 'so') {
-          baseFolder = 'guitarraDistorcao'; // Pasta padrão
-        } else {
-          // Se for um comando desconhecido, ignora
-          return;
-        }
+        if (guitarCommand === 'ab') baseFolder = 'guitarraDistorcao/abafadas';
+        else if (guitarCommand === 'de') baseFolder = 'guitarraDistorcao/dedilhada';
+        else if (guitarCommand === 'so') baseFolder = 'guitarraDistorcao';
         const fullChordName = chord.note + chord.type;
-        // A pasta é a nota raiz (chord.note), o arquivo é o nome completo do acorde (fullChordName)
-        url = `${baseFolder}/${chord.note}/${fullChordName}.mp3`;
+        const url = `${baseFolder}/${chord.note}/${fullChordName}.mp3`;
         const buf = state.buffers.guitar?.[url] || null;
         if (buf && time >= audio.ctx.currentTime - 0.02) {
-          // Para de tocar o sample anterior antes de tocar o novo
-          if (state.lastDistSource) {
-            state.lastDistSource.stop(time);
-          }
+          if (state.lastDistSource) state.lastDistSource.stop(time);
           const src = audio.ctx.createBufferSource();
           const g = audio.ctx.createGain();
           src.buffer = buf;
@@ -1058,15 +1038,10 @@ function scheduleStep() {
           g.gain.linearRampToValueAtTime(1.0, time + 0.01);
           src.start(time);
           state.lastDistSource = src;
-        } else {
-          console.warn(`Buffer não carregado para o acorde: ${fullChordName} | URL: ${url}`);
         }
       }
     }
   } else {
-    // Comportamento antigo (para grooves sem guitarRhythm definido)
-    // --- CORREÇÃO AQUI ---
-    // Move a lógica de isNewBar PARA DENTRO deste bloco 'else'
     if (isNewBar) {
       if (state.lastCleanSource) state.lastCleanSource.stop(time);
       if (state.lastDistSource) state.lastDistSource.stop(time);
@@ -1082,75 +1057,47 @@ function scheduleStep() {
       }
     }
   }
-        // MELODY
+
+  // 🎼 MELODY
   const melodyEvent = state.melodyPlan[stepIdx % state.melodyPlan.length];
   if (melodyEvent && melodyEvent.type === 'start') {
-    // Se é um 'start', calcula o número adaptado se ainda não foi calculado
     if (melodyEvent.adaptedNumber === null) {
       const chord = state.chordPlan[state.currentChordIndex];
       const adaptedNumber = adaptNumberToChord(melodyEvent.originalNumber, chord.note, chord.type, state.lastMelodyNote);
-      // Armazena o número adaptado no próprio evento para uso futuro
       melodyEvent.adaptedNumber = adaptedNumber;
       state.lastMelodyNote = adaptedNumber;
     }
-    // Toca a nota adaptada (seja ela recém-calculada ou recuperada do cache)
     playMelodyNumber(time, melodyEvent.adaptedNumber, melodyEvent.instrument);
-  } else if (melodyEvent && melodyEvent.type === 'continue') {
-    // Para 'continue', precisamos encontrar o último evento 'start' válido, buscando CIRCULARMENTE para trás
-    let lastStartEvent = null;
-    const planLength = state.melodyPlan.length;
-    // Começa do passo anterior e vai para trás, circularmente
-    for (let offset = 1; offset < planLength; offset++) {
-      const checkIndex = (stepIdx - offset + planLength) % planLength;
-      const ev = state.melodyPlan[checkIndex];
-      if (ev && ev.type === 'start' && ev.adaptedNumber !== null) {
-        lastStartEvent = ev;
-        break;
-      } else if (ev && ev.type === 'mute') {
-        break; // Encontrou um mute, então não há nota para continuar
-      }
-    }
-    if (lastStartEvent) {
-      // Toca o número adaptado do último 'start'
-      playMelodyNumber(time, lastStartEvent.adaptedNumber, lastStartEvent.instrument);
-    }
-    // NÃO atualiza state.lastMelodyNote para 'continue', apenas para 'start'
   } else if (melodyEvent && melodyEvent.type === 'mute') {
     stopMelodyAt(time);
     state.lastMelodyNote = null;
   }
+
   state.stepIndex++;
+
+  // ⏩ Troca de compasso (isNewBar)
   if (isNewBar) {
-  // Avança para o próximo acorde da progressão
-  state.currentChordIndex = (state.currentChordIndex + 1) % state.chordPlan.length;
-  state.barsInChord = 0;
+    state.currentChordIndex = (state.currentChordIndex + 1) % state.chordPlan.length;
+    state.barsInChord = 0;
 
-  // Atualiza exibição do acorde atual na interface
-  const chord = state.chordPlan[state.currentChordIndex];
-  if (chord) {
-    ui.currentChord.textContent = chord.displayed;
-    ui.chordTimer.textContent = `Próx: ${state.chordPlan.length - state.currentChordIndex} compasso(s)`;
-    document.querySelectorAll('.chord-item.current').forEach(el => el.classList.remove('current'));
-    const items = document.querySelectorAll('.chord-item');
-    const currentIndex = state.currentChordIndex % items.length;
-    if (items[currentIndex]) items[currentIndex].classList.add('current');
-  }
-
-  // 👉 Se havia nota sustentada, força reavaliação no novo acorde
-  if (state.lastMelodyNote !== null) {
-    const chordNow = state.chordPlan[state.currentChordIndex];
-    if (chordNow) {
-      state.lastMelodyNote = adaptNumberToChord(
-        state.lastMelodyNote,
-        chordNow.note,
-        chordNow.type
-      );
+    // 👉 Reavalia nota sustentada conforme novo acorde
+    if (state.lastMelodyNote !== null) {
+      const chordNow = state.chordPlan[state.currentChordIndex];
+      if (chordNow) {
+        state.lastMelodyNote = adaptNumberToChord(
+          state.lastMelodyNote,
+          chordNow.note,
+          chordNow.type
+        );
+      }
     }
+
+    state.guitarPlan = null; // reseta o plano da guitarra
   }
 
-  // Reseta o plano da guitarra para recalcular no próximo loop
-  state.guitarPlan = null;
+  state.nextNoteTime += state.sixteenthDur;
 }
+
 
 // --- CORREÇÃO DA FUNÇÃO playChord PARA O COMPORTAMENTO ANTIGO ---
 // Esta função é usada apenas quando o groove NÃO tem `guitarRhythm` definido.
