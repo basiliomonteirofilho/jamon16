@@ -1082,14 +1082,36 @@ function scheduleStep() {
       }
     }
   }
-  // MELODY
+      // MELODY
   const melodyEvent = state.melodyPlan[stepIdx % state.melodyPlan.length];
   if (melodyEvent && melodyEvent.type === 'start') {
-    const baseNumber = melodyEvent.originalNumber;
-    const chord = state.chordPlan[state.currentChordIndex];
-    const adaptedNumber = adaptNumberToChord(baseNumber, chord.note, chord.type, state.lastMelodyNote);
-    state.lastMelodyNote = adaptedNumber;
-    playMelodyNumber(time, adaptedNumber, melodyEvent.instrument);
+    // Se é um 'start', calcula o número adaptado se ainda não foi calculado
+    if (melodyEvent.adaptedNumber === null) {
+      const chord = state.chordPlan[state.currentChordIndex];
+      const adaptedNumber = adaptNumberToChord(melodyEvent.originalNumber, chord.note, chord.type, state.lastMelodyNote);
+      // Armazena o número adaptado no próprio evento para uso futuro
+      melodyEvent.adaptedNumber = adaptedNumber;
+      state.lastMelodyNote = adaptedNumber;
+    }
+    // Toca a nota adaptada (seja ela recém-calculada ou recuperada do cache)
+    playMelodyNumber(time, melodyEvent.adaptedNumber, melodyEvent.instrument);
+  } else if (melodyEvent && melodyEvent.type === 'continue') {
+    // Para 'continue', precisamos encontrar o último evento 'start' válido
+    let lastStartEvent = null;
+    for (let i = stepIdx - 1; i >= 0; i--) {
+      const ev = state.melodyPlan[i % state.melodyPlan.length];
+      if (ev && ev.type === 'start' && ev.adaptedNumber !== null) {
+        lastStartEvent = ev;
+        break;
+      } else if (ev && ev.type === 'mute') {
+        break; // Encontrou um mute, então não há nota para continuar
+      }
+    }
+    if (lastStartEvent) {
+      // Toca o número adaptado do último 'start'
+      playMelodyNumber(time, lastStartEvent.adaptedNumber, lastStartEvent.instrument);
+    }
+    // NÃO atualiza state.lastMelodyNote para 'continue', apenas para 'start'
   } else if (melodyEvent && melodyEvent.type === 'mute') {
     stopMelodyAt(time);
     state.lastMelodyNote = null;
@@ -1380,25 +1402,27 @@ function buildMelodyPlanFromBlocks() {
       const raw = input.value.trim();
       const absStep = baseStep + c;
       if (raw === 'x') {
-        events.push({ absStep, type: 'mute', instrument: ui.melodyInstrument.value });
+        events.push({ absStep, type: 'mute', instrument: ui.melodyInstrument.value, adaptedNumber: null });
         lastNote = null;
       } else if (raw) {
         const n = parseInt(raw, 10);
         if (n >= 1 && n <= 49) {
-          events.push({ absStep, type: 'start', originalNumber: n, instrument: ui.melodyInstrument.value });
+          // Cria o evento 'start' com adaptedNumber = null (será calculado em scheduleStep)
+          events.push({ absStep, type: 'start', originalNumber: n, instrument: ui.melodyInstrument.value, adaptedNumber: null });
           lastNote = n;
         }
       } else if (lastNote !== null) {
-        events.push({ absStep, type: 'continue', originalNumber: lastNote, instrument: ui.melodyInstrument.value });
+        // Evento 'continue' aponta para o originalNumber da nota que está continuando
+        events.push({ absStep, type: 'continue', originalNumber: lastNote, instrument: ui.melodyInstrument.value, adaptedNumber: null });
       } else {
-        events.push({ absStep, type: 'rest' });
+        events.push({ absStep, type: 'rest', adaptedNumber: null });
       }
     }
     baseStep += cols;
   }
   const plan = new Array(baseStep).fill(null);
   events.forEach(ev => {
-    if (ev.absStep < plan.length) plan[ev.absStep] = { type: ev.type, originalNumber: ev.originalNumber, instrument: ev.instrument };
+    if (ev.absStep < plan.length) plan[ev.absStep] = { ...ev }; // Copia o evento para o plano
   });
   state.melodyPlan = plan;
 }
