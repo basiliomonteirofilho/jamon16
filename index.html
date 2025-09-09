@@ -1518,7 +1518,7 @@ function exportarPartituraSimples() {
   const espacoEntreCordas = 25; // Espaço vertical entre as linhas da tab
   const larguraCasa = 45; // Largura de cada "casa" na tab
 
-  // Desenha as linhas da tablatura (as cordas)
+  // Desenha as linhas da tablatura (as cordas) - DA MAIS AGUDA (TOP) PARA A MAIS GRAVE (BOTTOM)
   ctx.strokeStyle = '#000000';
   ctx.lineWidth = 1;
   for (let i = 0; i < cordas; i++) {
@@ -1535,7 +1535,8 @@ function exportarPartituraSimples() {
   ctx.fillText('TAB', 20, margemSuperior + (cordas - 1) * espacoEntreCordas - 5);
 
   // --- Mapeamento Completo de Nota para Posição na Tab (Afinacao Padrão EADGBE) ---
-  // Este mapeamento cobre as notas das 6 cordas soltas até o 15º traste.
+  // Nota: As posições são dadas como {str: número_da_corda, fret: traste}
+  // str=1 é a corda mais aguda (Mi agudo), str=6 é a mais grave (Mi grave)
   const mapeamentoCompleto = {
     'E':  [{str: 6, fret: 0}, {str: 1, fret: 0}],
     'F':  [{str: 6, fret: 1}, {str: 1, fret: 1}],
@@ -1591,7 +1592,6 @@ function exportarPartituraSimples() {
   };
 
   // --- Usa os Dados REAIS da Aplicação ---
-  // Verifica se há dados de melodia
   if (!state.melodyPlan || state.melodyPlan.length === 0) {
     ctx.font = '20px Arial';
     ctx.fillStyle = '#ff0000';
@@ -1602,32 +1602,28 @@ function exportarPartituraSimples() {
 
   // Cria um array com os dados reais para desenhar
   const melodiaReal = [];
-  const stepsPerBar = meterToBeats(state.meter) * 4; // Passos por compasso
+  const stepsPerBar = meterToBeats(state.meter) * 4;
 
   state.melodyPlan.forEach((evento, index) => {
     if (evento && evento.type === 'start') {
       const numero = evento.adaptedNumber;
-      const notaBase = NUM_TO_NAME[numero]; // Ex: 'E', 'F', 'FS', etc.
-      // Calcula o índice do acorde atual com base no passo
+      const notaBase = NUM_TO_NAME[numero];
       const chordIndex = Math.floor(index / stepsPerBar) % state.chordPlan.length;
       const acorde = state.chordPlan[chordIndex]?.displayed || 'N/A';
-
       melodiaReal.push({
         numero: numero,
         nota: notaBase,
         acorde: acorde
       });
     } else if (evento && evento.type === 'mute') {
-      // Para pausas, adiciona um placeholder
       const chordIndex = Math.floor(index / stepsPerBar) % state.chordPlan.length;
       const acorde = state.chordPlan[chordIndex]?.displayed || 'N/A';
       melodiaReal.push({
         numero: null,
-        nota: 'x', // Representa pausa
+        nota: 'x',
         acorde: acorde
       });
     }
-    // Se for null (nota sustentada), ignora para simplificar o desenho
   });
 
   // --- Desenha as Notas e Cifras ---
@@ -1638,7 +1634,6 @@ function exportarPartituraSimples() {
     const x = margemEsquerda + (index * larguraCasa) + (larguraCasa / 2);
 
     // --- Desenha a cifra do acorde acima da tab ---
-    // Só desenha a cifra se for a primeira nota do compasso ou se for diferente da anterior
     if (index === 0 || (index > 0 && item.acorde !== melodiaReal[index - 1].acorde)) {
       ctx.fillStyle = '#000000';
       ctx.fillText(item.acorde, x, margemSuperior - 25);
@@ -1646,21 +1641,19 @@ function exportarPartituraSimples() {
 
     // --- Desenha a nota (ou pausa) na tab ---
     if (item.nota === 'x') {
-      // Desenha 'x' para pausa
       ctx.fillStyle = '#888888';
       ctx.fillText('x', x, margemSuperior + (cordas - 1) * espacoEntreCordas + 15);
     } else {
       const posicoes = mapeamentoCompleto[item.nota] || [];
       if (posicoes.length > 0) {
-        // Escolhe a posição na corda mais grave (número de corda maior) para uma leitura mais natural
-        const pos = posicoes.reduce((prev, curr) => (curr.str > prev.str ? curr : prev), posicoes[0]);
-        const y = margemSuperior + (6 - pos.str) * espacoEntreCordas;
+        // Escolhe a posição na corda mais aguda (número de corda MENOR) para uma leitura mais natural
+        const pos = posicoes.reduce((prev, curr) => (curr.str < prev.str ? curr : prev), posicoes[0]);
+        // ✅ CORREÇÃO AQUI: A corda 1 (mais aguda) é a linha de cima (y menor)
+        const y = margemSuperior + (pos.str - 1) * espacoEntreCordas;
 
-        // Desenha o número do traste
         ctx.fillStyle = '#000000';
         ctx.fillText(pos.fret.toString(), x, y + 8);
       } else {
-        // Se a nota não estiver no mapeamento, mostra um '?'
         ctx.fillStyle = '#ff0000';
         ctx.fillText('?', x, margemSuperior + (cordas - 1) * espacoEntreCordas + 15);
       }
