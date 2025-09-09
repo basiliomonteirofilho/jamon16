@@ -378,7 +378,7 @@ input[type="range"] {
   color: #121212;
 }
   </style>
-  <script src="https://unpkg.com/vexflow/releases/vexflow-min.js"></script>
+  
 </head>
 <body>
   <header>
@@ -1499,63 +1499,105 @@ function playMelodyNumber(time, number, instrumentType) {
 // FUNÇÃO DE EXPORTAÇÃO DE PARTITURA
 // ===============================
 
-function exportarPartitura() {
-  alert('VexFlow está funcionando! Versão: ' + Vex.Flow.VERSION);
-
-  // Código de teste mínimo: desenha uma única nota
+function exportarPartituraSimples() {
+  // Seleciona o canvas e obtém o contexto 2D
   const canvas = document.getElementById('sheetCanvas');
-  const renderer = new Vex.Flow.Renderer(canvas, Vex.Flow.Renderer.Backends.CANVAS);
-  renderer.resize(750, 300);
-  const context = renderer.getContext();
-  context.setFont("Arial", 10, "").setBackgroundFillStyle("#ffffff");
+  const ctx = canvas.getContext('2d');
 
-  const stave = new Vex.Flow.TabStave(10, 40, 600);
-stave.addClef("tab").setContext(context).draw();
+  // Limpa o canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-// Suponha que você tenha um array de notas da tablatura já preparadas
-// Cada TabNote precisa de um array de objetos {str: , fret: }
-// Ex: uma nota no 3º traste da 5ª corda: { positions: [{str: 5, fret: 3}] }
-const tabNotes = [
-  new Vex.Flow.TabNote({ positions: [{str: 5, fret: 3}], duration: "q" }),
-  new Vex.Flow.TabNote({ positions: [{str: 4, fret: 0}], duration: "q" }),
-  // ... mais notas
-];
+  // Estilo do canvas
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-// Adicionar cifras acima
-const chordTexts = [
-  new Vex.Flow.TextNote({ text: "C", duration: "q" }).setLine(3), // Linha 3 geralmente fica acima da tab
-  new Vex.Flow.TextNote({ text: "G", duration: "q" }).setLine(3),
-  // ... mais cifras
-];
+  // Configurações da tablatura
+  const cordas = 6; // Número de cordas da guitarra
+  const trastes = 16; // Número de "colunas" ou "trastes" a serem desenhados
+  const margemEsquerda = 50;
+  const margemSuperior = 50;
+  const espacoEntreCordas = 20; // Espaço vertical entre as linhas da tab
+  const larguraTraste = 30; // Largura de cada "casa" na tab
 
-const voice = new Vex.Flow.Voice({ num_beats: 4, beat_value: 4 });
-voice.addTickables([...tabNotes, ...chordTexts]); // Adiciona notas e textos juntos
+  // Desenha as linhas da tablatura (as cordas)
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < cordas; i++) {
+    const y = margemSuperior + i * espacoEntreCordas;
+    ctx.beginPath();
+    ctx.moveTo(margemEsquerda, y);
+    ctx.lineTo(margemEsquerda + (trastes * larguraTraste), y);
+    ctx.stroke();
+  }
 
-new Vex.Flow.Formatter().joinVoices([voice]).format([voice], 600);
+  // Adiciona a clave de tablatura no início
+  ctx.font = 'bold 20px Arial';
+  ctx.fillStyle = '#000000';
+  ctx.fillText('TAB', 10, margemSuperior + (cordas - 1) * espacoEntreCordas - 5);
 
-  // Mostra o modal
+  // --- Lógica para Mapear Notas da Melodia para Posições na Tab ---
+  // Este é o coração da questão. Precisamos converter os números (1-49)
+  // que representam notas (E, F, F#, G, etc.) em posições de corda e traste.
+  // Esta é uma tabela de mapeamento simplificada para a afinação padrão (EADGBE).
+  // Nota: Este mapeamento é simplificado e pode não escolher a posição mais musical.
+  const mapeamentoNotaParaTab = {
+    'E': [{ str: 6, fret: 0 }, { str: 1, fret: 0 }], // E pode estar na 6ª ou 1ª corda
+    'F': [{ str: 6, fret: 1 }, { str: 1, fret: 1 }],
+    'FS': [{ str: 6, fret: 2 }, { str: 1, fret: 2 }],
+    'G': [{ str: 6, fret: 3 }, { str: 1, fret: 3 }],
+    'GS': [{ str: 6, fret: 4 }, { str: 1, fret: 4 }],
+    'A': [{ str: 5, fret: 0 }, { str: 2, fret: 5 }], // A na 5ª ou 2ª corda
+    'AS': [{ str: 5, fret: 1 }, { str: 2, fret: 6 }],
+    'B': [{ str: 5, fret: 2 }, { str: 2, fret: 7 }],
+    'C': [{ str: 5, fret: 3 }, { str: 2, fret: 8 }],
+    'CS': [{ str: 5, fret: 4 }, { str: 2, fret: 9 }],
+    'D': [{ str: 4, fret: 0 }, { str: 3, fret: 7 }], // D na 4ª ou 3ª corda
+    'DS': [{ str: 4, fret: 1 }, { str: 3, fret: 8 }]
+    // ... você precisaria completar para todas as notas e oitavas, se necessário.
+  };
+
+  // --- Supondo que você tenha a melodia e os acordes sincronizados ---
+  // Para este exemplo, vamos criar dados fictícios.
+  // Em um cenário real, você usaria `state.melodyPlan` e `state.chordPlan`.
+  const exemploMelodia = [
+    { numero: 1, nota: 'E', acorde: 'C' }, // 1º passo
+    { numero: 5, nota: 'G', acorde: 'C' }, // 2º passo
+    { numero: 8, nota: 'C', acorde: 'G' }, // 3º passo
+    { numero: 10, nota: 'D', acorde: 'G' }, // 4º passo
+    { numero: 1, nota: 'E', acorde: 'C' }, // 5º passo
+    { numero: 5, nota: 'G', acorde: 'C' }, // 6º passo
+    { numero: 8, nota: 'C', acorde: 'G' }, // 7º passo
+    { numero: 10, nota: 'D', acorde: 'G' } // 8º passo
+  ];
+
+  // Desenha as notas da melodia e as cifras dos acordes
+  ctx.font = '16px Arial';
+  ctx.textAlign = 'center';
+
+  exemploMelodia.forEach((item, index) => {
+    const x = margemEsquerda + (index * larguraTraste) + (larguraTraste / 2);
+
+    // Desenha a cifra do acorde acima da tab
+    ctx.fillStyle = '#000000';
+    ctx.fillText(item.acorde, x, margemSuperior - 15);
+
+    // Obtém a posição na tab para a nota
+    const posicoes = mapeamentoNotaParaTab[item.nota] || [];
+    if (posicoes.length > 0) {
+      // Pega a primeira posição disponível (poderia ser otimizado para escolher a melhor)
+      const pos = posicoes[0];
+      const y = margemSuperior + (6 - pos.str) * espacoEntreCordas; // Corda 6 é a mais alta no desenho
+
+      // Desenha o número do traste
+      ctx.fillStyle = '#000000';
+      ctx.fillText(pos.fret.toString(), x, y + 5);
+    }
+  });
+
+  // Mostra o modal (isso permanece igual)
   document.getElementById('sheetModal').style.display = "block";
 }
 
-// Vincula a função ao botão SOMENTE quando a biblioteca VexFlow estiver pronta
-function waitForVexFlow() {
-  if (typeof Vex !== 'undefined' && Vex.Flow) {
-    ui.btnExportPartitura.addEventListener('click', exportarPartitura);
-    console.log('VexFlow carregado! Botão de exportação ativado.');
-  } else {
-    console.log('VexFlow ainda não carregou. Tentando novamente em 100ms...');
-    setTimeout(waitForVexFlow, 100);
-  }
-}
-waitForVexFlow();
-
-// Inicializa o picker de números se for mobile
-if (isMobileDevice()) {
-  initializeNumberPicker();
-}
-window.addEventListener('load', function() {
-  // Código de inicialização, se necessário
-});
   </script>
   
 </body>
