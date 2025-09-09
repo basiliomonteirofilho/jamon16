@@ -1498,9 +1498,7 @@ function playMelodyNumber(time, number, instrumentType) {
 // ===============================
 // FUNÇÃO DE EXPORTAÇÃO DE PARTITURA
 // ===============================
-// ===============================
-// FUNÇÃO DE EXPORTAÇÃO DE PARTITURA (VERSÃO DE TESTE)
-// ===============================
+
 function exportarPartitura() {
   alert('VexFlow está funcionando! Versão: ' + Vex.Flow.VERSION);
 
@@ -1511,15 +1509,29 @@ function exportarPartitura() {
   const context = renderer.getContext();
   context.setFont("Arial", 10, "").setBackgroundFillStyle("#ffffff");
 
-  const stave = new Vex.Flow.Stave(10, 40, 400);
-  stave.addClef("treble").setContext(context).draw();
+  const stave = new Vex.Flow.TabStave(10, 40, 600);
+stave.addClef("tab").setContext(context).draw();
 
-  const note = new Vex.Flow.StaveNote({ keys: ["c/4"], duration: "q" });
-  const voice = new Vex.Flow.Voice({ num_beats: 4, beat_value: 4 });
-  voice.addTickables([note]);
+// Suponha que você tenha um array de notas da tablatura já preparadas
+// Cada TabNote precisa de um array de objetos {str: , fret: }
+// Ex: uma nota no 3º traste da 5ª corda: { positions: [{str: 5, fret: 3}] }
+const tabNotes = [
+  new Vex.Flow.TabNote({ positions: [{str: 5, fret: 3}], duration: "q" }),
+  new Vex.Flow.TabNote({ positions: [{str: 4, fret: 0}], duration: "q" }),
+  // ... mais notas
+];
 
-  new Vex.Flow.Formatter().joinVoices([voice]).format([voice], 400);
-  voice.draw(context, stave);
+// Adicionar cifras acima
+const chordTexts = [
+  new Vex.Flow.TextNote({ text: "C", duration: "q" }).setLine(3), // Linha 3 geralmente fica acima da tab
+  new Vex.Flow.TextNote({ text: "G", duration: "q" }).setLine(3),
+  // ... mais cifras
+];
+
+const voice = new Vex.Flow.Voice({ num_beats: 4, beat_value: 4 });
+voice.addTickables([...tabNotes, ...chordTexts]); // Adiciona notas e textos juntos
+
+new Vex.Flow.Formatter().joinVoices([voice]).format([voice], 600);
 
   // Mostra o modal
   document.getElementById('sheetModal').style.display = "block";
