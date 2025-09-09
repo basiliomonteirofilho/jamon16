@@ -332,53 +332,7 @@ input[type="range"] {
   color: white;
   font-weight: bold;
 }
-
-/* Estilo para o modal da partitura */
-#sheetModal {
-  display: none;
-  position: fixed;
-  z-index: 1001;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  overflow: auto;
-  background-color: rgba(0,0,0,0.8);
-}
-#sheetContent {
-  background-color: #222;
-  margin: 5% auto;
-  padding: 20px;
-  border: 1px solid #5eead4;
-  border-radius: 10px;
-  width: 90%;
-  max-width: 800px;
-  text-align: center;
-}
-#sheetCanvas {
-  background: white;
-  margin: 20px auto;
-  display: block;
-  box-shadow: 0 0 10px rgba(0,0,0,0.5);
-}
-#closeSheet, #downloadSheet {
-  margin: 10px 5px;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 1em;
-}
-#closeSheet {
-  background-color: #f44336;
-  color: white;
-}
-#downloadSheet {
-  background-color: #5eead4;
-  color: #121212;
-}
   </style>
-  
 </head>
 <body>
   <header>
@@ -457,7 +411,7 @@ input[type="range"] {
     <div class="panel melody-panel">
       <h3>🎸 Melodia Adaptativa</h3>
       <div class="melody-toolbar">
-        <button id="btnExportPartitura">📄 Exportar Partitura</button>
+        <!-- Botão de exportar partitura REMOVIDO -->
         <button id="btnMelodyAdd" class="primary">➕ Adicionar Bloco</button>
         <button id="btnMelodyClear" class="danger">🧹 Limpar Blocos</button>
         <span style="font-size: 0.9em; color: #aaa;">Notas se estendem até próxima nota ou "x"</span>
@@ -468,18 +422,6 @@ input[type="range"] {
       <div id="melodyBlocks"></div>
     </div>
   </div>
-
-  <!-- Modal para exibir a partitura -->
-  <div id="sheetModal">
-    <div id="sheetContent">
-      <h2>Partitura Gerada</h2>
-      <canvas id="sheetCanvas" width="750" height="300"></canvas>
-      <br>
-      <button id="downloadSheet">💾 Baixar PNG</button>
-      <button id="closeSheet">✖ Fechar</button>
-    </div>
-  </div>
-
     <script>
    function transposeDown3Semitones(note) {
   const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
@@ -515,7 +457,7 @@ const ui = {
   melodyBlocks: document.getElementById('melodyBlocks'),
   btnMelodyAdd: document.getElementById('btnMelodyAdd'),
   btnMelodyClear: document.getElementById('btnMelodyClear'),
-  btnExportPartitura: document.getElementById('btnExportPartitura'), // Adicionado
+  // btnExportPartitura REMOVIDO
   melodyInstrument: document.getElementById('melodyInstrument'),
   numberPicker: document.getElementById('numberPicker'),
   numberGrid: document.getElementById('numberGrid')
@@ -1495,192 +1437,13 @@ function playMelodyNumber(time, number, instrumentType) {
   src.finished = false;
   src.onended = () => { src.finished = true; };
 }
-// ===============================
-// FUNÇÃO DE EXPORTAÇÃO DE PARTITURA
-// ===============================
-
-function exportarPartituraSimples() {
-  // Seleciona o canvas e obtém o contexto 2D
-  const canvas = document.getElementById('sheetCanvas');
-  const ctx = canvas.getContext('2d');
-
-  // Limpa o canvas
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // Estilo do canvas
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // --- Configurações da tablatura ---
-  const cordas = 6; // Número de cordas da guitarra
-  const margemEsquerda = 80; // Aumentado para dar espaço às cifras
-  const margemSuperior = 80; // Aumentado para dar espaço ao título e cifras
-  const espacoEntreCordas = 25; // Espaço vertical entre as linhas da tab
-  const larguraCasa = 45; // Largura de cada "casa" na tab
-
-  // Desenha as linhas da tablatura (as cordas) - DA MAIS AGUDA (TOP) PARA A MAIS GRAVE (BOTTOM)
-  ctx.strokeStyle = '#000000';
-  ctx.lineWidth = 1;
-  for (let i = 0; i < cordas; i++) {
-    const y = margemSuperior + i * espacoEntreCordas;
-    ctx.beginPath();
-    ctx.moveTo(margemEsquerda, y);
-    ctx.lineTo(canvas.width - 20, y); // Estende até quase o fim do canvas
-    ctx.stroke();
-  }
-
-  // Adiciona a clave de tablatura no início
-  ctx.font = 'bold 24px Arial';
-  ctx.fillStyle = '#000000';
-  ctx.fillText('TAB', 20, margemSuperior + (cordas - 1) * espacoEntreCordas - 5);
-
-  // --- Mapeamento Completo de Nota para Posição na Tab (Afinacao Padrão EADGBE) ---
-  // Nota: As posições são dadas como {str: número_da_corda, fret: traste}
-  // str=1 é a corda mais aguda (Mi agudo), str=6 é a mais grave (Mi grave)
-  const mapeamentoCompleto = {
-    'E':  [{str: 6, fret: 0}, {str: 1, fret: 0}],
-    'F':  [{str: 6, fret: 1}, {str: 1, fret: 1}],
-    'FS': [{str: 6, fret: 2}, {str: 1, fret: 2}],
-    'G':  [{str: 6, fret: 3}, {str: 1, fret: 3}],
-    'GS': [{str: 6, fret: 4}, {str: 1, fret: 4}],
-    'A':  [{str: 6, fret: 5}, {str: 5, fret: 0}, {str: 1, fret: 5}],
-    'AS': [{str: 6, fret: 6}, {str: 5, fret: 1}, {str: 1, fret: 6}],
-    'B':  [{str: 6, fret: 7}, {str: 5, fret: 2}, {str: 1, fret: 7}],
-    'C':  [{str: 6, fret: 8}, {str: 5, fret: 3}, {str: 1, fret: 8}],
-    'CS': [{str: 6, fret: 9}, {str: 5, fret: 4}, {str: 1, fret: 9}],
-    'D':  [{str: 6, fret: 10}, {str: 5, fret: 5}, {str: 4, fret: 0}, {str: 1, fret: 10}],
-    'DS': [{str: 6, fret: 11}, {str: 5, fret: 6}, {str: 4, fret: 1}, {str: 1, fret: 11}],
-    'E2': [{str: 6, fret: 12}, {str: 5, fret: 7}, {str: 4, fret: 2}, {str: 1, fret: 12}],
-    'F2': [{str: 6, fret: 13}, {str: 5, fret: 8}, {str: 4, fret: 3}, {str: 1, fret: 13}],
-    'FS2':[{str: 6, fret: 14}, {str: 5, fret: 9}, {str: 4, fret: 4}, {str: 1, fret: 14}],
-    'G2': [{str: 6, fret: 15}, {str: 5, fret: 10}, {str: 4, fret: 5}, {str: 1, fret: 15}],
-    'A2': [{str: 5, fret: 12}, {str: 4, fret: 7}, {str: 2, fret: 5}],
-    'B2': [{str: 5, fret: 14}, {str: 4, fret: 9}, {str: 2, fret: 7}],
-    'C2': [{str: 5, fret: 15}, {str: 4, fret: 10}, {str: 2, fret: 8}],
-    'D2': [{str: 4, fret: 12}, {str: 3, fret: 7}, {str: 2, fret: 10}],
-    'E3': [{str: 4, fret: 14}, {str: 3, fret: 9}, {str: 2, fret: 12}],
-    'F3': [{str: 4, fret: 15}, {str: 3, fret: 10}, {str: 2, fret: 13}],
-    'G3': [{str: 3, fret: 0}, {str: 2, fret: 15}],
-    'A3': [{str: 3, fret: 2}, {str: 2, fret: 17}],
-    'B3': [{str: 3, fret: 4}],
-    'C3': [{str: 3, fret: 5}],
-    'D3': [{str: 3, fret: 7}],
-    'E4': [{str: 3, fret: 9}],
-    'F4': [{str: 3, fret: 10}],
-    'G4': [{str: 3, fret: 12}],
-    'A4': [{str: 3, fret: 14}],
-    'B4': [{str: 3, fret: 16}],
-    'C4': [{str: 2, fret: 1}],
-    'D4': [{str: 2, fret: 3}],
-    'E5': [{str: 2, fret: 5}],
-    'F5': [{str: 2, fret: 6}],
-    'G5': [{str: 2, fret: 8}],
-    'A5': [{str: 2, fret: 10}],
-    'B5': [{str: 2, fret: 12}],
-    'C5': [{str: 2, fret: 13}],
-    'D5': [{str: 2, fret: 15}],
-    'E6': [{str: 1, fret: 0}],
-    'F6': [{str: 1, fret: 1}],
-    'G6': [{str: 1, fret: 3}],
-    'A6': [{str: 1, fret: 5}],
-    'B6': [{str: 1, fret: 7}],
-    'C6': [{str: 1, fret: 8}],
-    'D6': [{str: 1, fret: 10}],
-    'E7': [{str: 1, fret: 12}],
-    'F7': [{str: 1, fret: 13}],
-    'G7': [{str: 1, fret: 15}]
-  };
-
-  // --- Usa os Dados REAIS da Aplicação ---
-  if (!state.melodyPlan || state.melodyPlan.length === 0) {
-    ctx.font = '20px Arial';
-    ctx.fillStyle = '#ff0000';
-    ctx.fillText('Nenhuma melodia inserida!', margemEsquerda, margemSuperior + 50);
-    document.getElementById('sheetModal').style.display = "block";
-    return;
-  }
-
-  // Cria um array com os dados reais para desenhar
-  const melodiaReal = [];
-  const stepsPerBar = meterToBeats(state.meter) * 4;
-
-  state.melodyPlan.forEach((evento, index) => {
-    if (evento && evento.type === 'start') {
-      const numero = evento.adaptedNumber;
-      const notaBase = NUM_TO_NAME[numero];
-      const chordIndex = Math.floor(index / stepsPerBar) % state.chordPlan.length;
-      const acorde = state.chordPlan[chordIndex]?.displayed || 'N/A';
-      melodiaReal.push({
-        numero: numero,
-        nota: notaBase,
-        acorde: acorde
-      });
-    } else if (evento && evento.type === 'mute') {
-      const chordIndex = Math.floor(index / stepsPerBar) % state.chordPlan.length;
-      const acorde = state.chordPlan[chordIndex]?.displayed || 'N/A';
-      melodiaReal.push({
-        numero: null,
-        nota: 'x',
-        acorde: acorde
-      });
-    }
-  });
-
-  // --- Desenha as Notas e Cifras ---
-  ctx.font = '18px Arial';
-  ctx.textAlign = 'center';
-
-  melodiaReal.forEach((item, index) => {
-    const x = margemEsquerda + (index * larguraCasa) + (larguraCasa / 2);
-
-    // --- Desenha a cifra do acorde acima da tab ---
-    if (index === 0 || (index > 0 && item.acorde !== melodiaReal[index - 1].acorde)) {
-      ctx.fillStyle = '#000000';
-      ctx.fillText(item.acorde, x, margemSuperior - 25);
-    }
-
-    // --- Desenha a nota (ou pausa) na tab ---
-    if (item.nota === 'x') {
-      ctx.fillStyle = '#888888';
-      ctx.fillText('x', x, margemSuperior + (cordas - 1) * espacoEntreCordas + 15);
-    } else {
-      const posicoes = mapeamentoCompleto[item.nota] || [];
-      if (posicoes.length > 0) {
-        // Escolhe a posição na corda mais aguda (número de corda MENOR) para uma leitura mais natural
-        const pos = posicoes.reduce((prev, curr) => (curr.str < prev.str ? curr : prev), posicoes[0]);
-        // ✅ CORREÇÃO AQUI: A corda 1 (mais aguda) é a linha de cima (y menor)
-        const y = margemSuperior + (pos.str - 1) * espacoEntreCordas;
-
-        ctx.fillStyle = '#000000';
-        ctx.fillText(pos.fret.toString(), x, y + 8);
-      } else {
-        ctx.fillStyle = '#ff0000';
-        ctx.fillText('?', x, margemSuperior + (cordas - 1) * espacoEntreCordas + 15);
-      }
-    }
-  });
-
-  // Mostra o modal
-  document.getElementById('sheetModal').style.display = "block";
+// Inicializa o picker de números se for mobile
+if (isMobileDevice()) {
+  initializeNumberPicker();
 }
-// Vincula a nova função de exportação ao botão
-ui.btnExportPartitura.addEventListener('click', exportarPartituraSimples);
-console.log('Botão de exportação de tablatura simples ativado.');
-
-// Vincula os botões do modal da partitura
-document.getElementById('closeSheet').addEventListener('click', function() {
-  document.getElementById('sheetModal').style.display = "none";
-});
-
-document.getElementById('downloadSheet').addEventListener('click', function() {
-  const canvas = document.getElementById('sheetCanvas');
-  const link = document.createElement('a');
-  link.download = 'tablatura_jam_on.png';
-  link.href = canvas.toDataURL();
-  link.click();
+window.addEventListener('load', function() {
+  // Código de inicialização, se necessário
 });
   </script>
-  
 </body>
 </html>
-
