@@ -1689,51 +1689,7 @@ async function webmToMP3(webmBlob) {
   });
 }
 
-// Modificação da função onPlay para iniciar a gravação
-async function onPlay() {
-  if (!audio.ctx) await initAudio();
-  if (state.running && !state.paused) return;
-  state.bpm = Number(ui.bpm.value) || 100;
-  state.sixteenthDur = 60 / state.bpm / 4;
-  try {
-    await buildBassAndChordPlan();
-  } catch (e) {
-    console.error('Erro ao gerar plano:', e);
-  }
-  try {
-    buildMelodyPlanFromBlocks();
-    await ensureMelodySamplesNeeded();
-  } catch (e) {
-    console.error('Erro na melodia:', e);
-  }
-  if (state.paused) {
-    state.paused = false;
-    return;
-  }
-  state.running = false;
-  state.stepIndex = 0;
-  state.nextNoteTime = audio.ctx.currentTime + 0.05;
-  const beats = meterToBeats(state.meter);
-  const quarterDur = 60 / state.bpm;
-  const startTime = audio.ctx.currentTime + 0.05;
-  for (let i = 0; i < beats; i++) {
-    const t = startTime + i * quarterDur;
-    const isStrong = (i % beats) === 0;
-    playClickAtTime(t, isStrong);
-  }
-  const schedulerStartTime = startTime + beats * quarterDur;
-  setTimeout(() => {
-    state.running = true;
-    state.nextNoteTime = schedulerStartTime;
-    startScheduler();
-    // Inicia a gravação se estiver no modo de salvamento
-    if (isRecording) {
-      startRecording();
-    }
-  }, Math.max(0, (schedulerStartTime - audio.ctx.currentTime) * 1000 + 10));
-}
 
-// Substituição do evento do botão "Salvar como MP3"
 // Evento atualizado para o botão "Salvar como MP3" (4 MINUTOS)
 ui.btnSaveWAV.addEventListener('click', async () => {
   if (!audio.ctx) await initAudio();
