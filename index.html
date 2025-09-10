@@ -1740,43 +1740,127 @@ ui.btnSaveWAV.addEventListener('click', async () => {
 
   // Cria destino de gravação
   const dest = audio.ctx.createMediaStreamDestination();
+  // Conecta o destino ao mix principal para capturar todo o áudio
   audio.master.connect(dest);
 
-  mediaRecorder = new MediaRecorder(dest.stream, { mimeType: 'audio/wav' });
-  recordedChunks = [];
+  // Usa um formato suportado
+  const mimeType = 'audio/webm;codecs=opus';
+  mediaRecorder = new MediaRecorder(dest.stream, { mimeType });
 
+  recordedChunks = []; // <-- CORREÇÃO: Removeu 'let', apenas zera o array global.
   mediaRecorder.ondataavailable = e => {
     if (e.data.size > 0) recordedChunks.push(e.data);
   };
 
-  mediaRecorder.onstop = () => {
-    const blob = new Blob(recordedChunks, { type: 'audio/wav' });
-    const url = URL.createObjectURL(blob);
+  mediaRecorder.onstop = async () => {
+    const webmBlob = new Blob(recordedChunks, { type: mimeType });
 
-    const a = document.createElement('a');
-    a.style.display = 'none';
-    a.href = url;
-    a.download = 'jam-on.wav';
-    document.body.appendChild(a);
-    a.click();
+    try {
+      // Converte o Blob WebM para um ArrayBuffer
+      const arrayBuffer = await webmBlob.arrayBuffer();
+      // Decodifica o áudio
+      const audioBuffer = await audio.ctx.decodeAudioData(arrayBuffer);
 
-    setTimeout(() => {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 100);
+      // Converte o AudioBuffer para WAV
+      const wavBlob = audioBufferToWav(audioBuffer);
+
+      // Faz o download
+      const url = URL.createObjectURL(wavBlob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = 'jam-on.wav';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+
+      console.log("✅ Arquivo WAV salvo com sucesso.");
+    } catch (err) {
+      console.error('Erro ao processar o áudio:', err);
+      alert('Erro ao salvar o arquivo WAV: ' + err.message);
+    }
+  };
+
+  mediaRecorder.onerror = (e) => {
+    console.error('Erro no MediaRecorder:', e);
+    alert('Erro ao iniciar a gravação.');
   };
 
   mediaRecorder.start();
-  console.log("🎙️ Gravação iniciada em WAV...");
+  console.log("🎙️ Gravação para WAV iniciada...");
 
-  // Para gravar tempo fixo (ex: 2 minutos), pare depois:
+  // Define a duração da gravação (por exemplo, 2 minutos)
   setTimeout(() => {
     if (mediaRecorder && mediaRecorder.state === "recording") {
       mediaRecorder.stop();
-      console.log("⏹ Gravação finalizada.");
+      console.log("⏹️ Gravação finalizada.");
     }
-  }, 2 * 60 * 1000); // 2 min
+  }, 2 * 60 * 1000); // 2 minutos
 });
+
+// Função para converter AudioBuffer para Blob WAV
+function audioBufferToWav(buffer) {
+  const numOfChan = buffer.numberOfChannels;
+  const length = buffer.length * numOfChan * 2 + 44;
+  const arrayBuffer = new ArrayBuffer(length);
+  const view = new DataView(arrayBuffer);
+  const channels = [];
+  let i, sample, offset = 0;
+
+  // String 'RIFF'
+  writeString(view, 0, 'RIFF');
+  // comprimento do arquivo - 8
+  view.setUint32(4, length - 8, true);
+  // String 'WAVE'
+  writeString(view, 8, 'WAVE');
+  // String 'fmt '
+  writeString(view, 12, 'fmt ');
+  // comprimento do bloco fmt
+  view.setUint32(16, 16, true);
+  // formato de áudio (1 para PCM)
+  view.setUint16(20, 1, true);
+  // número de canais
+  view.setUint16(22, numOfChan, true);
+  // taxa de amostragem
+  view.setUint32(24, buffer.sampleRate, true);
+  // byteRate (taxa de amostragem * blocos por amostra * canais)
+  view.setUint32(28, buffer.sampleRate * 2 * numOfChan, true);
+  // blocos por amostra (bits por amostra / 8)
+  view.setUint16(32, 2 * numOfChan, true);
+  // bits por amostra
+  view.setUint16(34, 16, true);
+  // String 'data'
+  writeString(view, 36, 'data');
+  // comprimento dos dados
+  view.setUint32(40, length - 44, true);
+
+  // coleta os dados dos canais
+  for (i = 0; i < buffer.numberOfChannels; i++) {
+    channels.push(buffer.getChannelData(i));
+  }
+
+  offset = 44;
+  // escreve os dados PCM
+  for (i = 0; i < buffer.length; i++) {
+    for (let channel = 0; channel < numOfChan; channel++) {
+      sample = Math.max(-1, Math.min(1, channels[channel][i]));
+      sample = (sample < 0 ? sample * 0x8000 : sample * 0x7FFF);
+      view.setInt16(offset, sample, true);
+      offset += 2;
+    }
+  }
+
+  return new Blob([view], { type: 'audio/wav' });
+}
+
+function writeString(view, offset, string) {
+  for (let i = 0; i < string.length; i++) {
+    view.setUint8(offset + i, string.charCodeAt(i));
+  }
+}
   </script>
 </body>
 </html>
