@@ -375,7 +375,6 @@ input[type="range"] {
           <option>7/4</option>
         </select>
       </div>
-      
       <div class="row">
         <label>Melodia</label>
         <select id="melodyInstrument">
@@ -642,7 +641,6 @@ function updateVolume() {
   if (audio.melodyGain) {
     audio.melodyGain.gain.value = parseFloat(ui.volMelody.value);
   }
-
     // Atualiza labels
   ui.volBassLabel.textContent = Math.round(ui.volBass.value * 100) + '%';
   ui.volDrumsLabel.textContent = Math.round(ui.volDrums.value * 100) + '%';
@@ -675,10 +673,8 @@ async function initAudio() {
     audio.bassGain.connect(audio.master);
     audio.cleanGain.connect(audio.master);
     audio.distGain.connect(audio.master);
-    
     if (!state.buffers.melody) state.buffers.melody = {};
     await ensureBasicSamples();
-        
     // Conecta todos os sliders à função de atualização
 ui.volBass.addEventListener('input', updateVolume);
 ui.volDrums.addEventListener('input', updateVolume);
@@ -983,7 +979,6 @@ function scheduleStep() {
   const beats = meterToBeats(state.meter);
   const sixteenthsPerBar = beats * 4;
   const isNewBar = (stepIdx % sixteenthsPerBar) === 0;
-
   // 🎵 DRUMS (mantido igual)
   const drumToken = state.drumSeq[stepIdx % state.drumSeq.length];
   if (drumToken && !mute.drums) {
@@ -1011,7 +1006,6 @@ function scheduleStep() {
       src.start(time);
     }
   }
-
   // 🎸 BASS (mantido igual)
   const bassCommand = state.bassPlan[stepIdx % state.bassPlan.length];
   if (!mute.bass && state.lastBassSource) {
@@ -1032,7 +1026,6 @@ function scheduleStep() {
       state.lastBassSource = src;
     }
   }
-
   // 🎸 GUITAR (mantido igual)
   if (state.currentGroove && state.currentGroove.guitarRhythm) {
     if (!state.guitarPlan) {
@@ -1097,10 +1090,8 @@ function scheduleStep() {
     }
   }
 }
-
   // 🎼 MELODY — LÓGICA APRIMORADA
   const melodyEvent = state.melodyPlan[stepIdx % state.melodyPlan.length];
-
   if (melodyEvent && melodyEvent.type === 'start') {
     // Nova nota começa
     if (melodyEvent.adaptedNumber === null) {
@@ -1136,9 +1127,7 @@ function scheduleStep() {
       }
     }
   }
-
   state.stepIndex++;
-
   // ⏩ Troca de compasso (mantido, mas removemos a readaptação redundante)
   if (isNewBar) {
     state.currentChordIndex = (state.currentChordIndex + 1) % state.chordPlan.length;
@@ -1146,7 +1135,6 @@ function scheduleStep() {
     // 👉 A readaptação agora é feita continuamente em `scheduleStep`, não apenas no início do compasso
     state.guitarPlan = null;
   }
-
   state.nextNoteTime += state.sixteenthDur;
 }
 // --- CORREÇÃO DA FUNÇÃO playChord PARA O COMPORTAMENTO ANTIGO ---
@@ -1414,7 +1402,6 @@ function handleNumberSelection(e) {
 function buildMelodyPlanFromBlocks() {
   const plan = [];
   const stepsPerBar = meterToBeats(state.meter) * 4;
-
   for (const block of state.melodyBlocks) {
     const inputs = block.querySelectorAll('input');
     inputs.forEach((input, step) => {
@@ -1452,7 +1439,6 @@ const MELODY_INSTRUMENTS = {
   violao_nylon: "assets/ViolaoNylonMelodia",
   cordas: "assets/Cordas"
 };
-
 // --- ATUALIZADO: Garante que os samples de melodia necessários estejam carregados ---
 async function ensureMelodySamplesNeeded() {
   const instrument = ui.melodyInstrument.value;
@@ -1470,7 +1456,6 @@ async function ensureMelodySamplesNeeded() {
   }
   await Promise.all(promises);
 }
-
 // --- ATUALIZADO: Toca uma nota de melodia ---
 function playMelodyNumber(time, number, instrumentType) {
   const folder = MELODY_INSTRUMENTS[instrumentType];
@@ -1478,11 +1463,9 @@ function playMelodyNumber(time, number, instrumentType) {
     console.warn(`[Melodia] Instrumento desconhecido: ${instrumentType}`);
     return;
   }
-  
   // ✅ CORREÇÃO: Usa o nome da nota real (ex: "1E", "2F", "3FS") em vez de apenas o número
   const noteName = NUM_TO_NAME[number]; // Ex: 'E', 'F', 'FS', etc.
   const url = `${folder}/${number}${noteName}.mp3`; // ✅ Agora o nome do arquivo será "1E.mp3", "2F.mp3", etc.
-
   const buf = state.buffers.melody[url];
   if (!buf) {
     console.warn(`[Melodia] Arquivo não carregado: ${url}`);
@@ -1517,7 +1500,6 @@ function playMelodyNumber(time, number, instrumentType) {
 if (isMobileDevice()) {
   initializeNumberPicker();
 }
-// --- NOVA FUNÇÃO: Grava e salva a performance como MP3 ---
 // --- NOVA FUNÇÃO: Para a nota de melodia atual ---
 function stopMelodyAt(time) {
   if (state.lastMelodySource && !state.lastMelodySource.finished) {
@@ -1530,326 +1512,158 @@ function stopMelodyAt(time) {
     state.lastMelodyGain.gain.linearRampToValueAtTime(0.0, time + 0.05);
   }
 }
+// --- NOVAS VARIÁVEIS E FUNÇÕES PARA GRAVAÇÃO ---
+let isRecording = false;
+let recordedChunks = [];
+let mediaRecorder = null;
 
-async function savePerformanceAsMP3() {
-  if (!state.running) {
-    alert("Inicie a reprodução primeiro!");
+// Função para iniciar a gravação da mixagem principal
+async function startRecording() {
+  if (!audio.ctx || !audio.mix) {
+    console.error('Áudio não inicializado.');
     return;
   }
 
-  const totalDuration = state.bassPlan.length * state.sixteenthDur; // Duração total em segundos
-  const sampleRate = audio.ctx.sampleRate;
-  const numChannels = 2; // Estéreo
-  const offlineCtx = new OfflineAudioContext(numChannels, totalDuration * sampleRate, sampleRate);
+  // Cria um stream a partir do nó de mixagem
+  const streamDestination = audio.ctx.createMediaStreamDestination();
+  audio.mix.connect(streamDestination);
 
-  // Reconecta todos os nós de ganho ao contexto offline
-  const masterNode = offlineCtx.createGain();
-  const drumNode = offlineCtx.createGain();
-  const bassNode = offlineCtx.createGain();
-  const cleanNode = offlineCtx.createGain();
-  const distNode = offlineCtx.createGain();
-  const melodyNode = offlineCtx.createGain();
+  const stream = streamDestination.stream;
 
-  drumNode.connect(masterNode);
-  bassNode.connect(masterNode);
-  cleanNode.connect(masterNode);
-  distNode.connect(masterNode);
-  melodyNode.connect(masterNode);
-  masterNode.connect(offlineCtx.destination);
+  // Configura o MediaRecorder
+  mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' }); // ou 'audio/mp4' se suportado
+  recordedChunks = [];
 
-  // Define os ganhos com os valores atuais da UI
-  drumNode.gain.value = parseFloat(ui.volDrums.value);
-  bassNode.gain.value = parseFloat(ui.volBass.value);
-  cleanNode.gain.value = parseFloat(ui.volClean.value);
-  distNode.gain.value = parseFloat(ui.volDist.value);
-  melodyNode.gain.value = parseFloat(ui.volMelody.value);
-
-  // Função auxiliar para agendar eventos no contexto offline
-  function scheduleEventInOfflineContext(callback, time) {
-    const offlineTime = time * (offlineCtx.sampleRate / audio.ctx.sampleRate);
-    callback(offlineTime, drumNode, bassNode, cleanNode, distNode, melodyNode);
-  }
-
-  // Recria o plano de eventos para o contexto offline
-  let stepTime = 0;
-  for (let stepIdx = 0; stepIdx < state.bassPlan.length; stepIdx++) {
-    const time = stepTime;
-
-    // Agenda bateria
-    const drumToken = state.drumSeq[stepIdx % state.drumSeq.length];
-    if (drumToken && !mute.drums) {
-      let drumKey = null;
-      if (['bu', 'bumbo'].includes(drumToken)) drumKey = 'bu';
-      else if (['ca', 'caixa'].includes(drumToken)) drumKey = 'ca';
-      else if (['ch', 'chimbal'].includes(drumToken)) drumKey = 'ch';
-      else if (['ba', 'bumbo-ataque'].includes(drumToken)) drumKey = 'ba';
-      else if (['cch', 'caixa-chimbal'].includes(drumToken)) drumKey = 'cch';
-      else if (['bco', 'bumbo-conducao'].includes(drumToken)) drumKey = 'bco';
-      else if (['co', 'conducao'].includes(drumToken)) drumKey = 'co';
-      else if (['cco', 'caixa-conducao'].includes(drumToken)) drumKey = 'cco';
-      else if (['to1', 'tom-1'].includes(drumToken)) drumKey = 'to1';
-      else if (['to2', 'tom-2'].includes(drumToken)) drumKey = 'to2';
-      else if (['su', 'surdo'].includes(drumToken)) drumKey = 'su';
-      else if (['bch', 'bumbo-chimbal'].includes(drumToken)) drumKey = 'bch';
-
-      if (drumKey && state.buffers.drums[drumKey]) {
-        const buf = offlineCtx.createBuffer(
-          state.buffers.drums[drumKey].numberOfChannels,
-          state.buffers.drums[drumKey].length,
-          state.buffers.drums[drumKey].sampleRate
-        );
-        buf.copyToChannel(state.buffers.drums[drumKey].getChannelData(0), 0);
-        if (buf.numberOfChannels > 1) {
-          buf.copyToChannel(state.buffers.drums[drumKey].getChannelData(1), 1);
-        }
-
-        scheduleEventInOfflineContext((t, _, __, ___, ____, _____) => {
-          const src = offlineCtx.createBufferSource();
-          const g = offlineCtx.createGain();
-          src.buffer = buf;
-          src.connect(g);
-          g.connect(drumNode);
-          g.gain.setValueAtTime(0.0, t);
-          g.gain.linearRampToValueAtTime(1.0, t + 0.005);
-          src.start(t);
-        }, time);
-      }
+  mediaRecorder.ondataavailable = function(event) {
+    if (event.data.size > 0) {
+      recordedChunks.push(event.data);
     }
+  };
 
-    // Agenda baixo
-    const bassCommand = state.bassPlan[stepIdx % state.bassPlan.length];
-    if (!mute.bass && bassCommand !== '-' && bassCommand !== 'x') {
-      const bufData = state.buffers.bass[bassCommand];
-      if (bufData) {
-        const buf = offlineCtx.createBuffer(
-          bufData.numberOfChannels,
-          bufData.length,
-          bufData.sampleRate
-        );
-        buf.copyToChannel(bufData.getChannelData(0), 0);
-        if (bufData.numberOfChannels > 1) {
-          buf.copyToChannel(bufData.getChannelData(1), 1);
-        }
-
-        scheduleEventInOfflineContext((t, _, bassGain, __, ___, ____) => {
-          const src = offlineCtx.createBufferSource();
-          const g = offlineCtx.createGain();
-          src.buffer = buf;
-          src.connect(g);
-          g.connect(bassGain);
-          g.gain.setValueAtTime(0.0, t);
-          g.gain.linearRampToValueAtTime(1.0, t + 0.01);
-          src.start(t);
-        }, time);
-      }
-    }
-
-    // Agenda guitarra (limpa e distorcida)
-    if (stepIdx % (meterToBeats(state.meter) * 4) === 0) {
-      const chord = state.chordPlan[Math.floor(stepIdx / (meterToBeats(state.meter) * 4)) % state.chordPlan.length];
-      if (chord) {
-        if (!mute.clean) {
-          const fullChordName = chord.note + chord.type;
-          const url = `guitarraLimpa/${chord.note}/${fullChordName}.mp3`;
-          const bufData = state.buffers.guitar?.[url];
-          if (bufData) {
-            const buf = offlineCtx.createBuffer(
-              bufData.numberOfChannels,
-              bufData.length,
-              bufData.sampleRate
-            );
-            buf.copyToChannel(bufData.getChannelData(0), 0);
-            if (bufData.numberOfChannels > 1) {
-              buf.copyToChannel(bufData.getChannelData(1), 1);
-            }
-
-            scheduleEventInOfflineContext((t, _, __, cleanGain, ___, ____) => {
-              const src = offlineCtx.createBufferSource();
-              const g = offlineCtx.createGain();
-              src.buffer = buf;
-              src.connect(g);
-              g.connect(cleanGain);
-              g.gain.setValueAtTime(0.0, t);
-              g.gain.linearRampToValueAtTime(1.0, t + 0.01);
-              src.start(t);
-            }, time);
-          }
-        }
-
-        if (!mute.dist) {
-          const fullChordName = chord.note + chord.type;
-          const url = `guitarraDistorcao/${chord.note}/${fullChordName}.mp3`;
-          const bufData = state.buffers.guitar?.[url];
-          if (bufData) {
-            const buf = offlineCtx.createBuffer(
-              bufData.numberOfChannels,
-              bufData.length,
-              bufData.sampleRate
-            );
-            buf.copyToChannel(bufData.getChannelData(0), 0);
-            if (bufData.numberOfChannels > 1) {
-              buf.copyToChannel(bufData.getChannelData(1), 1);
-            }
-
-            scheduleEventInOfflineContext((t, _, __, ___, distGain, ____) => {
-              const src = offlineCtx.createBufferSource();
-              const g = offlineCtx.createGain();
-              src.buffer = buf;
-              src.connect(g);
-              g.connect(distGain);
-              g.gain.setValueAtTime(0.0, t);
-              g.gain.linearRampToValueAtTime(1.0, t + 0.01);
-              src.start(t);
-            }, time);
-          }
-        }
-      }
-    }
-
-    // Agenda melodia
-    const melodyEvent = state.melodyPlan[stepIdx % state.melodyPlan.length];
-    if (melodyEvent && melodyEvent.type === 'start') {
-      const folder = MELODY_INSTRUMENTS[melodyEvent.instrument];
-      const noteName = NUM_TO_NAME[melodyEvent.adaptedNumber];
-      const url = `${folder}/${melodyEvent.adaptedNumber}${noteName}.mp3`;
-      const bufData = state.buffers.melody[url];
-      if (bufData && !mute.dist) { // Considerando mute.dist para melodia por simplicidade
-        const buf = offlineCtx.createBuffer(
-          bufData.numberOfChannels,
-          bufData.length,
-          bufData.sampleRate
-        );
-        buf.copyToChannel(bufData.getChannelData(0), 0);
-        if (bufData.numberOfChannels > 1) {
-          buf.copyToChannel(bufData.getChannelData(1), 1);
-        }
-
-        scheduleEventInOfflineContext((t, _, __, ___, ____, melodyGain) => {
-          const src = offlineCtx.createBufferSource();
-          const g = offlineCtx.createGain();
-          src.buffer = buf;
-          src.connect(g);
-          g.connect(melodyGain);
-          g.gain.setValueAtTime(0.0, t);
-          g.gain.linearRampToValueAtTime(1.0, t + 0.01);
-          const maxDur = state.sixteenthDur * 16;
-          src.start(t);
-          src.stop(t + Math.min(buf.duration, maxDur));
-        }, time);
-      }
-    }
-
-    stepTime += state.sixteenthDur;
-  }
-
-  try {
-    const renderedBuffer = await offlineCtx.startRendering();
-    const wavBlob = bufferToWave(renderedBuffer, renderedBuffer.length);
-    const mp3Blob = await encodeWAVToMP3(wavBlob);
+  mediaRecorder.onstop = async function() {
+    const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+    // Converte WebM para MP3
+    const mp3Blob = await webmToMP3(blob);
     downloadBlob(mp3Blob, 'jam_on_performance.mp3');
-  } catch (err) {
-    console.error('Erro ao renderizar:', err);
-    alert('Erro ao salvar o arquivo MP3.');
-  }
+  };
+
+  mediaRecorder.start();
+  console.log('Gravação iniciada.');
 }
 
-// Função auxiliar para converter AudioBuffer para Blob WAV
-function bufferToWave(abuffer, len) {
-  const numOfChan = abuffer.numberOfChannels;
-  const length = len * numOfChan * 2 + 44;
-  const buffer = new ArrayBuffer(length);
-  const view = new DataView(buffer);
-  const channels = [];
-  let i, sample, offset = 0;
-
-  // Escreve o cabeçalho RIFF
-  writeString(view, 0, 'RIFF');
-  view.setUint32(4, length - 8, true);
-  writeString(view, 8, 'WAVE');
-  writeString(view, 12, 'fmt ');
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true);
-  view.setUint16(22, numOfChan, true);
-  view.setUint32(24, abuffer.sampleRate, true);
-  view.setUint32(28, abuffer.sampleRate * 2 * numOfChan, true);
-  view.setUint16(32, numOfChan * 2, true);
-  view.setUint16(34, 16, true);
-  writeString(view, 36, 'data');
-  view.setUint32(40, length - 44, true);
-
-  // Interleaves os canais
-  for (i = 0; i < abuffer.numberOfChannels; i++) {
-    channels.push(abuffer.getChannelData(i));
-  }
-
-  offset = 44;
-  for (i = 0; i < len; i++) {
-    for (let ch = 0; ch < numOfChan; ch++) {
-      sample = Math.max(-1, Math.min(1, channels[ch][i]));
-      sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767) | 0;
-      view.setInt16(offset, sample, true);
-      offset += 2;
-    }
-  }
-
-  return new Blob([buffer], { type: 'audio/wav' });
-}
-
-function writeString(view, offset, string) {
-  for (let i = 0; i < string.length; i++) {
-    view.setUint8(offset + i, string.charCodeAt(i));
-  }
-}
-
-// Função para baixar o Blob
-function downloadBlob(blob, filename) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-// Função para converter WAV para MP3 (requer biblioteca externa)
-async function encodeWAVToMP3(wavBlob) {
+// Função para converter Blob WebM para MP3
+async function webmToMP3(webmBlob) {
   return new Promise((resolve, reject) => {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const reader = new FileReader();
+
     reader.onload = function() {
-      const arrayBuffer = reader.result;
-      const wavData = new Int16Array(arrayBuffer, 44); // Pula o cabeçalho WAV de 44 bytes
-      const wavHeader = parseWavHeader(new DataView(arrayBuffer, 0, 44));
+      audioCtx.decodeAudioData(reader.result)
+        .then(buffer => {
+          const mp3encoder = new lamejs.Mp3Encoder(buffer.numberOfChannels, buffer.sampleRate, 128);
+          const mp3Data = [];
+          const sampleBlockSize = 1152;
 
-      const mp3encoder = new lamejs.Mp3Encoder(wavHeader.channels, wavHeader.sampleRate, 128); // 128 kbps
-      const mp3Data = [];
-      const sampleBlockSize = 1152; // Tamanho do bloco para o encoder
+          // Processa cada canal
+          for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+            const channelData = buffer.getChannelData(channel);
+            for (let i = 0; i < channelData.length; i += sampleBlockSize) {
+              const sampleChunk = channelData.subarray(i, i + sampleBlockSize);
+              const mp3buf = mp3encoder.encodeBuffer(sampleChunk);
+              if (mp3buf.length > 0) {
+                mp3Data.push(mp3buf);
+              }
+            }
+          }
 
-      for (let i = 0; i < wavData.length; i += sampleBlockSize) {
-        const sampleChunk = wavData.subarray(i, i + sampleBlockSize);
-        const mp3buf = mp3encoder.encodeBuffer(sampleChunk);
-        if (mp3buf.length > 0) {
-          mp3Data.push(mp3buf);
-        }
-      }
-      const mp3buf = mp3encoder.flush();
-      if (mp3buf.length > 0) {
-        mp3Data.push(mp3buf);
-      }
+          const mp3buf = mp3encoder.flush();
+          if (mp3buf.length > 0) {
+            mp3Data.push(mp3buf);
+          }
 
-      const mp3Blob = new Blob(mp3Data, { type: 'audio/mp3' });
-      resolve(mp3Blob);
+          const mp3Blob = new Blob(mp3Data, { type: 'audio/mp3' });
+          resolve(mp3Blob);
+        })
+        .catch(reject);
     };
+
     reader.onerror = reject;
-    reader.readAsArrayBuffer(wavBlob);
+    reader.readAsArrayBuffer(webmBlob);
   });
 }
 
-function parseWavHeader(dataView) {
-  return {
-    channels: dataView.getUint16(22, true),
-    sampleRate: dataView.getUint32(24, true)
-  };
+// Modificação da função onPlay para iniciar a gravação
+async function onPlay() {
+  if (!audio.ctx) await initAudio();
+  if (state.running && !state.paused) return;
+  state.bpm = Number(ui.bpm.value) || 100;
+  state.sixteenthDur = 60 / state.bpm / 4;
+  try {
+    await buildBassAndChordPlan();
+  } catch (e) {
+    console.error('Erro ao gerar plano:', e);
+  }
+  try {
+    buildMelodyPlanFromBlocks();
+    await ensureMelodySamplesNeeded();
+  } catch (e) {
+    console.error('Erro na melodia:', e);
+  }
+  if (state.paused) {
+    state.paused = false;
+    return;
+  }
+  state.running = false;
+  state.stepIndex = 0;
+  state.nextNoteTime = audio.ctx.currentTime + 0.05;
+  const beats = meterToBeats(state.meter);
+  const quarterDur = 60 / state.bpm;
+  const startTime = audio.ctx.currentTime + 0.05;
+  for (let i = 0; i < beats; i++) {
+    const t = startTime + i * quarterDur;
+    const isStrong = (i % beats) === 0;
+    playClickAtTime(t, isStrong);
+  }
+  const schedulerStartTime = startTime + beats * quarterDur;
+  setTimeout(() => {
+    state.running = true;
+    state.nextNoteTime = schedulerStartTime;
+    startScheduler();
+    // Inicia a gravação se estiver no modo de salvamento
+    if (isRecording) {
+      startRecording();
+    }
+  }, Math.max(0, (schedulerStartTime - audio.ctx.currentTime) * 1000 + 10));
 }
+
+// Substituição do evento do botão "Salvar como MP3"
+ui.btnSaveMP3.addEventListener('click', async () => {
+  if (state.running) {
+    alert("Pare a reprodução atual antes de salvar.");
+    return;
+  }
+
+  // Ativa o modo de gravação
+  isRecording = true;
+
+  // Inicia a reprodução, que agora também iniciará a gravação
+  await onPlay();
+
+  // Adiciona um listener para parar a gravação quando o usuário clicar em "Stop"
+  const originalStopHandler = onStop;
+  ui.stop.addEventListener('click', function stopAndRecord() {
+    originalStopHandler();
+    if (isRecording && mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
+    }
+    isRecording = false;
+    // Remove este handler específico após uso
+    ui.stop.removeEventListener('click', stopAndRecord);
+    // Re-adiciona o handler original
+    ui.stop.addEventListener('click', originalStopHandler);
+  }, { once: true });
+});
+
 window.addEventListener('load', function() {
   // Código de inicialização, se necessário
 });
