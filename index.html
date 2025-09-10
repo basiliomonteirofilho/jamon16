@@ -1600,6 +1600,7 @@ async function startRecording() {
 
 // Função para converter Blob WebM para MP3 (VERSÃO CORRIGIDA)
 // Função para converter Blob WebM para MP3 (VERSÃO FINAL E ROBUSTA)
+// Função para converter Blob WebM para MP3 (VERSÃO FINAL E ROBUSTA)
 async function webmToMP3(webmBlob) {
   return new Promise((resolve, reject) => {
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1608,44 +1609,43 @@ async function webmToMP3(webmBlob) {
     reader.onload = function() {
       audioCtx.decodeAudioData(reader.result)
         .then(buffer => {
-          // --- VERIFICAÇÃO 1: Buffer válido? ---
-          if (!buffer || buffer.length === 0 || buffer.numberOfChannels === 0) {
-            reject(new Error('Áudio decodificado está vazio ou inválido.'));
+          // --- VERIFICAÇÃO 1: Buffer existe e tem canais? ---
+          if (!buffer || buffer.numberOfChannels === 0 || buffer.length === 0) {
+            reject(new Error('Áudio decodificado é inválido ou vazio.'));
             return;
           }
 
-          // --- VERIFICAÇÃO 2: Há dados válidos nos canais? ---
-          let hasValidData = false;
+          // --- VERIFICAÇÃO 2: Os dados dos canais são válidos? ---
+          let hasValidAudio = false;
           for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
             const channelData = buffer.getChannelData(channel);
-            // --- VERIFICAÇÃO CRÍTICA: channelData é um Float32Array válido? ---
-            if (channelData && channelData instanceof Float32Array && channelData.length > 0) {
-              // Verifica se há pelo menos um valor não-zero no canal (evita buffers de silêncio absoluto)
-              for (let i = 0; i < channelData.length; i++) {
-                if (Math.abs(channelData[i]) > 0.00001) { // Limiar muito baixo para detectar qualquer som
-                  hasValidData = true;
-                  break;
-                }
-              }
-              if (hasValidData) break; // Se encontrou áudio em algum canal, pode parar
+            // Verifica se channelData é um Float32Array válido
+            if (!(channelData instanceof Float32Array) || channelData.length === 0) {
+              continue;
             }
+            // Verifica se há pelo menos um valor de áudio não-zero
+            for (let i = 0; i < Math.min(channelData.length, 1000); i++) { // Verifica os primeiros 1000 samples
+              if (Math.abs(channelData[i]) > 0.00001) {
+                hasValidAudio = true;
+                break;
+              }
+            }
+            if (hasValidAudio) break;
           }
 
-          if (!hasValidData) {
+          if (!hasValidAudio) {
             reject(new Error('O áudio gravado está completamente silencioso. Verifique os volumes e tente novamente.'));
             return;
           }
 
+          // --- CODIFICAÇÃO PARA MP3 ---
           const mp3encoder = new lamejs.Mp3Encoder(buffer.numberOfChannels, buffer.sampleRate, 128);
           const mp3Data = [];
           const sampleBlockSize = 1152;
 
-          // Processa cada canal
           for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
             const channelData = buffer.getChannelData(channel);
-            // --- VERIFICAÇÃO 3: Canal tem dados válidos? ---
-            if (!channelData || !(channelData instanceof Float32Array) || channelData.length === 0) {
-              console.warn(`Canal ${channel} não possui dados válidos.`);
+            if (!(channelData instanceof Float32Array) || channelData.length === 0) {
               continue;
             }
             for (let i = 0; i < channelData.length; i += sampleBlockSize) {
@@ -1663,7 +1663,7 @@ async function webmToMP3(webmBlob) {
           }
 
           if (mp3Data.length === 0) {
-            reject(new Error('Nenhum dado MP3 foi gerado.'));
+            reject(new Error('Falha ao gerar dados MP3.'));
             return;
           }
 
@@ -1680,6 +1680,7 @@ async function webmToMP3(webmBlob) {
       console.error('Erro ao ler Blob:', err);
       reject(new Error('Falha ao ler o áudio gravado.'));
     };
+
     reader.readAsArrayBuffer(webmBlob);
   });
 }
