@@ -451,7 +451,6 @@ const ui = {
   play: document.getElementById('btnPlay'),
   pause: document.getElementById('btnPause'),
   stop: document.getElementById('btnStop'),
-  
   muteBass: document.getElementById('muteBass'),
   muteDrums: document.getElementById('muteDrums'),
   muteClean: document.getElementById('muteClean'),
@@ -469,10 +468,13 @@ const ui = {
   volDrumsLabel: document.getElementById('volDrumsLabel'),
   volCleanLabel: document.getElementById('volCleanLabel'),
   volDistLabel: document.getElementById('volDistLabel'),
+  // --- ADICIONE ESTAS DUAS LINHAS ---
+  volMelody: document.getElementById('volMelody'),
+  volMelodyLabel: document.getElementById('volMelodyLabel'),
+  // --- FIM DA ADIÇÃO ---
   melodyBlocks: document.getElementById('melodyBlocks'),
   btnMelodyAdd: document.getElementById('btnMelodyAdd'),
   btnMelodyClear: document.getElementById('btnMelodyClear'),
-  // btnExportPartitura REMOVIDO
   melodyInstrument: document.getElementById('melodyInstrument'),
   numberPicker: document.getElementById('numberPicker'),
   numberGrid: document.getElementById('numberGrid')
@@ -1072,7 +1074,24 @@ function scheduleStep() {
       }
       // Toca a guitarra distorcida, se não estiver mutada
       if (!mute.dist) {
-        playChord(time, chord.note, chord.type, true);
+        // --- SUBSTITUIÇÃO: Lógica inline para tocar acorde distorcido ---
+        const fullChordName = chord.note + chord.type;
+        const url = `guitarraDistorcao/${chord.note}/${fullChordName}.mp3`;
+        const buf = state.buffers.guitar?.[url] || null;
+        if (buf && time >= audio.ctx.currentTime - 0.02) {
+          const src = audio.ctx.createBufferSource();
+          const g = audio.ctx.createGain();
+          src.buffer = buf;
+          src.connect(g);
+          g.connect(audio.distGain);
+          g.gain.setValueAtTime(0.0, time);
+          g.gain.linearRampToValueAtTime(1.0, time + 0.01);
+          src.start(time);
+          state.lastDistSource = src;
+        } else {
+          console.warn(`Buffer não carregado para o acorde DISTORCIDO: ${fullChordName} | URL: ${url}`);
+        }
+        // --- FIM DA SUBSTITUIÇÃO ---
       }
     }
   }
