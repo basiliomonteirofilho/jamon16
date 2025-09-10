@@ -679,12 +679,16 @@ async function initAudio() {
     if (!state.buffers.melody) state.buffers.melody = {};
     await ensureBasicSamples();
         
-        ui.volBass.addEventListener('input', updateVolume);
-    ui.volDrums.addEventListener('input', updateVolume);
-    ui.volClean.addEventListener('input', updateVolume);
-    ui.volDist.addEventListener('input', updateVolume);
-    // --- NOVO: Listener para o slider da melodia ---
-    ui.volMelody.addEventListener('input', updateVolume);
+    // Conecta todos os sliders à função de atualização
+ui.volBass.addEventListener('input', updateVolume);
+ui.volDrums.addEventListener('input', updateVolume);
+ui.volClean.addEventListener('input', updateVolume);
+ui.volDist.addEventListener('input', updateVolume);
+ui.volMelody.addEventListener('input', updateVolume);
+ui.volMaster.addEventListener('input', updateVolume); // 🔑 Listener para o volume mestre
+
+// Aplica os valores iniciais dos sliders
+updateVolume(); // 🔑 Chama uma vez para garantir que os valores iniciais sejam aplicados
   })();
   return initPromise;
 }
@@ -1385,8 +1389,8 @@ function handleNumberSelection(e) {
 }
 function buildMelodyPlanFromBlocks() {
   const plan = [];
-  let chordIdx = 0; // índice para sincronizar melodia com acorde
   const stepsPerBar = meterToBeats(state.meter) * 4;
+
   for (const block of state.melodyBlocks) {
     const inputs = block.querySelectorAll('input');
     inputs.forEach((input, step) => {
@@ -1398,15 +1402,12 @@ function buildMelodyPlanFromBlocks() {
       } else {
         const num = parseInt(value, 10);
         if (!isNaN(num) && num >= 1 && num <= 49) {
-          // 🔑 Pega o acorde correspondente ao passo
-          chordIdx = Math.floor(plan.length / stepsPerBar) % state.chordPlan.length;
-          const chord = state.chordPlan[chordIdx];
-          // 🔑 Já adapta o número de acordo com o acorde
-          const adapted = adaptNumberToChord(num, chord.note, chord.type);
+          // 🔑 Armazena APENAS o número original.
+          // A adaptação será feita em tempo real em `scheduleStep`.
           plan.push({
             type: 'start',
             originalNumber: num,
-            adaptedNumber: adapted,
+            adaptedNumber: null, // Será calculado dinamicamente
             instrument: ui.melodyInstrument.value
           });
         }
