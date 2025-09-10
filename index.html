@@ -1405,10 +1405,10 @@ async function ensureMelodySamplesNeeded() {
   const instrument = ui.melodyInstrument.value;
   const folder = MELODY_INSTRUMENTS[instrument];
   if (!folder) return;
-
   const promises = [];
   for (let i = 1; i <= 49; i++) {
-    const url = `${folder}/${i}.mp3`;
+    const noteName = NUM_TO_NAME[i]; // ✅ Obtém o nome da nota (ex: 'E', 'F', 'FS')
+    const url = `${folder}/${i}${noteName}.mp3`; // ✅ Constrói o nome correto do arquivo
     if (!state.buffers.melody[url]) {
       promises.push(
         loadBuffer(url).then(buf => { if (buf) state.buffers.melody[url] = buf; })
@@ -1425,23 +1425,23 @@ function playMelodyNumber(time, number, instrumentType) {
     console.warn(`[Melodia] Instrumento desconhecido: ${instrumentType}`);
     return;
   }
+  
+  // ✅ CORREÇÃO: Usa o nome da nota real (ex: "1E", "2F", "3FS") em vez de apenas o número
+  const noteName = NUM_TO_NAME[number]; // Ex: 'E', 'F', 'FS', etc.
+  const url = `${folder}/${number}${noteName}.mp3`; // ✅ Agora o nome do arquivo será "1E.mp3", "2F.mp3", etc.
 
-  const url = `${folder}/${number}.mp3`;
   const buf = state.buffers.melody[url];
   if (!buf) {
     console.warn(`[Melodia] Arquivo não carregado: ${url}`);
     return;
   }
-
   if (state.lastMelodySource && !state.lastMelodySource.finished) {
     state.lastMelodySource.stop(time);
   }
-
   const src = audio.ctx.createBufferSource();
   const g = audio.ctx.createGain();
   src.buffer = buf;
   src.connect(g);
-
   // --- NOVO: Conecta ao ganho da melodia ---
   if (!audio.melodyGain) {
     // Cria o nó de ganho da melodia se ele não existir
@@ -1450,17 +1450,13 @@ function playMelodyNumber(time, number, instrumentType) {
     audio.melodyGain.connect(audio.master); // Conecta ao mix principal
   }
   g.connect(audio.melodyGain);
-
   g.gain.setValueAtTime(0.0, time);
   g.gain.linearRampToValueAtTime(1.0, time + 0.01);
-
   const maxDur = state.sixteenthDur * 16;
   src.start(time);
   src.stop(time + Math.min(buf.duration, maxDur));
-
   state.lastMelodySource = src;
   state.lastMelodyGain = g;
-
   src.finished = false;
   src.onended = () => { src.finished = true; };
 }
