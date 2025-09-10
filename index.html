@@ -404,10 +404,16 @@ input[type="range"] {
         <input type="range" id="volClean" min="0" max="1" step="0.01" value="0.45">
         <span class="slider-value" id="volCleanLabel">45%</span>
       </div>
-      <div class="slider-row">
+            <div class="slider-row">
         <label>Distorcida</label>
         <input type="range" id="volDist" min="0" max="1" step="0.01" value="0.35">
         <span class="slider-value" id="volDistLabel">35%</span>
+      </div>
+      <!-- NOVO: Controle de Volume para Melodia -->
+      <div class="slider-row">
+        <label>Melodia</label>
+        <input type="range" id="volMelody" min="0" max="1" step="0.01" value="0.50">
+        <span class="slider-value" id="volMelodyLabel">50%</span>
       </div>
     </div>
     <div class="panel">
@@ -641,23 +647,32 @@ async function initAudio() {
     audio.bassGain.connect(audio.master);
     audio.cleanGain.connect(audio.master);
     audio.distGain.connect(audio.master);
+    
     if (!state.buffers.melody) state.buffers.melody = {};
     await ensureBasicSamples();
-    function updateVolume() {
+        function updateVolume() {
       audio.bassGain.gain.value = parseFloat(ui.volBass.value);
       audio.drumGain.gain.value = parseFloat(ui.volDrums.value);
       audio.cleanGain.gain.value = parseFloat(ui.volClean.value);
       audio.distGain.gain.value = parseFloat(ui.volDist.value);
+      // --- NOVO: Atualiza o volume da melodia ---
+      if (audio.melodyGain) {
+        audio.melodyGain.gain.value = parseFloat(ui.volMelody.value);
+      }
       ui.volBassLabel.textContent = Math.round(ui.volBass.value * 100) + '%';
       ui.volDrumsLabel.textContent = Math.round(ui.volDrums.value * 100) + '%';
       ui.volCleanLabel.textContent = Math.round(ui.volClean.value * 100) + '%';
       ui.volDistLabel.textContent = Math.round(ui.volDist.value * 100) + '%';
+      // --- NOVO: Atualiza o label da melodia ---
+      ui.volMelodyLabel.textContent = Math.round(ui.volMelody.value * 100) + '%';
     }
     updateVolume();
-    ui.volBass.addEventListener('input', updateVolume);
+        ui.volBass.addEventListener('input', updateVolume);
     ui.volDrums.addEventListener('input', updateVolume);
     ui.volClean.addEventListener('input', updateVolume);
     ui.volDist.addEventListener('input', updateVolume);
+    // --- NOVO: Listener para o slider da melodia ---
+    ui.volMelody.addEventListener('input', updateVolume);
   })();
   return initPromise;
 }
@@ -1372,89 +1387,80 @@ function buildMelodyPlanFromBlocks() {
   }
   state.melodyPlan = plan;
 }
+// --- NOVO: MAPA DE INSTRUMENTOS DE MELODIA ---
+const MELODY_INSTRUMENTS = {
+  dist: "guitarraDistorcao/Melodia",
+  piano: "assets/PianoString",
+  baixo: "assets/BaixoMelodia",
+  sax: "assets/SaxMelodia",
+  acordeon: "Assets/AcordeonMelodia",
+  sinos: "Assets/SinosMelodia",
+  violao_aco: "Assets/ViolaoAcoMelodia",
+  violao_nylon: "Assets/ViolaoNylonMelodia",
+  cordas: "Assets/Cordas"
+};
+
+// --- ATUALIZADO: Garante que os samples de melodia necessários estejam carregados ---
 async function ensureMelodySamplesNeeded() {
-  const need = new Set();
-  for (let i = 1; i <= 49; i++) {
-    const folders = {
-      dist: 'guitarraDistorcao/Melodia',
-      piano: 'assets/PianoString',
-      baixo: 'assets/BaixoMelodia',
-      sax: 'assets/SaxMelodia',
-      // Novos Instrumentos
-      acordeon: 'Assets/AcordeonMelodia',
-      sinos: 'Assets/SinosMelodia',
-      violao_aco: 'Assets/ViolaoAcoMelodia',
-      violao_nylon: 'Assets/ViolaoNylonMelodia',
-      cordas: 'Assets/Cordas'
-    };
-    Object.values(folders).forEach(folder => {
-      need.add(`${folder}/${i}.mp3`); // <-- CORREÇÃO: Apenas o número, sem o nome da nota.
-    });
-  }
+  const instrument = ui.melodyInstrument.value;
+  const folder = MELODY_INSTRUMENTS[instrument];
+  if (!folder) return;
+
   const promises = [];
-  for (const url of need) {
+  for (let i = 1; i <= 49; i++) {
+    const url = `${folder}/${i}.mp3`;
     if (!state.buffers.melody[url]) {
-      promises.push(loadBuffer(url).then(buf => {
-        if (buf) state.buffers.melody[url] = buf;
-      }));
+      promises.push(
+        loadBuffer(url).then(buf => { if (buf) state.buffers.melody[url] = buf; })
+      );
     }
   }
   await Promise.all(promises);
 }
-function stopMelodyAt(time) {
-  if (state.lastMelodyGain) {
-    state.lastMelodyGain.gain.cancelScheduledValues(time);
-    state.lastMelodyGain.gain.setValueAtTime(state.lastMelodyGain.gain.value, time);
-    state.lastMelodyGain.gain.linearRampToValueAtTime(0.0, time + 0.02);
-  }
-  state.lastMelodySource = null;
-  state.lastMelodyGain = null;
-}
+
+// --- ATUALIZADO: Toca uma nota de melodia ---
 function playMelodyNumber(time, number, instrumentType) {
-  const name = NUM_TO_NAME[number];
-  let folder, targetGain = audio.distGain;
-  if (instrumentType === 'dist') {
-  folder = 'guitarraDistorcao/Melodia';
-} else if (instrumentType === 'piano') {
-  folder = 'assets/PianoString';
-} else if (instrumentType === 'baixo') {
-  folder = 'assets/BaixoMelodia';
-} else if (instrumentType === 'sax') {
-  folder = 'assets/SaxMelodia';
-} else if (instrumentType === 'acordeon') {
-  folder = 'Assets/AcordeonMelodia';
-} else if (instrumentType === 'sinos') {
-  folder = 'Assets/SinosMelodia';
-} else if (instrumentType === 'violao_aco') {
-  folder = 'Assets/ViolaoAcoMelodia';
-} else if (instrumentType === 'violao_nylon') {
-  folder = 'Assets/ViolaoNylonMelodia';
-} else if (instrumentType === 'cordas') {
-  folder = 'Assets/Cordas';
-} else {
-  folder = 'guitarraDistorcao/Melodia';
-}
-  const url = `${folder}/${number}${name}.mp3`;
+  const folder = MELODY_INSTRUMENTS[instrumentType];
+  if (!folder) {
+    console.warn(`[Melodia] Instrumento desconhecido: ${instrumentType}`);
+    return;
+  }
+
+  const url = `${folder}/${number}.mp3`;
   const buf = state.buffers.melody[url];
   if (!buf) {
     console.warn(`[Melodia] Arquivo não carregado: ${url}`);
     return;
   }
+
   if (state.lastMelodySource && !state.lastMelodySource.finished) {
     state.lastMelodySource.stop(time);
   }
+
   const src = audio.ctx.createBufferSource();
   const g = audio.ctx.createGain();
   src.buffer = buf;
   src.connect(g);
-  g.connect(targetGain);
+
+  // --- NOVO: Conecta ao ganho da melodia ---
+  if (!audio.melodyGain) {
+    // Cria o nó de ganho da melodia se ele não existir
+    audio.melodyGain = audio.ctx.createGain();
+    audio.melodyGain.gain.value = 0.50; // Valor inicial
+    audio.melodyGain.connect(audio.master); // Conecta ao mix principal
+  }
+  g.connect(audio.melodyGain);
+
   g.gain.setValueAtTime(0.0, time);
   g.gain.linearRampToValueAtTime(1.0, time + 0.01);
+
   const maxDur = state.sixteenthDur * 16;
   src.start(time);
   src.stop(time + Math.min(buf.duration, maxDur));
+
   state.lastMelodySource = src;
   state.lastMelodyGain = g;
+
   src.finished = false;
   src.onended = () => { src.finished = true; };
 }
