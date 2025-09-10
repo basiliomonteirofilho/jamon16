@@ -376,11 +376,17 @@ input[type="range"] {
       <div class="row">
         <label>Melodia</label>
         <select id="melodyInstrument">
-          <option value="dist">Guitarra Distorcida</option>
-          <option value="piano">Piano/String</option>
-          <option value="baixo">Baixo</option>
-          <option value="sax">Sax</option>
-        </select>
+  <option value="dist">Guitarra Distorcida</option>
+  <option value="piano">Piano/String</option>
+  <option value="baixo">Baixo</option>
+  <option value="sax">Sax</option>
+  <!-- Novos Instrumentos -->
+  <option value="acordeon">Acordeon</option>
+  <option value="sinos">Sinos</option>
+  <option value="violao_aco">Violão Aço</option>
+  <option value="violao_nylon">Violão Nylon</option>
+  <option value="cordas">Cordas</option>
+</select>
       </div>
       <h3 style="color: #5eead4; margin: 15px 0 5px;">Controle de Volume</h3>
       <div class="slider-row">
@@ -1371,11 +1377,17 @@ async function ensureMelodySamplesNeeded() {
   for (let i = 1; i <= 49; i++) {
     const name = NUM_TO_NAME[i];
     const folders = {
-      dist: 'guitarraDistorcao/Melodia',
-      piano: 'assets/PianoString',
-      baixo: 'assets/BaixoMelodia',
-      sax: 'assets/SaxMelodia'
-    };
+  dist: 'guitarraDistorcao/Melodia',
+  piano: 'assets/PianoString',
+  baixo: 'assets/BaixoMelodia',
+  sax: 'assets/SaxMelodia',
+  // Novos Instrumentos
+  acordeon: 'Assets/AcordeonMelodia',
+  sinos: 'Assets/SinosMelodia',
+  violao_aco: 'Assets/ViolaoAcoMelodia',
+  violao_nylon: 'Assets/ViolaoNylonMelodia',
+  cordas: 'Assets/Cordas'
+};
     Object.values(folders).forEach(folder => {
       need.add(`${folder}/${i}${name}.mp3`);
     });
@@ -1403,16 +1415,26 @@ function playMelodyNumber(time, number, instrumentType) {
   const name = NUM_TO_NAME[number];
   let folder, targetGain = audio.distGain;
   if (instrumentType === 'dist') {
-    folder = 'guitarraDistorcao/Melodia';
-  } else if (instrumentType === 'piano') {
-    folder = 'assets/PianoString';
-  } else if (instrumentType === 'baixo') {
-    folder = 'assets/BaixoMelodia';
-  } else if (instrumentType === 'sax') {
-    folder = 'assets/SaxMelodia';
-  } else {
-    folder = 'guitarraDistorcao/Melodia';
-  }
+  folder = 'guitarraDistorcao/Melodia';
+} else if (instrumentType === 'piano') {
+  folder = 'assets/PianoString';
+} else if (instrumentType === 'baixo') {
+  folder = 'assets/BaixoMelodia';
+} else if (instrumentType === 'sax') {
+  folder = 'assets/SaxMelodia';
+} else if (instrumentType === 'acordeon') {
+  folder = 'Assets/AcordeonMelodia';
+} else if (instrumentType === 'sinos') {
+  folder = 'Assets/SinosMelodia';
+} else if (instrumentType === 'violao_aco') {
+  folder = 'Assets/ViolaoAcoMelodia';
+} else if (instrumentType === 'violao_nylon') {
+  folder = 'Assets/ViolaoNylonMelodia';
+} else if (instrumentType === 'cordas') {
+  folder = 'Assets/Cordas';
+} else {
+  folder = 'guitarraDistorcao/Melodia';
+}
   const url = `${folder}/${number}${name}.mp3`;
   const buf = state.buffers.melody[url];
   if (!buf) {
