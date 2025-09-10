@@ -682,10 +682,8 @@ ui.volDrums.addEventListener('input', updateVolume);
 ui.volClean.addEventListener('input', updateVolume);
 ui.volDist.addEventListener('input', updateVolume);
 ui.volMelody.addEventListener('input', updateVolume);
-ui.volMaster.addEventListener('input', updateVolume); // 🔑 Listener para o volume mestre
-
 // Aplica os valores iniciais dos sliders
-updateVolume(); // 🔑 Chama uma vez para garantir que os valores iniciais sejam aplicados
+updateVolume();
   })();
   return initPromise;
 }
@@ -1500,6 +1498,19 @@ if (isMobileDevice()) {
   initializeNumberPicker();
 }
 // --- NOVA FUNÇÃO: Grava e salva a performance como MP3 ---
+// --- NOVA FUNÇÃO: Para a nota de melodia atual ---
+function stopMelodyAt(time) {
+  if (state.lastMelodySource && !state.lastMelodySource.finished) {
+    state.lastMelodySource.stop(time);
+    state.lastMelodySource = null;
+  }
+  if (state.lastMelodyGain) {
+    state.lastMelodyGain.gain.cancelScheduledValues(time);
+    state.lastMelodyGain.gain.setValueAtTime(state.lastMelodyGain.gain.value, time);
+    state.lastMelodyGain.gain.linearRampToValueAtTime(0.0, time + 0.05);
+  }
+}
+
 async function savePerformanceAsMP3() {
   if (!state.running) {
     alert("Inicie a reprodução primeiro!");
