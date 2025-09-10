@@ -1175,7 +1175,12 @@ function onStop() {
   state.lastMelodySource = null;
   state.lastMelodyGain = null;
   state.lastMelodyNote = null;
-  state.guitarPlan = null; // Reseta ao parar
+
+  // --- MODIFICAÇÃO: Só reseta o plano da guitarra se NÃO estiver gravando ---
+  // Isso permite que a música continue de onde parou após os 4 minutos.
+  if (!isRecording) {
+    state.guitarPlan = null;
+  }
   document.querySelectorAll('.chord-item.current').forEach(el => el.classList.remove('current'));
 }
 function startScheduler() {
@@ -1518,9 +1523,17 @@ let recordedChunks = [];
 let mediaRecorder = null;
 
 // Função para iniciar a gravação da mixagem principal
+// Função para iniciar a gravação da mixagem principal (VERSÃO PARA 4 MINUTOS)
 async function startRecording() {
-  if (!audio.ctx || !audio.mix) {
-    console.error('Áudio não inicializado.');
+  if (!audio.ctx) {
+    console.error('Contexto de áudio não inicializado.');
+    isRecording = false;
+    return;
+  }
+
+  if (!audio.mix) {
+    console.error('Nó de mixagem não encontrado.');
+    isRecording = false;
     return;
   }
 
@@ -1530,28 +1543,61 @@ async function startRecording() {
 
   const stream = streamDestination.stream;
 
+  if (!stream || stream.getAudioTracks().length === 0) {
+    console.error('Nenhum track de áudio disponível para gravação.');
+    isRecording = false;
+    return;
+  }
+
   // Configura o MediaRecorder
-  mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' }); // ou 'audio/mp4' se suportado
+  mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
   recordedChunks = [];
 
   mediaRecorder.ondataavailable = function(event) {
-    if (event.data.size > 0) {
+    if (event.data && event.data.size > 0) {
       recordedChunks.push(event.data);
     }
   };
 
   mediaRecorder.onstop = async function() {
+    if (recordedChunks.length === 0) {
+      alert('A gravação não capturou nenhum áudio.');
+      return;
+    }
     const blob = new Blob(recordedChunks, { type: 'audio/webm' });
-    // Converte WebM para MP3
-    const mp3Blob = await webmToMP3(blob);
-    downloadBlob(mp3Blob, 'jam_on_performance.mp3');
+    try {
+      const mp3Blob = await webmToMP3(blob);
+      downloadBlob(mp3Blob, 'jam_on_4min_loop.mp3');
+    } catch (err) {
+      console.error('Erro ao converter para MP3:', err);
+      alert('Erro ao salvar o arquivo MP3: ' + err.message);
+    }
+  };
+
+  mediaRecorder.onerror = function(event) {
+    console.error('Erro no MediaRecorder:', event.error);
+    isRecording = false;
+    alert('Erro durante a gravação: ' + event.error.message);
   };
 
   mediaRecorder.start();
-  console.log('Gravação iniciada.');
+  console.log('✅ Gravação de 4 minutos iniciada.');
+
+  // --- NOVO: Para a gravação após exatamente 4 minutos (240.000 milissegundos) ---
+  setTimeout(() => {
+    if (isRecording && mediaRecorder && mediaRecorder.state !== 'inactive') {
+      console.log('✅ Gravação de 4 minutos finalizada.');
+      mediaRecorder.stop();
+      isRecording = false;
+      
+      // Para a reprodução automaticamente após a gravação
+      if (state.running) {
+        onStop();
+      }
+    }
+  }, 240000); // 4 minutos = 240.000 ms
 }
 
-// Função para converter Blob WebM para MP3
 // Função para converter Blob WebM para MP3 (VERSÃO CORRIGIDA)
 async function webmToMP3(webmBlob) {
   return new Promise((resolve, reject) => {
@@ -1660,6 +1706,7 @@ async function onPlay() {
 }
 
 // Substituição do evento do botão "Salvar como MP3"
+// Evento atualizado para o botão "Salvar como MP3" (4 MINUTOS)
 ui.btnSaveMP3.addEventListener('click', async () => {
   if (state.running) {
     alert("Pare a reprodução atual antes de salvar.");
@@ -1672,19 +1719,8 @@ ui.btnSaveMP3.addEventListener('click', async () => {
   // Inicia a reprodução, que agora também iniciará a gravação
   await onPlay();
 
-  // Adiciona um listener para parar a gravação quando o usuário clicar em "Stop"
-  const originalStopHandler = onStop;
-  ui.stop.addEventListener('click', function stopAndRecord() {
-    originalStopHandler();
-    if (isRecording && mediaRecorder && mediaRecorder.state !== 'inactive') {
-      mediaRecorder.stop();
-    }
-    isRecording = false;
-    // Remove este handler específico após uso
-    ui.stop.removeEventListener('click', stopAndRecord);
-    // Re-adiciona o handler original
-    ui.stop.addEventListener('click', originalStopHandler);
-  }, { once: true });
+  // O temporizador dentro de `startRecording` cuidará de parar a gravação após 4 minutos.
+  // Não é necessário adicionar listeners extras ao botão "Stop".
 });
 
 window.addEventListener('load', function() {
