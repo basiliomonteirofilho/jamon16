@@ -351,7 +351,8 @@ input[type="range"] {
         <button id="btnPlay" class="primary">▶ Play</button>
         <button id="btnPause">⏸ Pause</button>
         <button id="btnStop" class="danger">⏹ Stop</button>
-         <button id="btnSaveMP3" class="primary">💾 Salvar como MP3</button>
+         <button id="btnSaveWAV" class="primary">💾 Salvar como WAV</button>
+
       </div>
       <div class="mute-buttons">
         <button id="muteBass" data-mute="off">🎸 Baixo</button>
@@ -480,7 +481,10 @@ const ui = {
   numberGrid: document.getElementById('numberGrid')
 };
 // --- NOVO: REFERÊNCIA AO BOTÃO DE SALVAR ---
-ui.btnSaveMP3 = document.getElementById('btnSaveMP3');
+ui.btnSaveWAV = document.getElementById('btnSaveWAV');
+let mediaRecorder;
+let recordedChunks = [];
+
 const audio = {
   ctx: null,
   master: null,
@@ -1731,24 +1735,47 @@ async function onPlay() {
 
 // Substituição do evento do botão "Salvar como MP3"
 // Evento atualizado para o botão "Salvar como MP3" (4 MINUTOS)
-ui.btnSaveMP3.addEventListener('click', async () => {
-  if (state.running) {
-    alert("Pare a reprodução atual antes de salvar.");
-    return;
-  }
+ui.btnSaveWAV.addEventListener('click', async () => {
+  if (!audio.ctx) await initAudio();
 
-  // Ativa o modo de gravação
-  isRecording = true;
+  // Cria destino de gravação
+  const dest = audio.ctx.createMediaStreamDestination();
+  audio.master.connect(dest);
 
-  // Inicia a reprodução, que agora também iniciará a gravação
-  await onPlay();
+  mediaRecorder = new MediaRecorder(dest.stream, { mimeType: 'audio/wav' });
+  recordedChunks = [];
 
-  // O temporizador dentro de `startRecording` cuidará de parar a gravação após 4 minutos.
-  // Não é necessário adicionar listeners extras ao botão "Stop".
-});
+  mediaRecorder.ondataavailable = e => {
+    if (e.data.size > 0) recordedChunks.push(e.data);
+  };
 
-window.addEventListener('load', function() {
-  // Código de inicialização, se necessário
+  mediaRecorder.onstop = () => {
+    const blob = new Blob(recordedChunks, { type: 'audio/wav' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = 'jam-on.wav';
+    document.body.appendChild(a);
+    a.click();
+
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
+  };
+
+  mediaRecorder.start();
+  console.log("🎙️ Gravação iniciada em WAV...");
+
+  // Para gravar tempo fixo (ex: 2 minutos), pare depois:
+  setTimeout(() => {
+    if (mediaRecorder && mediaRecorder.state === "recording") {
+      mediaRecorder.stop();
+      console.log("⏹ Gravação finalizada.");
+    }
+  }, 2 * 60 * 1000); // 2 min
 });
   </script>
 </body>
