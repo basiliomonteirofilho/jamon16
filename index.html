@@ -886,7 +886,8 @@ async function buildBassAndChordPlan() {
   }
   state.drumSeq = drumExpanded.slice(0, state.bassPlan.length);
   setStatePanel();
-    // --- CORREÇÃO PARA CARREGAR TODOS OS TIPOS DE SAMPLES (ab, de, so) ---
+
+  // --- CORREÇÃO PARA CARREGAR TODOS OS TIPOS DE SAMPLES (ab, de, so) ---
   const guitarUrls = new Set();
   for (const ch of state.chordPlan) {
     let fullChordName = ch.note;
@@ -898,7 +899,6 @@ async function buildBassAndChordPlan() {
     // Guitarra Limpa
     guitarUrls.add(`guitarraLimpa/${ch.note}/${fullChordName}.mp3`);
   }
-
   const preloadPromises = [];
   guitarUrls.forEach(url => {
     if (!state.buffers.guitar) state.buffers.guitar = {};
@@ -907,7 +907,8 @@ async function buildBassAndChordPlan() {
       preloadPromises.push(p);
     }
   });
-  await Promise.all(preloadPromises);}
+  await Promise.all(preloadPromises);
+}
 function parsePattern(patternText) {
   const result = { intro: [], loop: [] };
   const introMatch = patternText.match(/\[(.*?)\]/);
