@@ -1552,6 +1552,7 @@ async function startRecording() {
 }
 
 // Função para converter Blob WebM para MP3
+// Função para converter Blob WebM para MP3 (VERSÃO CORRIGIDA)
 async function webmToMP3(webmBlob) {
   return new Promise((resolve, reject) => {
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1560,6 +1561,12 @@ async function webmToMP3(webmBlob) {
     reader.onload = function() {
       audioCtx.decodeAudioData(reader.result)
         .then(buffer => {
+          // --- VERIFICAÇÃO DE SEGURANÇA ADICIONADA ---
+          if (!buffer || buffer.length === 0 || buffer.numberOfChannels === 0) {
+            reject(new Error('Áudio decodificado está vazio ou inválido.'));
+            return;
+          }
+
           const mp3encoder = new lamejs.Mp3Encoder(buffer.numberOfChannels, buffer.sampleRate, 128);
           const mp3Data = [];
           const sampleBlockSize = 1152;
@@ -1567,6 +1574,11 @@ async function webmToMP3(webmBlob) {
           // Processa cada canal
           for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
             const channelData = buffer.getChannelData(channel);
+            // --- VERIFICAÇÃO ADICIONAL ---
+            if (!channelData || channelData.length === 0) {
+              console.warn(`Canal ${channel} não possui dados.`);
+              continue;
+            }
             for (let i = 0; i < channelData.length; i += sampleBlockSize) {
               const sampleChunk = channelData.subarray(i, i + sampleBlockSize);
               const mp3buf = mp3encoder.encodeBuffer(sampleChunk);
@@ -1581,13 +1593,24 @@ async function webmToMP3(webmBlob) {
             mp3Data.push(mp3buf);
           }
 
+          if (mp3Data.length === 0) {
+            reject(new Error('Nenhum dado MP3 foi gerado.'));
+            return;
+          }
+
           const mp3Blob = new Blob(mp3Data, { type: 'audio/mp3' });
           resolve(mp3Blob);
         })
-        .catch(reject);
+        .catch(err => {
+          console.error('Erro ao decodificar áudio:', err);
+          reject(err);
+        });
     };
 
-    reader.onerror = reject;
+    reader.onerror = (err) => {
+      console.error('Erro ao ler Blob:', err);
+      reject(err);
+    };
     reader.readAsArrayBuffer(webmBlob);
   });
 }
