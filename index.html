@@ -888,6 +888,8 @@ async function buildBassAndChordPlan() {
   setStatePanel();
 
   // --- CORREÇÃO PARA CARREGAR TODOS OS TIPOS DE SAMPLES (ab, de, so) ---
+    // --- CORREÇÃO PARA CARREGAR TODOS OS TIPOS DE SAMPLES (ab, de, so) ---
+    // --- CORREÇÃO PARA CARREGAR TODOS OS TIPOS DE SAMPLES (ab, de, so) ---
   const guitarUrls = new Set();
   for (const ch of state.chordPlan) {
     let fullChordName = ch.note;
@@ -908,7 +910,7 @@ async function buildBassAndChordPlan() {
     }
   });
   await Promise.all(preloadPromises);
-}
+} // <-- ESTA CHAVE DEVE SER A ÚNICA QUE FECHA A FUNÇÃO buildBassAndChordPlan
 function parsePattern(patternText) {
   const result = { intro: [], loop: [] };
   const introMatch = patternText.match(/\[(.*?)\]/);
