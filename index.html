@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js"></script>
   <meta charset="UTF-8" />
   <title>Jam On – Playback Aleatório</title>
   <style>
@@ -1812,12 +1813,42 @@ function downloadBlob(blob, filename) {
 
 // Função para converter WAV para MP3 (requer biblioteca externa)
 async function encodeWAVToMP3(wavBlob) {
-  // Esta é uma implementação simplificada.
-  // Em produção, você usaria uma biblioteca como lamejs.
-  // Para este exemplo, retornamos o WAV como se fosse MP3 (não é correto, mas evita complexidade).
-  // ALERTA: Isto NÃO gera um MP3 real. É apenas um placeholder.
-  console.warn("Implementação de encodeWAVToMP3 é um placeholder. Use 'lamejs' para MP3 real.");
-  return wavBlob;
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = function() {
+      const arrayBuffer = reader.result;
+      const wavData = new Int16Array(arrayBuffer, 44); // Pula o cabeçalho WAV de 44 bytes
+      const wavHeader = parseWavHeader(new DataView(arrayBuffer, 0, 44));
+
+      const mp3encoder = new lamejs.Mp3Encoder(wavHeader.channels, wavHeader.sampleRate, 128); // 128 kbps
+      const mp3Data = [];
+      const sampleBlockSize = 1152; // Tamanho do bloco para o encoder
+
+      for (let i = 0; i < wavData.length; i += sampleBlockSize) {
+        const sampleChunk = wavData.subarray(i, i + sampleBlockSize);
+        const mp3buf = mp3encoder.encodeBuffer(sampleChunk);
+        if (mp3buf.length > 0) {
+          mp3Data.push(mp3buf);
+        }
+      }
+      const mp3buf = mp3encoder.flush();
+      if (mp3buf.length > 0) {
+        mp3Data.push(mp3buf);
+      }
+
+      const mp3Blob = new Blob(mp3Data, { type: 'audio/mp3' });
+      resolve(mp3Blob);
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(wavBlob);
+  });
+}
+
+function parseWavHeader(dataView) {
+  return {
+    channels: dataView.getUint16(22, true),
+    sampleRate: dataView.getUint32(24, true)
+  };
 }
 window.addEventListener('load', function() {
   // Código de inicialização, se necessário
