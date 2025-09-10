@@ -483,7 +483,7 @@ const ui = {
 // --- NOVO: REFERÊNCIA AO BOTÃO DE SALVAR ---
 ui.btnSaveWAV = document.getElementById('btnSaveWAV');
 let mediaRecorder;
-let recordedChunks = [];
+
 
 const audio = {
   ctx: null,
@@ -1698,16 +1698,13 @@ async function webmToMP3(webmBlob) {
 // Evento atualizado para o botão "Salvar como MP3" (4 MINUTOS)
 ui.btnSaveWAV.addEventListener('click', async () => {
   if (!audio.ctx) await initAudio();
-
   // Cria destino de gravação
   const dest = audio.ctx.createMediaStreamDestination();
   // Conecta o destino ao mix principal para capturar todo o áudio
   audio.master.connect(dest);
-
   // Usa um formato suportado
   const mimeType = 'audio/webm;codecs=opus';
   mediaRecorder = new MediaRecorder(dest.stream, { mimeType });
-
   recordedChunks = []; // <-- CORREÇÃO: Removeu 'let', apenas zera o array global.
   mediaRecorder.ondataavailable = e => {
     if (e.data.size > 0) recordedChunks.push(e.data);
