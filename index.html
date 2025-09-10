@@ -374,14 +374,9 @@ input[type="range"] {
         </select>
       </div>
       <!-- NOVO: Controle de Volume Mestre Global -->
+<!-- NOVO: Controle de Volume Mestre Global -->
 <div class="slider-row">
   <label>Mestre</label>
-  <input type="range" id="volBass" min="0" max="1" step="0.01" value="0.50"> <!-- Aumentado de 0.45 -->
-<input type="range" id="volDrums" min="0" max="1" step="0.01" value="0.70"> <!-- Aumentado de 0.60 -->
-<input type="range" id="volClean" min="0" max="1" step="0.01" value="0.50"> <!-- Aumentado de 0.45 -->
-<input type="range" id="volDist" min="0" max="1" step="0.01" value="0.40"> <!-- Aumentado de 0.35 -->
-<input type="range" id="volMelody" min="0" max="1" step="0.01" value="0.60"> <!-- Aumentado de 0.50 -->
-<input type="range" id="volMaster" min="0" max="1" step="0.01" value="0.85"> <!-- Valor inicial um pouco mais baixo -->
   <input type="range" id="volMaster" min="0" max="1" step="0.01" value="0.90">
   <span class="slider-value" id="volMasterLabel">90%</span>
 </div>
@@ -683,23 +678,7 @@ async function initAudio() {
     
     if (!state.buffers.melody) state.buffers.melody = {};
     await ensureBasicSamples();
-        function updateVolume() {
-      audio.bassGain.gain.value = parseFloat(ui.volBass.value);
-      audio.drumGain.gain.value = parseFloat(ui.volDrums.value);
-      audio.cleanGain.gain.value = parseFloat(ui.volClean.value);
-      audio.distGain.gain.value = parseFloat(ui.volDist.value);
-      // --- NOVO: Atualiza o volume da melodia ---
-      if (audio.melodyGain) {
-        audio.melodyGain.gain.value = parseFloat(ui.volMelody.value);
-      }
-      ui.volBassLabel.textContent = Math.round(ui.volBass.value * 100) + '%';
-      ui.volDrumsLabel.textContent = Math.round(ui.volDrums.value * 100) + '%';
-      ui.volCleanLabel.textContent = Math.round(ui.volClean.value * 100) + '%';
-      ui.volDistLabel.textContent = Math.round(ui.volDist.value * 100) + '%';
-      // --- NOVO: Atualiza o label da melodia ---
-      ui.volMelodyLabel.textContent = Math.round(ui.volMelody.value * 100) + '%';
-    }
-    updateVolume();
+        
         ui.volBass.addEventListener('input', updateVolume);
     ui.volDrums.addEventListener('input', updateVolume);
     ui.volClean.addEventListener('input', updateVolume);
