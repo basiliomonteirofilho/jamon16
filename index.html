@@ -1375,21 +1375,20 @@ function buildMelodyPlanFromBlocks() {
 async function ensureMelodySamplesNeeded() {
   const need = new Set();
   for (let i = 1; i <= 49; i++) {
-    const name = NUM_TO_NAME[i];
     const folders = {
-  dist: 'guitarraDistorcao/Melodia',
-  piano: 'assets/PianoString',
-  baixo: 'assets/BaixoMelodia',
-  sax: 'assets/SaxMelodia',
-  // Novos Instrumentos
-  acordeon: 'Assets/AcordeonMelodia',
-  sinos: 'Assets/SinosMelodia',
-  violao_aco: 'Assets/ViolaoAcoMelodia',
-  violao_nylon: 'Assets/ViolaoNylonMelodia',
-  cordas: 'Assets/Cordas'
-};
+      dist: 'guitarraDistorcao/Melodia',
+      piano: 'assets/PianoString',
+      baixo: 'assets/BaixoMelodia',
+      sax: 'assets/SaxMelodia',
+      // Novos Instrumentos
+      acordeon: 'Assets/AcordeonMelodia',
+      sinos: 'Assets/SinosMelodia',
+      violao_aco: 'Assets/ViolaoAcoMelodia',
+      violao_nylon: 'Assets/ViolaoNylonMelodia',
+      cordas: 'Assets/Cordas'
+    };
     Object.values(folders).forEach(folder => {
-      need.add(`${folder}/${i}${name}.mp3`);
+      need.add(`${folder}/${i}.mp3`); // <-- CORREÇÃO: Apenas o número, sem o nome da nota.
     });
   }
   const promises = [];
