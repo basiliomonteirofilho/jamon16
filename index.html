@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js"></script>
   <meta charset="UTF-8" />
   <title>Jam On – Playback Aleatório</title>
   <style>
@@ -1752,31 +1752,17 @@ ui.btnSaveWAV.addEventListener('click', async () => {
     if (e.data.size > 0) recordedChunks.push(e.data);
   };
 
-  mediaRecorder.onstop = async () => {
+      mediaRecorder.onstop = async () => {
     const webmBlob = new Blob(recordedChunks, { type: mimeType });
-
     try {
       // Converte o Blob WebM para um ArrayBuffer
       const arrayBuffer = await webmBlob.arrayBuffer();
       // Decodifica o áudio
       const audioBuffer = await audio.ctx.decodeAudioData(arrayBuffer);
-
       // Converte o AudioBuffer para WAV
       const wavBlob = audioBufferToWav(audioBuffer);
-
-      // Faz o download
-      const url = URL.createObjectURL(wavBlob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = 'jam-on.wav';
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 100);
-
+      // Faz o download usando a função helper
+      downloadBlob(wavBlob, 'jam-on.wav');
       console.log("✅ Arquivo WAV salvo com sucesso.");
     } catch (err) {
       console.error('Erro ao processar o áudio:', err);
@@ -1861,7 +1847,20 @@ function writeString(view, offset, string) {
     view.setUint8(offset + i, string.charCodeAt(i));
   }
 }
+// Função para fazer o download de qualquer Blob
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.style.display = 'none';
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 100);
+}
   </script>
 </body>
 </html>
-
