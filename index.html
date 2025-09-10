@@ -890,13 +890,16 @@ async function buildBassAndChordPlan() {
   // --- CORREÇÃO PARA CARREGAR TODOS OS TIPOS DE SAMPLES (ab, de, so) ---
 const guitarUrls = new Set();
 for (const ch of state.chordPlan) {
-  const fullChordName = ch.note + ch.type;
+  let fullChordName = ch.note;
+  if (ch.type) fullChordName += ch.type; // concatena só se tiver tipo (m, 7, dim...)
+
   // Guitarra Distorcida
   guitarUrls.add(`guitarraDistorcao/${ch.note}/${fullChordName}.mp3`);
   guitarUrls.add(`guitarraDistorcao/abafadas/${ch.note}/${fullChordName}.mp3`);
   guitarUrls.add(`guitarraDistorcao/dedilhada/${ch.note}/${fullChordName}.mp3`);
-  // Guitarra Limpa (NOVO)
+  // Guitarra Limpa
   guitarUrls.add(`guitarraLimpa/${ch.note}/${fullChordName}.mp3`);
+}
 }
   const preloadPromises = [];
   guitarUrls.forEach(url => {
@@ -1043,8 +1046,10 @@ function scheduleStep() {
         if (guitarCommand === 'ab') baseFolder = 'guitarraDistorcao/abafadas';
         else if (guitarCommand === 'de') baseFolder = 'guitarraDistorcao/dedilhada';
         else if (guitarCommand === 'so') baseFolder = 'guitarraDistorcao';
-        const fullChordName = chord.note + chord.type;
+        let fullChordName = chord.note;
+        if (chord.type) fullChordName += chord.type;
         const url = `${baseFolder}/${chord.note}/${fullChordName}.mp3`;
+
         const buf = state.buffers.guitar?.[url] || null;
         if (buf && time >= audio.ctx.currentTime - 0.02) {
           if (state.lastDistSource) state.lastDistSource.stop(time);
@@ -1145,9 +1150,11 @@ function scheduleStep() {
 // Esta função é usada apenas quando o groove NÃO tem `guitarRhythm` definido.
 // --- NOVA FUNÇÃO: Toca um acorde na guitarra limpa ---
 function playCleanChord(time, note, type) {
-  const fullChordName = note + type;
-  const folder = 'guitarraLimpa';
-  const url = `${folder}/${note}/${fullChordName}.mp3`;
+let fullChordName = note;
+if (type) fullChordName += type;
+const folder = 'guitarraLimpa';
+const url = `${folder}/${note}/${fullChordName}.mp3`;
+
   const buf = state.buffers.guitar?.[url] || null;
   if (buf && time >= audio.ctx.currentTime - 0.02) {
     const src = audio.ctx.createBufferSource();
