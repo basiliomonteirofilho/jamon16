@@ -373,6 +373,18 @@ input[type="range"] {
           <option>7/4</option>
         </select>
       </div>
+      <!-- NOVO: Controle de Volume Mestre Global -->
+<div class="slider-row">
+  <label>Mestre</label>
+  <input type="range" id="volBass" min="0" max="1" step="0.01" value="0.50"> <!-- Aumentado de 0.45 -->
+<input type="range" id="volDrums" min="0" max="1" step="0.01" value="0.70"> <!-- Aumentado de 0.60 -->
+<input type="range" id="volClean" min="0" max="1" step="0.01" value="0.50"> <!-- Aumentado de 0.45 -->
+<input type="range" id="volDist" min="0" max="1" step="0.01" value="0.40"> <!-- Aumentado de 0.35 -->
+<input type="range" id="volMelody" min="0" max="1" step="0.01" value="0.60"> <!-- Aumentado de 0.50 -->
+<input type="range" id="volMaster" min="0" max="1" step="0.01" value="0.85"> <!-- Valor inicial um pouco mais baixo -->
+  <input type="range" id="volMaster" min="0" max="1" step="0.01" value="0.90">
+  <span class="slider-value" id="volMasterLabel">90%</span>
+</div>
       <div class="row">
         <label>Melodia</label>
         <select id="melodyInstrument">
@@ -625,6 +637,27 @@ function setStatePanel() {
   ui.state.innerHTML = `<div>Levada: ${state.signatureTag || '—'}</div><div>Key: ${state.key || '—'} ${state.quality}</div>`;
 }
 let initPromise = null;
+function updateVolume() {
+  // Volumes individuais
+  audio.bassGain.gain.value = parseFloat(ui.volBass.value);
+  audio.drumGain.gain.value = parseFloat(ui.volDrums.value);
+  audio.cleanGain.gain.value = parseFloat(ui.volClean.value);
+  audio.distGain.gain.value = parseFloat(ui.volDist.value);
+  if (audio.melodyGain) {
+    audio.melodyGain.gain.value = parseFloat(ui.volMelody.value);
+  }
+
+  // Volume Mestre Global (NOVO)
+  audio.master.gain.value = parseFloat(ui.volMaster.value);
+
+  // Atualiza labels
+  ui.volBassLabel.textContent = Math.round(ui.volBass.value * 100) + '%';
+  ui.volDrumsLabel.textContent = Math.round(ui.volDrums.value * 100) + '%';
+  ui.volCleanLabel.textContent = Math.round(ui.volClean.value * 100) + '%';
+  ui.volDistLabel.textContent = Math.round(ui.volDist.value * 100) + '%';
+  ui.volMelodyLabel.textContent = Math.round(ui.volMelody.value * 100) + '%';
+  ui.volMasterLabel.textContent = Math.round(ui.volMaster.value * 100) + '%'; // NOVO
+}
 async function initAudio() {
   if (audio.ctx) return;
   if (initPromise) return initPromise;
@@ -966,7 +999,8 @@ function scheduleStep() {
   const beats = meterToBeats(state.meter);
   const sixteenthsPerBar = beats * 4;
   const isNewBar = (stepIdx % sixteenthsPerBar) === 0;
-  // 🎵 DRUMS
+
+  // 🎵 DRUMS (mantido igual)
   const drumToken = state.drumSeq[stepIdx % state.drumSeq.length];
   if (drumToken && !mute.drums) {
     let drumKey = null;
@@ -993,7 +1027,8 @@ function scheduleStep() {
       src.start(time);
     }
   }
-  // 🎸 BASS
+
+  // 🎸 BASS (mantido igual)
   const bassCommand = state.bassPlan[stepIdx % state.bassPlan.length];
   if (!mute.bass && state.lastBassSource) {
     state.lastBassSource.stop(time);
@@ -1013,7 +1048,8 @@ function scheduleStep() {
       state.lastBassSource = src;
     }
   }
-  // 🎸 GUITAR
+
+  // 🎸 GUITAR (mantido igual)
   if (state.currentGroove && state.currentGroove.guitarRhythm) {
     if (!state.guitarPlan) {
       state.guitarPlan = expandRhythm(state.currentGroove.guitarRhythm, state.bassPlan.length);
@@ -1053,9 +1089,12 @@ function scheduleStep() {
       }
     }
   }
-  // 🎼 MELODY
+
+  // 🎼 MELODY — LÓGICA APRIMORADA
   const melodyEvent = state.melodyPlan[stepIdx % state.melodyPlan.length];
+
   if (melodyEvent && melodyEvent.type === 'start') {
+    // Nova nota começa
     if (melodyEvent.adaptedNumber === null) {
       const chord = state.chordPlan[state.currentChordIndex];
       const adaptedNumber = adaptNumberToChord(
@@ -1069,27 +1108,37 @@ function scheduleStep() {
     }
     playMelodyNumber(time, melodyEvent.adaptedNumber, melodyEvent.instrument);
   } else if (melodyEvent && melodyEvent.type === 'mute') {
+    // Evento de pausa: para a nota e limpa o estado
     stopMelodyAt(time);
     state.lastMelodyNote = null;
+  } else if (state.lastMelodyNote !== null) {
+    // --- NOVO: Se NÃO há evento, mas HÁ uma nota sustentada, ela se readapta ao acorde atual ---
+    const chord = state.chordPlan[state.currentChordIndex];
+    if (chord) {
+      const newlyAdaptedNumber = adaptNumberToChord(
+        state.lastMelodyNote,
+        chord.note,
+        chord.type,
+        null // Força readaptação ignorando a nota anterior
+      );
+      // Só toca se a nota mudou (evita glitches de sobreposição)
+      if (newlyAdaptedNumber !== state.lastMelodyNote) {
+        playMelodyNumber(time, newlyAdaptedNumber, ui.melodyInstrument.value);
+        state.lastMelodyNote = newlyAdaptedNumber;
+      }
+    }
   }
+
   state.stepIndex++;
-  // ⏩ Troca de compasso
+
+  // ⏩ Troca de compasso (mantido, mas removemos a readaptação redundante)
   if (isNewBar) {
     state.currentChordIndex = (state.currentChordIndex + 1) % state.chordPlan.length;
     state.barsInChord = 0;
-    // 👉 readapta nota sustentada
-    if (state.lastMelodyNote !== null) {
-      const chordNow = state.chordPlan[state.currentChordIndex];
-      if (chordNow) {
-        state.lastMelodyNote = adaptNumberToChord(
-          state.lastMelodyNote,
-          chordNow.note,
-          chordNow.type
-        );
-      }
-    }
+    // 👉 A readaptação agora é feita continuamente em `scheduleStep`, não apenas no início do compasso
     state.guitarPlan = null;
   }
+
   state.nextNoteTime += state.sixteenthDur;
 }
 // --- CORREÇÃO DA FUNÇÃO playChord PARA O COMPORTAMENTO ANTIGO ---
