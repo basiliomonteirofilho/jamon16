@@ -427,7 +427,7 @@
     </div>
   </div>
   <div id="numberPicker">
-    <h3>Selecione uma nota</h3>
+    
     <div id="numberGrid"></div>
   </div>
   <script>
@@ -779,29 +779,52 @@
       const bassPlan = [];
       const chordPlan = [];
 
-      function getBassNotesFromScale(degree, scale, quality) {
-        if (scale === "chromatic") {
-          const rootIdx = (state.keyIdx + DEGREE_TO_ROOT[degree]) % 12;
-          const rootNote = PITCHES[rootIdx];
-          const octave = 8;
-          return Array(8).fill().map((_, i) => {
-            const noteIdx = (rootIdx - i + 12) % 12;
-            const p = PITCHES[noteIdx];
-            return p.endsWith('S') ? `${p.replace('S', '')}${octave}S` : `${p}${octave}`;
-          });
-        }
-        if (Array.isArray(scale)) {
-          const rootIdx = (state.keyIdx + DEGREE_TO_ROOT[degree]) % 12;
-          return scale.map(interval => {
-            const intervalOffset = DEGREE_TO_ROOT[interval] || 0;
-            const noteIdx = (rootIdx + intervalOffset) % 12;
-            const noteName = PITCHES[noteIdx];
-            if (interval === 1) return noteName;
-            return noteName.endsWith('S') ? `${noteName.replace('S', '')}8S` : `${noteName}8`;
-          });
-        }
-        return [PITCHES[(state.keyIdx + DEGREE_TO_ROOT[degree]) % 12]];
+      function getBassNotesFromScale(degree, scale, chordType) {
+  // Determina se o acorde é menor ou de tipo específico que requer escala menor
+  const isMinor = chordType.startsWith('m') || chordType === 'dim' || ['5+', '75+', '95+'].includes(chordType);
+
+  if (scale === "chromatic") {
+    const rootIdx = (state.keyIdx + DEGREE_TO_ROOT[degree]) % 12;
+    const rootNote = PITCHES[rootIdx];
+    const octave = 8;
+    return Array(8).fill().map((_, i) => {
+      const noteIdx = (rootIdx - i + 12) % 12;
+      const p = PITCHES[noteIdx];
+      return p.endsWith('S') ? `${p.replace('S', '')}${octave}S` : `${p}${octave}`;
+    });
+  }
+
+  if (Array.isArray(scale)) {
+    const rootIdx = (state.keyIdx + DEGREE_TO_ROOT[degree]) % 12;
+    return scale.map(interval => {
+      // Mapeia os intervalos para tons maiores ou menores
+      let intervalOffset;
+      if (isMinor) {
+        // Escala menor natural: 1, 2, ♭3, 4, 5, ♭6, ♭7, 8
+        const minorIntervals = { 1: 0, 2: 2, 3: 3, 4: 5, 5: 7, 6: 8, 7: 10, 8: 12 };
+        intervalOffset = minorIntervals[interval] || 0;
+      } else {
+        // Escala maior: 1, 2, 3, 4, 5, 6, 7, 8
+        const majorIntervals = { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11, 8: 12 };
+        intervalOffset = majorIntervals[interval] || 0;
       }
+
+      const noteIdx = (rootIdx + intervalOffset) % 12;
+      const octave = interval === 1 ? '' : '8'; // A nota raiz (1) não tem oitava no nome do arquivo
+      const noteName = PITCHES[noteIdx];
+
+      if (interval === 1) {
+        return noteName; // Ex: 'D'
+      } else {
+        // Para notas com oitava, retorna no formato 'F8' ou 'FS8'
+        return noteName.endsWith('S') ? `${noteName.replace('S', '')}${octave}S` : `${noteName}${octave}`;
+      }
+    });
+  }
+
+  // Fallback
+  return [PITCHES[(state.keyIdx + DEGREE_TO_ROOT[degree]) % 12]];
+}
 
       let globalChordVariation = '';
       if (styleKey === "Blues") {
@@ -853,7 +876,7 @@
         const displayedChord = displayedNote + chordType;
         chordPlan.push({ note: rootNote, type: chordType, display: chordDisplay, displayed: displayedChord });
         
-        const bassNotes = getBassNotesFromScale(degree, state.currentGroove.bassScale, state.quality);
+        const bassNotes = getBassNotesFromScale(degree, state.currentGroove.bassScale, chordType);
         const stepsInBar = sixteenthsPerBar;
         const notesPerBar = Math.ceil(stepsInBar / bassNotes.length);
         const fullBassNotes = Array(stepsInBar).fill().map((_, i) => bassNotes[Math.floor(i / notesPerBar)] || bassNotes[0]);
@@ -1614,45 +1637,133 @@
     }
 
     ui.btnSaveWAV.addEventListener('click', async () => {
-      if (!audio.ctx) await initAudio();
-      
-      const dest = audio.ctx.createMediaStreamDestination();
-      audio.master.connect(dest);
-      
-      const mimeType = 'audio/webm;codecs=opus';
-      mediaRecorder = new MediaRecorder(dest.stream, { mimeType });
-      recordedChunks = [];
-      
-      mediaRecorder.ondataavailable = e => {
-        if (e.data.size > 0) recordedChunks.push(e.data);
-      };
+  if (!audio.ctx) await initAudio();
 
-      mediaRecorder.onstop = async () => {
-        const webmBlob = new Blob(recordedChunks, { type: mimeType });
-        try {
-          const arrayBuffer = await webmBlob.arrayBuffer();
-          const audioBuffer = await audio.ctx.decodeAudioData(arrayBuffer);
-          const wavBlob = audioBufferToWav(audioBuffer);
-          downloadBlob(wavBlob, 'jam-on.wav');
-        } catch (err) {
-          console.error('Erro ao processar o áudio:', err);
-          alert('Erro ao salvar o arquivo WAV: ' + err.message);
+  // Pergunta ao usuário por quanto tempo deseja gravar
+  const duration = prompt("Digite a duração da gravação em segundos (ex: 30):", "30");
+  if (!duration || isNaN(duration)) return;
+
+  const seconds = parseFloat(duration);
+  if (seconds <= 0) return;
+
+  try {
+    // Cria um buffer offline para renderizar o áudio
+    const sampleRate = audio.ctx.sampleRate;
+    const offlineCtx = new OfflineAudioContext(2, sampleRate * seconds, sampleRate);
+
+    // Reconecta os nós de ganho para o contexto offline
+    const offlineMaster = offlineCtx.createGain();
+    const offlineMix = offlineCtx.createGain();
+    const offlineDrumGain = offlineCtx.createGain();
+    const offlineBassGain = offlineCtx.createGain();
+    const offlineCleanGain = offlineCtx.createGain();
+    const offlineDistGain = offlineCtx.createGain();
+    const offlineMelodyGain = offlineCtx.createGain();
+
+    offlineMaster.gain.value = 0.9;
+    offlineDrumGain.gain.value = audio.drumGain.gain.value;
+    offlineBassGain.gain.value = audio.bassGain.gain.value;
+    offlineCleanGain.gain.value = audio.cleanGain.gain.value;
+    offlineDistGain.gain.value = audio.distGain.gain.value;
+    offlineMelodyGain.gain.value = audio.melodyGain.gain.value;
+
+    offlineMaster.connect(offlineMix);
+    offlineDrumGain.connect(offlineMaster);
+    offlineBassGain.connect(offlineMaster);
+    offlineCleanGain.connect(offlineMaster);
+    offlineDistGain.connect(offlineMaster);
+    offlineMelodyGain.connect(offlineMaster);
+    offlineMix.connect(offlineCtx.destination);
+
+    // Função auxiliar para clonar buffers
+    function cloneBuffer(buffer, ctx) {
+      const newBuffer = ctx.createBuffer(buffer.numberOfChannels, buffer.length, buffer.sampleRate);
+      for (let i = 0; i < buffer.numberOfChannels; i++) {
+        newBuffer.copyToChannel(buffer.getChannelData(i), i);
+      }
+      return newBuffer;
+    }
+
+    // Clona e reconecta os buffers de bateria
+    for (const [key, buffer] of Object.entries(state.buffers.drums)) {
+      if (buffer) {
+        const clonedBuffer = cloneBuffer(buffer, offlineCtx);
+        state.buffers.drums[key] = clonedBuffer; // Temporariamente substitui para o offline
+      }
+    }
+
+    // Clona e reconecta os buffers de baixo
+    for (const [key, buffer] of Object.entries(state.buffers.bass)) {
+      if (buffer) {
+        const clonedBuffer = cloneBuffer(buffer, offlineCtx);
+        state.buffers.bass[key] = clonedBuffer;
+      }
+    }
+
+    // Clona e reconecta os buffers de guitarra
+    if (state.buffers.guitar) {
+      for (const [url, buffer] of Object.entries(state.buffers.guitar)) {
+        if (buffer) {
+          const clonedBuffer = cloneBuffer(buffer, offlineCtx);
+          state.buffers.guitar[url] = clonedBuffer;
         }
-      };
+      }
+    }
 
-      mediaRecorder.onerror = (e) => {
-        console.error('Erro no MediaRecorder:', e);
-        alert('Erro ao iniciar a gravação.');
-      };
+    // Clona e reconecta os buffers de melodia
+    for (const [url, buffer] of Object.entries(state.buffers.melody)) {
+      if (buffer) {
+        const clonedBuffer = cloneBuffer(buffer, offlineCtx);
+        state.buffers.melody[url] = clonedBuffer;
+      }
+    }
 
-      mediaRecorder.start();
+    // Reinicia o estado da música para garantir que a gravação comece do início
+    state.running = false;
+    state.paused = false;
+    state.stepIndex = 0;
+    state.nextNoteTime = 0;
+    state.currentChordIndex = 0;
+    state.barsInChord = 0;
+    state.lastBassSource = null;
+    state.lastDistSource = null;
+    state.lastMelodySource = null;
+    state.lastMelodyNote = null;
 
-      setTimeout(() => {
-        if (mediaRecorder && mediaRecorder.state === "recording") {
-          mediaRecorder.stop();
-        }
-      }, 2 * 60 * 1000);
-    });
+    // Inicia a reprodução no contexto offline
+    state.running = true;
+    state.nextNoteTime = 0;
+    state.schedulerTimer = setInterval(() => {
+      if (!state.running) return;
+      const lookahead = 0.20;
+      while (state.nextNoteTime < lookahead) {
+        scheduleStep();
+      }
+    }, 25);
+
+    // Aguarda a renderização
+    const renderedBuffer = await offlineCtx.startRendering();
+
+    // Restaura os buffers originais
+    await ensureBasicSamples();
+    await ensureMelodySamplesNeeded();
+
+    // Converte o buffer renderizado para WAV e faz o download
+    const wavBlob = audioBufferToWav(renderedBuffer);
+    downloadBlob(wavBlob, 'jam-on.wav');
+
+    // Limpa o estado
+    clearInterval(state.schedulerTimer);
+    state.running = false;
+    state.schedulerTimer = null;
+
+    alert('Gravação salva com sucesso como "jam-on.wav"!');
+
+  } catch (err) {
+    console.error('Erro ao salvar WAV:', err);
+    alert('Erro ao salvar o arquivo WAV: ' + err.message);
+  }
+});
 
     window.addEventListener('load', () => {
       const buttons = document.querySelectorAll('button');
