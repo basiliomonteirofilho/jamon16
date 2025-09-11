@@ -910,6 +910,14 @@ async function buildBassAndChordPlan() {
     }
   });
   await Promise.all(preloadPromises);
+
+    // --- DIAGNÓSTICO: Verifica se pelo menos UM sample de guitarra foi carregado ---
+  const guitarSamplesLoaded = Object.keys(state.buffers.guitar || {}).length;
+  console.log(`🎸 Samples de guitarra carregados: ${guitarSamplesLoaded}`);
+  if (guitarSamplesLoaded === 0) {
+    alert("⚠️ Nenhum sample de guitarra foi carregado. Verifique se as pastas 'guitarraDistorcao' e 'guitarraLimpa' existem e contêm os arquivos MP3.");
+  }
+  // --- FIM DO DIAGNÓSTICO ---
 } // <-- ESTA CHAVE DEVE SER A ÚNICA QUE FECHA A FUNÇÃO buildBassAndChordPlan
 function parsePattern(patternText) {
   const result = { intro: [], loop: [] };
