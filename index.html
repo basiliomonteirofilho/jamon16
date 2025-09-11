@@ -335,6 +335,20 @@
       opacity: 0.7;
       pointer-events: none;
     }
+    .recording-indicator {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      background-color: #f44336;
+      border-radius: 50%;
+      margin-right: 8px;
+      animation: pulse 1s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.4; }
+      100% { opacity: 1; }
+    }
   </style>
 </head>
 <body>
@@ -628,13 +642,13 @@
       lastMelodyNote: null,
       guitarPlan: null,
       activeInput: null,
-      schedulerTimer: null
+      schedulerTimer: null,
+      isRecording: false,
+      mediaRecorder: null,
+      recordedChunks: []
     };
 
     const mute = { bass: false, drums: false, clean: false, dist: false };
-    let isRecording = false;
-    let recordedChunks = [];
-    let mediaRecorder = null;
 
     // ===== FUNÇÕES UTILITÁRIAS =====
     function log(msg) {
@@ -944,7 +958,7 @@
         guitarUrls.add(`guitarraDistorcao/${ch.note}/${fullChordName}.mp3`);
         guitarUrls.add(`guitarraDistorcao/abafadas/${ch.note}/${fullChordName}.mp3`);
         guitarUrls.add(`guitarraDistorcao/dedilhada/${ch.note}/${fullChordName}.mp3`);
-        guitarUrls.add(`guitarraLimpa/${ch.note}/${fullChordName}.mp3`);
+        guitarUrls.add(`guitarraLimpa/${ch.note/${fullChordName}.mp3`);
       }
       
       const preloadPromises = [];
@@ -1622,7 +1636,7 @@
       hideNumberPicker();
     }
 
-    // ===== SALVAR COMO WAV =====
+    // ===== FUNÇÕES DE GRAVAÇÃO WAV =====
     function audioBufferToWav(buffer) {
       const numOfChan = buffer.numberOfChannels;
       const length = buffer.length * numOfChan * 2 + 44;
@@ -1630,6 +1644,13 @@
       const view = new DataView(arrayBuffer);
       const channels = [];
       let i, sample, offset = 0;
+
+      // Função auxiliar para escrever strings no DataView
+      function writeString(view, offset, string) {
+        for (let i = 0; i < string.length; i++) {
+          view.setUint8(offset + i, string.charCodeAt(i));
+        }
+      }
 
       writeString(view, 0, 'RIFF');
       view.setUint32(4, length - 8, true);
@@ -1662,12 +1683,6 @@
       return new Blob([view], { type: 'audio/wav' });
     }
 
-    function writeString(view, offset, string) {
-      for (let i = 0; i < string.length; i++) {
-        view.setUint8(offset + i, string.charCodeAt(i));
-      }
-    }
-
     function downloadBlob(blob, filename) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -1682,8 +1697,60 @@
       }, 100);
     }
 
-    ui.btnSaveWAV.addEventListener('click', async () => {
-      alert("A funcionalidade de gravação WAV está temporariamente desativada para melhorias. Em breve estará disponível novamente.");
+    async function startRecording() {
+      if (!audio.ctx) {
+        await initAudio();
+      }
+      
+      state.recordedChunks = [];
+      
+      try {
+        // Cria um MediaStreamDestination para capturar o áudio
+        const destination = audio.ctx.createMediaStreamDestination();
+        audio.master.connect(destination);
+        
+        // Cria um MediaRecorder para gravar o stream
+        state.mediaRecorder = new MediaRecorder(destination.stream);
+        
+        state.mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            state.recordedChunks.push(event.data);
+          }
+        };
+        
+        state.mediaRecorder.onstop = () => {
+          const blob = new Blob(state.recordedChunks, { type: 'audio/wav' });
+          downloadBlob(blob, 'jam-on-recording.wav');
+          ui.btnSaveWAV.innerHTML = '💾 Salvar como WAV';
+          state.isRecording = false;
+        };
+        
+        state.mediaRecorder.start();
+        state.isRecording = true;
+        ui.btnSaveWAV.innerHTML = '<span class="recording-indicator"></span>Gravando...';
+        
+      } catch (error) {
+        console.error('Erro ao iniciar gravação:', error);
+        alert('Não foi possível iniciar a gravação. Verifique se seu navegador suporta esta funcionalidade.');
+      }
+    }
+
+    function stopRecording() {
+      if (state.mediaRecorder && state.isRecording) {
+        state.mediaRecorder.stop();
+      }
+    }
+
+    ui.btnSaveWAV.addEventListener('click', () => {
+      if (state.isRecording) {
+        stopRecording();
+      } else {
+        if (state.running) {
+          startRecording();
+        } else {
+          alert('Por favor, inicie a reprodução primeiro para poder gravar.');
+        }
+      }
     });
 
     // ===== INICIALIZAÇÃO =====
