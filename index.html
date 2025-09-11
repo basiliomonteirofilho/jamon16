@@ -1640,18 +1640,22 @@
   if (!audio.ctx) await initAudio();
 
   // Pergunta ao usuário por quanto tempo deseja gravar
-  const duration = prompt("Digite a duração da gravação em segundos (ex: 30):", "30");
-  if (!duration || isNaN(duration)) return;
-
-  const seconds = parseFloat(duration);
-  if (seconds <= 0) return;
+  const durationInput = prompt("Digite a duração da gravação em segundos (ex: 60):", "60");
+  const seconds = parseFloat(durationInput);
+  if (!durationInput || isNaN(seconds) || seconds <= 0) {
+    alert("Duração inválida. Operação cancelada.");
+    return;
+  }
 
   try {
-    // Cria um buffer offline para renderizar o áudio
     const sampleRate = audio.ctx.sampleRate;
-    const offlineCtx = new OfflineAudioContext(2, sampleRate * seconds, sampleRate);
+    const totalLength = Math.ceil(sampleRate * seconds);
+    const numChannels = 2; // Stereo
 
-    // Reconecta os nós de ganho para o contexto offline
+    // Cria um contexto offline para renderização
+    const offlineCtx = new OfflineAudioContext(numChannels, totalLength, sampleRate);
+
+    // Recria a cadeia de ganho no contexto offline
     const offlineMaster = offlineCtx.createGain();
     const offlineMix = offlineCtx.createGain();
     const offlineDrumGain = offlineCtx.createGain();
@@ -1660,13 +1664,15 @@
     const offlineDistGain = offlineCtx.createGain();
     const offlineMelodyGain = offlineCtx.createGain();
 
+    // Configura os ganhos com os valores atuais da UI
     offlineMaster.gain.value = 0.9;
-    offlineDrumGain.gain.value = audio.drumGain.gain.value;
-    offlineBassGain.gain.value = audio.bassGain.gain.value;
-    offlineCleanGain.gain.value = audio.cleanGain.gain.value;
-    offlineDistGain.gain.value = audio.distGain.gain.value;
-    offlineMelodyGain.gain.value = audio.melodyGain.gain.value;
+    offlineDrumGain.gain.value = parseFloat(ui.volDrums.value);
+    offlineBassGain.gain.value = parseFloat(ui.volBass.value);
+    offlineCleanGain.gain.value = parseFloat(ui.volClean.value);
+    offlineDistGain.gain.value = parseFloat(ui.volDist.value);
+    offlineMelodyGain.gain.value = parseFloat(ui.volMelody.value);
 
+    // Reconecta a cadeia
     offlineMaster.connect(offlineMix);
     offlineDrumGain.connect(offlineMaster);
     offlineBassGain.connect(offlineMaster);
@@ -1675,89 +1681,281 @@
     offlineMelodyGain.connect(offlineMaster);
     offlineMix.connect(offlineCtx.destination);
 
-    // Função auxiliar para clonar buffers
+    // Função para clonar buffers de áudio para o contexto offline
     function cloneBuffer(buffer, ctx) {
+      if (!buffer) return null;
       const newBuffer = ctx.createBuffer(buffer.numberOfChannels, buffer.length, buffer.sampleRate);
-      for (let i = 0; i < buffer.numberOfChannels; i++) {
-        newBuffer.copyToChannel(buffer.getChannelData(i), i);
+      for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+        const data = buffer.getChannelData(channel);
+        newBuffer.copyToChannel(data, channel);
       }
       return newBuffer;
     }
 
-    // Clona e reconecta os buffers de bateria
+    // Clona todos os buffers necessários para o contexto offline
+    const offlineBuffers = {
+      drums: {},
+      bass: {},
+      guitar: {},
+      melody: {}
+    };
+
     for (const [key, buffer] of Object.entries(state.buffers.drums)) {
-      if (buffer) {
-        const clonedBuffer = cloneBuffer(buffer, offlineCtx);
-        state.buffers.drums[key] = clonedBuffer; // Temporariamente substitui para o offline
-      }
+      offlineBuffers.drums[key] = cloneBuffer(buffer, offlineCtx);
     }
 
-    // Clona e reconecta os buffers de baixo
     for (const [key, buffer] of Object.entries(state.buffers.bass)) {
-      if (buffer) {
-        const clonedBuffer = cloneBuffer(buffer, offlineCtx);
-        state.buffers.bass[key] = clonedBuffer;
-      }
+      offlineBuffers.bass[key] = cloneBuffer(buffer, offlineCtx);
     }
 
-    // Clona e reconecta os buffers de guitarra
     if (state.buffers.guitar) {
+      offlineBuffers.guitar = {};
       for (const [url, buffer] of Object.entries(state.buffers.guitar)) {
-        if (buffer) {
-          const clonedBuffer = cloneBuffer(buffer, offlineCtx);
-          state.buffers.guitar[url] = clonedBuffer;
-        }
+        offlineBuffers.guitar[url] = cloneBuffer(buffer, offlineCtx);
       }
     }
 
-    // Clona e reconecta os buffers de melodia
-    for (const [url, buffer] of Object.entries(state.buffers.melody)) {
-      if (buffer) {
-        const clonedBuffer = cloneBuffer(buffer, offlineCtx);
-        state.buffers.melody[url] = clonedBuffer;
+    if (state.buffers.melody) {
+      offlineBuffers.melody = {};
+      for (const [url, buffer] of Object.entries(state.buffers.melody)) {
+        offlineBuffers.melody[url] = cloneBuffer(buffer, offlineCtx);
       }
     }
 
-    // Reinicia o estado da música para garantir que a gravação comece do início
-    state.running = false;
+    // --- INICIA A RENDERIZAÇÃO ---
+
+    // Salva o estado atual para restaurar depois
+    const originalRunning = state.running;
+    const originalPaused = state.paused;
+    const originalStepIndex = state.stepIndex;
+    const originalNextNoteTime = state.nextNoteTime;
+    const originalCurrentChordIndex = state.currentChordIndex;
+    const originalBarsInChord = state.barsInChord;
+
+    // Reinicia o estado da música para o início
+    state.running = true;
     state.paused = false;
     state.stepIndex = 0;
-    state.nextNoteTime = 0;
+    state.nextNoteTime = 0; // Começa imediatamente no contexto offline
     state.currentChordIndex = 0;
     state.barsInChord = 0;
-    state.lastBassSource = null;
-    state.lastDistSource = null;
-    state.lastMelodySource = null;
-    state.lastMelodyNote = null;
 
-    // Inicia a reprodução no contexto offline
-    state.running = true;
-    state.nextNoteTime = 0;
-    state.schedulerTimer = setInterval(() => {
-      if (!state.running) return;
-      const lookahead = 0.20;
-      while (state.nextNoteTime < lookahead) {
-        scheduleStep();
+    // Variáveis para controle da renderização
+    let currentStep = 0;
+    const sixteenthDur = 60 / state.bpm / 4;
+    const stepsPerSecond = 1 / sixteenthDur;
+    const totalSteps = Math.ceil(seconds * stepsPerSecond);
+
+    // Função agendadora simplificada para o contexto offline
+    function scheduleStepForOffline(stepIndex) {
+      const time = stepIndex * sixteenthDur;
+
+      if (time >= seconds) return; // Não agenda além da duração solicitada
+
+      const beats = meterToBeats(state.meter);
+      const sixteenthsPerBar = beats * 4;
+      const isNewBar = (stepIndex % sixteenthsPerBar) === 0;
+
+      // --- BATERIA ---
+      const drumToken = state.drumSeq[stepIndex % state.drumSeq.length];
+      if (drumToken && !mute.drums) {
+        let drumKey = null;
+        if (['bu', 'bumbo'].includes(drumToken)) drumKey = 'bu';
+        else if (['ca', 'caixa'].includes(drumToken)) drumKey = 'ca';
+        else if (['ch', 'chimbal'].includes(drumToken)) drumKey = 'ch';
+        else if (['ba', 'bumbo-ataque'].includes(drumToken)) drumKey = 'ba';
+        else if (['cch', 'caixa-chimbal'].includes(drumToken)) drumKey = 'cch';
+        else if (['bco', 'bumbo-conducao'].includes(drumToken)) drumKey = 'bco';
+        else if (['co', 'conducao'].includes(drumToken)) drumKey = 'co';
+        else if (['cco', 'caixa-conducao'].includes(drumToken)) drumKey = 'cco';
+        else if (['to1', 'tom-1'].includes(drumToken)) drumKey = 'to1';
+        else if (['to2', 'tom-2'].includes(drumToken)) drumKey = 'to2';
+        else if (['su', 'surdo'].includes(drumToken)) drumKey = 'su';
+        else if (['bch', 'bumbo-chimbal'].includes(drumToken)) drumKey = 'bch';
+
+        if (drumKey && offlineBuffers.drums[drumKey]) {
+          const src = offlineCtx.createBufferSource();
+          const g = offlineCtx.createGain();
+          src.buffer = offlineBuffers.drums[drumKey];
+          src.connect(g);
+          g.connect(offlineDrumGain);
+          g.gain.setValueAtTime(0.0, time);
+          g.gain.linearRampToValueAtTime(1.0, time + 0.005);
+          src.start(time);
+        }
       }
-    }, 25);
 
-    // Aguarda a renderização
+      // --- BAIXO ---
+      const bassCommand = state.bassPlan[stepIndex % state.bassPlan.length];
+      if (!mute.bass && bassCommand !== '-' && bassCommand !== 'x') {
+        const buf = offlineBuffers.bass[bassCommand];
+        if (buf) {
+          const src = offlineCtx.createBufferSource();
+          const g = offlineCtx.createGain();
+          src.buffer = buf;
+          src.connect(g);
+          g.connect(offlineBassGain);
+          g.gain.setValueAtTime(0.0, time);
+          g.gain.linearRampToValueAtTime(1.0, time + 0.01);
+          src.start(time);
+        }
+      }
+
+      // --- GUITARRA ---
+      if (state.currentGroove && state.currentGroove.guitarRhythm) {
+        if (!state.guitarPlan) {
+          state.guitarPlan = expandRhythm(state.currentGroove.guitarRhythm, state.bassPlan.length);
+        }
+        const guitarCommand = state.guitarPlan[stepIndex % state.guitarPlan.length];
+        if (guitarCommand && guitarCommand !== '-' && !mute.dist) {
+          const chord = state.chordPlan[state.currentChordIndex];
+          if (chord) {
+            let baseFolder = 'guitarraDistorcao';
+            if (guitarCommand === 'ab') baseFolder = 'guitarraDistorcao/abafadas';
+            else if (guitarCommand === 'de') baseFolder = 'guitarraDistorcao/dedilhada';
+            else if (guitarCommand === 'so') baseFolder = 'guitarraDistorcao';
+            let fullChordName = chord.note;
+            if (chord.type) fullChordName += chord.type;
+            const url = `${baseFolder}/${chord.note}/${fullChordName}.mp3`;
+            const buf = offlineBuffers.guitar?.[url] || null;
+            if (buf) {
+              const src = offlineCtx.createBufferSource();
+              const g = offlineCtx.createGain();
+              src.buffer = buf;
+              src.connect(g);
+              g.connect(offlineDistGain);
+              g.gain.setValueAtTime(0.0, time);
+              g.gain.linearRampToValueAtTime(1.0, time + 0.01);
+              src.start(time);
+            }
+          }
+        }
+      } else {
+        if (isNewBar) {
+          const chord = state.chordPlan[state.currentChordIndex];
+          if (chord) {
+            if (!mute.clean) {
+              // Play Clean Chord
+              let fullChordName = chord.note;
+              if (chord.type) fullChordName += chord.type;
+              const folder = 'guitarraLimpa';
+              const url = `${folder}/${chord.note}/${fullChordName}.mp3`;
+              const buf = offlineBuffers.guitar?.[url] || null;
+              if (buf) {
+                const src = offlineCtx.createBufferSource();
+                const g = offlineCtx.createGain();
+                src.buffer = buf;
+                src.connect(g);
+                g.connect(offlineCleanGain);
+                g.gain.setValueAtTime(0.0, time);
+                g.gain.linearRampToValueAtTime(1.0, time + 0.01);
+                src.start(time);
+              }
+            }
+            if (!mute.dist) {
+              // Play Distorted Chord
+              const fullChordName = chord.note + chord.type;
+              const url = `guitarraDistorcao/${chord.note}/${fullChordName}.mp3`;
+              const buf = offlineBuffers.guitar?.[url] || null;
+              if (buf) {
+                const src = offlineCtx.createBufferSource();
+                const g = offlineCtx.createGain();
+                src.buffer = buf;
+                src.connect(g);
+                g.connect(offlineDistGain);
+                g.gain.setValueAtTime(0.0, time);
+                g.gain.linearRampToValueAtTime(1.0, time + 0.01);
+                src.start(time);
+              }
+            }
+          }
+        }
+      }
+
+      // --- MELODIA ---
+      const melodyEvent = state.melodyPlan[stepIndex % state.melodyPlan.length];
+      if (melodyEvent && melodyEvent.type === 'start') {
+        if (melodyEvent.adaptedNumber === null) {
+          const chord = state.chordPlan[state.currentChordIndex];
+          const adaptedNumber = adaptNumberToChord(
+            melodyEvent.originalNumber,
+            chord.note,
+            chord.type,
+            state.lastMelodyNote
+          );
+          melodyEvent.adaptedNumber = adaptedNumber;
+          state.lastMelodyNote = adaptedNumber;
+        }
+        playMelodyNumberOffline(time, melodyEvent.adaptedNumber, melodyEvent.instrument, offlineCtx, offlineBuffers, offlineMelodyGain);
+      } else if (melodyEvent && melodyEvent.type === 'mute') {
+        // Para simplificar, não implementamos stop em offline. A nota tocará sua duração natural.
+        state.lastMelodyNote = null;
+      } else if (state.lastMelodyNote !== null) {
+        const chord = state.chordPlan[state.currentChordIndex];
+        if (chord) {
+          const newlyAdaptedNumber = adaptNumberToChord(
+            state.lastMelodyNote,
+            chord.note,
+            chord.type,
+            null
+          );
+          if (newlyAdaptedNumber !== state.lastMelodyNote) {
+            playMelodyNumberOffline(time, newlyAdaptedNumber, ui.melodyInstrument.value, offlineCtx, offlineBuffers, offlineMelodyGain);
+            state.lastMelodyNote = newlyAdaptedNumber;
+          }
+        }
+      }
+
+      // Atualiza o índice do acorde se for um novo compasso
+      if (isNewBar) {
+        state.currentChordIndex = (state.currentChordIndex + 1) % state.chordPlan.length;
+        state.barsInChord = 0;
+        state.guitarPlan = null;
+      }
+    }
+
+    // Função auxiliar para tocar notas de melodia no contexto offline
+    function playMelodyNumberOffline(time, number, instrumentType, ctx, buffers, gainNode) {
+      const folder = MELODY_INSTRUMENTS[instrumentType];
+      if (!folder) return;
+      const noteName = NUM_TO_NAME[number];
+      const url = `${folder}/${number}${noteName}.mp3`;
+      const buf = buffers.melody[url];
+      if (!buf) return;
+
+      const src = ctx.createBufferSource();
+      const g = ctx.createGain();
+      src.buffer = buf;
+      src.connect(g);
+      g.connect(gainNode);
+      g.gain.setValueAtTime(0.0, time);
+      g.gain.linearRampToValueAtTime(1.0, time + 0.01);
+      const maxDur = sixteenthDur * 16;
+      src.start(time);
+      src.stop(time + Math.min(buf.duration, maxDur));
+    }
+
+    // Agenda todos os passos para a renderização offline
+    for (let i = 0; i < totalSteps; i++) {
+      scheduleStepForOffline(i);
+    }
+
+    // Inicia a renderização
     const renderedBuffer = await offlineCtx.startRendering();
 
-    // Restaura os buffers originais
-    await ensureBasicSamples();
-    await ensureMelodySamplesNeeded();
+    // --- RESTAURA O ESTADO ORIGINAL ---
+    state.running = originalRunning;
+    state.paused = originalPaused;
+    state.stepIndex = originalStepIndex;
+    state.nextNoteTime = originalNextNoteTime + (audio.ctx.currentTime - offlineCtx.currentTime);
+    state.currentChordIndex = originalCurrentChordIndex;
+    state.barsInChord = originalBarsInChord;
 
     // Converte o buffer renderizado para WAV e faz o download
     const wavBlob = audioBufferToWav(renderedBuffer);
     downloadBlob(wavBlob, 'jam-on.wav');
 
-    // Limpa o estado
-    clearInterval(state.schedulerTimer);
-    state.running = false;
-    state.schedulerTimer = null;
-
-    alert('Gravação salva com sucesso como "jam-on.wav"!');
+    alert(`Gravação de ${seconds} segundos salva com sucesso como "jam-on.wav"!`);
 
   } catch (err) {
     console.error('Erro ao salvar WAV:', err);
