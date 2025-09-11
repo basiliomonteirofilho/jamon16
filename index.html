@@ -1741,10 +1741,11 @@
     state.barsInChord = 0;
 
     // Variáveis para controle da renderização
-    let currentStep = 0;
-    const sixteenthDur = 60 / state.bpm / 4;
-    const stepsPerSecond = 1 / sixteenthDur;
-    const totalSteps = Math.ceil(seconds * stepsPerSecond);
+        // Referências para as últimas fontes de áudio (para parar no momento certo)
+    let lastBassSourceOffline = null;
+    let lastCleanSourceOffline = null;
+    let lastDistSourceOffline = null;
+    let lastMelodySourceOffline = null;
 
     // Função agendadora simplificada para o contexto offline
     function scheduleStepForOffline(stepIndex) {
@@ -1785,11 +1786,15 @@
         }
       }
 
-      // --- BAIXO ---
+            // --- BAIXO ---
       const bassCommand = state.bassPlan[stepIndex % state.bassPlan.length];
       if (!mute.bass && bassCommand !== '-' && bassCommand !== 'x') {
         const buf = offlineBuffers.bass[bassCommand];
         if (buf) {
+          // Para a nota anterior de baixo, se existir
+          if (lastBassSourceOffline) {
+            lastBassSourceOffline.stop(time);
+          }
           const src = offlineCtx.createBufferSource();
           const g = offlineCtx.createGain();
           src.buffer = buf;
@@ -1798,6 +1803,13 @@
           g.gain.setValueAtTime(0.0, time);
           g.gain.linearRampToValueAtTime(1.0, time + 0.01);
           src.start(time);
+          lastBassSourceOffline = src; // Atualiza a referência
+        }
+      } else {
+        // Se o comando for '-' ou 'x', para a nota atual
+        if (lastBassSourceOffline) {
+          lastBassSourceOffline.stop(time);
+          lastBassSourceOffline = null;
         }
       }
 
@@ -1818,7 +1830,11 @@
             if (chord.type) fullChordName += chord.type;
             const url = `${baseFolder}/${chord.note}/${fullChordName}.mp3`;
             const buf = offlineBuffers.guitar?.[url] || null;
-            if (buf) {
+                        if (buf) {
+              // Para a nota anterior de distorção, se existir
+              if (lastDistSourceOffline) {
+                lastDistSourceOffline.stop(time);
+              }
               const src = offlineCtx.createBufferSource();
               const g = offlineCtx.createGain();
               src.buffer = buf;
@@ -1827,6 +1843,7 @@
               g.gain.setValueAtTime(0.0, time);
               g.gain.linearRampToValueAtTime(1.0, time + 0.01);
               src.start(time);
+              lastDistSourceOffline = src; // Atualiza a referência
             }
           }
         }
@@ -1857,7 +1874,11 @@
               const fullChordName = chord.note + chord.type;
               const url = `guitarraDistorcao/${chord.note}/${fullChordName}.mp3`;
               const buf = offlineBuffers.guitar?.[url] || null;
-              if (buf) {
+                            if (buf) {
+                // Para a nota anterior de distorção, se existir
+                if (lastDistSourceOffline) {
+                  lastDistSourceOffline.stop(time);
+                }
                 const src = offlineCtx.createBufferSource();
                 const g = offlineCtx.createGain();
                 src.buffer = buf;
@@ -1866,6 +1887,7 @@
                 g.gain.setValueAtTime(0.0, time);
                 g.gain.linearRampToValueAtTime(1.0, time + 0.01);
                 src.start(time);
+                lastDistSourceOffline = src; // Atualiza a referência
               }
             }
           }
@@ -1874,20 +1896,28 @@
 
       // --- MELODIA ---
       const melodyEvent = state.melodyPlan[stepIndex % state.melodyPlan.length];
-      if (melodyEvent && melodyEvent.type === 'start') {
-        if (melodyEvent.adaptedNumber === null) {
-          const chord = state.chordPlan[state.currentChordIndex];
-          const adaptedNumber = adaptNumberToChord(
-            melodyEvent.originalNumber,
-            chord.note,
-            chord.type,
-            state.lastMelodyNote
-          );
-          melodyEvent.adaptedNumber = adaptedNumber;
-          state.lastMelodyNote = adaptedNumber;
+              // Para a nota anterior de melodia, se existir
+        if (lastMelodySourceOffline) {
+          lastMelodySourceOffline.stop(time);
         }
-        playMelodyNumberOffline(time, melodyEvent.adaptedNumber, melodyEvent.instrument, offlineCtx, offlineBuffers, offlineMelodyGain);
-      } else if (melodyEvent && melodyEvent.type === 'mute') {
+        const folder = MELODY_INSTRUMENTS[melodyEvent.instrument];
+        if (!folder) return;
+        const noteName = NUM_TO_NAME[melodyEvent.adaptedNumber];
+        const url = `${folder}/${melodyEvent.adaptedNumber}${noteName}.mp3`;
+        const buf = offlineBuffers.melody[url];
+        if (!buf) return;
+
+        const src = offlineCtx.createBufferSource();
+        const g = offlineCtx.createGain();
+        src.buffer = buf;
+        src.connect(g);
+        g.connect(offlineMelodyGain);
+        g.gain.setValueAtTime(0.0, time);
+        g.gain.linearRampToValueAtTime(1.0, time + 0.01);
+        const maxDur = sixteenthDur * 16;
+        src.start(time);
+        src.stop(time + Math.min(buf.duration, maxDur));
+        lastMelodySourceOffline = src; // Atualiza a referênciaelse if (melodyEvent && melodyEvent.type === 'mute') {
         // Para simplificar, não implementamos stop em offline. A nota tocará sua duração natural.
         state.lastMelodyNote = null;
       } else if (state.lastMelodyNote !== null) {
