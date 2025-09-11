@@ -1858,22 +1858,6 @@
               const folder = 'guitarraLimpa';
               const url = `${folder}/${chord.note}/${fullChordName}.mp3`;
               const buf = offlineBuffers.guitar?.[url] || null;
-              if (buf) {
-                const src = offlineCtx.createBufferSource();
-                const g = offlineCtx.createGain();
-                src.buffer = buf;
-                src.connect(g);
-                g.connect(offlineCleanGain);
-                g.gain.setValueAtTime(0.0, time);
-                g.gain.linearRampToValueAtTime(1.0, time + 0.01);
-                src.start(time);
-              }
-            }
-            if (!mute.dist) {
-              // Play Distorted Chord
-              const fullChordName = chord.note + chord.type;
-              const url = `guitarraDistorcao/${chord.note}/${fullChordName}.mp3`;
-              const buf = offlineBuffers.guitar?.[url] || null;
                             if (buf) {
                 // Para a nota anterior de distorção, se existir
                 if (lastDistSourceOffline) {
@@ -1890,13 +1874,45 @@
                 lastDistSourceOffline = src; // Atualiza a referência
               }
             }
+            if (!mute.dist) {
+              // Play Distorted Chord
+              const fullChordName = chord.note + chord.type;
+              const url = `guitarraDistorcao/${chord.note}/${fullChordName}.mp3`;
+              const buf = offlineBuffers.guitar?.[url] || null;
+                          if (buf) {
+              // Para a nota anterior de distorção, se existir
+              if (lastDistSourceOffline) {
+                lastDistSourceOffline.stop(time);
+              }
+              const src = offlineCtx.createBufferSource();
+              const g = offlineCtx.createGain();
+              src.buffer = buf;
+              src.connect(g);
+              g.connect(offlineDistGain);
+              g.gain.setValueAtTime(0.0, time);
+              g.gain.linearRampToValueAtTime(1.0, time + 0.01);
+              src.start(time);
+              lastDistSourceOffline = src; // Atualiza a referência
+            }
           }
         }
       }
 
       // --- MELODIA ---
       const melodyEvent = state.melodyPlan[stepIndex % state.melodyPlan.length];
-              // Para a nota anterior de melodia, se existir
+            if (melodyEvent && melodyEvent.type === 'start') {
+        if (melodyEvent.adaptedNumber === null) {
+          const chord = state.chordPlan[state.currentChordIndex];
+          const adaptedNumber = adaptNumberToChord(
+            melodyEvent.originalNumber,
+            chord.note,
+            chord.type,
+            state.lastMelodyNote
+          );
+          melodyEvent.adaptedNumber = adaptedNumber;
+          state.lastMelodyNote = adaptedNumber;
+        }
+        // Para a nota anterior de melodia, se existir
         if (lastMelodySourceOffline) {
           lastMelodySourceOffline.stop(time);
         }
@@ -1917,7 +1933,8 @@
         const maxDur = sixteenthDur * 16;
         src.start(time);
         src.stop(time + Math.min(buf.duration, maxDur));
-        lastMelodySourceOffline = src; // Atualiza a referênciaelse if (melodyEvent && melodyEvent.type === 'mute') {
+        lastMelodySourceOffline = src; // Atualiza a referência
+      } else if (melodyEvent && melodyEvent.type === 'mute') {
         // Para simplificar, não implementamos stop em offline. A nota tocará sua duração natural.
         state.lastMelodyNote = null;
       } else if (state.lastMelodyNote !== null) {
