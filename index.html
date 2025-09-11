@@ -1939,7 +1939,7 @@
       } else if (melodyEvent && melodyEvent.type === 'mute') {
         // Para simplificar, não implementamos stop em offline. A nota tocará sua duração natural.
         state.lastMelodyNote = null;
-      } else if (state.lastMelodyNote !== null) {
+            } else if (state.lastMelodyNote !== null) {
         const chord = state.chordPlan[state.currentChordIndex];
         if (chord) {
           const newlyAdaptedNumber = adaptNumberToChord(
@@ -1949,7 +1949,28 @@
             null
           );
           if (newlyAdaptedNumber !== state.lastMelodyNote) {
-            playMelodyNumberOffline(time, newlyAdaptedNumber, ui.melodyInstrument.value, offlineCtx, offlineBuffers, offlineMelodyGain);
+            // Para a nota anterior de melodia, se existir
+            if (lastMelodySourceOffline) {
+              lastMelodySourceOffline.stop(time);
+            }
+            const folder = MELODY_INSTRUMENTS[ui.melodyInstrument.value];
+            if (!folder) return;
+            const noteName = NUM_TO_NAME[newlyAdaptedNumber];
+            const url = `${folder}/${newlyAdaptedNumber}${noteName}.mp3`;
+            const buf = offlineBuffers.melody[url];
+            if (!buf) return;
+
+            const src = offlineCtx.createBufferSource();
+            const g = offlineCtx.createGain();
+            src.buffer = buf;
+            src.connect(g);
+            g.connect(offlineMelodyGain);
+            g.gain.setValueAtTime(0.0, time);
+            g.gain.linearRampToValueAtTime(1.0, time + 0.01);
+            const maxDur = sixteenthDur * 16;
+            src.start(time);
+            src.stop(time + Math.min(buf.duration, maxDur));
+            lastMelodySourceOffline = src; // Atualiza a referência
             state.lastMelodyNote = newlyAdaptedNumber;
           }
         }
@@ -1964,6 +1985,7 @@
     }
 
     // Função auxiliar para tocar notas de melodia no contexto offline
+        // Função auxiliar para tocar notas de melodia no contexto offline
     function playMelodyNumberOffline(time, number, instrumentType, ctx, buffers, gainNode) {
       const folder = MELODY_INSTRUMENTS[instrumentType];
       if (!folder) return;
@@ -1971,7 +1993,6 @@
       const url = `${folder}/${number}${noteName}.mp3`;
       const buf = buffers.melody[url];
       if (!buf) return;
-
       const src = ctx.createBufferSource();
       const g = ctx.createGain();
       src.buffer = buf;
