@@ -945,10 +945,9 @@ function playClickAtTime(time, isStrong) {
 async function onPlay() {
   // Tenta inicializar o áudio ANTES de qualquer outra coisa
   try {
-    if (!audio.ctx) {
-      await initAudio();
-      console.log("✅ Áudio inicializado com sucesso.");
-    }
+    if (audio.ctx.state === "suspended") {
+  await audio.ctx.resume();
+}
   } catch (e) {
     console.error('❌ Falha crítica ao inicializar áudio:', e);
     alert('Erro ao iniciar o sistema de áudio. Por favor, recarregue a página e clique novamente em Play.');
@@ -982,7 +981,9 @@ async function onPlay() {
     return;
   }
 
-  state.running = false;
+  state.running = true;
+state.stepIndex = 0;
+state.nextNoteTime = audio.ctx.currentTime + 0.05;
   state.stepIndex = 0;
   state.nextNoteTime = audio.ctx.currentTime + 0.05;
 
@@ -1565,7 +1566,6 @@ function stopMelodyAt(time) {
 // --- NOVAS VARIÁVEIS E FUNÇÕES PARA GRAVAÇÃO ---
 let isRecording = false;
 let recordedChunks = [];
-let mediaRecorder = null;
 
 // Função para iniciar a gravação da mixagem principal
 // Função para iniciar a gravação da mixagem principal (VERSÃO PARA 4 MINUTOS)
