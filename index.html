@@ -970,14 +970,12 @@ const isMinor = (
 
    async function onPlay() {
   if (state.running && !state.paused) return;
-
   try {
     if (!audio.ctx) {
       await initAudio();
     }
-
-    // ✅ Corrige navegadores que iniciam o áudio suspenso
-    if (audio.ctx.state === "suspended") {
+    // ✅ Correção: Verifica se audio.ctx existe antes de acessar .state
+    if (audio.ctx && audio.ctx.state === "suspended") {
       await audio.ctx.resume();
     }
   } catch (e) {
