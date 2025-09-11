@@ -781,7 +781,11 @@
 
       function getBassNotesFromScale(degree, scale, chordType) {
   // Determina se o acorde é menor ou de tipo específico que requer escala menor
-  const isMinor = chordType.startsWith('m') || chordType === 'dim' || ['5+', '75+', '95+'].includes(chordType);
+  const isMinor = (
+  chordType.startsWith('m') ||
+  chordType.includes('dim') ||
+  ['5+', '75+', '95+'].includes(chordType)
+);
 
   if (scale === "chromatic") {
     const rootIdx = (state.keyIdx + DEGREE_TO_ROOT[degree]) % 12;
@@ -963,17 +967,22 @@
     }
 
     async function onPlay() {
-      if (state.running && !state.paused) return;
+  if (state.running && !state.paused) return;
 
-      try {
-        if (!audio.ctx) {
-          await initAudio();
-        }
-      } catch (e) {
-        console.error('Falha ao inicializar áudio:', e);
-        alert('Erro ao iniciar o sistema de áudio. Por favor, recarregue a página e clique novamente em Play.');
-        return;
-      }
+  try {
+    if (!audio.ctx) {
+      await initAudio();
+    }
+
+    // Alguns navegadores iniciam o contexto suspenso
+    if (audio.ctx.state === "suspended") {
+      await audio.ctx.resume();
+    }
+  } catch (e) {
+    console.error('Falha ao inicializar áudio:', e);
+    alert('Erro ao iniciar o sistema de áudio. Por favor, recarregue a página e clique novamente em Play.');
+    return;
+  }
 
       state.bpm = Number(ui.bpm.value) || 100;
       state.sixteenthDur = 60 / state.bpm / 4;
@@ -1029,6 +1038,17 @@
         scheduleStep();
       }
     }
+
+    function startScheduler() {
+  function tick() {
+    if (state.running && !state.paused) scheduler();
+    requestAnimationFrame(tick);
+  }
+  tick();
+
+  // Garante que o scheduler continue mesmo se o navegador reduzir FPS
+  setInterval(scheduler, 50);
+}
 
     function scheduleStep() {
       const time = state.nextNoteTime;
