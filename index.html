@@ -781,11 +781,13 @@
 
       function getBassNotesFromScale(degree, scale, chordType) {
   // Determina se o acorde é menor ou de tipo específico que requer escala menor
-  const isMinor = (
+  // Determina se o acorde é menor ou diminuto
+const isMinor = (
   chordType.startsWith('m') ||
   chordType.includes('dim') ||
   ['5+', '75+', '95+'].includes(chordType)
 );
+
 
   if (scale === "chromatic") {
     const rootIdx = (state.keyIdx + DEGREE_TO_ROOT[degree]) % 12;
@@ -966,7 +968,7 @@
       osc.stop(time + 0.07);
     }
 
-    async function onPlay() {
+   async function onPlay() {
   if (state.running && !state.paused) return;
 
   try {
@@ -974,7 +976,7 @@
       await initAudio();
     }
 
-    // Alguns navegadores iniciam o contexto suspenso
+    // ✅ Corrige navegadores que iniciam o áudio suspenso
     if (audio.ctx.state === "suspended") {
       await audio.ctx.resume();
     }
@@ -984,51 +986,51 @@
     return;
   }
 
-      state.bpm = Number(ui.bpm.value) || 100;
-      state.sixteenthDur = 60 / state.bpm / 4;
+  state.bpm = Number(ui.bpm.value) || 100;
+  state.sixteenthDur = 60 / state.bpm / 4;
 
-      try {
-        await buildBassAndChordPlan();
-      } catch (e) {
-        console.error('Erro ao gerar plano de baixo/acordes:', e);
-        alert('Erro ao gerar a progressão musical. Tente novamente.');
-        return;
-      }
+  try {
+    await buildBassAndChordPlan();
+  } catch (e) {
+    console.error('Erro ao gerar plano de baixo/acordes:', e);
+    alert('Erro ao gerar a progressão musical. Tente novamente.');
+    return;
+  }
 
-      try {
-        buildMelodyPlanFromBlocks();
-        await ensureMelodySamplesNeeded();
-      } catch (e) {
-        console.error('Erro na melodia:', e);
-      }
+  try {
+    buildMelodyPlanFromBlocks();
+    await ensureMelodySamplesNeeded();
+  } catch (e) {
+    console.error('Erro na melodia:', e);
+  }
 
-      if (state.paused) {
-        state.paused = false;
-        return;
-      }
+  if (state.paused) {
+    state.paused = false;
+    return;
+  }
 
-      state.running = false;
-      state.stepIndex = 0;
-      state.nextNoteTime = audio.ctx.currentTime + 0.05;
+  state.running = false;
+  state.stepIndex = 0;
+  state.nextNoteTime = audio.ctx.currentTime + 0.05;
 
-      const beats = meterToBeats(state.meter);
-      const quarterDur = 60 / state.bpm;
-      const startTime = audio.ctx.currentTime + 0.05;
+  const beats = meterToBeats(state.meter);
+  const quarterDur = 60 / state.bpm;
+  const startTime = audio.ctx.currentTime + 0.05;
 
-      for (let i = 0; i < beats; i++) {
-        const t = startTime + i * quarterDur;
-        const isStrong = (i % beats) === 0;
-        playClickAtTime(t, isStrong);
-      }
+  for (let i = 0; i < beats; i++) {
+    const t = startTime + i * quarterDur;
+    const isStrong = (i % beats) === 0;
+    playClickAtTime(t, isStrong);
+  }
 
-      const schedulerStartTime = startTime + beats * quarterDur;
+  const schedulerStartTime = startTime + beats * quarterDur;
 
-      setTimeout(() => {
-        state.running = true;
-        state.nextNoteTime = schedulerStartTime;
-        startScheduler();
-      }, Math.max(0, (schedulerStartTime - audio.ctx.currentTime) * 1000 + 10));
-    }
+  setTimeout(() => {
+    state.running = true;
+    state.nextNoteTime = schedulerStartTime;
+    startScheduler();
+  }, Math.max(0, (schedulerStartTime - audio.ctx.currentTime) * 1000 + 10));
+}
 
     function scheduler() {
       if (!state.running || state.paused) return;
@@ -1275,12 +1277,15 @@
     }
 
     function startScheduler() {
-      function tick() {
-        if (state.running && !state.paused) scheduler();
-        requestAnimationFrame(tick);
-      }
-      tick();
-    }
+  function tick() {
+    if (state.running && !state.paused) scheduler();
+    requestAnimationFrame(tick);
+  }
+  tick();
+
+  // ✅ Garante precisão mesmo se o navegador reduzir o FPS
+  setInterval(scheduler, 50);
+}
 
     function toggleMute(type, button) {
       mute[type] = !mute[type];
