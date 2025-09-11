@@ -1746,7 +1746,9 @@
     let lastCleanSourceOffline = null;
     let lastDistSourceOffline = null;
     let lastMelodySourceOffline = null;
-
+    const sixteenthDur = 60 / state.bpm / 4;
+    const stepsPerSecond = 1 / sixteenthDur;
+    const totalSteps = Math.ceil(seconds * stepsPerSecond);
     // Função agendadora simplificada para o contexto offline
     function scheduleStepForOffline(stepIndex) {
       const time = stepIndex * sixteenthDur;
