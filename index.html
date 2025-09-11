@@ -943,70 +943,56 @@ function playClickAtTime(time, isStrong) {
   osc.stop(time + 0.07);
 }
 async function onPlay() {
-  // Tenta inicializar o áudio ANTES de qualquer outra coisa
   try {
+    // 🔊 Garante que o AudioContext exista
+    if (!audio.ctx) {
+      await initAudio();
+    }
+
+    // 🎵 Alguns navegadores iniciam o ctx suspenso
     if (audio.ctx.state === "suspended") {
-  await audio.ctx.resume();
-}
-  } catch (e) {
-    console.error('❌ Falha crítica ao inicializar áudio:', e);
-    alert('Erro ao iniciar o sistema de áudio. Por favor, recarregue a página e clique novamente em Play.');
-    return;
-  }
+      await audio.ctx.resume();
+    }
 
-  if (state.running && !state.paused) return;
+    // ▶️ Se estava apenas pausado, retoma sem nova contagem
+    if (state.paused) {
+      state.paused = false;
+      state.running = true;
+      console.log("⏯ Playback retomado");
+      return;
+    }
 
-  state.bpm = Number(ui.bpm.value) || 100;
-  state.sixteenthDur = 60 / state.bpm / 4;
-
-  try {
-    await buildBassAndChordPlan();
-    console.log("✅ Plano de baixo e acordes gerado.");
-  } catch (e) {
-    console.error('❌ Erro ao gerar plano de baixo/acordes:', e);
-    alert('Erro ao gerar a progressão musical. Tente novamente.');
-    return;
-  }
-
-  try {
-    buildMelodyPlanFromBlocks();
-    await ensureMelodySamplesNeeded();
-    console.log("✅ Plano de melodia gerado e samples carregados.");
-  } catch (e) {
-    console.error('❌ Erro na melodia:', e);
-  }
-
-  if (state.paused) {
-    state.paused = false;
-    return;
-  }
-
-  state.running = true;
-state.stepIndex = 0;
-state.nextNoteTime = audio.ctx.currentTime + 0.05;
-  state.stepIndex = 0;
-  state.nextNoteTime = audio.ctx.currentTime + 0.05;
-
-  const beats = meterToBeats(state.meter);
-  const quarterDur = 60 / state.bpm;
-  const startTime = audio.ctx.currentTime + 0.05;
-
-  // Toca os cliques de contagem
-  for (let i = 0; i < beats; i++) {
-    const t = startTime + i * quarterDur;
-    const isStrong = (i % beats) === 0;
-    playClickAtTime(t, isStrong);
-  }
-
-  const schedulerStartTime = startTime + beats * quarterDur;
-
-  setTimeout(() => {
+    // ▶️ Reinicia o sequenciador do zero
     state.running = true;
-    state.nextNoteTime = schedulerStartTime;
-    startScheduler();
-    console.log("▶️ Playback iniciado com sucesso.");
-  }, Math.max(0, (schedulerStartTime - audio.ctx.currentTime) * 1000 + 10));
+    state.stepIndex = 0;
+    state.nextNoteTime = audio.ctx.currentTime + 0.05;
+
+    const beats = meterToBeats(state.meter);
+    const quarterDur = 60 / state.bpm;
+    const startTime = audio.ctx.currentTime + 0.05;
+
+    // 🔔 Toca os cliques de contagem antes de começar
+    for (let i = 0; i < beats; i++) {
+      const t = startTime + i * quarterDur;
+      const isStrong = (i % beats) === 0;
+      playClickAtTime(t, isStrong);
+    }
+
+    const schedulerStartTime = startTime + beats * quarterDur;
+
+    // 🚀 Inicia o scheduler após a contagem
+    setTimeout(() => {
+      state.running = true;
+      state.nextNoteTime = schedulerStartTime;
+      startScheduler();
+      console.log("▶️ Playback iniciado com sucesso.");
+    }, Math.max(0, (schedulerStartTime - audio.ctx.currentTime) * 1000 + 10));
+
+  } catch (err) {
+    console.error("❌ Falha crítica ao inicializar áudio:", err);
+  }
 }
+
 function scheduler() {
   if (!state.running || state.paused) return;
   const lookahead = 0.20;
