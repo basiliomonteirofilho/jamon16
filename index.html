@@ -954,7 +954,7 @@ async function onPlay() {
       await audio.ctx.resume();
     }
 
-    // ▶️ Se estava apenas pausado, retoma sem nova contagem
+    // ⏯ Se estava apenas pausado, retoma sem nova contagem
     if (state.paused) {
       state.paused = false;
       state.running = true;
@@ -992,6 +992,7 @@ async function onPlay() {
     console.error("❌ Falha crítica ao inicializar áudio:", err);
   }
 }
+
 
 function scheduler() {
   if (!state.running || state.paused) return;
@@ -1192,28 +1193,17 @@ const url = `${folder}/${note}/${fullChordName}.mp3`;
   }
 }
 function onPause() {
-  if (state.running && !state.paused) state.paused = true;
+  if (!state.running) return;
+  state.paused = true;
+  state.running = false;
+  console.log("⏸ Playback pausado");
 }
 function onStop() {
   state.running = false;
   state.paused = false;
-  ui.currentChord.textContent = '—';
-  ui.chordTimer.textContent = '—';
-  if (state.lastBassSource) state.lastBassSource.stop(0);
-  if (state.lastDistSource) state.lastDistSource.stop(0);
-  if (state.lastMelodySource) state.lastMelodySource.stop(0);
-  state.lastBassSource = null;
-  state.lastDistSource = null;
-  state.lastMelodySource = null;
-  state.lastMelodyGain = null;
-  state.lastMelodyNote = null;
-
-  // --- MODIFICAÇÃO: Só reseta o plano da guitarra se NÃO estiver gravando ---
-  // Isso permite que a música continue de onde parou após os 4 minutos.
-  if (!isRecording) {
-    state.guitarPlan = null;
-  }
-  document.querySelectorAll('.chord-item.current').forEach(el => el.classList.remove('current'));
+  state.stepIndex = 0;
+  state.nextNoteTime = 0;
+  console.log("⏹ Playback parado");
 }
 function startScheduler() {
   function tick() {
