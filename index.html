@@ -565,7 +565,7 @@ function initializeStyleAndKeySelectors() {
       bassGain: null,
       cleanGain: null,
       distGain: null,
-      melodyGain: null
+      melodyGain: null,
       pianoStringGain: null
     };
     // ===== CONSTANTES MUSICAIS =====
@@ -1192,16 +1192,6 @@ if (!ui.keySelect || ui.keySelect.value === 'auto') {
   }
 
 // ===== PIANO STRING ===== (uma vez por compasso)
-if (!mute.pianoString && chord && isNewBar) {
-  let fullChordName = chord.note + (chord.type || '');
-  const url = `assets/PianoStringChord/${fullChordName}.mp3`;
-  const buf = state.buffers.guitar?.[url];
-  if (buf) {
-    scheduleSample(buf, currentTime, pianoStringGain, 'pianoString');
-  }
-}
-
-  // ===== PIANO STRING ===== (uma vez por compasso)
 if (!mute.pianoString && chord && isNewBar) {
   // Para o sample anterior de piano string
   if (state.lastPianoStringSource) {
