@@ -375,36 +375,52 @@
         <button id="muteClean" data-mute="off">🎸 Limpa</button>
         <button id="muteDist" data-mute="off">🔥 Distorção</button>
       </div>
-      <div class="row">
-        <label>BPM</label>
-        <input id="bpm" type="number" min="40" max="220" value="100">
-      </div>
-      <div class="row">
-        <label>Assinatura</label>
-        <select id="meter">
-          <option value="auto" selected>aleatória</option>
-          <option>2/4</option>
-          <option>3/4</option>
-          <option>4/4</option>
-          <option>5/4</option>
-          <option>6/4</option>
-          <option>7/4</option>
-        </select>
-      </div>
-      <div class="row">
-        <label>Melodia</label>
-        <select id="melodyInstrument">
-          <option value="dist">Guitarra Distorcida</option>
-          <option value="piano">Piano/String</option>
-          <option value="baixo">Baixo</option>
-          <option value="sax">Sax</option>
-          <option value="acordeon">Acordeon</option>
-          <option value="sinos">Sinos</option>
-          <option value="violao_aco">Violão Aço</option>
-          <option value="violao_nylon">Violão Nylon</option>
-          <option value="cordas">Cordas</option>
-        </select>
-      </div>
+      <!-- ... outros controles ... -->
+<div class="row">
+  <label>Assinatura</label>
+  <select id="meter">
+    <option value="auto" selected>aleatória</option>
+    <option>2/4</option>
+    <option>3/4</option>
+    <option>4/4</option>
+    <option>5/4</option>
+    <option>6/4</option>
+    <option>7/4</option>
+  </select>
+</div>
+
+<!-- NOVOS CONTROLES -->
+<div class="row">
+  <label>Estilo</label>
+  <select id="styleSelect">
+    <option value="auto" selected>aleatório</option>
+    <!-- As opções serão preenchidas dinamicamente pelo JavaScript -->
+  </select>
+</div>
+<div class="row">
+  <label>Tonalidade</label>
+  <select id="keySelect">
+    <option value="auto" selected>aleatória</option>
+    <!-- As opções serão preenchidas dinamicamente pelo JavaScript -->
+  </select>
+</div>
+<!-- FIM DOS NOVOS CONTROLES -->
+
+<div class="row">
+  <label>Melodia</label>
+  <select id="melodyInstrument">
+    <option value="dist">Guitarra Distorcida</option>
+    <option value="piano">Piano/String</option>
+    <option value="baixo">Baixo</option>
+    <option value="sax">Sax</option>
+    <option value="acordeon">Acordeon</option>
+    <option value="sinos">Sinos</option>
+    <option value="violao_aco">Violão Aço</option>
+    <option value="violao_nylon">Violão Nylon</option>
+    <option value="cordas">Cordas</option>
+  </select>
+</div>
+<!-- ... resto dos controles ... -->
       <h3 style="color: #5eead4; margin: 15px 0 5px;">Controle de Volume</h3>
       <div class="slider-row">
         <label>Baixo</label>
@@ -465,38 +481,43 @@
       return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     }
     // ===== ELEMENTOS DA INTERFACE =====
-    const ui = {
-      play: document.getElementById('btnPlay'),
-      pause: document.getElementById('btnPause'),
-      stop: document.getElementById('btnStop'),
-      muteBass: document.getElementById('muteBass'),
-      muteDrums: document.getElementById('muteDrums'),
-      muteClean: document.getElementById('muteClean'),
-      muteDist: document.getElementById('muteDist'),
-      bpm: document.getElementById('bpm'),
-      meter: document.getElementById('meter'),
-      state: document.getElementById('state'),
-      currentChord: document.getElementById('currentChord'),
-      chordTimer: document.getElementById('chordTimer'),
-      volBass: document.getElementById('volBass'),
-      volDrums: document.getElementById('volDrums'),
-      volClean: document.getElementById('volClean'),
-      volDist: document.getElementById('volDist'),
-      volBassLabel: document.getElementById('volBassLabel'),
-      volDrumsLabel: document.getElementById('volDrumsLabel'),
-      volCleanLabel: document.getElementById('volCleanLabel'),
-      volDistLabel: document.getElementById('volDistLabel'),
-      volMelody: document.getElementById('volMelody'),
-      volMelodyLabel: document.getElementById('volMelodyLabel'),
-      melodyBlocks: document.getElementById('melodyBlocks'),
-      btnMelodyAdd: document.getElementById('btnMelodyAdd'),
-      btnMelodyClear: document.getElementById('btnMelodyClear'),
-      melodyInstrument: document.getElementById('melodyInstrument'),
-      numberPicker: document.getElementById('numberPicker'),
-      numberGrid: document.getElementById('numberGrid'),
-      btnSaveWAV: document.getElementById('btnSaveWAV'),
-      chordProgression: document.getElementById('chordProgression')
-    };
+    // ===== ELEMENTOS DA INTERFACE =====
+const ui = {
+  play: document.getElementById('btnPlay'),
+  pause: document.getElementById('btnPause'),
+  stop: document.getElementById('btnStop'),
+  muteBass: document.getElementById('muteBass'),
+  muteDrums: document.getElementById('muteDrums'),
+  muteClean: document.getElementById('muteClean'),
+  muteDist: document.getElementById('muteDist'),
+  bpm: document.getElementById('bpm'),
+  meter: document.getElementById('meter'),
+  // --- NOVOS ELEMENTOS ---
+  styleSelect: document.getElementById('styleSelect'),
+  keySelect: document.getElementById('keySelect'),
+  // --- FIM DOS NOVOS ELEMENTOS ---
+  state: document.getElementById('state'),
+  currentChord: document.getElementById('currentChord'),
+  chordTimer: document.getElementById('chordTimer'),
+  volBass: document.getElementById('volBass'),
+  volDrums: document.getElementById('volDrums'),
+  volClean: document.getElementById('volClean'),
+  volDist: document.getElementById('volDist'),
+  volBassLabel: document.getElementById('volBassLabel'),
+  volDrumsLabel: document.getElementById('volDrumsLabel'),
+  volCleanLabel: document.getElementById('volCleanLabel'),
+  volDistLabel: document.getElementById('volDistLabel'),
+  volMelody: document.getElementById('volMelody'),
+  volMelodyLabel: document.getElementById('volMelodyLabel'),
+  melodyBlocks: document.getElementById('melodyBlocks'),
+  btnMelodyAdd: document.getElementById('btnMelodyAdd'),
+  btnMelodyClear: document.getElementById('btnMelodyClear'),
+  melodyInstrument: document.getElementById('melodyInstrument'),
+  numberPicker: document.getElementById('numberPicker'),
+  numberGrid: document.getElementById('numberGrid'),
+  btnSaveWAV: document.getElementById('btnSaveWAV'),
+  chordProgression: document.getElementById('chordProgression')
+};
     // ===== SISTEMA DE ÁUDIO =====
     const audio = {
       ctx: null,
@@ -745,9 +766,17 @@
     }
     // ===== FUNÇÕES PRINCIPAIS =====
     async function buildBassAndChordPlan() {
-      state.currentGroove = ALL_GROOVES[Math.floor(Math.random() * ALL_GROOVES.length)];
-      state.signatureTag = state.currentGroove.name;
-      state.meter = ui.meter.value === 'auto' ? state.currentGroove.meter : ui.meter.value;
+      // Escolhe o groove baseado na seleção do usuário ou aleatoriamente
+if (ui.styleSelect.value === 'auto') {
+  state.currentGroove = ALL_GROOVES[Math.floor(Math.random() * ALL_GROOVES.length)];
+} else {
+  // Filtra os grooves que correspondem ao estilo selecionado
+  const matchingGrooves = ALL_GROOVES.filter(g => g.name === ui.styleSelect.value);
+  state.currentGroove = matchingGrooves[Math.floor(Math.random() * matchingGrooves.length)] || ALL_GROOVES[0];
+}
+
+state.signatureTag = state.currentGroove.name;
+state.meter = ui.meter.value === 'auto' ? state.currentGroove.meter : ui.meter.value;
       if (state.currentGroove.name === "Samba") {
         ui.bpm.value = 70;
         state.bpm = 70;
@@ -756,8 +785,14 @@
       }
       const beats = meterToBeats(state.meter);
       const sixteenthsPerBar = beats * 4;
-      state.keyIdx = Math.floor(Math.random() * PITCHES.length);
-      state.key = PITCHES[state.keyIdx];
+      // Escolhe a tonalidade baseada na seleção do usuário ou aleatoriamente
+if (ui.keySelect.value === 'auto') {
+  state.keyIdx = Math.floor(Math.random() * PITCHES.length);
+  state.key = PITCHES[state.keyIdx];
+} else {
+  state.key = ui.keySelect.value;
+  state.keyIdx = PITCHES.indexOf(state.key);
+}
       state.quality = 'maj';
       const grooveName = state.currentGroove.name;
       let styleKey = "Rock";
@@ -1896,27 +1931,32 @@
     });
     // ===== INICIALIZAÇÃO =====
     function initializeApp() {
-      // Event listeners
-      ui.play.addEventListener('click', onPlay);
-      ui.pause.addEventListener('click', onPause);
-      ui.stop.addEventListener('click', onStop);
-      ui.muteBass.addEventListener('click', () => toggleMute('bass', ui.muteBass));
-      ui.muteDrums.addEventListener('click', () => toggleMute('drums', ui.muteDrums));
-      ui.muteClean.addEventListener('click', () => toggleMute('clean', ui.muteClean));
-      ui.muteDist.addEventListener('click', () => toggleMute('dist', ui.muteDist));
-      ui.btnMelodyAdd.addEventListener('click', addMelodyBlock);
-      ui.btnMelodyClear.addEventListener('click', clearMelodyBlocks);
-      // Inicializa o number picker para mobile
-      if (isMobileDevice()) {
-        initializeNumberPicker();
-      }
-      // Habilita todos os botões após o carregamento
-      const buttons = document.querySelectorAll('button');
-      buttons.forEach(btn => {
-        btn.disabled = false;
-        btn.style.opacity = '1';
-      });
-    }
+  // Event listeners
+  ui.play.addEventListener('click', onPlay);
+  ui.pause.addEventListener('click', onPause);
+  ui.stop.addEventListener('click', onStop);
+  ui.muteBass.addEventListener('click', () => toggleMute('bass', ui.muteBass));
+  ui.muteDrums.addEventListener('click', () => toggleMute('drums', ui.muteDrums));
+  ui.muteClean.addEventListener('click', () => toggleMute('clean', ui.muteClean));
+  ui.muteDist.addEventListener('click', () => toggleMute('dist', ui.muteDist));
+  ui.btnMelodyAdd.addEventListener('click', addMelodyBlock);
+  ui.btnMelodyClear.addEventListener('click', clearMelodyBlocks);
+
+  // Inicializa os selects de Estilo e Tonalidade
+  initializeStyleAndKeySelectors(); // <-- ADICIONE ESTA LINHA
+
+  // Inicializa o number picker para mobile
+  if (isMobileDevice()) {
+    initializeNumberPicker();
+  }
+
+  // Habilita todos os botões após o carregamento
+  const buttons = document.querySelectorAll('button');
+  buttons.forEach(btn => {
+    btn.disabled = false;
+    btn.style.opacity = '1';
+  });
+}
     // Inicializa a aplicação quando a página carrega
     window.addEventListener('load', initializeApp);
   </script>
