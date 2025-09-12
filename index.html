@@ -1201,7 +1201,7 @@ if (!mute.pianoString && chord && isNewBar) {
     state.lastPianoStringSource = null;
   }
   let fullChordName = chord.note + (chord.type || '');
-  const url = `assets/PianoStringChord/${fullChordName}.mp3`;
+  const url = `assets/PianoStringChord/${chord.note}/${fullChordName}.mp3`;
   const buf = state.buffers.guitar?.[url]; // Reutiliza o buffer 'guitar' para armazenar os samples de piano
   if (buf) {
     const src = audio.ctx.createBufferSource();
@@ -2033,12 +2033,18 @@ const lastSources = {
   ui.muteDrums.addEventListener('click', () => toggleMute('drums', ui.muteDrums));
   ui.muteClean.addEventListener('click', () => toggleMute('clean', ui.muteClean));
   ui.muteDist.addEventListener('click', () => toggleMute('dist', ui.muteDist));
-  // --- NOVO EVENT LISTENER ---
-  ui.mutePianoString.addEventListener('click', () => toggleMute('pianoString', ui.mutePianoString));
+
+  // --- NOVO EVENT LISTENER (com verificação de segurança) ---
+  if (ui.mutePianoString) {
+    ui.mutePianoString.addEventListener('click', () => toggleMute('pianoString', ui.mutePianoString));
+  } else {
+    console.error('Elemento #mutePianoString não encontrado no DOM!');
+  }
   // --- FIM ---
+
   ui.btnMelodyAdd.addEventListener('click', addMelodyBlock);
   ui.btnMelodyClear.addEventListener('click', clearMelodyBlocks);
-  // ... resto da função ...
+
   // Inicializa o number picker para mobile
   if (isMobileDevice()) {
     initializeNumberPicker();
