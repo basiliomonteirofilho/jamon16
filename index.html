@@ -643,6 +643,9 @@ function initializeStyleAndKeySelectors() {
       { name: "Samba", meter: "2/4", drumPattern: ["bch - ch bu bch - ch bu"], bassRhythm: ["bo - - x bo - - x"], bassScale: [8, 5] },
       { name: "Jazz", meter: "4/4", drumPattern: ["bch co co - co co co ca bch co co - bch co co cch"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: "chromatic" },
     ];
+
+    initializeStyleAndKeySelectors();
+    
     // ===== ESTADO DA APLICAÇÃO =====
     const state = {
       running: false,
@@ -1965,9 +1968,7 @@ if (!ui.keySelect || ui.keySelect.value === 'auto') {
   ui.btnMelodyAdd.addEventListener('click', addMelodyBlock);
   ui.btnMelodyClear.addEventListener('click', clearMelodyBlocks);
 
-  // Inicializa os selects de Estilo e Tonalidade
-  initializeStyleAndKeySelectors(); // <-- ADICIONE ESTA LINHA
-
+  
   // Inicializa o number picker para mobile
   if (isMobileDevice()) {
     initializeNumberPicker();
