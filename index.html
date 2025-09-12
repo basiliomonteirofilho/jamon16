@@ -482,6 +482,7 @@
     }
     // ===== ELEMENTOS DA INTERFACE =====
     // ===== ELEMENTOS DA INTERFACE =====
+// ===== ELEMENTOS DA INTERFACE =====
 const ui = {
   play: document.getElementById('btnPlay'),
   pause: document.getElementById('btnPause'),
@@ -518,6 +519,28 @@ const ui = {
   btnSaveWAV: document.getElementById('btnSaveWAV'),
   chordProgression: document.getElementById('chordProgression')
 };
+
+// Função para inicializar os selects de Estilo e Tonalidade
+function initializeStyleAndKeySelectors() {
+  // Preenche o select de Estilos
+  const uniqueStyles = [...new Set(ALL_GROOVES.map(g => g.name))].sort();
+  uniqueStyles.forEach(styleName => {
+    const opt = document.createElement('option');
+    opt.value = styleName;
+    opt.textContent = styleName;
+    ui.styleSelect.appendChild(opt);
+  });
+
+  // Preenche o select de Tonalidades
+  const uniqueKeys = [...new Set(PITCHES)].sort();
+  uniqueKeys.forEach(keyName => {
+    const opt = document.createElement('option');
+    opt.value = keyName;
+    opt.textContent = keyName;
+    ui.keySelect.appendChild(opt);
+  });
+}
+
     // ===== SISTEMA DE ÁUDIO =====
     const audio = {
       ctx: null,
@@ -767,7 +790,7 @@ const ui = {
     // ===== FUNÇÕES PRINCIPAIS =====
     async function buildBassAndChordPlan() {
       // Escolhe o groove baseado na seleção do usuário ou aleatoriamente
-if (ui.styleSelect.value === 'auto') {
+if (!ui.styleSelect || ui.styleSelect.value === 'auto') {
   state.currentGroove = ALL_GROOVES[Math.floor(Math.random() * ALL_GROOVES.length)];
 } else {
   // Filtra os grooves que correspondem ao estilo selecionado
@@ -786,7 +809,7 @@ state.meter = ui.meter.value === 'auto' ? state.currentGroove.meter : ui.meter.v
       const beats = meterToBeats(state.meter);
       const sixteenthsPerBar = beats * 4;
       // Escolhe a tonalidade baseada na seleção do usuário ou aleatoriamente
-if (ui.keySelect.value === 'auto') {
+if (!ui.keySelect || ui.keySelect.value === 'auto') {
   state.keyIdx = Math.floor(Math.random() * PITCHES.length);
   state.key = PITCHES[state.keyIdx];
 } else {
