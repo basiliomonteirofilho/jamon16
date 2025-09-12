@@ -1193,17 +1193,12 @@ if (!ui.keySelect || ui.keySelect.value === 'auto') {
 
 // ===== PIANO STRING ===== (uma vez por compasso)
 if (!mute.pianoString && chord && isNewBar) {
-  // Para o sample anterior de piano string
-  if (state.lastPianoStringSource) {
-    try {
-      state.lastPianoStringSource.stop(time);
-    } catch (e) {}
-    state.lastPianoStringSource = null;
-  }
   let fullChordName = chord.note + (chord.type || '');
   const url = `assets/PianoStringChord/${chord.note}/${fullChordName}.mp3`;
-  const buf = state.buffers.guitar?.[url]; // Reutiliza o buffer 'guitar' para armazenar os samples de piano
+  console.log("Tentando tocar PianoString:", url); // <-- LOG ADICIONADO
+  const buf = state.buffers.guitar?.[url];
   if (buf) {
+    console.log("✅ Buffer encontrado para:", url); // <-- LOG ADICIONADO
     const src = audio.ctx.createBufferSource();
     const g = audio.ctx.createGain();
     src.buffer = buf;
@@ -1213,6 +1208,8 @@ if (!mute.pianoString && chord && isNewBar) {
     g.gain.linearRampToValueAtTime(1.0, time + 0.01);
     src.start(time);
     state.lastPianoStringSource = src;
+  } else {
+    console.warn("❌ Buffer NÃO encontrado para:", url); // <-- LOG ADICIONADO
   }
 }
 
@@ -2062,3 +2059,4 @@ const lastSources = {
   </script>
 </body>
 </html>
+
