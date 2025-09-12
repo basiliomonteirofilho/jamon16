@@ -1916,6 +1916,15 @@ const lastSources = {
         }
       }
 
+      if (!mute.pianoString && chord && isNewBar) {
+    let fullChordName = chord.note + (chord.type || '');
+    const url = `assets/PianoStringChord/${chord.note}/${fullChordName}.mp3`;
+    const buf = state.buffers.guitar?.[url];
+    if (buf) {
+      scheduleSample(buf, currentTime, pianoStringGain, 'pianoString');
+    }
+  }
+
       // ===== GUITARRA DISTORCIDA =====
       if (!mute.dist) {
         if (state.currentGroove && state.currentGroove.guitarRhythm) {
