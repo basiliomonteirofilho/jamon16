@@ -374,6 +374,7 @@
         <button id="muteDrums" data-mute="off">🥁 Bateria</button>
         <button id="muteClean" data-mute="off">🎸 Limpa</button>
         <button id="muteDist" data-mute="off">🔥 Distorção</button>
+        <button id="mutePianoString" data-mute="off">🎹 Piano</button>
       </div>
       <!-- ... outros controles ... -->
 <div class="row">
@@ -451,6 +452,11 @@
         <span class="slider-value" id="volDistLabel">35%</span>
       </div>
       <div class="slider-row">
+  <label>Piano</label>
+  <input type="range" id="volPianoString" min="0" max="1" step="0.01" value="0.50">
+  <span class="slider-value" id="volPianoStringLabel">50%</span>
+</div>
+      <div class="slider-row">
         <label>Melodia</label>
         <input type="range" id="volMelody" min="0" max="1" step="0.01" value="0.50">
         <span class="slider-value" id="volMelodyLabel">50%</span>
@@ -488,8 +494,7 @@
     function isMobileDevice() {
       return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     }
-    // ===== ELEMENTOS DA INTERFACE =====
-    // ===== ELEMENTOS DA INTERFACE =====
+       
 // ===== ELEMENTOS DA INTERFACE =====
 const ui = {
   play: document.getElementById('btnPlay'),
@@ -508,6 +513,8 @@ const ui = {
   state: document.getElementById('state'),
   currentChord: document.getElementById('currentChord'),
   chordTimer: document.getElementById('chordTimer'),
+  volPianoString: document.getElementById('volPianoString'),
+  volPianoStringLabel: document.getElementById('volPianoStringLabel'),
   volBass: document.getElementById('volBass'),
   volDrums: document.getElementById('volDrums'),
   volClean: document.getElementById('volClean'),
@@ -559,6 +566,7 @@ function initializeStyleAndKeySelectors() {
       cleanGain: null,
       distGain: null,
       melodyGain: null
+      pianoStringGain: null
     };
     // ===== CONSTANTES MUSICAIS =====
     const PITCHES = ['A','AS','B','C','CS','D','DS','E','F','FS','G','GS'];
@@ -656,45 +664,48 @@ function initializeStyleAndKeySelectors() {
     
     // ===== ESTADO DA APLICAÇÃO =====
     const state = {
-      running: false,
-      paused: false,
-      nextNoteTime: 0,
-      meter: '4/4',
-      bpm: 100,
-      sixteenthDur: 0.15,
-      stepIndex: 0,
-      buffers: { drums: {}, bass: {}, guitar: {}, melody: {} },
-      bassPlan: [],
-      chordPlan: [],
-      signatureTag: '',
-      key: null,
-      keyIdx: 0,
-      quality: 'maj',
-      chordProgression: [],
-      chordDurations: [],
-      currentGroove: null,
-      currentChordIndex: 0,
-      barsInChord: 0,
-      clickCount: 0,
-      totalClicks: 0,
-      drumSeq: [],
-      lastBassSource: null,
-      lastBassGainNode: null,
-      lastCleanSource: null,
-      lastDistSource: null,
-      lastMelodySource: null,
-      lastMelodyGain: null,
-      melodyBlocks: [],
-      melodyPlan: [],
-      lastMelodyNote: null,
-      guitarPlan: null,
-      activeInput: null,
-      schedulerTimer: null,
-      isRecording: false,
-      mediaRecorder: null,
-      recordedChunks: []
-    };
-    const mute = { bass: false, drums: false, clean: false, dist: false };
+  running: false,
+  paused: false,
+  nextNoteTime: 0,
+  meter: '4/4',
+  bpm: 100,
+  sixteenthDur: 0.15,
+  stepIndex: 0,
+  buffers: { drums: {}, bass: {}, guitar: {}, melody: {} },
+  bassPlan: [],
+  chordPlan: [],
+  signatureTag: '',
+  key: null,
+  keyIdx: 0,
+  quality: 'maj',
+  chordProgression: [],
+  chordDurations: [],
+  currentGroove: null,
+  currentChordIndex: 0,
+  barsInChord: 0,
+  clickCount: 0,
+  totalClicks: 0,
+  drumSeq: [],
+  lastBassSource: null,
+  lastBassGainNode: null,
+  lastCleanSource: null,
+  lastDistSource: null,
+  lastMelodySource: null,
+  lastMelodyGain: null,
+  // --- NOVA PROPRIEDADE ---
+  lastPianoStringSource: null,
+  // --- FIM ---
+  melodyBlocks: [],
+  melodyPlan: [],
+  lastMelodyNote: null,
+  guitarPlan: null,
+  activeInput: null,
+  schedulerTimer: null,
+  isRecording: false,
+  mediaRecorder: null,
+  recordedChunks: []
+};
+    const mute = { bass: false, drums: false, clean: false, dist: false, pianoString: false };
     // ===== FUNÇÕES UTILITÁRIAS =====
     function log(msg) {
       console.log(`[LOG] ${msg}`);
@@ -711,6 +722,7 @@ function initializeStyleAndKeySelectors() {
       if (audio.drumGain) audio.drumGain.gain.value = parseFloat(ui.volDrums.value);
       if (audio.cleanGain) audio.cleanGain.gain.value = parseFloat(ui.volClean.value);
       if (audio.distGain) audio.distGain.gain.value = parseFloat(ui.volDist.value);
+      if (audio.pianoStringGain) audio.pianoStringGain.gain.value = parseFloat(ui.volPianoString.value);
       if (audio.melodyGain) audio.melodyGain.gain.value = parseFloat(ui.volMelody.value);
       ui.volBassLabel.textContent = Math.round(ui.volBass.value * 100) + '%';
       ui.volDrumsLabel.textContent = Math.round(ui.volDrums.value * 100) + '%';
@@ -730,6 +742,8 @@ function initializeStyleAndKeySelectors() {
           audio.bassGain = audio.ctx.createGain();
           audio.cleanGain = audio.ctx.createGain();
           audio.distGain = audio.ctx.createGain();
+          audio.pianoStringGain = audio.ctx.createGain();
+          audio.pianoStringGain.gain.value = 0.50;
           audio.melodyGain = audio.ctx.createGain();
           audio.melodyGain.gain.value = 0.50;
           audio.melodyGain.connect(audio.master);
@@ -744,12 +758,14 @@ function initializeStyleAndKeySelectors() {
           audio.bassGain.connect(audio.master);
           audio.cleanGain.connect(audio.master);
           audio.distGain.connect(audio.master);
+          audio.pianoStringGain.connect(audio.master);
           if (!state.buffers.melody) state.buffers.melody = {};
           await ensureBasicSamples();
           ui.volBass.addEventListener('input', updateVolume);
           ui.volDrums.addEventListener('input', updateVolume);
           ui.volClean.addEventListener('input', updateVolume);
           ui.volDist.addEventListener('input', updateVolume);
+          ui.volPianoString.addEventListener('input', updateVolume);
           ui.volMelody.addEventListener('input', updateVolume);
           updateVolume();
         } catch (error) {
@@ -1175,6 +1191,41 @@ if (!ui.keySelect || ui.keySelect.value === 'auto') {
     }
   }
 
+// ===== PIANO STRING ===== (uma vez por compasso)
+if (!mute.pianoString && chord && isNewBar) {
+  let fullChordName = chord.note + (chord.type || '');
+  const url = `assets/PianoStringChord/${fullChordName}.mp3`;
+  const buf = state.buffers.guitar?.[url];
+  if (buf) {
+    scheduleSample(buf, currentTime, pianoStringGain, 'pianoString');
+  }
+}
+
+  // ===== PIANO STRING ===== (uma vez por compasso)
+if (!mute.pianoString && chord && isNewBar) {
+  // Para o sample anterior de piano string
+  if (state.lastPianoStringSource) {
+    try {
+      state.lastPianoStringSource.stop(time);
+    } catch (e) {}
+    state.lastPianoStringSource = null;
+  }
+  let fullChordName = chord.note + (chord.type || '');
+  const url = `assets/PianoStringChord/${fullChordName}.mp3`;
+  const buf = state.buffers.guitar?.[url]; // Reutiliza o buffer 'guitar' para armazenar os samples de piano
+  if (buf) {
+    const src = audio.ctx.createBufferSource();
+    const g = audio.ctx.createGain();
+    src.buffer = buf;
+    src.connect(g);
+    g.connect(audio.pianoStringGain);
+    g.gain.setValueAtTime(0.0, time);
+    g.gain.linearRampToValueAtTime(1.0, time + 0.01);
+    src.start(time);
+    state.lastPianoStringSource = src;
+  }
+}
+
   // ===== GUITARRA DISTORCIDA =====
   if (!mute.dist) {
     if (state.currentGroove && state.currentGroove.guitarRhythm) {
@@ -1383,12 +1434,21 @@ if (!ui.keySelect || ui.keySelect.value === 'auto') {
       document.querySelectorAll('.chord-item.current').forEach(el => el.classList.remove('current'));
     }
     function toggleMute(type, button) {
-      mute[type] = !mute[type];
-      const icon = mute[type] ? '🔇' : (type === 'bass' ? '🎸' : (type === 'drums' ? '🥁' : (type === 'clean' ? '🎸' : '🔥')));
-      const labelMap = { bass: 'Baixo', drums: 'Bateria', clean: 'Limpa', dist: 'Distorção' };
-      button.textContent = `${icon} ${labelMap[type]}`;
-      button.classList.toggle('muted', mute[type]);
-    }
+  mute[type] = !mute[type];
+  let icon, label;
+  // --- ADICIONA O CASO PARA PIANOSTRING ---
+  if (type === 'pianoString') {
+    icon = mute[type] ? '🔇' : '🎹';
+    label = 'PianoString';
+  } else {
+    icon = mute[type] ? '🔇' : (type === 'bass' ? '🎸' : (type === 'drums' ? '🥁' : (type === 'clean' ? '🎸' : '🔥')));
+    const labelMap = { bass: 'Baixo', drums: 'Bateria', clean: 'Limpa', dist: 'Distorção' };
+    label = labelMap[type];
+  }
+  // --- FIM ---
+  button.textContent = `${icon} ${label}`;
+  button.classList.toggle('muted', mute[type]);
+}
     // ===== MELODIA ADAPTATIVA =====
     const ORDER_E_UP = ['E','F','FS','G','GS','A','AS','B','C','CS','D','DS'];
     const NUM_TO_NAME = (() => {
@@ -1735,20 +1795,28 @@ if (!ui.keySelect || ui.keySelect.value === 'auto') {
 
     // Clona os nós de ganho para o contexto offline
     const master = offlineCtx.createGain();
-    const mix = offlineCtx.createGain();
-    const drumGain = offlineCtx.createGain();
-    const bassGain = offlineCtx.createGain();
-    const cleanGain = offlineCtx.createGain();
-    const distGain = offlineCtx.createGain();
-    const melodyGain = offlineCtx.createGain();
+const mix = offlineCtx.createGain();
+const drumGain = offlineCtx.createGain();
+const bassGain = offlineCtx.createGain();
+const cleanGain = offlineCtx.createGain();
+const distGain = offlineCtx.createGain();
+const melodyGain = offlineCtx.createGain();
+// --- ADICIONA O GANHO OFFLINE PARA O PIANOSTRING ---
+const pianoStringGain = offlineCtx.createGain();
+pianoStringGain.gain.value = parseFloat(ui.volPianoString.value);
+// --- FIM ---
 
-    // Aplica os volumes atuais da UI
-    master.gain.value = 0.9;
-    drumGain.gain.value = parseFloat(ui.volDrums.value);
-    bassGain.gain.value = parseFloat(ui.volBass.value);
-    cleanGain.gain.value = parseFloat(ui.volClean.value);
-    distGain.gain.value = parseFloat(ui.volDist.value);
-    melodyGain.gain.value = parseFloat(ui.volMelody.value);
+// Reconecta a árvore de áudio no contexto offline
+master.connect(mix);
+mix.connect(offlineCtx.destination);
+drumGain.connect(master);
+bassGain.connect(master);
+cleanGain.connect(master);
+distGain.connect(master);
+melodyGain.connect(master);
+// --- CONECTA O NOVO NÓ ---
+pianoStringGain.connect(master);
+// --- FIM ---
 
     // Reconecta a árvore de áudio no contexto offline
     master.connect(mix);
@@ -1764,12 +1832,14 @@ if (!ui.keySelect || ui.keySelect.value === 'auto') {
     const stepsPerBar = beatsPerBar * 4;
 
     // Armazena os últimos sources agendados para mutar antes de tocar o próximo
-    const lastSources = {
-      bass: null,
-      clean: null,
-      dist: null,
-      melody: null
-    };
+const lastSources = {
+  bass: null,
+  clean: null,
+  dist: null,
+  melody: null,
+  // --- NOVA ENTRADA ---
+  pianoString: null
+};
 
     // Função auxiliar para agendar um sample, mutando o anterior
     function scheduleSample(buffer, time, gainNode, instrumentKey, gainValue = 1.0) {
@@ -1973,10 +2043,12 @@ if (!ui.keySelect || ui.keySelect.value === 'auto') {
   ui.muteDrums.addEventListener('click', () => toggleMute('drums', ui.muteDrums));
   ui.muteClean.addEventListener('click', () => toggleMute('clean', ui.muteClean));
   ui.muteDist.addEventListener('click', () => toggleMute('dist', ui.muteDist));
+  // --- NOVO EVENT LISTENER ---
+  ui.mutePianoString.addEventListener('click', () => toggleMute('pianoString', ui.mutePianoString));
+  // --- FIM ---
   ui.btnMelodyAdd.addEventListener('click', addMelodyBlock);
   ui.btnMelodyClear.addEventListener('click', clearMelodyBlocks);
-
-  
+  // ... resto da função ...
   // Inicializa o number picker para mobile
   if (isMobileDevice()) {
     initializeNumberPicker();
