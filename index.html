@@ -1573,7 +1573,7 @@
 
   try {
     // Cria um contexto offline com a duração exata
-    const sampleRate = 44100; // Padrão CD quality
+    const sampleRate = 44100;
     const totalLength = Math.ceil(durationInSeconds * sampleRate);
     const offlineCtx = new OfflineAudioContext(2, totalLength, sampleRate);
 
@@ -1603,11 +1603,11 @@
     distGain.connect(master);
     melodyGain.connect(master);
 
-    // Calcula o tempo de início (começa imediatamente no contexto offline)
-    const startTime = 0;
     const sixteenthDur = 60 / state.bpm / 4;
+    const beatsPerBar = meterToBeats(state.meter);
+    const stepsPerBar = beatsPerBar * 4;
 
-    // Armazena os últimos sources agendados para cada instrumento (para mutar antes de tocar o próximo)
+    // Armazena os últimos sources agendados para mutar antes de tocar o próximo
     const lastSources = {
       bass: null,
       clean: null,
@@ -1619,9 +1619,13 @@
     function scheduleSample(buffer, time, gainNode, instrumentKey, gainValue = 1.0) {
       if (!buffer || time >= durationInSeconds) return;
 
-      // Se houver um sample anterior para este instrumento, pare-o agora
-      if (lastSources[instrumentKey] && lastSources[instrumentKey].stop) {
-        lastSources[instrumentKey].stop(time);
+      // Para o sample anterior do mesmo instrumento
+      if (lastSources[instrumentKey]) {
+        try {
+          lastSources[instrumentKey].stop(time);
+        } catch (e) {
+          // Ignora erro se já estiver parado
+        }
       }
 
       const src = offlineCtx.createBufferSource();
@@ -1633,35 +1637,24 @@
       g.gain.linearRampToValueAtTime(gainValue, time + 0.01);
       src.start(time);
 
-      // Para evitar sobreposição indesejada, paramos o sample após sua duração natural
-      // ou após um limite seguro (ex: 2s para samples longos de guitarra)
+      // Define um tempo máximo de duração para evitar sobreposição
       const stopTime = Math.min(time + buffer.duration, time + 2.0, durationInSeconds);
       src.stop(stopTime);
 
-      // Atualiza o último source para este instrumento
       lastSources[instrumentKey] = src;
     }
 
-    // Função para obter o índice do compasso e passo atual no tempo 't'
-    function getStepIndexAtTime(t) {
-      const stepsElapsed = Math.floor(t / sixteenthDur);
-      return stepsElapsed % state.bassPlan.length;
-    }
+    // Calcula quantos steps (16ªs) cabem na duração desejada
+    const totalSteps = Math.floor(durationInSeconds / sixteenthDur);
 
-    function getCurrentChordIndexAtTime(t) {
-      const beats = meterToBeats(state.meter);
-      const barsElapsed = Math.floor(t / (beats * sixteenthDur * 4)); // 4 semicolcheias por batida
-      return barsElapsed % state.chordPlan.length;
-    }
-
-    // Agenda todos os eventos de áudio para a duração especificada
-    for (let t = 0; t < durationInSeconds; t += sixteenthDur / 4) { // Amostragem em 64ªs para precisão
-      const currentTime = t;
-      const stepIdx = getStepIndexAtTime(currentTime);
-      const currentChordIndex = getCurrentChordIndexAtTime(currentTime);
+    // Agenda cada step exatamente como no playback em tempo real
+    for (let stepIdx = 0; stepIdx < totalSteps; stepIdx++) {
+      const currentTime = stepIdx * sixteenthDur;
+      const isNewBar = (stepIdx % stepsPerBar) === 0;
+      const currentChordIndex = Math.floor(stepIdx / stepsPerBar) % state.chordPlan.length;
       const chord = state.chordPlan[currentChordIndex];
 
-      // Agenda Bateria (NÃO muta samples anteriores, pois são percussivos e curtos)
+      // ===== BATERIA =====
       if (!mute.drums) {
         const drumToken = state.drumSeq[stepIdx % state.drumSeq.length];
         let drumKey = null;
@@ -1687,11 +1680,11 @@
           g.gain.setValueAtTime(0.0, currentTime);
           g.gain.linearRampToValueAtTime(1.0, currentTime + 0.005);
           src.start(currentTime);
-          // Não armazena nem para, pois samples de bateria são curtos e não se sobrepõem de forma problemática.
+          // Samples de bateria são curtos e não precisam ser parados manualmente
         }
       }
 
-      // Agenda Baixo (MUTA o sample anterior)
+      // ===== BAIXO =====
       if (!mute.bass) {
         const bassCommand = state.bassPlan[stepIdx % state.bassPlan.length];
         if (bassCommand !== '-' && bassCommand !== 'x' && state.buffers.bass[bassCommand]) {
@@ -1699,20 +1692,17 @@
         }
       }
 
-      // Agenda Guitarra Limpa (uma vez por compasso, MUTA o sample anterior)
-      if (!mute.clean && chord) {
-        const isNewBar = (stepIdx % (meterToBeats(state.meter) * 4)) === 0;
-        if (isNewBar) {
-          let fullChordName = chord.note + (chord.type || '');
-          const url = `guitarraLimpa/${chord.note}/${fullChordName}.mp3`;
-          const buf = state.buffers.guitar?.[url];
-          if (buf) {
-            scheduleSample(buf, currentTime, cleanGain, 'clean');
-          }
+      // ===== GUITARRA LIMPA ===== (uma vez por compasso)
+      if (!mute.clean && chord && isNewBar) {
+        let fullChordName = chord.note + (chord.type || '');
+        const url = `guitarraLimpa/${chord.note}/${fullChordName}.mp3`;
+        const buf = state.buffers.guitar?.[url];
+        if (buf) {
+          scheduleSample(buf, currentTime, cleanGain, 'clean');
         }
       }
 
-      // Agenda Guitarra Distorcida (MUTA o sample anterior)
+      // ===== GUITARRA DISTORCIDA =====
       if (!mute.dist) {
         if (state.currentGroove && state.currentGroove.guitarRhythm) {
           if (!state.guitarPlan) {
@@ -1732,8 +1722,8 @@
               scheduleSample(buf, currentTime, distGain, 'dist');
             }
           }
-        } else if (chord && (stepIdx % (meterToBeats(state.meter) * 4)) === 0) {
-          // Se não houver ritmo específico, toca no início do compasso
+        } else if (chord && isNewBar) {
+          // Toca no início do compasso se não houver ritmo específico
           let fullChordName = chord.note + (chord.type || '');
           const url = `guitarraDistorcao/${chord.note}/${fullChordName}.mp3`;
           const buf = state.buffers.guitar?.[url];
@@ -1743,7 +1733,7 @@
         }
       }
 
-      // Agenda Melodia (MUTA o sample anterior)
+      // ===== MELODIA =====
       if (state.melodyPlan.length > 0) {
         const melodyEvent = state.melodyPlan[stepIdx % state.melodyPlan.length];
         if (melodyEvent && melodyEvent.type === 'start') {
@@ -1767,9 +1757,11 @@
             }
           }
         } else if (melodyEvent && melodyEvent.type === 'mute') {
-          // Se for um evento de mute, para o último sample de melodia
-          if (lastSources.melody && lastSources.melody.stop) {
-            lastSources.melody.stop(currentTime);
+          // Para a melodia atual
+          if (lastSources.melody) {
+            try {
+              lastSources.melody.stop(currentTime);
+            } catch (e) {}
             lastSources.melody = null;
           }
         }
