@@ -997,6 +997,7 @@ if (!ui.keySelect || ui.keySelect.value === 'auto') {
         guitarUrls.add(`guitarraDistorcao/dedilhada/${ch.note}/${fullChordName}.mp3`);
         // CORREÇÃO AQUI: Adicionada a chave de fechamento '}' faltante.
         guitarUrls.add(`guitarraLimpa/${ch.note}/${fullChordName}.mp3`);
+        guitarUrls.add(`assets/PianoStringChord/${ch.note}/${fullChordName}.mp3`);
       }
       const preloadPromises = [];
       guitarUrls.forEach(url => {
