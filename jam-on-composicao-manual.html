@@ -494,8 +494,8 @@
     async function initializeApp() {
       updateStatus('Carregando recursos de áudio...', 'loading');
       
-      // Initialize Audio Context
       try {
+        // Initialize Audio Context
         state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         
         // Create gain nodes
@@ -543,6 +543,10 @@
         updateStatus('Aplicação pronta para uso!', 'ready');
         state.isLoaded = true;
         ui.btnPlay.disabled = false;
+      } catch (error) {
+        console.error('Error initializing app:', error);
+        updateStatus('Erro ao inicializar: ' + error.message, 'error');
+      }
     }
 
     function setupEventListeners() {
@@ -1299,7 +1303,7 @@
       try {
         // Resume audio context if suspended
         if (state.audioCtx.state === 'suspended') {
-          state.audioCtx.resume();
+          await state.audioCtx.resume();
         }
         
         buildPlaybackPlan();
