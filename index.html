@@ -1786,15 +1786,22 @@ if (!mute.pianoString && chord && isNewBar) {
     const offlineCtx = new OfflineAudioContext(2, totalLength, sampleRate);
 
     // Clona os nós de ganho para o contexto offline
-    const master = offlineCtx.createGain();
+const master = offlineCtx.createGain();
 const mix = offlineCtx.createGain();
 const drumGain = offlineCtx.createGain();
 const bassGain = offlineCtx.createGain();
 const cleanGain = offlineCtx.createGain();
 const distGain = offlineCtx.createGain();
 const melodyGain = offlineCtx.createGain();
-// --- ADICIONA O GANHO OFFLINE PARA O PIANOSTRING ---
 const pianoStringGain = offlineCtx.createGain();
+
+// --- APLICA OS VOLUMES ATUAIS DA INTERFACE ---
+master.gain.value = 0.9; // Master gain (pode ser ajustado se necessário)
+drumGain.gain.value = parseFloat(ui.volDrums.value);
+bassGain.gain.value = parseFloat(ui.volBass.value);
+cleanGain.gain.value = parseFloat(ui.volClean.value);
+distGain.gain.value = parseFloat(ui.volDist.value);
+melodyGain.gain.value = parseFloat(ui.volMelody.value);
 pianoStringGain.gain.value = parseFloat(ui.volPianoString.value);
 // --- FIM ---
 
@@ -1806,7 +1813,6 @@ bassGain.connect(master);
 cleanGain.connect(master);
 distGain.connect(master);
 melodyGain.connect(master);
-// --- CONECTA O NOVO NÓ ---
 pianoStringGain.connect(master);
 // --- FIM ---
 
