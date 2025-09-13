@@ -2041,11 +2041,44 @@ const lastSources = {
       await renderAndDownloadWAV(duration);
     });
     // ===== INICIALIZAÇÃO =====
-   if (ui.btnOpenManual) {
-    ui.btnOpenManual.addEventListener('click', () => {
-      window.open('jam-on-composicao-manual.html', '_blank');
-    });
-  }
+       // ===== INICIALIZAÇÃO =====
+    function initializeApp() {
+      // Event listeners
+      ui.play.addEventListener('click', onPlay);
+      ui.pause.addEventListener('click', onPause);
+      ui.stop.addEventListener('click', onStop);
+      ui.muteBass.addEventListener('click', () => toggleMute('bass', ui.muteBass));
+      ui.muteDrums.addEventListener('click', () => toggleMute('drums', ui.muteDrums));
+      ui.muteClean.addEventListener('click', () => toggleMute('clean', ui.muteClean));
+      ui.muteDist.addEventListener('click', () => toggleMute('dist', ui.muteDist));
+      // --- NOVO EVENT LISTENER (com verificação de segurança) ---
+      if (ui.mutePianoString) {
+        ui.mutePianoString.addEventListener('click', () => toggleMute('pianoString', ui.mutePianoString));
+      } else {
+        console.error('Elemento #mutePianoString não encontrado no DOM!');
+      }
+      // --- FIM ---
+      ui.btnMelodyAdd.addEventListener('click', addMelodyBlock);
+      ui.btnMelodyClear.addEventListener('click', clearMelodyBlocks);
+      // Novo botão para abrir a composição manual
+      if (ui.btnOpenManual) {
+        ui.btnOpenManual.addEventListener('click', () => {
+          window.open('jam-on-composicao-manual.html', '_blank');
+        });
+      }
+      // Inicializa o number picker para mobile
+      if (isMobileDevice()) {
+        initializeNumberPicker();
+      }
+      // Habilita todos os botões após o carregamento
+      const buttons = document.querySelectorAll('button');
+      buttons.forEach(btn => {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+      });
+    }
+    // Inicializa a aplicação quando a página carrega
+    window.addEventListener('load', initializeApp);
 </body>
 </html>
 
