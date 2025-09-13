@@ -994,15 +994,15 @@ if (!ui.keySelect || ui.keySelect.value === 'auto') {
       setStatePanel();
       const guitarUrls = new Set();
       for (const ch of state.chordPlan) {
-        let fullChordName = ch.note;
-        if (ch.type) fullChordName += ch.type;
-        guitarUrls.add(`guitarraDistorcao/${ch.note}/${fullChordName}.mp3`);
-        guitarUrls.add(`guitarraDistorcao/abafadas/${ch.note}/${fullChordName}.mp3`);
-        guitarUrls.add(`guitarraDistorcao/dedilhada/${ch.note}/${fullChordName}.mp3`);
-        // CORREÇÃO AQUI: Adicionada a chave de fechamento '}' faltante.
-        guitarUrls.add(`guitarraLimpa/${ch.note}/${fullChordName}.mp3`);
-        guitarUrls.add(`assets/PianoStringChord/${ch.note}/${fullChordName}.mp3`);
-      }
+  let fullChordName = ch.note;
+  if (ch.type) fullChordName += ch.type;
+  guitarUrls.add(`guitarraDistorcao/${ch.note}/${fullChordName}.mp3`);
+  guitarUrls.add(`guitarraDistorcao/abafadas/${ch.note}/${fullChordName}.mp3`);
+  guitarUrls.add(`guitarraDistorcao/dedilhada/${ch.note}/${fullChordName}.mp3`);
+  // A linha abaixo estava com um comentário incorreto interrompendo o código.
+  guitarUrls.add(`guitarraLimpa/${ch.note}/${fullChordName}.mp3`);
+  guitarUrls.add(`assets/PianoStringChord/${ch.note}/${fullChordName}.mp3`);
+}
       const preloadPromises = [];
       guitarUrls.forEach(url => {
         if (!state.buffers.guitar) state.buffers.guitar = {};
