@@ -393,11 +393,11 @@
     };
 
     // Caminhos dos instrumentos harmônicos (acorde.mp3)
-    const HARMONIC_INSTRUMENTS = {
-      'distorted-guitar': 'guitarraDistorcao/',
-      'clean-guitar': 'guitarraLimpa/',
-      'piano-chord': 'assets/PianoStringChord/'
-    };
+   const HARMONIC_INSTRUMENTS = {
+  'distorted-guitar': 'guitarraDistorcao/',
+  'clean-guitar': 'guitarraLimpa/',   // ❌ ISSO ESTÁ ERRADO!
+  'piano-chord': 'assets/PianoStringChord/'
+};
 
     // Caminhos dos samples de bateria
     const DRUM_SAMPLES = [
@@ -588,39 +588,36 @@
     }
 
     async function loadHarmonicChords() {
-      for (const [instKey, basePath] of Object.entries(HARMONIC_INSTRUMENTS)) {
-        state.buffers.harmonic[instKey] = {};
-        for (const chord of AVAILABLE_CHORDS) {
-          let filePath;
-          if (instKey === 'piano-chord') {
-            // assets/PianoStringChord/FS/FS5.mp3
-            const root = chord.substring(0, 2);
-            if (!['AS','CS','DS','FS','GS'].includes(root)) {
-              filePath = basePath + chord[0] + '/' + chord + '.mp3';
-            } else {
-              filePath = basePath + root + '/' + chord + '.mp3';
-            }
-          } else {
-            // guitarraDistorcao/AS/ASm.mp3
-            const root = chord.substring(0, 2);
-            if (!['AS','CS','DS','FS','GS'].includes(root)) {
-              filePath = basePath + chord[0] + '/' + chord + '.mp3';
-            } else {
-              filePath = basePath + root + '/' + chord + '.mp3';
-            }
-          }
-          try {
-            const response = await fetch(filePath);
-            const arrayBuffer = await response.arrayBuffer();
-            const buffer = await state.audioCtx.decodeAudioData(arrayBuffer);
-            state.buffers.harmonic[instKey][chord] = buffer;
-            console.log(`✅ Carregado: ${filePath}`);
-          } catch (err) {
-            console.warn(`⚠️ Não encontrado: ${filePath}`);
-          }
-        }
+  for (const [instKey, basePath] of Object.entries(HARMONIC_INSTRUMENTS)) {
+    state.buffers.harmonic[instKey] = {};
+    
+    for (const chord of AVAILABLE_CHORDS) {
+      // Determina a nota raiz: primeiro ou dois primeiros caracteres
+      let root;
+      if (['AS','CS','DS','FS','GS'].includes(chord.slice(0, 2))) {
+        root = chord.slice(0, 2); // Ex: "AS", "CS"
+      } else {
+        root = chord[0]; // Ex: "A", "G", "C"
+      }
+
+      // Caminho final: /root/chord.mp3
+      const filePath = basePath + root + '/' + chord + '.mp3';
+
+      try {
+        const response = await fetch(filePath);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const arrayBuffer = await response.arrayBuffer();
+        const buffer = await state.audioCtx.decodeAudioData(arrayBuffer);
+        state.buffers.harmonic[instKey][chord] = buffer;
+        console.log(`✅ Carregado: ${filePath}`);
+      } catch (err) {
+        console.warn(`⚠️ Não encontrado: ${filePath} | Acorde: ${chord} | Instrumento: ${instKey}`);
+        // NÃO interrompe a inicialização — apenas registra e continua
       }
     }
+  }
+  console.log('✅ Todos os acordes harmônicos carregados (ou ignorados).');
+}
 
     // ===== BLOCOS DE INSTRUMENTOS =====
     function addHarmonyBlock() {
