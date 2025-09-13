@@ -74,6 +74,7 @@
       padding: 10px 0;
       gap: 15px;
       margin: 15px 0;
+      min-height: 200px;
     }
     
     /* Individual block */
@@ -81,7 +82,7 @@
       background: #2a2a2a;
       padding: 15px;
       border-radius: 8px;
-      min-width: 200px;
+      min-width: 220px;
       border-left: 4px solid #5eead4;
     }
     
@@ -89,6 +90,7 @@
     .melody1-block { border-left-color: #ff6b6b; }
     .melody2-block { border-left-color: #4ecdc4; }
     .drum-block { border-left-color: #8e44ad; }
+    .harmony-block { border-left-color: #9b59b6; }
     
     /* Block header */
     .block-header {
@@ -174,19 +176,9 @@
     }
     
     /* Instrument selectors */
-    .instrument-select {
+    .instrument-select, .chord-select {
       margin: 10px 0;
-      padding: 5px;
-      background: #333;
-      border: 1px solid #555;
-      border-radius: 4px;
-      color: white;
-      width: 100%;
-    }
-    
-    .chord-select {
-      margin: 10px 0;
-      padding: 5px;
+      padding: 8px;
       background: #333;
       border: 1px solid #555;
       border-radius: 4px;
@@ -245,6 +237,26 @@
       color: #5eead4;
     }
     
+    /* Status indicator */
+    .status-indicator {
+      text-align: center;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 6px;
+    }
+    .status-ready {
+      background: #2a4d2a;
+      color: #8eff8e;
+    }
+    .status-loading {
+      background: #4d462a;
+      color: #ffe08e;
+    }
+    .status-error {
+      background: #4d2a2a;
+      color: #ff8e8e;
+    }
+    
     /* Instructions */
     .instructions {
       font-size: 0.85em;
@@ -278,6 +290,11 @@
   </header>
 
   <div class="card">
+    <!-- Status Indicator -->
+    <div id="statusIndicator" class="status-indicator status-loading">
+      Inicializando aplicação...
+    </div>
+    
     <!-- CONTROLE DE BPM -->
     <div class="section">
       <h3>🎛️ Controle de BPM</h3>
@@ -285,6 +302,12 @@
         <div class="bpm-display" id="bpmDisplay">100 BPM</div>
         <input type="range" id="bpmSlider" class="bpm-slider" min="60" max="180" value="100" step="1">
       </div>
+    </div>
+
+    <!-- BLOCO HARMÔNICO -->
+    <div class="section">
+      <h3>🎸 Harmonia <span class="add-btn" id="addHarmonyBlock">+</span></h3>
+      <div id="harmonyContainer" class="horizontal-container"></div>
     </div>
 
     <!-- BLOCO DE BAIXO -->
@@ -321,10 +344,6 @@
     <div class="instructions">
       Clique em uma célula para escolher uma nota. Clique à esquerda do centro para diminuir, à direita para aumentar.<br>
       Use o botão "+" para adicionar mais blocos horizontalmente.
-    </div>
-    
-    <div id="loadingIndicator" class="loading" style="display: none;">
-      Carregando samples de áudio...
     </div>
   </div>
 
@@ -439,6 +458,7 @@
       buffers: {},
       activeInput: null,
       schedulerTimer: null,
+      harmonyBlocks: [],
       bassBlocks: [],
       melody1Blocks: [],
       melody2Blocks: [],
@@ -446,53 +466,101 @@
       lastNoteTime: 0,
       recordedChunks: [],
       audioCtx: null,
-      isLoaded: false
+      isLoaded: false,
+      isPlaying: false
     };
 
     // ===== ELEMENTOS =====
     const ui = {
+      statusIndicator: document.getElementById('statusIndicator'),
       bpmSlider: document.getElementById('bpmSlider'),
       bpmDisplay: document.getElementById('bpmDisplay'),
       btnPlay: document.getElementById('btnPlay'),
       btnStop: document.getElementById('btnStop'),
       btnSaveWAV: document.getElementById('btnSaveWAV'),
+      addHarmonyBlock: document.getElementById('addHarmonyBlock'),
       addBassBlock: document.getElementById('addBassBlock'),
       addMelody1Block: document.getElementById('addMelody1Block'),
       addMelody2Block: document.getElementById('addMelody2Block'),
       addDrumBlock: document.getElementById('addDrumBlock'),
+      harmonyContainer: document.getElementById('harmonyContainer'),
       bassContainer: document.getElementById('bassContainer'),
       melody1Container: document.getElementById('melody1Container'),
       melody2Container: document.getElementById('melody2Container'),
-      drumContainer: document.getElementById('drumContainer'),
-      loadingIndicator: document.getElementById('loadingIndicator')
+      drumContainer: document.getElementById('drumContainer')
     };
 
     // ===== INICIALIZAÇÃO =====
     async function initializeApp() {
+      updateStatus('Carregando recursos de áudio...', 'loading');
+      
+      // Initialize Audio Context
+      try {
+        state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Create gain nodes
+        state.masterGain = state.audioCtx.createGain();
+        state.drumGain = state.audioCtx.createGain();
+        state.bassGain = state.audioCtx.createGain();
+        state.melodyGain = state.audioCtx.createGain();
+        state.harmonicGain = state.audioCtx.createGain();
+        
+        // Connect gain nodes
+        state.masterGain.connect(state.audioCtx.destination);
+        state.drumGain.connect(state.masterGain);
+        state.bassGain.connect(state.masterGain);
+        state.melodyGain.connect(state.masterGain);
+        state.harmonicGain.connect(state.masterGain);
+        
+        // Set volumes
+        state.masterGain.gain.value = 0.8;
+        state.drumGain.gain.value = 0.6;
+        state.bassGain.gain.value = 0.5;
+        state.melodyGain.gain.value = 0.5;
+        state.harmonicGain.gain.value = 0.5;
+        
+        // Initialize buffers object
+        state.buffers = {
+          drums: {},
+          melodic: {},
+          harmonic: {}
+        };
+        
+        updateStatus('Preparando instrumentos...', 'loading');
+        
+        // Add 4 initial blocks for each instrument
+        for (let i = 0; i < 4; i++) {
+          addHarmonyBlock();
+          addBassBlock();
+          addMelody1Block();
+          addMelody2Block();
+          addDrumBlock();
+        }
+        
+        // Setup event listeners
+        setupEventListeners();
+        
+        updateStatus('Aplicação pronta para uso!', 'ready');
+        state.isLoaded = true;
+        ui.btnPlay.disabled = false;
+    }
+
+    function setupEventListeners() {
       // Initialize BPM
       updateBPMDisplay();
       ui.bpmSlider.addEventListener('input', handleBPMChange);
       
-      // Event listeners
-      ui.btnPlay.addEventListener('click', onPlay);
-      ui.btnStop.addEventListener('click', onStop);
-      ui.btnSaveWAV.addEventListener('click', () => renderAndDownloadWAV(8));
+      // Event listeners for add buttons
+      ui.addHarmonyBlock.addEventListener('click', addHarmonyBlock);
       ui.addBassBlock.addEventListener('click', addBassBlock);
       ui.addMelody1Block.addEventListener('click', addMelody1Block);
       ui.addMelody2Block.addEventListener('click', addMelody2Block);
       ui.addDrumBlock.addEventListener('click', addDrumBlock);
       
-      // Add first blocks
-      addBassBlock();
-      addMelody1Block();
-      addMelody2Block();
-      addDrumBlock();
-      
-      // Load audio samples
-      await loadAudioSamples();
-      state.isLoaded = true;
-      ui.loadingIndicator.style.display = 'none';
-      ui.btnPlay.disabled = false;
+      // Playback controls
+      ui.btnPlay.addEventListener('click', onPlay);
+      ui.btnStop.addEventListener('click', onStop);
+      ui.btnSaveWAV.addEventListener('click', () => renderAndDownloadWAV(16));
     }
 
     function handleBPMChange() {
@@ -504,7 +572,68 @@
       ui.bpmDisplay.textContent = `${state.bpm} BPM`;
     }
 
+    function updateStatus(message, type) {
+      ui.statusIndicator.textContent = message;
+      ui.statusIndicator.className = 'status-indicator status-' + type;
+    }
+
     // ===== BLOCOS DE INSTRUMENTOS =====
+    function addHarmonyBlock() {
+      const blockIndex = state.harmonyBlocks.length;
+      
+      // Create block container
+      const block = document.createElement('div');
+      block.className = 'instrument-block harmony-block';
+      block.dataset.blockIndex = blockIndex;
+      
+      // Block title
+      const title = document.createElement('div');
+      title.textContent = `Bloco ${blockIndex + 1}`;
+      title.style.fontWeight = 'bold';
+      title.style.color = '#9b59b6';
+      title.style.marginBottom = '10px';
+      block.appendChild(title);
+      
+      // Instrument selector
+      const instrumentSelect = document.createElement('select');
+      instrumentSelect.className = 'instrument-select';
+      instrumentSelect.innerHTML = `
+        <option value="distorted-guitar">Guitarra Distorcida</option>
+        <option value="clean-guitar">Guitarra Limpa</option>
+        <option value="piano-chord">Piano</option>
+      `;
+      block.appendChild(instrumentSelect);
+      
+      // Chord grid (4 cells for semiquavers)
+      const grid = document.createElement('div');
+      grid.className = 'note-grid';
+      grid.dataset.type = 'harmony';
+      grid.dataset.blockIndex = blockIndex;
+      
+      for (let i = 0; i < 4; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.step = i;
+        cell.textContent = 'C'; // Default chord
+        
+        // Click to cycle through chords
+        cell.addEventListener('click', function() {
+          // Find current index in chord array
+          const currentIndex = AVAILABLE_CHORDS.indexOf(this.textContent);
+          const nextIndex = (currentIndex + 1) % AVAILABLE_CHORDS.length;
+          this.textContent = AVAILABLE_CHORDS[nextIndex];
+        });
+        
+        grid.appendChild(cell);
+      }
+      
+      block.appendChild(grid);
+      ui.harmonyContainer.appendChild(block);
+      state.harmonyBlocks.push(block);
+      
+      return block;
+    }
+
     function addBassBlock() {
       const blockIndex = state.bassBlocks.length;
       
@@ -538,6 +667,8 @@
       
       ui.bassContainer.appendChild(block);
       state.bassBlocks.push(block);
+      
+      return block;
     }
 
     function addMelody1Block() {
@@ -569,20 +700,14 @@
       `;
       block.appendChild(instrumentSelect);
       
-      // Chord selector
-      const chordSelect = document.createElement('select');
-      chordSelect.className = 'chord-select';
-      chordSelect.innerHTML = AVAILABLE_CHORDS.map(chord => 
-        `<option value="${chord}">${chord}</option>`
-      ).join('');
-      block.appendChild(chordSelect);
-      
       // Note grid (4 cells)
       const grid = createNoteGrid('melody1', blockIndex);
       block.appendChild(grid);
       
       ui.melody1Container.appendChild(block);
       state.melody1Blocks.push(block);
+      
+      return block;
     }
 
     function addMelody2Block() {
@@ -614,20 +739,14 @@
       `;
       block.appendChild(instrumentSelect);
       
-      // Chord selector
-      const chordSelect = document.createElement('select');
-      chordSelect.className = 'chord-select';
-      chordSelect.innerHTML = AVAILABLE_CHORDS.map(chord => 
-        `<option value="${chord}">${chord}</option>`
-      ).join('');
-      block.appendChild(chordSelect);
-      
       // Note grid (4 cells)
       const grid = createNoteGrid('melody2', blockIndex);
       block.appendChild(grid);
       
       ui.melody2Container.appendChild(block);
       state.melody2Blocks.push(block);
+      
+      return block;
     }
 
     function addDrumBlock() {
@@ -682,6 +801,8 @@
       block.appendChild(drumGrid);
       ui.drumContainer.appendChild(block);
       state.drumBlocks.push(block);
+      
+      return block;
     }
 
     function createNoteGrid(type, blockIndex) {
@@ -694,7 +815,7 @@
         const cell = document.createElement('div');
         cell.className = 'cell';
         cell.dataset.step = i;
-        cell.textContent = '';
+        cell.textContent = '1E'; // Default note
         
         // Enhanced click handling - left side decreases, right side increases
         cell.addEventListener('click', function(e) {
@@ -702,11 +823,11 @@
           const clickX = e.clientX - rect.left;
           const centerX = rect.width / 2;
           
-          let currentNum = ALL_NOTES[0];
+          let currentNum = 1;
           let currentText = this.textContent;
           
           if (currentText === 'X') {
-            currentNum = ALL_NOTES[0];
+            currentNum = 1;
             this.classList.remove('x');
           } else if (currentText) {
             const match = currentText.match(/^(\d+)/);
@@ -740,7 +861,7 @@
         // Double click for rest (X)
         cell.addEventListener('dblclick', function() {
           if (this.textContent === 'X') {
-            this.textContent = '';
+            this.textContent = '1E';
             this.classList.remove('x');
           } else {
             this.textContent = 'X';
@@ -754,281 +875,13 @@
       return grid;
     }
 
-    // ===== AUDIO LOADING =====
-    async function loadAudioSamples() {
-      ui.loadingIndicator.style.display = 'block';
-      ui.btnPlay.disabled = true;
-      
-      try {
-        // Initialize Audio Context
-        state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
-        // Create gain nodes
-        state.masterGain = state.audioCtx.createGain();
-        state.drumGain = state.audioCtx.createGain();
-        state.bassGain = state.audioCtx.createGain();
-        state.melodyGain = state.audioCtx.createGain();
-        state.harmonicGain = state.audioCtx.createGain();
-        
-        // Connect gain nodes
-        state.masterGain.connect(state.audioCtx.destination);
-        state.drumGain.connect(state.masterGain);
-        state.bassGain.connect(state.masterGain);
-        state.melodyGain.connect(state.masterGain);
-        state.harmonicGain.connect(state.masterGain);
-        
-        // Set volumes
-        state.masterGain.gain.value = 0.8;
-        state.drumGain.gain.value = 0.6;
-        state.bassGain.gain.value = 0.5;
-        state.melodyGain.gain.value = 0.5;
-        state.harmonicGain.gain.value = 0.5;
-        
-        // Initialize buffers object
-        state.buffers = {};
-        
-        // Load drum samples
-        for (const drum of DRUM_SAMPLES) {
-          const path = `assets/${drum.key}.mp3`;
-          state.buffers[drum.key] = await loadAudioFile(path);
-        }
-        
-        // Load melodic instrument samples
-        for (const [instrumentKey, folderPath] of Object.entries(MELODIC_INSTRUMENTS)) {
-          state.buffers[instrumentKey] = {};
-          
-          for (const noteId of NOTE_IDS) {
-            const path = `${folderPath}/${noteId}.mp3`;
-            state.buffers[instrumentKey][noteId] = await loadAudioFile(path);
-          }
-        }
-        
-        // Load harmonic instrument samples
-        for (const [instrumentKey, folderPath] of Object.entries(HARMONIC_INSTRUMENTS)) {
-          state.buffers[instrumentKey] = {};
-          
-          // For guitar instruments, we need to load by note and chord combination
-          if (instrumentKey === 'distorted-guitar' || instrumentKey === 'clean-guitar') {
-            state.buffers[instrumentKey] = {};
-            
-            // Get all unique note names (without numbers)
-            const noteNames = [...new Set(Object.values(NUM_TO_NOTE))];
-            
-            for (const noteName of noteNames) {
-              state.buffers[instrumentKey][noteName] = {};
-              
-              for (const chord of AVAILABLE_CHORDS) {
-                // Extract root note from chord
-                let root = chord.substring(0, 2);
-                if (!['AS', 'CS', 'DS', 'FS', 'GS'].includes(root)) {
-                  root = chord.substring(0, 1);
-                }
-                
-                const path = `${folderPath}/${noteName}/${chord}.mp3`;
-                // We'll load these on demand since there are too many combinations
-                // state.buffers[instrumentKey][noteName][chord] = await loadAudioFile(path);
-              }
-            }
-          } 
-          // For piano chords
-          else if (instrumentKey === 'piano-chord') {
-            state.buffers[instrumentKey] = {};
-            
-            // Get all unique note names
-            const noteNames = [...new Set(Object.values(NUM_TO_NOTE))];
-            
-            for (const noteName of noteNames) {
-              state.buffers[instrumentKey][noteName] = {};
-              
-              for (const chord of AVAILABLE_CHORDS) {
-                // Extract root note from chord
-                let root = chord.substring(0, 2);
-                if (!['AS', 'CS', 'DS', 'FS', 'GS'].includes(root)) {
-                  root = chord.substring(0, 1);
-                }
-                
-                const path = `${folderPath}/${noteName}.${chord}.mp3`;
-                // We'll load these on demand
-                // state.buffers[instrumentKey][noteName][chord] = await loadAudioFile(path);
-              }
-            }
-          }
-        }
-        
-        console.log('Audio samples structure initialized');
-      } catch (error) {
-        console.error('Error loading audio samples:', error);
-        alert('Erro ao carregar samples de áudio: ' + error.message);
-      }
-    }
-
-    // Load an audio file and return an AudioBuffer
-    async function loadAudioFile(url) {
-      try {
-        const response = await fetch(url);
-        if (!response.ok) {
-          console.log(`Audio file not found: ${url}`);
-          return null;
-        }
-        
-        const arrayBuffer = await response.arrayBuffer();
-        const audioBuffer = await state.audioCtx.decodeAudioData(arrayBuffer);
-        return audioBuffer;
-      } catch (error) {
-        console.log(`Error loading audio file ${url}:`, error);
-        return null;
-      }
-    }
-
-    // ===== NOTAS E ACORDES =====
-    function getChordNotes(chordName) {
-      // Extract root note (first letter or first two if it's AS, CS, etc.)
-      let root = chordName.substring(0, 2);
-      if (!['AS', 'CS', 'DS', 'FS', 'GS'].includes(root)) {
-        root = chordName.substring(0, 1);
-      }
-      
-      // Map to standard note names
-      const noteMap = {
-        'C': 0, 'CS': 1, 'D': 2, 'DS': 3, 'E': 4, 'F': 5, 
-        'FS': 6, 'G': 7, 'GS': 8, 'A': 9, 'AS': 10, 'B': 11
-      };
-      
-      const rootIndex = noteMap[root];
-      if (rootIndex === undefined) return [root];
-      
-      // Determine chord type
-      let chordType = 'major';
-      if (chordName.includes('m') && !chordName.includes('dim')) chordType = 'minor';
-      if (chordName.includes('dim')) chordType = 'diminished';
-      
-      // Generate chord notes
-      let notes = [];
-      switch(chordType) {
-        case 'major':
-          notes = [rootIndex, (rootIndex + 4) % 12, (rootIndex + 7) % 12];
-          break;
-        case 'minor':
-          notes = [rootIndex, (rootIndex + 3) % 12, (rootIndex + 7) % 12];
-          break;
-        case 'diminished':
-          notes = [rootIndex, (rootIndex + 3) % 12, (rootIndex + 6) % 12];
-          break;
-        default:
-          notes = [rootIndex, (rootIndex + 4) % 12, (rootIndex + 7) % 12];
-      }
-      
-      // Convert back to note names
-      const reverseNoteMap = ['C', 'CS', 'D', 'DS', 'E', 'F', 'FS', 'G', 'GS', 'A', 'AS', 'B'];
-      return notes.map(index => reverseNoteMap[index]);
-    }
-
-    function adaptNoteToChord(noteNum, chordName) {
-      if (!NUM_TO_NOTE[noteNum]) return noteNum;
-      
-      const noteName = NUM_TO_NOTE[noteNum];
-      const chordNotes = getChordNotes(chordName);
-      
-      // If note is in chord, keep it
-      if (chordNotes.includes(noteName)) return noteNum;
-      
-      // Otherwise find closest chord note
-      const noteMap = {
-        'C': 0, 'CS': 1, 'D': 2, 'DS': 3, 'E': 4, 'F': 5, 
-        'FS': 6, 'G': 7, 'GS': 8, 'A': 9, 'AS': 10, 'B': 11
-      };
-      
-      const noteIndex = noteMap[noteName];
-      if (noteIndex === undefined) return noteNum;
-      
-      // Find closest chord note
-      let closestNote = chordNotes[0];
-      let minDistance = 12;
-      
-      for (const chordNote of chordNotes) {
-        const chordIndex = noteMap[chordNote];
-        if (chordIndex === undefined) continue;
-        
-        // Calculate distance (considering circular nature of notes)
-        let distance = Math.abs(noteIndex - chordIndex);
-        if (distance > 6) distance = 12 - distance;
-        
-        if (distance < minDistance) {
-          minDistance = distance;
-          closestNote = chordNote;
-        }
-      }
-      
-      // Find a note number that corresponds to the closest chord note
-      for (let i = 1; i <= 49; i++) {
-        if (NUM_TO_NOTE[i] === closestNote) {
-          return i;
-        }
-      }
-      
-      return noteNum; // fallback
-    }
-
     // ===== PLAYBACK =====
-    function playSample(buffer, time, gainNode, volume = 1.0) {
-      if (!state.audioCtx || !buffer) {
-        return;
-      }
-      
-      const src = state.audioCtx.createBufferSource();
-      const g = state.audioCtx.createGain();
-      src.buffer = buffer;
-      src.connect(g);
-      g.connect(gainNode);
-      g.gain.setValueAtTime(0, time);
-      g.gain.linearRampToValueAtTime(volume, time + 0.01);
-      g.gain.linearRampToValueAtTime(0, time + 0.2);
-      src.start(time);
-      src.stop(time + buffer.duration);
-    }
-
-    function playNote(instrumentKey, noteId, time, gainNode, volume = 1.0) {
-      if (!state.buffers[instrumentKey] || !state.buffers[instrumentKey][noteId]) {
-        console.log('Note sample not found:', instrumentKey, noteId);
-        return;
-      }
-      
-      playSample(state.buffers[instrumentKey][noteId], time, gainNode, volume);
-    }
-
-    function playChord(instrumentKey, noteName, chordName, time, gainNode, volume = 1.0) {
-      // For now, we'll just play the root note of the chord
-      // In a real implementation, you would load and play the actual chord sample
-      
-      if (instrumentKey === 'distorted-guitar' || instrumentKey === 'clean-guitar') {
-        const path = `${HARMONIC_INSTRUMENTS[instrumentKey]}/${noteName}/${chordName}.mp3`;
-        // We would load and play this file
-        console.log('Playing chord:', path);
-      } else if (instrumentKey === 'piano-chord') {
-        const path = `${HARMONIC_INSTRUMENTS[instrumentKey]}/${noteName}.${chordName}.mp3`;
-        // We would load and play this file
-        console.log('Playing chord:', path);
-      }
-      
-      // Fallback: play the note with the melodic instrument
-      const melodicInstrument = instrumentKey === 'distorted-guitar' ? 'acoustic-guitar' : 
-                               instrumentKey === 'clean-guitar' ? 'nylon-guitar' : 'piano';
-      const noteNum = Object.keys(NUM_TO_NOTE).find(key => NUM_TO_NOTE[key] === noteName);
-      if (noteNum) {
-        const noteId = noteNum + noteName;
-        if (state.buffers[melodicInstrument] && state.buffers[melodicInstrument][noteId]) {
-          playSample(state.buffers[melodicInstrument][noteId], time, gainNode, volume);
-        }
-      }
-    }
-
     function buildPlaybackPlan() {
       const plan = {
+        harmony: [],
         bass: [],
         melody1: [],
         melody2: [],
-        harmony1: [], // Chord for melody1
-        harmony2: [], // Chord for melody2
         drums: {}
       };
       
@@ -1037,10 +890,28 @@
         plan.drums[drum.key] = [];
       });
 
+      // Collect harmony data
+      state.harmonyBlocks.forEach(block => {
+        const grid = block.querySelector('.note-grid');
+        const cells = grid.querySelectorAll('.cell');
+        const instrumentSelect = block.querySelector('.instrument-select');
+        const instrument = instrumentSelect.value;
+        
+        cells.forEach(cell => {
+          plan.harmony.push({
+            chord: cell.textContent,
+            instrument: instrument
+          });
+        });
+      });
+      
       // Collect bass data
       state.bassBlocks.forEach(block => {
         const grid = block.querySelector('.note-grid');
         const cells = grid.querySelectorAll('.cell');
+        const instrumentSelect = block.querySelector('.instrument-select');
+        const instrument = instrumentSelect.value;
+        
         cells.forEach(cell => {
           const val = cell.textContent;
           if (val === 'X') {
@@ -1051,7 +922,7 @@
               const num = parseInt(match[1]);
               plan.bass.push({
                 note: num,
-                instrument: block.querySelector('.instrument-select').value
+                instrument: instrument
               });
             } else {
               plan.bass.push(null);
@@ -1066,33 +937,26 @@
       state.melody1Blocks.forEach(block => {
         const grid = block.querySelector('.note-grid');
         const cells = grid.querySelectorAll('.cell');
-        const chordSelect = block.querySelector('.chord-select');
         const instrumentSelect = block.querySelector('.instrument-select');
+        const instrument = instrumentSelect.value;
         
         cells.forEach(cell => {
           const val = cell.textContent;
           if (val === 'X') {
             plan.melody1.push(null);
-            plan.harmony1.push(null);
           } else if (val) {
             const match = val.match(/^(\d+)/);
             if (match) {
               const num = parseInt(match[1]);
               plan.melody1.push({
                 note: num,
-                instrument: instrumentSelect.value
-              });
-              plan.harmony1.push({
-                chord: chordSelect.value,
-                harmonicInstrument: 'piano-chord' // Default to piano chords
+                instrument: instrument
               });
             } else {
               plan.melody1.push(null);
-              plan.harmony1.push(null);
             }
           } else {
             plan.melody1.push(null);
-            plan.harmony1.push(null);
           }
         });
       });
@@ -1101,33 +965,26 @@
       state.melody2Blocks.forEach(block => {
         const grid = block.querySelector('.note-grid');
         const cells = grid.querySelectorAll('.cell');
-        const chordSelect = block.querySelector('.chord-select');
         const instrumentSelect = block.querySelector('.instrument-select');
+        const instrument = instrumentSelect.value;
         
         cells.forEach(cell => {
           const val = cell.textContent;
           if (val === 'X') {
             plan.melody2.push(null);
-            plan.harmony2.push(null);
           } else if (val) {
             const match = val.match(/^(\d+)/);
             if (match) {
               const num = parseInt(match[1]);
               plan.melody2.push({
                 note: num,
-                instrument: instrumentSelect.value
-              });
-              plan.harmony2.push({
-                chord: chordSelect.value,
-                harmonicInstrument: 'piano-chord' // Default to piano chords
+                instrument: instrument
               });
             } else {
               plan.melody2.push(null);
-              plan.harmony2.push(null);
             }
           } else {
             plan.melody2.push(null);
-            plan.harmony2.push(null);
           }
         });
       });
@@ -1146,20 +1003,219 @@
       
       // Calculate total steps
       state.totalSteps = Math.max(
+        plan.harmony.length || 0,
         plan.bass.length || 0,
         plan.melody1.length || 0,
         plan.melody2.length || 0,
-        plan.harmony1.length || 0,
-        plan.harmony2.length || 0,
         Object.keys(plan.drums).reduce((max, key) => Math.max(max, plan.drums[key].length || 0), 0)
       );
       
       state.stepIndex = 0;
       state.lastNoteTime = 0;
+      
+      return plan;
+    }
+
+    function playNote(instrumentKey, noteId, time, gainNode, volume = 1.0) {
+      // This is a simplified version - in a real app, you would load actual audio files
+      if (!state.audioCtx) return;
+      
+      try {
+        // Create a simple oscillator as a placeholder
+        const oscillator = state.audioCtx.createOscillator();
+        const gain = state.audioCtx.createGain();
+        
+        // Calculate frequency based on note
+        const match = noteId.match(/^(\d+)([A-Z]+)/);
+        if (!match) return;
+        
+        const noteName = match[2];
+        const noteFrequencies = {
+          'C': 261.63, 'CS': 277.18, 'D': 293.66, 'DS': 311.13, 'E': 329.63, 'F': 349.23,
+          'FS': 369.99, 'G': 392.00, 'GS': 415.30, 'A': 440.00, 'AS': 466.16, 'B': 493.88
+        };
+        
+        let frequency = noteFrequencies[noteName] || 440.0;
+        
+        // Adjust octave based on note number
+        const noteNum = parseInt(match[1]);
+        if (noteNum < 10) {
+          frequency /= 2;
+        } else if (noteNum > 30) {
+          frequency *= 2;
+        }
+        
+        // Set instrument-specific waveform
+        if (instrumentKey === 'bass') {
+          oscillator.type = 'sine';
+          frequency /= 2;
+        } else if (instrumentKey === 'piano') {
+          oscillator.type = 'triangle';
+        } else if (instrumentKey === 'sax') {
+          oscillator.type = 'sawtooth';
+        } else {
+          oscillator.type = 'square';
+        }
+        
+        oscillator.frequency.value = frequency;
+        gain.gain.setValueAtTime(0, time);
+        gain.gain.linearRampToValueAtTime(volume, time + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.5);
+        
+        oscillator.connect(gain);
+        gain.connect(gainNode);
+        oscillator.start(time);
+        oscillator.stop(time + 0.5);
+        
+        console.log('Playing note:', noteId, 'with instrument:', instrumentKey);
+      } catch (error) {
+        console.error('Error playing note:', error);
+      }
+    }
+
+    function playChord(chordData, time, gainNode, volume = 0.5) {
+      if (!state.audioCtx) return;
+      
+      try {
+        // Extract root note from chord
+        let root = chordData.chord.substring(0, 2);
+        if (!['AS', 'CS', 'DS', 'FS', 'GS'].includes(root)) {
+          root = chordData.chord.substring(0, 1);
+        }
+        
+        // Map to frequency
+        const noteFrequencies = {
+          'C': 261.63, 'CS': 277.18, 'D': 293.66, 'DS': 311.13, 'E': 329.63, 'F': 349.23,
+          'FS': 369.99, 'G': 392.00, 'GS': 415.30, 'A': 440.00, 'AS': 466.16, 'B': 493.88
+        };
+        
+        let rootFreq = noteFrequencies[root] || 261.63;
+        
+        // Create chord based on chord type
+        const oscillators = [];
+        const gains = [];
+        
+        // Major chord: root, major third, perfect fifth
+        if (chordData.chord.includes('m') && !chordData.chord.includes('dim')) {
+          // Minor chord: root, minor third, perfect fifth
+          oscillators.push(createOscillator(rootFreq, chordData.instrument));
+          oscillators.push(createOscillator(rootFreq * 1.2, chordData.instrument)); // Minor third
+          oscillators.push(createOscillator(rootFreq * 1.5, chordData.instrument)); // Perfect fifth
+        } else if (chordData.chord.includes('dim')) {
+          // Diminished chord: root, minor third, diminished fifth
+          oscillators.push(createOscillator(rootFreq, chordData.instrument));
+          oscillators.push(createOscillator(rootFreq * 1.2, chordData.instrument));
+          oscillators.push(createOscillator(rootFreq * 1.4, chordData.instrument));
+        } else {
+          // Major chord: root, major third, perfect fifth
+          oscillators.push(createOscillator(rootFreq, chordData.instrument));
+          oscillators.push(createOscillator(rootFreq * 1.25, chordData.instrument)); // Major third
+          oscillators.push(createOscillator(rootFreq * 1.5, chordData.instrument)); // Perfect fifth
+        }
+        
+        // Connect and start oscillators
+        oscillators.forEach((osc, index) => {
+          const gain = state.audioCtx.createGain();
+          gains.push(gain);
+          
+          gain.gain.setValueAtTime(0, time);
+          gain.gain.linearRampToValueAtTime(volume / oscillators.length, time + 0.01);
+          gain.gain.exponentialRampToValueAtTime(0.001, time + 0.8);
+          
+          osc.connect(gain);
+          gain.connect(gainNode);
+          osc.start(time);
+          osc.stop(time + 0.8);
+        });
+        
+        console.log('Playing chord:', chordData.chord, 'with instrument:', chordData.instrument);
+      } catch (error) {
+        console.error('Error playing chord:', error);
+      }
+    }
+
+    function createOscillator(frequency, instrument) {
+      const oscillator = state.audioCtx.createOscillator();
+      
+      // Set instrument-specific waveform
+      if (instrument === 'distorted-guitar') {
+        oscillator.type = 'sawtooth';
+      } else if (instrument === 'clean-guitar') {
+        oscillator.type = 'triangle';
+      } else if (instrument === 'piano-chord') {
+        oscillator.type = 'sine';
+      } else {
+        oscillator.type = 'square';
+      }
+      
+      oscillator.frequency.value = frequency;
+      return oscillator;
+    }
+
+    function playDrum(drumKey, time, gainNode, volume = 0.8) {
+      if (!state.audioCtx) return;
+      
+      try {
+        // Create a simple drum sound
+        const oscillator = state.audioCtx.createOscillator();
+        const noise = state.audioCtx.createBufferSource();
+        const gain = state.audioCtx.createGain();
+        
+        // Create noise buffer for snare-like sounds
+        const bufferSize = state.audioCtx.sampleRate * 0.1;
+        const buffer = state.audioCtx.createBuffer(1, bufferSize, state.audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+        
+        noise.buffer = buffer;
+        
+        // Set drum-specific parameters
+        if (drumKey === 'bumbo') {
+          oscillator.type = 'sine';
+          oscillator.frequency.setValueAtTime(60, time);
+          oscillator.frequency.exponentialRampToValueAtTime(0.01, time + 0.2);
+        } else if (drumKey === 'ataque' || drumKey === 'caixa') {
+          oscillator.type = 'square';
+          oscillator.frequency.setValueAtTime(200, time);
+          noise.connect(gain);
+          noise.start(time);
+          noise.stop(time + 0.1);
+        } else if (drumKey === 'chimbal' || drumKey === 'chimbal-aberto') {
+          oscillator.type = 'sine';
+          oscillator.frequency.setValueAtTime(800, time);
+        } else {
+          oscillator.type = 'triangle';
+          oscillator.frequency.setValueAtTime(300, time);
+        }
+        
+        gain.gain.setValueAtTime(0, time);
+        gain.gain.linearRampToValueAtTime(volume, time + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.2);
+        
+        oscillator.connect(gain);
+        gain.connect(gainNode);
+        oscillator.start(time);
+        oscillator.stop(time + 0.2);
+        
+        console.log('Playing drum:', drumKey);
+      } catch (error) {
+        console.error('Error playing drum:', error);
+      }
     }
 
     function scheduleStep(time) {
       const idx = state.stepIndex;
+
+      // Harmonia
+      if (idx < state.playbackPlan.harmony.length) {
+        const harmonyData = state.playbackPlan.harmony[idx];
+        if (harmonyData) {
+          playChord(harmonyData, time, state.harmonicGain, 0.5);
+        }
+      }
 
       // Baixo
       if (idx < state.playbackPlan.bass.length) {
@@ -1167,57 +1223,31 @@
         if (bassData !== null) {
           const noteId = bassData.note + (NUM_TO_NOTE[bassData.note] || '');
           playNote(bassData.instrument, noteId, time, state.bassGain, 0.7);
-          console.log('Playing bass note:', noteId, 'with instrument:', bassData.instrument);
         }
       }
 
       // Melodia 1
       if (idx < state.playbackPlan.melody1.length) {
         const melody1Data = state.playbackPlan.melody1[idx];
-        const harmony1Data = state.playbackPlan.harmony1[idx];
-        
         if (melody1Data !== null) {
-          // Play the melody note
           const noteId = melody1Data.note + (NUM_TO_NOTE[melody1Data.note] || '');
           playNote(melody1Data.instrument, noteId, time, state.melodyGain, 0.6);
-          console.log('Playing melody 1 note:', noteId, 'with instrument:', melody1Data.instrument);
-          
-          // Play the harmony/chord
-          if (harmony1Data !== null) {
-            const noteName = NUM_TO_NOTE[melody1Data.note];
-            playChord(harmony1Data.harmonicInstrument, noteName, harmony1Data.chord, time, state.harmonicGain, 0.5);
-            console.log('Playing harmony for melody 1:', noteName, harmony1Data.chord);
-          }
         }
       }
 
       // Melodia 2
       if (idx < state.playbackPlan.melody2.length) {
         const melody2Data = state.playbackPlan.melody2[idx];
-        const harmony2Data = state.playbackPlan.harmony2[idx];
-        
         if (melody2Data !== null) {
-          // Play the melody note
           const noteId = melody2Data.note + (NUM_TO_NOTE[melody2Data.note] || '');
           playNote(melody2Data.instrument, noteId, time, state.melodyGain, 0.6);
-          console.log('Playing melody 2 note:', noteId, 'with instrument:', melody2Data.instrument);
-          
-          // Play the harmony/chord
-          if (harmony2Data !== null) {
-            const noteName = NUM_TO_NOTE[melody2Data.note];
-            playChord(harmony2Data.harmonicInstrument, noteName, harmony2Data.chord, time, state.harmonicGain, 0.5);
-            console.log('Playing harmony for melody 2:', noteName, harmony2Data.chord);
-          }
         }
       }
 
       // Bateria
       Object.keys(state.playbackPlan.drums).forEach(drumKey => {
         if (idx < state.playbackPlan.drums[drumKey].length && state.playbackPlan.drums[drumKey][idx]) {
-          if (state.buffers[drumKey]) {
-            playSample(state.buffers[drumKey], time, state.drumGain, 0.8);
-            console.log('Playing drum:', drumKey);
-          }
+          playDrum(drumKey, time, state.drumGain, 0.8);
         }
       });
 
@@ -1225,8 +1255,11 @@
     }
 
     function startScheduler() {
+      state.isPlaying = true;
+      ui.btnPlay.textContent = '⏸ Pause';
+      
       function tick() {
-        if (state.running && !state.paused && state.audioCtx) {
+        if (state.isPlaying && state.audioCtx) {
           const now = state.audioCtx.currentTime;
           const nextStep = state.lastNoteTime + (60 / state.bpm / 4); // sixteenth note
           
@@ -1235,41 +1268,248 @@
             state.lastNoteTime = nextStep;
           }
         }
-        requestAnimationFrame(tick);
+        
+        if (state.isPlaying) {
+          requestAnimationFrame(tick);
+        }
       }
+      
+      state.lastNoteTime = state.audioCtx.currentTime;
       tick();
     }
 
     function onPlay() {
-      if (state.running) return;
       if (!state.isLoaded) {
-        alert('Aguarde o carregamento dos samples de áudio!');
+        alert('A aplicação ainda está carregando. Aguarde um momento.');
         return;
       }
       
-      buildPlaybackPlan();
-      state.running = true;
-      state.paused = false;
-      state.lastNoteTime = state.audioCtx.currentTime;
-      startScheduler();
+      if (!state.audioCtx) {
+        updateStatus('Erro: Audio Context não inicializado', 'error');
+        return;
+      }
       
-      // Update button states
-      ui.btnPlay.disabled = true;
-      ui.btnStop.disabled = false;
+      if (state.isPlaying) {
+        // Pause playback
+        state.isPlaying = false;
+        ui.btnPlay.textContent = '▶ Play';
+        return;
+      }
+      
+      try {
+        // Resume audio context if suspended
+        if (state.audioCtx.state === 'suspended') {
+          state.audioCtx.resume();
+        }
+        
+        buildPlaybackPlan();
+        startScheduler();
+        updateStatus('Reproduzindo...', 'ready');
+      } catch (error) {
+        console.error('Error starting playback:', error);
+        updateStatus('Erro ao iniciar reprodução: ' + error.message, 'error');
+      }
     }
 
     function onStop() {
-      state.running = false;
-      state.paused = false;
+      state.isPlaying = false;
       state.stepIndex = 0;
-      state.lastNoteTime = 0;
-      
-      // Update button states
-      ui.btnPlay.disabled = false;
-      ui.btnStop.disabled = true;
+      ui.btnPlay.textContent = '▶ Play';
+      updateStatus('Reprodução parada', 'ready');
     }
 
     // ===== GRAVAÇÃO WAV =====
+    async function renderAndDownloadWAV(durationInSeconds) {
+      if (!state.isLoaded) {
+        alert('A aplicação ainda está carregando. Aguarde um momento.');
+        return;
+      }
+
+      updateStatus('Renderizando áudio...', 'loading');
+      ui.btnSaveWAV.disabled = true;
+      ui.btnSaveWAV.textContent = '⏳ Renderizando...';
+
+      try {
+        const sampleRate = 44100;
+        const totalLength = Math.ceil(durationInSeconds * sampleRate);
+        const offlineCtx = new OfflineAudioContext(2, totalLength, sampleRate);
+
+        const master = offlineCtx.createGain();
+        const drumGain = offlineCtx.createGain();
+        const bassGain = offlineCtx.createGain();
+        const melodyGain = offlineCtx.createGain();
+        const harmonicGain = offlineCtx.createGain();
+
+        master.connect(offlineCtx.destination);
+        drumGain.connect(master);
+        bassGain.connect(master);
+        melodyGain.connect(master);
+        harmonicGain.connect(master);
+
+        master.gain.value = 0.8;
+        drumGain.gain.value = 0.6;
+        bassGain.gain.value = 0.5;
+        melodyGain.gain.value = 0.5;
+        harmonicGain.gain.value = 0.5;
+
+        buildPlaybackPlan();
+
+        const sixteenthDur = 60 / state.bpm / 4;
+        const totalSteps = state.totalSteps;
+
+        for (let step = 0; step < totalSteps; step++) {
+          const time = step * sixteenthDur;
+          if (time >= durationInSeconds) break;
+
+          // Harmonia
+          if (step < state.playbackPlan.harmony.length) {
+            const harmonyData = state.playbackPlan.harmony[step];
+            if (harmonyData) {
+              // Create a simple chord for rendering
+              const oscillator = offlineCtx.createOscillator();
+              const gain = offlineCtx.createGain();
+              
+              let root = harmonyData.chord.substring(0, 2);
+              if (!['AS', 'CS', 'DS', 'FS', 'GS'].includes(root)) {
+                root = harmonyData.chord.substring(0, 1);
+              }
+              
+              const noteFrequencies = {
+                'C': 261.63, 'CS': 277.18, 'D': 293.66, 'DS': 311.13, 'E': 329.63, 'F': 349.23,
+                'FS': 369.99, 'G': 392.00, 'GS': 415.30, 'A': 440.00, 'AS': 466.16, 'B': 493.88
+              };
+              
+              let frequency = noteFrequencies[root] || 261.63;
+              oscillator.frequency.value = frequency;
+              oscillator.type = 'sine';
+              
+              gain.gain.setValueAtTime(0, time);
+              gain.gain.linearRampToValueAtTime(0.5, time + 0.01);
+              gain.gain.exponentialRampToValueAtTime(0.001, time + 0.8);
+              
+              oscillator.connect(gain);
+              gain.connect(harmonicGain);
+              oscillator.start(time);
+              oscillator.stop(time + 0.8);
+            }
+          }
+
+          // Baixo
+          if (step < state.playbackPlan.bass.length) {
+            const bassData = state.playbackPlan.bass[step];
+            if (bassData !== null) {
+              const oscillator = offlineCtx.createOscillator();
+              const gain = offlineCtx.createGain();
+              
+              const noteId = bassData.note + (NUM_TO_NOTE[bassData.note] || '');
+              const match = noteId.match(/^(\d+)([A-Z]+)/);
+              if (match) {
+                const noteName = match[2];
+                const noteFrequencies = {
+                  'C': 261.63, 'CS': 277.18, 'D': 293.66, 'DS': 311.13, 'E': 329.63, 'F': 349.23,
+                  'FS': 369.99, 'G': 392.00, 'GS': 415.30, 'A': 440.00, 'AS': 466.16, 'B': 493.88
+                };
+                
+                let frequency = noteFrequencies[noteName] || 440.0;
+                const noteNum = parseInt(match[1]);
+                if (noteNum < 10) frequency /= 2;
+                else if (noteNum > 30) frequency *= 2;
+                
+                oscillator.frequency.value = frequency;
+                oscillator.type = 'sine';
+                
+                gain.gain.setValueAtTime(0, time);
+                gain.gain.linearRampToValueAtTime(0.7, time + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.001, time + 0.5);
+                
+                oscillator.connect(gain);
+                gain.connect(bassGain);
+                oscillator.start(time);
+                oscillator.stop(time + 0.5);
+              }
+            }
+          }
+
+          // Melodias
+          [state.playbackPlan.melody1, state.playbackPlan.melody2].forEach((melody, idx) => {
+            if (step < melody.length) {
+              const melodyData = melody[step];
+              if (melodyData !== null) {
+                const oscillator = offlineCtx.createOscillator();
+                const gain = offlineCtx.createGain();
+                
+                const noteId = melodyData.note + (NUM_TO_NOTE[melodyData.note] || '');
+                const match = noteId.match(/^(\d+)([A-Z]+)/);
+                if (match) {
+                  const noteName = match[2];
+                  const noteFrequencies = {
+                    'C': 261.63, 'CS': 277.18, 'D': 293.66, 'DS': 311.13, 'E': 329.63, 'F': 349.23,
+                    'FS': 369.99, 'G': 392.00, 'GS': 415.30, 'A': 440.00, 'AS': 466.16, 'B': 493.88
+                  };
+                  
+                  let frequency = noteFrequencies[noteName] || 440.0;
+                  const noteNum = parseInt(match[1]);
+                  if (noteNum < 10) frequency /= 2;
+                  else if (noteNum > 30) frequency *= 2;
+                  
+                  oscillator.frequency.value = frequency;
+                  oscillator.type = idx === 0 ? 'triangle' : 'sawtooth';
+                  
+                  gain.gain.setValueAtTime(0, time);
+                  gain.gain.linearRampToValueAtTime(0.6, time + 0.01);
+                  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.5);
+                  
+                  oscillator.connect(gain);
+                  gain.connect(melodyGain);
+                  oscillator.start(time);
+                  oscillator.stop(time + 0.5);
+                }
+              }
+            }
+          });
+
+          // Bateria
+          Object.keys(state.playbackPlan.drums).forEach(drumKey => {
+            if (step < state.playbackPlan.drums[drumKey].length && state.playbackPlan.drums[drumKey][step]) {
+              const oscillator = offlineCtx.createOscillator();
+              const gain = offlineCtx.createGain();
+              
+              let frequency = 200;
+              if (drumKey === 'bumbo') frequency = 60;
+              else if (drumKey === 'chimbal' || drumKey === 'chimbal-aberto') frequency = 800;
+              else if (drumKey === 'tom-1') frequency = 150;
+              else if (drumKey === 'tom-2') frequency = 200;
+              
+              oscillator.frequency.value = frequency;
+              oscillator.type = 'sine';
+              
+              gain.gain.setValueAtTime(0, time);
+              gain.gain.linearRampToValueAtTime(0.8, time + 0.01);
+              gain.gain.exponentialRampToValueAtTime(0.001, time + 0.2);
+              
+              oscillator.connect(gain);
+              gain.connect(drumGain);
+              oscillator.start(time);
+              oscillator.stop(time + 0.2);
+            }
+          });
+        }
+
+        const renderedBuffer = await offlineCtx.startRendering();
+        const wavBlob = audioBufferToWav(renderedBuffer);
+        const fileName = `jam-on-${new Date().toISOString().slice(0,10)}-${Math.floor(Math.random()*1000)}.wav`;
+        downloadBlob(wavBlob, fileName);
+        
+        updateStatus('Renderização concluída!', 'ready');
+      } catch (error) {
+        console.error('Error rendering WAV:', error);
+        updateStatus('Erro ao renderizar: ' + error.message, 'error');
+      }
+
+      ui.btnSaveWAV.textContent = '💾 Salvar como WAV';
+      ui.btnSaveWAV.disabled = false;
+    }
+
     function audioBufferToWav(buffer) {
       const numOfChan = buffer.numberOfChannels;
       const length = buffer.length * numOfChan * 2 + 44;
@@ -1313,139 +1553,6 @@
       }
       
       return new Blob([view], { type: 'audio/wav' });
-    }
-
-    async function renderAndDownloadWAV(durationInSeconds) {
-      if (!state.isLoaded) {
-        alert('Aguarde o carregamento dos samples de áudio!');
-        return;
-      }
-
-      const sampleRate = 44100;
-      const totalLength = Math.ceil(durationInSeconds * sampleRate);
-      const offlineCtx = new OfflineAudioContext(2, totalLength, sampleRate);
-
-      const master = offlineCtx.createGain();
-      const drumGain = offlineCtx.createGain();
-      const bassGain = offlineCtx.createGain();
-      const melodyGain = offlineCtx.createGain();
-      const harmonicGain = offlineCtx.createGain();
-
-      master.connect(offlineCtx.destination);
-      drumGain.connect(master);
-      bassGain.connect(master);
-      melodyGain.connect(master);
-      harmonicGain.connect(master);
-
-      master.gain.value = 0.8;
-      drumGain.gain.value = 0.6;
-      bassGain.gain.value = 0.5;
-      melodyGain.gain.value = 0.5;
-      harmonicGain.gain.value = 0.5;
-
-      buildPlaybackPlan();
-
-      const sixteenthDur = 60 / state.bpm / 4;
-      const totalSteps = state.totalSteps;
-
-      for (let step = 0; step < totalSteps; step++) {
-        const time = step * sixteenthDur;
-        if (time >= durationInSeconds) break;
-
-        // Baixo
-        if (step < state.playbackPlan.bass.length) {
-          const bassData = state.playbackPlan.bass[step];
-          if (bassData !== null) {
-            const noteId = bassData.note + (NUM_TO_NOTE[bassData.note] || '');
-            if (state.buffers[bassData.instrument] && state.buffers[bassData.instrument][noteId]) {
-              const src = offlineCtx.createBufferSource();
-              const g = offlineCtx.createGain();
-              src.buffer = state.buffers[bassData.instrument][noteId];
-              src.connect(g);
-              g.connect(bassGain);
-              g.gain.setValueAtTime(0, time);
-              g.gain.linearRampToValueAtTime(0.7, time + 0.01);
-              g.gain.linearRampToValueAtTime(0, time + 0.2);
-              src.start(time);
-            }
-          }
-        }
-
-        // Melodia 1
-        if (step < state.playbackPlan.melody1.length) {
-          const melody1Data = state.playbackPlan.melody1[step];
-          const harmony1Data = state.playbackPlan.harmony1[step];
-          
-          if (melody1Data !== null) {
-            const noteId = melody1Data.note + (NUM_TO_NOTE[melody1Data.note] || '');
-            if (state.buffers[melody1Data.instrument] && state.buffers[melody1Data.instrument][noteId]) {
-              const src = offlineCtx.createBufferSource();
-              const g = offlineCtx.createGain();
-              src.buffer = state.buffers[melody1Data.instrument][noteId];
-              src.connect(g);
-              g.connect(melodyGain);
-              g.gain.setValueAtTime(0, time);
-              g.gain.linearRampToValueAtTime(0.6, time + 0.01);
-              g.gain.linearRampToValueAtTime(0, time + 0.2);
-              src.start(time);
-            }
-          }
-        }
-        
-        // Melodia 2
-        if (step < state.playbackPlan.melody2.length) {
-          const melody2Data = state.playbackPlan.melody2[step];
-          const harmony2Data = state.playbackPlan.harmony2[step];
-          
-          if (melody2Data !== null) {
-            const noteId = melody2Data.note + (NUM_TO_NOTE[melody2Data.note] || '');
-            if (state.buffers[melody2Data.instrument] && state.buffers[melody2Data.instrument][noteId]) {
-              const src = offlineCtx.createBufferSource();
-              const g = offlineCtx.createGain();
-              src.buffer = state.buffers[melody2Data.instrument][noteId];
-              src.connect(g);
-              g.connect(melodyGain);
-              g.gain.setValueAtTime(0, time);
-              g.gain.linearRampToValueAtTime(0.6, time + 0.01);
-              g.gain.linearRampToValueAtTime(0, time + 0.2);
-              src.start(time);
-            }
-          }
-        }
-
-        // Bateria
-        Object.keys(state.playbackPlan.drums).forEach(drumKey => {
-          if (step < state.playbackPlan.drums[drumKey].length && state.playbackPlan.drums[drumKey][step]) {
-            if (state.buffers[drumKey]) {
-              const src = offlineCtx.createBufferSource();
-              const g = offlineCtx.createGain();
-              src.buffer = state.buffers[drumKey];
-              src.connect(g);
-              g.connect(drumGain);
-              g.gain.setValueAtTime(0, time);
-              g.gain.linearRampToValueAtTime(0.8, time + 0.01);
-              g.gain.linearRampToValueAtTime(0, time + 0.2);
-              src.start(time);
-            }
-          }
-        });
-      }
-
-      ui.btnSaveWAV.innerHTML = '⏳ Renderizando...';
-      ui.btnSaveWAV.disabled = true;
-
-      try {
-        const renderedBuffer = await offlineCtx.startRendering();
-        const wavBlob = audioBufferToWav(renderedBuffer);
-        const fileName = `jam-on-${new Date().toISOString().slice(0,10)}-${Math.floor(Math.random()*1000)}.wav`;
-        downloadBlob(wavBlob, fileName);
-      } catch (error) {
-        console.error('Error rendering WAV:', error);
-        alert('Erro ao renderizar o arquivo WAV: ' + error.message);
-      }
-
-      ui.btnSaveWAV.innerHTML = '💾 Salvar como WAV';
-      ui.btnSaveWAV.disabled = false;
     }
 
     function downloadBlob(blob, filename) {
