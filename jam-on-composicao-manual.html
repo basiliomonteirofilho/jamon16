@@ -66,7 +66,6 @@
       justify-content: center;
       cursor: pointer;
     }
-    /* AGORA OS BLOCOS SÃO VERTICAIS */
     .instrument-container {
       display: flex;
       flex-direction: column;
@@ -120,7 +119,6 @@
       color: #888;
       font-weight: bold;
     }
-    /* DRUMS - MESMO TAMANHO E LAYOUT DOS OUTROS */
     .drum-grid {
       display: flex;
       flex-direction: column;
@@ -337,7 +335,6 @@
       'GS', 'GS11', 'GS13', 'GS4', 'GS45+', 'GS5', 'GS5+', 'GS6', 'GS7', 'GS75+', 'GS9', 'GS95+',
       'GSdim', 'GSm', 'GSm4', 'GSm5', 'GSm5+', 'GSm6', 'GSm7', 'GSm75+', 'GSm79', 'GSm9'
     ];
-    // Carregar nomes das notas do arquivo nomes.txt
     const NOTE_NAMES = [
       '10CS.mp3', '11D.mp3', '12DS.mp3', '13E.mp3', '14F.mp3', '15FS.mp3', '16G.mp3', '17GS.mp3', 
       '18A.mp3', '19AS.mp3', '1E.mp3', '20B.mp3', '21C.mp3', '22CS.mp3', '23D.mp3', '24DS.mp3', 
@@ -361,12 +358,10 @@
     const ALL_NOTES = Object.keys(NUM_TO_NOTE).map(n => parseInt(n)).sort((a, b) => a - b);
     const MIN_NOTE = Math.min(...ALL_NOTES);
     const MAX_NOTE = Math.max(...ALL_NOTES);
-    // Mapeamento de frequências base (A4 = 440Hz)
     const NOTE_FREQ = {
       'C': 261.63, 'CS': 277.18, 'D': 293.66, 'DS': 311.13, 'E': 329.63, 'F': 349.23,
       'FS': 369.99, 'G': 392.00, 'GS': 415.30, 'A': 440.00, 'AS': 466.16, 'B': 493.88
     };
-    // Caminhos dos instrumentos melódicos (nota.mp3)
     const MELODIC_INSTRUMENTS = {
       'acordeon': 'assets/AcordeonMelodia/',
       'bass': 'assets/BaixoMelodia/',
@@ -376,13 +371,11 @@
       'acoustic-guitar': 'assets/ViolaoAcoMelodia/',
       'nylon-guitar': 'assets/ViolaoNylonMelodia/'
     };
-    // Caminhos dos instrumentos harmônicos (acorde.mp3)
     const HARMONIC_INSTRUMENTS = {
       'distorted-guitar': 'guitarraDistorcao/',
       'clean-guitar': 'guitarraLimpa/',
       'piano-chord': 'assets/PianoStringChord/'
     };
-    // Caminhos dos samples de bateria
     const DRUM_SAMPLES = [
       { key: 'ataque', label: 'Caixa', path: 'assets/ataque.mp3' },
       { key: 'bumbo', label: 'Bumbo', path: 'assets/bumbo.mp3' },
@@ -400,7 +393,7 @@
       bpm: 100,
       stepIndex: 0,
       totalSteps: 4,
-      buffers: {}, // Armazena AudioBuffers carregados
+      buffers: {},
       activeInput: null,
       schedulerTimer: null,
       harmonyBlocks: [],
@@ -460,14 +453,10 @@
           harmonic: {}
         };
         updateStatus('Carregando amostras de áudio...', 'loading');
-        // Carregar todos os samples de bateria
         await loadDrumSamples();
-        // Carregar todas as notas melódicas (todas as notas possíveis)
         await loadMelodicNotes();
-        // Carregar todos os acordes harmônicos (todos os acordes possíveis)
         await loadHarmonicChords();
         updateStatus('Preparando instrumentos...', 'loading');
-        // Adiciona 1 bloco inicial de cada tipo
         addHarmonyBlock();
         addBassBlock();
         addMelody1Block();
@@ -533,7 +522,6 @@
             console.log(`✅ Carregado: ${filePath}`);
           } catch (err) {
             console.warn(`⚠️ Não encontrado: ${filePath}`);
-            // Se não encontrar, tenta com o nome da nota sem modificador (ex: "CS" -> "C")
             const baseNote = note.replace(/S$/, '');
             const altPath = basePath + baseNote + '.mp3';
             try {
@@ -553,14 +541,12 @@
       for (const [instKey, basePath] of Object.entries(HARMONIC_INSTRUMENTS)) {
         state.buffers.harmonic[instKey] = {};
         for (const chord of AVAILABLE_CHORDS) {
-          // Determina a nota raiz: primeiro ou dois primeiros caracteres
           let root;
           if (['AS','CS','DS','FS','GS'].includes(chord.slice(0, 2))) {
-            root = chord.slice(0, 2); // Ex: "AS", "CS"
+            root = chord.slice(0, 2);
           } else {
-            root = chord[0]; // Ex: "A", "G", "C"
+            root = chord[0];
           }
-          // Caminho final: /root/chord.mp3
           const filePath = basePath + root + '/' + chord + '.mp3';
           try {
             const response = await fetch(filePath);
@@ -571,7 +557,6 @@
             console.log(`✅ Carregado: ${filePath}`);
           } catch (err) {
             console.warn(`⚠️ Não encontrado: ${filePath} | Acorde: ${chord} | Instrumento: ${instKey}`);
-            // NÃO interrompe a inicialização — apenas registra e continua
           }
         }
       }
@@ -605,7 +590,7 @@
         const cell = document.createElement('div');
         cell.className = 'cell';
         cell.dataset.step = i;
-        cell.textContent = 'C'; // Default chord
+        cell.textContent = 'C';
         cell.addEventListener('click', function() {
           const currentIndex = AVAILABLE_CHORDS.indexOf(this.textContent);
           const nextIndex = (currentIndex + 1) % AVAILABLE_CHORDS.length;
@@ -756,7 +741,7 @@
         const cell = document.createElement('div');
         cell.className = 'cell';
         cell.dataset.step = i;
-        cell.textContent = '1E'; // Default note
+        cell.textContent = '1E';
         cell.addEventListener('click', function(e) {
           const rect = this.getBoundingClientRect();
           const clickX = e.clientX - rect.left;
@@ -803,7 +788,6 @@
         drums: {}
       };
       DRUM_SAMPLES.forEach(d => plan.drums[d.key] = []);
-      // Harmonia
       state.harmonyBlocks.forEach(block => {
         const grid = block.querySelector('.note-grid');
         const cells = grid.querySelectorAll('.cell');
@@ -815,7 +799,6 @@
           });
         });
       });
-      // Baixo
       state.bassBlocks.forEach(block => {
         const grid = block.querySelector('.note-grid');
         const cells = grid.querySelectorAll('.cell');
@@ -825,7 +808,7 @@
           if (val === 'X') {
             plan.bass.push(null);
           } else {
-            const match = val.match(/^(\d+)([A-Z]+)/);
+            const match = val.match(/^(\d+)([A-Z]+)$/);
             if (match) {
               const num = parseInt(match[1]);
               plan.bass.push({ note: num, instrument: instrument });
@@ -835,7 +818,6 @@
           }
         });
       });
-      // Melodia 1
       state.melody1Blocks.forEach(block => {
         const grid = block.querySelector('.note-grid');
         const cells = grid.querySelectorAll('.cell');
@@ -845,7 +827,7 @@
           if (val === 'X') {
             plan.melody1.push(null);
           } else {
-            const match = val.match(/^(\d+)([A-Z]+)/);
+            const match = val.match(/^(\d+)([A-Z]+)$/);
             if (match) {
               const num = parseInt(match[1]);
               plan.melody1.push({ note: num, instrument: instrument });
@@ -855,7 +837,6 @@
           }
         });
       });
-      // Melodia 2
       state.melody2Blocks.forEach(block => {
         const grid = block.querySelector('.note-grid');
         const cells = grid.querySelectorAll('.cell');
@@ -865,7 +846,7 @@
           if (val === 'X') {
             plan.melody2.push(null);
           } else {
-            const match = val.match(/^(\d+)([A-Z]+)/);
+            const match = val.match(/^(\d+)([A-Z]+)$/);
             if (match) {
               const num = parseInt(match[1]);
               plan.melody2.push({ note: num, instrument: instrument });
@@ -875,7 +856,6 @@
           }
         });
       });
-      // Bateria
       state.drumBlocks.forEach(block => {
         DRUM_SAMPLES.forEach(drum => {
           const cells = block.querySelectorAll(`.drum-cell[data-instr="${drum.key}"]`);
@@ -909,7 +889,7 @@
       source.buffer = buffer;
       source.connect(gainNode);
       source.start(time);
-      source.stop(time + 0.5); // 0.5s de duração padrão
+      source.stop(time + 0.5);
     }
     function playChord(instrumentKey, chord, time, gainNode, volume = 0.5) {
       if (!state.audioCtx || !state.buffers.harmonic[instrumentKey]) return;
@@ -922,7 +902,7 @@
       source.buffer = buffer;
       source.connect(gainNode);
       source.start(time);
-      source.stop(time + 0.8); // Acordes mais longos
+      source.stop(time + 0.8);
     }
     function playDrum(drumKey, time, gainNode, volume = 0.8) {
       if (!state.audioCtx || !state.buffers.drums[drumKey]) return;
@@ -948,19 +928,19 @@
       }
       if (idx < state.playbackPlan.bass.length) {
         const item = state.playbackPlan.bass[idx];
-        if (item) {
+        if (item && typeof item.note === 'number') { // ← PROTEÇÃO CRÍTICA
           playNote(item.instrument, item.note, time, state.bassGain, 0.7);
         }
       }
       if (idx < state.playbackPlan.melody1.length) {
         const item = state.playbackPlan.melody1[idx];
-        if (item) {
+        if (item && typeof item.note === 'number') { // ← PROTEÇÃO CRÍTICA
           playNote(item.instrument, item.note, time, state.melodyGain, 0.6);
         }
       }
       if (idx < state.playbackPlan.melody2.length) {
         const item = state.playbackPlan.melody2[idx];
-        if (item) {
+        if (item && typeof item.note === 'number') { // ← PROTEÇÃO CRÍTICA
           playNote(item.instrument, item.note, time, state.melodyGain, 0.6);
         }
       }
@@ -977,7 +957,7 @@
       function tick() {
         if (!state.isPlaying) return;
         const now = state.audioCtx.currentTime;
-        const stepDuration = 60 / state.bpm / 4; // semicolcheia
+        const stepDuration = 60 / state.bpm / 4;
         const nextStep = state.lastNoteTime + stepDuration;
         if (now >= nextStep) {
           scheduleStep(nextStep);
@@ -1020,7 +1000,6 @@
       ui.btnPlay.textContent = '▶ Play';
       updateStatus('Reprodução parada', 'ready');
     }
-    // ===== GRAVAÇÃO WAV =====
     async function renderAndDownloadWAV(durationInSeconds) {
       if (!state.isLoaded) {
         alert('A aplicação ainda está carregando. Aguarde um momento.');
@@ -1053,7 +1032,6 @@
         const totalSteps = Math.min(state.totalSteps, Math.ceil(durationInSeconds / sixteenthDur));
         for (let step = 0; step < totalSteps; step++) {
           const time = step * sixteenthDur;
-          // Harmonia
           if (step < state.playbackPlan.harmony.length) {
             const item = state.playbackPlan.harmony[step];
             if (item && item.chord !== 'X' && item.chord !== 'C') {
@@ -1067,10 +1045,9 @@
               }
             }
           }
-          // Baixo
           if (step < state.playbackPlan.bass.length) {
             const item = state.playbackPlan.bass[step];
-            if (item) {
+            if (item && typeof item.note === 'number') {
               const noteName = NUM_TO_NOTE[item.note];
               const buffer = state.buffers.melodic[item.instrument]?.[noteName];
               if (buffer) {
@@ -1082,11 +1059,10 @@
               }
             }
           }
-          // Melodia 1 & 2
           [[state.playbackPlan.melody1, melodyGain], [state.playbackPlan.melody2, melodyGain]].forEach(([melody, gain]) => {
             if (step < melody.length) {
               const item = melody[step];
-              if (item) {
+              if (item && typeof item.note === 'number') {
                 const noteName = NUM_TO_NOTE[item.note];
                 const buffer = state.buffers.melodic[item.instrument]?.[noteName];
                 if (buffer) {
@@ -1099,7 +1075,6 @@
               }
             }
           });
-          // Bateria
           Object.keys(state.playbackPlan.drums).forEach(key => {
             if (step < state.playbackPlan.drums[key].length && state.playbackPlan.drums[key][step]) {
               const buffer = state.buffers.drums[key];
@@ -1177,7 +1152,6 @@
         URL.revokeObjectURL(url);
       }, 100);
     }
-    // ===== INICIALIZAR =====
     window.addEventListener('load', initializeApp);
   </script>
 </body>
