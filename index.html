@@ -368,6 +368,9 @@
         <button id="btnPause">⏸ Pause</button>
         <button id="btnStop" class="danger">⏹ Stop</button>
         <button id="btnSaveWAV" class="primary">💾 Salvar como WAV</button>
+        <button id="btnOpenManual" class="primary" style="font-size: 1em; padding: 14px 24px;">
+      🎛️ Abrir Composição Manual
+      </button>
       </div>
       <div class="mute-buttons">
         <button id="muteBass" data-mute="off">🎸 Baixo</button>
@@ -532,7 +535,8 @@ const ui = {
   numberPicker: document.getElementById('numberPicker'),
   numberGrid: document.getElementById('numberGrid'),
   btnSaveWAV: document.getElementById('btnSaveWAV'),
-  chordProgression: document.getElementById('chordProgression')
+  chordProgression: document.getElementById('chordProgression'),
+  btnOpenManual: document.getElementById('btnOpenManual')
 };
 
 // Função para inicializar os selects de Estilo e Tonalidade
@@ -2031,42 +2035,11 @@ const lastSources = {
       await renderAndDownloadWAV(duration);
     });
     // ===== INICIALIZAÇÃO =====
-    function initializeApp() {
-  // Event listeners
-  ui.play.addEventListener('click', onPlay);
-  ui.pause.addEventListener('click', onPause);
-  ui.stop.addEventListener('click', onStop);
-  ui.muteBass.addEventListener('click', () => toggleMute('bass', ui.muteBass));
-  ui.muteDrums.addEventListener('click', () => toggleMute('drums', ui.muteDrums));
-  ui.muteClean.addEventListener('click', () => toggleMute('clean', ui.muteClean));
-  ui.muteDist.addEventListener('click', () => toggleMute('dist', ui.muteDist));
-
-  // --- NOVO EVENT LISTENER (com verificação de segurança) ---
-  if (ui.mutePianoString) {
-    ui.mutePianoString.addEventListener('click', () => toggleMute('pianoString', ui.mutePianoString));
-  } else {
-    console.error('Elemento #mutePianoString não encontrado no DOM!');
+   if (ui.btnOpenManual) {
+    ui.btnOpenManual.addEventListener('click', () => {
+      window.open('jam-on-composicao-manual.html', '_blank');
+    });
   }
-  // --- FIM ---
-
-  ui.btnMelodyAdd.addEventListener('click', addMelodyBlock);
-  ui.btnMelodyClear.addEventListener('click', clearMelodyBlocks);
-
-  // Inicializa o number picker para mobile
-  if (isMobileDevice()) {
-    initializeNumberPicker();
-  }
-
-  // Habilita todos os botões após o carregamento
-  const buttons = document.querySelectorAll('button');
-  buttons.forEach(btn => {
-    btn.disabled = false;
-    btn.style.opacity = '1';
-  });
-}
-    // Inicializa a aplicação quando a página carrega
-    window.addEventListener('load', initializeApp);
-  </script>
 </body>
 </html>
 
