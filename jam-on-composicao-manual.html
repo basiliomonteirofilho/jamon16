@@ -539,18 +539,19 @@ function updateStatus(message, type) {
 
 // ===== CARREGAMENTO SOB DEMANDA (OTIMIZADO) =====
 // ===== CARREGAMENTO SOB DEMANDA (OTIMIZADO) =====
+// ===== CARREGAMENTO SOB DEMANDA (OTIMIZADO) =====
 async function loadSample(instrumentType, key, noteOrChord) {
   let filePath;
+  let bufferKey; // 👈 DECLARAÇÃO NO ESCOPO DA FUNÇÃO — AGORA É ACESSÍVEL EM TODOS OS BLOCOS
+
   if (instrumentType === 'drum') {
     const sample = DRUM_SAMPLES.find(d => d.key === key);
     if (!sample) return;
     filePath = sample.path;
-    
-    // 👇 CHAVE ÚNICA E SIMPLES PARA BATERIA: apenas o nome do sample (ex: "ataque")
-    const bufferKey = key; 
+    bufferKey = key; // 👈 ATRIBUIÇÃO
   } else if (instrumentType === 'melodic') {
     filePath = MELODIC_INSTRUMENTS[key] + noteOrChord + '.mp3';
-    const bufferKey = `melodic-${key}-${noteOrChord}`;
+    bufferKey = `melodic-${key}-${noteOrChord}`; // 👈 ATRIBUIÇÃO
   } else if (instrumentType === 'harmonic') {
     let root;
     if (['AS','CS','DS','FS','GS'].includes(noteOrChord.slice(0, 2))) {
@@ -559,13 +560,14 @@ async function loadSample(instrumentType, key, noteOrChord) {
       root = noteOrChord[0];
     }
     filePath = HARMONIC_INSTRUMENTS[key] + root + '/' + noteOrChord + '.mp3';
-    const bufferKey = `harmonic-${key}-${noteOrChord}`;
+    bufferKey = `harmonic-${key}-${noteOrChord}`; // 👈 ATRIBUIÇÃO
   }
+
   if (!filePath) return;
 
-  // 👇 Verifica se já foi carregado
+  // 👇 VERIFICA SE JÁ FOI CARREGADO — AGORA bufferKey ESTÁ DEFINIDO
   if (state.loadedSamples.has(bufferKey)) {
-    return; // Já carregado, não faz nada
+    return;
   }
 
   try {
