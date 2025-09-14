@@ -538,14 +538,19 @@ function updateStatus(message, type) {
 }
 
 // ===== CARREGAMENTO SOB DEMANDA (OTIMIZADO) =====
+// ===== CARREGAMENTO SOB DEMANDA (OTIMIZADO) =====
 async function loadSample(instrumentType, key, noteOrChord) {
   let filePath;
   if (instrumentType === 'drum') {
     const sample = DRUM_SAMPLES.find(d => d.key === key);
     if (!sample) return;
     filePath = sample.path;
+    
+    // 👇 CHAVE ÚNICA E SIMPLES PARA BATERIA: apenas o nome do sample (ex: "ataque")
+    const bufferKey = key; 
   } else if (instrumentType === 'melodic') {
     filePath = MELODIC_INSTRUMENTS[key] + noteOrChord + '.mp3';
+    const bufferKey = `melodic-${key}-${noteOrChord}`;
   } else if (instrumentType === 'harmonic') {
     let root;
     if (['AS','CS','DS','FS','GS'].includes(noteOrChord.slice(0, 2))) {
@@ -554,14 +559,13 @@ async function loadSample(instrumentType, key, noteOrChord) {
       root = noteOrChord[0];
     }
     filePath = HARMONIC_INSTRUMENTS[key] + root + '/' + noteOrChord + '.mp3';
+    const bufferKey = `harmonic-${key}-${noteOrChord}`;
   }
   if (!filePath) return;
 
-  const bufferKey = `${instrumentType}-${key}-${noteOrChord}`;
-  
-  // Se já foi carregado, pula
+  // 👇 Verifica se já foi carregado
   if (state.loadedSamples.has(bufferKey)) {
-    return;
+    return; // Já carregado, não faz nada
   }
 
   try {
@@ -569,11 +573,17 @@ async function loadSample(instrumentType, key, noteOrChord) {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const arrayBuffer = await response.arrayBuffer();
     const buffer = await state.audioCtx.decodeAudioData(arrayBuffer);
-    
-    state.buffers[instrumentType === 'drum' ? 'drums' : instrumentType === 'melodic' ? 'melodic' : 'harmonic'][bufferKey] = buffer;
-    state.loadedSamples.add(bufferKey); // Marca como carregado
-    
-    console.log(`✅ Carregado: ${filePath}`);
+
+    if (instrumentType === 'drum') {
+      state.buffers.drums[bufferKey] = buffer;
+    } else if (instrumentType === 'melodic') {
+      state.buffers.melodic[bufferKey] = buffer;
+    } else if (instrumentType === 'harmonic') {
+      state.buffers.harmonic[bufferKey] = buffer;
+    }
+
+    state.loadedSamples.add(bufferKey);
+    console.log(`✅ Carregado: ${filePath} → chave: ${bufferKey}`);
   } catch (err) {
     console.warn(`⚠️ Não encontrado: ${filePath}`);
   }
@@ -1051,6 +1061,8 @@ function playChord(instrumentKey, chord, time, gainNode, volume = 0.5) {
 
 function playDrum(drumKey, time, gainNode, volume = 0.8) {
   if (!state.audioCtx) return;
+  
+  // 👇 AGORA USAMOS EXATAMENTE O MESMO NOME QUE FOI USADO NO LOAD: "ataque", "bumbo", etc.
   const buffer = state.buffers.drums[drumKey];
   if (!buffer) {
     console.warn(`Sample de bateria não encontrado: ${drumKey}`);
@@ -1383,4 +1395,3 @@ window.addEventListener('load', initializeApp);
     </script>
 </body>
 </html>
-
