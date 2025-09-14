@@ -360,7 +360,7 @@
       'GSdim', 'GSm', 'GSm4', 'GSm5', 'GSm5+', 'GSm6', 'GSm7', 'GSm75+', 'GSm79', 'GSm9'
     ];
 
-    // NOMES DAS NOTAS MELÓDICAS (COM NÚMERO): EX: '1E.mp3', '2F.mp3', etc.
+    // Nomes das notas melódicas COM O NÚMERO (ex: '1E', '2F', etc.)
     const NOTE_NAMES = [
       '10CS.mp3', '11D.mp3', '12DS.mp3', '13E.mp3', '14F.mp3', '15FS.mp3', '16G.mp3', '17GS.mp3', 
       '18A.mp3', '19AS.mp3', '1E.mp3', '20B.mp3', '21C.mp3', '22CS.mp3', '23D.mp3', '24DS.mp3', 
@@ -369,8 +369,9 @@
       '3FS.mp3', '40G.mp3', '41GS.mp3', '42A.mp3', '43AS.mp3', '44B.mp3', '45C.mp3', '46CS.mp3', 
       '47D.mp3', '48DS.mp3', '49E.mp3', '4G.mp3', '5GS.mp3', '6A.mp3', '7AS.mp3', '8B.mp3', '9C.mp3'
     ];
-    const NOTE_IDS = NOTE_NAMES.map(name => name.replace('.mp3', '')); // ['10CS', '11D', '12DS', ...]
-    const ALL_NOTES = NOTE_IDS; // Já são os nomes completos com número!
+    
+    // Os nomes das notas são exatamente os nomes dos arquivos SEM .mp3
+    const ALL_NOTES = NOTE_NAMES.map(name => name.replace('.mp3', '')); // ['10CS', '11D', '12DS', ..., '1E', '2F', ...]
 
     // Mapeamento de frequências base (A4 = 440Hz)
     const NOTE_FREQ = {
@@ -899,7 +900,7 @@
         }
       });
 
-      // Baixo, Melodia 1, Melodia 2, Bateria: +4 células cada
+      // Baixo, Melodia 1, Melodia 2: +4 células cada
       [state.bassBlocks, state.melody1Blocks, state.melody2Blocks].forEach(blocks => {
         blocks.forEach(block => {
           const grid = block.querySelector('.note-grid');
@@ -1013,7 +1014,7 @@
           if (val === 'X') {
             plan.bass.push(null);
           } else {
-            plan.bass.push({ note: val, instrument: instrument }); // note é a STRING completa: '1E', '2F', etc.
+            plan.bass.push({ note: val, instrument: instrument }); // ← VALOR COMPLETO: '1E', '2F', etc.
           }
         });
       });
@@ -1027,7 +1028,7 @@
           if (val === 'X') {
             plan.melody1.push(null);
           } else {
-            plan.melody1.push({ note: val, instrument: instrument }); // note é a STRING completa: '1E', '2F', etc.
+            plan.melody1.push({ note: val, instrument: instrument }); // ← VALOR COMPLETO: '1E', '2F', etc.
           }
         });
       });
@@ -1041,7 +1042,7 @@
           if (val === 'X') {
             plan.melody2.push(null);
           } else {
-            plan.melody2.push({ note: val, instrument: instrument }); // note é a STRING completa: '1E', '2F', etc.
+            plan.melody2.push({ note: val, instrument: instrument }); // ← VALOR COMPLETO: '1E', '2F', etc.
           }
         });
       });
@@ -1063,7 +1064,7 @@
 
     function playNote(instrumentKey, note, time, gainNode, volume = 1.0) {
       if (!state.audioCtx) return;
-      const bufferKey = `melodic-${instrumentKey}-${note}`;
+      const bufferKey = `melodic-${instrumentKey}-${note}`; // Ex: melodic-bass-1E
       const buffer = state.buffers.melodic[bufferKey];
       if (!buffer) {
         console.warn(`Sample não encontrado: ${instrumentKey}/${note}`);
@@ -1133,7 +1134,7 @@
 
       if (idx < plan.bass.length) {
         const item = plan.bass[idx];
-        if (item && item.note) {
+        if (item && item.note) { // ← Garante que item.note existe
           if (state.currentlyPlaying.bass !== null) {
             state.currentlyPlaying.bass = null;
           }
