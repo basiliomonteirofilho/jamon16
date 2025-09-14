@@ -399,9 +399,9 @@ const MELODIC_INSTRUMENTS = {
 };
 
 const HARMONIC_INSTRUMENTS = {
-  'distorted-guitar': 'guitarraDistorcao/',   // ← CORRIGIDO: adicionado / no final
-  'clean-guitar': 'guitarraLimpa/',          // ← CORRIGIDO: adicionado / no final
-  'piano-chord': 'assets/PianoStringChord/'  // ← CORRIGIDO: adicionado / no final
+  'distorted-guitar': 'guitarraDistorcao/',   // ← CORRETO: termina com /
+  'clean-guitar': 'guitarraLimpa/',          // ← CORRETO: termina com /
+  'piano-chord': 'assets/PianoStringChord/'  // ← CORRETO: termina com /
 };
 
 const DRUM_SAMPLES = [
@@ -485,7 +485,7 @@ async function initializeApp() {
     state.melodyGain.connect(state.masterGain);
     state.harmonicGain.connect(state.masterGain);
     state.masterGain.gain.value = 0.8;
-    state.drumGain.gain.value = 1.0; // ↑ Aumentado para evitar abafamento
+    state.drumGain.gain.value = 1.0; // ↑ Para evitar abafamento
     state.bassGain.gain.value = 0.5;
     state.melodyGain.gain.value = 0.5;
     state.harmonicGain.gain.value = 0.5;
@@ -515,7 +515,7 @@ function setupEventListeners() {
   ui.addCompassoBtn.addEventListener('click', addCompasso);
   ui.btnPlay.addEventListener('click', onPlay);
   ui.btnStop.addEventListener('click', onStop);
-  ui.btnSaveWAV.addEventListener('click', () => renderAndDownloadWAV(16));
+  ui.btnSaveWAV.addEventListener('click', () => renderAndDownloadWAV(16)); // Usando sistema do outro código
 
   document.addEventListener('click', function(e) {
     if (e.target.classList.contains('cell') || e.target.classList.contains('drum-cell')) {
@@ -550,7 +550,7 @@ function updateStatus(message, type) {
   ui.statusIndicator.className = 'status-indicator status-' + type;
 }
 
-// ===== CARREGAMENTO SOB DEMANDA (OTIMIZADO) =====
+// ===== CARREGAMENTO SOB DEMANDA (CORRIGIDO) =====
 async function loadSample(instrumentType, key, noteOrChord) {
   let filePath;
   let bufferKey;
@@ -564,13 +564,14 @@ async function loadSample(instrumentType, key, noteOrChord) {
     filePath = MELODIC_INSTRUMENTS[key] + noteOrChord + '.mp3';
     bufferKey = `melodic-${key}-${noteOrChord}`;
   } else if (instrumentType === 'harmonic') {
-    // EXTRAÇÃO ROBUSTA DO ROOT (para acordes como ASm7, CS5+, etc.)
+    // 🔍 EXTRAÇÃO ROBUSTA DO ROOT (suporta AS, CS, DS, FS, GS)
     let root;
     if (noteOrChord.length >= 2 && ['AS','CS','DS','FS','GS'].includes(noteOrChord.slice(0, 2))) {
       root = noteOrChord.slice(0, 2);
     } else {
       root = noteOrChord[0]; // Para C, D, E, etc.
     }
+    // 🚫 NÃO use "root" sozinho — use o acorde completo como nome de arquivo!
     filePath = HARMONIC_INSTRUMENTS[key] + root + '/' + noteOrChord + '.mp3';
     bufferKey = `harmonic-${key}-${noteOrChord}`;
   }
@@ -636,7 +637,7 @@ function addHarmonyBlock() {
       const nextIndex = (currentIndex + 1) % AVAILABLE_CHORDS.length;
       this.textContent = AVAILABLE_CHORDS[nextIndex];
       if (state.currentlyPlaying.harmony !== null) {
-        state.currentlyPlaying.harmony = null; // Cancela o acorde anterior
+        state.currentlyPlaying.harmony = null;
       }
       loadSample('harmonic', this.parentElement.querySelector('.instrument-select').value, this.textContent);
     });
@@ -808,7 +809,7 @@ function createNoteGrid(type, blockIndex, numCells) {
       const instrument = this.parentElement.parentElement.querySelector('.instrument-select').value;
       const category = type.replace('Block', '').toLowerCase();
       if (state.currentlyPlaying[category] !== null) {
-        state.currentlyPlaying[category] = null; // Mute anterior
+        state.currentlyPlaying[category] = null; // Muta anterior
       }
       loadSample('melodic', instrument, this.textContent);
     });
@@ -997,7 +998,7 @@ function scheduleStep(time) {
     const item = plan.harmony[idx];
     if (item && item.chord !== 'X') {
       if (state.currentlyPlaying.harmony !== null) {
-        state.currentlyPlaying.harmony = null; // Muta o anterior
+        state.currentlyPlaying.harmony = null;
       }
       playChord(item.instrument, item.chord, time, state.harmonicGain, 1.0); // ← DURAÇÃO DE 1.0s (semínima)
       state.currentlyPlaying.harmony = item.chord;
@@ -1083,7 +1084,7 @@ function playChord(instrumentKey, chord, time, gainNode, volume = 1.0) {
   source.buffer = buffer;
   source.connect(gainNode);
   source.start(time);
-  source.stop(time + 1.0); // ← SEMÍNIMA: 2 semicolcheias = 1.0s
+  source.stop(time + 1.0); // ← Semínima = 1.0s
 }
 
 function playDrum(drumKey, time, gainNode, volume = 1.0) {
@@ -1166,10 +1167,10 @@ function onPlay() {
       });
     });
 
-    // Bateria
+    // Bateria — usa o key direto (ex: 'ataque'), sem prefixo
     Object.keys(state.playbackPlan.drums).forEach(key => {
       if (state.playbackPlan.drums[key].some(active => active)) {
-        samplesToLoad.add(key); // ← Usa apenas o key (ex: 'ataque'), sem prefixo
+        samplesToLoad.add(key);
       }
     });
 
@@ -1186,7 +1187,7 @@ function onPlay() {
           return loadSample('harmonic', inst, note);
         }
       } else {
-        return loadSample('drum', bufferKey, ''); // Drum key
+        return loadSample('drum', bufferKey, '');
       }
     });
 
@@ -1230,7 +1231,7 @@ function onStop() {
   updateStatus('Reprodução parada', 'ready');
 }
 
-// ===== GRAVAÇÃO WAV =====
+// ===== GRAVAÇÃO WAV (COPIADA DO SEGUNDO CÓDIGO — FUNCIONAL) =====
 async function renderAndDownloadWAV(durationInSeconds) {
   if (!state.playbackPlan) {
     alert('Crie alguma música primeiro.');
@@ -1258,7 +1259,7 @@ async function renderAndDownloadWAV(durationInSeconds) {
     harmonicGain.connect(master);
 
     master.gain.value = 0.8;
-    drumGain.gain.value = 1.0; // ↑ Mais alto para compensar abafamento
+    drumGain.gain.value = 1.0;
     bassGain.gain.value = 0.5;
     melodyGain.gain.value = 0.5;
     harmonicGain.gain.value = 0.5;
@@ -1325,10 +1326,10 @@ async function renderAndDownloadWAV(durationInSeconds) {
         }
       });
 
-      // Bateria — usa o key direto (ex: 'ataque')
+      // Bateria — usa o key direto
       Object.keys(state.playbackPlan.drums).forEach(key => {
         if (step < state.playbackPlan.drums[key].length && state.playbackPlan.drums[key][step]) {
-          const buffer = state.buffers.drums[key]; // ← CORRIGIDO: agora usa key direto
+          const buffer = state.buffers.drums[key]; // ← CORRETO: usa o key sem prefixo
           if (buffer) {
             const source = offlineCtx.createBufferSource();
             source.buffer = buffer;
@@ -1415,7 +1416,8 @@ function downloadBlob(blob, filename) {
 
 // ===== INICIALIZAR =====
 window.addEventListener('load', initializeApp);
-    </script>
+</script>
 </body>
 </html>
+
 
