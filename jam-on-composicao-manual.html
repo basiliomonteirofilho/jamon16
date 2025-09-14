@@ -387,12 +387,12 @@ const HARMONIC_INSTRUMENTS = {
   'piano-chord': 'assets/PianoStringChord/'
 };
 const DRUM_SAMPLES = [
-  { key: 'ataque', label: 'Caixa', path: 'assets/ataque.mp3' },
+  { key: 'ataque', label: 'Prato De Ataque', path: 'assets/ataque.mp3' },
   { key: 'bumbo', label: 'Bumbo', path: 'assets/bumbo.mp3' },
   { key: 'caixa', label: 'Caixa', path: 'assets/caixa.mp3' },
   { key: 'chimbal', label: 'Chimbal Fechado', path: 'assets/chimbal.mp3' },
   { key: 'chimbal-aberto', label: 'Chimbal Aberto', path: 'assets/chimbal-aberto.mp3' },
-  { key: 'conducao', label: 'Prato de Ataque', path: 'assets/conducao.mp3' },
+  { key: 'conducao', label: 'Condução', path: 'assets/conducao.mp3' },
   { key: 'surdo', label: 'Surdo', path: 'assets/surdo.mp3' },
   { key: 'tom-1', label: 'Tom 1', path: 'assets/tom-1.mp3' },
   { key: 'tom-2', label: 'Tom 2', path: 'assets/tom-2.mp3' }
@@ -467,7 +467,7 @@ async function initializeApp() {
     state.melodyGain.connect(state.masterGain);
     state.harmonicGain.connect(state.masterGain);
     state.masterGain.gain.value = 0.8;
-    state.drumGain.gain.value = 0.6;
+    state.drumGain.gain.value = 0.8; // Aumentado para deixar mais audível
     state.bassGain.gain.value = 0.5;
     state.melodyGain.gain.value = 0.5;
     state.harmonicGain.gain.value = 0.5;
@@ -817,7 +817,9 @@ function createNoteGrid(type, blockIndex, numCells) {
 }
 
 // ===== ADICIONAR COMPASSO EM TODOS OS INSTRUMENTOS =====
+// ===== ADICIONAR COMPASSO EM TODOS OS INSTRUMENTOS =====
 function addCompasso() {
+  // Harmonia: +2 células
   state.harmonyBlocks.forEach(block => {
     const grid = block.querySelector('.note-grid');
     if (!grid) return;
@@ -848,6 +850,7 @@ function addCompasso() {
     }
   });
 
+  // Baixo, Melodia 1, Melodia 2: +4 células cada
   [state.bassBlocks, state.melody1Blocks, state.melody2Blocks].forEach(blocks => {
     blocks.forEach(block => {
       const grid = block.querySelector('.note-grid');
@@ -871,7 +874,7 @@ function addCompasso() {
           const newNote = ALL_NOTES[currentIndex];
           this.textContent = newNote;
           const instrument = this.parentElement.parentElement.querySelector('.instrument-select').value;
-          const category = 'bass';
+          const category = 'bass'; // ou melody1/melody2
           if (state.currentlyPlaying[category] !== null) {
             state.currentlyPlaying[category] = null;
           }
@@ -891,27 +894,31 @@ function addCompasso() {
     });
   });
 
+  // BATERIA: ADICIONA UMA CÉLULA PARA CADA PEÇA DE BATERIA (8 PEÇAS) — SEMPRE!
   state.drumBlocks.forEach(block => {
     const drumGrid = block.querySelector('.drum-grid');
     if (!drumGrid) return;
+
+    // Para cada peça de bateria (8 peças), adiciona uma nova célula na última coluna
     DRUM_SAMPLES.forEach(drum => {
       const row = Array.from(drumGrid.children).find(r => r.querySelector('.drum-label')?.textContent === drum.label);
       if (!row) return;
-      for (let i = 0; i < 4; i++) {
-        const cell = document.createElement('div');
-        cell.className = 'drum-cell';
-        cell.dataset.step = row.children.length - 1;
-        cell.dataset.instr = drum.key;
-        cell.dataset.block = block.dataset.blockIndex;
-        cell.addEventListener('click', function() {
-          this.classList.toggle('active');
-          loadSample('drum', drum.key, '');
-        });
-        row.appendChild(cell);
-      }
+
+      // Adiciona uma nova célula ao final da linha
+      const cell = document.createElement('div');
+      cell.className = 'drum-cell';
+      cell.dataset.step = row.children.length - 1; // índice da nova célula
+      cell.dataset.instr = drum.key;
+      cell.dataset.block = block.dataset.blockIndex;
+      cell.addEventListener('click', function() {
+        this.classList.toggle('active');
+        loadSample('drum', drum.key, '');
+      });
+      row.appendChild(cell);
     });
   });
 
+  // Atualiza total de passos
   state.totalSteps += 4;
   updateStatus(`Compasso adicionado. Total: ${state.totalSteps} passos.`, 'ready');
 }
@@ -1064,8 +1071,6 @@ function playChord(instrumentKey, chord, time, gainNode, volume = 0.5) {
 
 function playDrum(drumKey, time, gainNode, volume = 0.8) {
   if (!state.audioCtx) return;
-  
-  // 👇 AGORA USAMOS EXATAMENTE O MESMO NOME QUE FOI USADO NO LOAD: "ataque", "bumbo", etc.
   const buffer = state.buffers.drums[drumKey];
   if (!buffer) {
     console.warn(`Sample de bateria não encontrado: ${drumKey}`);
@@ -1073,10 +1078,13 @@ function playDrum(drumKey, time, gainNode, volume = 0.8) {
   }
   const source = state.audioCtx.createBufferSource();
   source.buffer = buffer;
+
+  // Aumenta o ganho para compensar possíveis arquivos silenciosos
   const gain = state.audioCtx.createGain();
   gain.gain.setValueAtTime(0, time);
-  gain.gain.linearRampToValueAtTime(volume, time + 0.01);
+  gain.gain.linearRampToValueAtTime(volume * 1.5, time + 0.01); // ↑ 50% mais alto
   gain.gain.exponentialRampToValueAtTime(0.001, time + 0.2);
+
   source.connect(gain);
   gain.connect(gainNode);
   source.start(time);
