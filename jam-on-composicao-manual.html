@@ -331,7 +331,7 @@
     </div>
   </div>
 
-  <script>
+ <script>
 // ===== CONSTANTES =====
 const AVAILABLE_CHORDS = [
   // Acordes em A
@@ -562,25 +562,20 @@ async function loadSample(instrumentType, key, noteOrChord) {
     bufferKey = key;
   } else if (instrumentType === 'melodic') {
     filePath = MELODIC_INSTRUMENTS[key] + noteOrChord + '.mp3';
-    bufferKey = `melodic-${key}-${noteOrChord}`;
+    bufferKey = `melodic-${MELODIC_INSTRUMENTS[key]}-${noteOrChord}`;
   } else if (instrumentType === 'harmonic') {
-    // 🔍 EXTRAÇÃO ROBUSTA DO ROOT (suporta AS, CS, DS, FS, GS)
     let root;
     if (noteOrChord.length >= 2 && ['AS','CS','DS','FS','GS'].includes(noteOrChord.slice(0, 2))) {
       root = noteOrChord.slice(0, 2);
     } else {
-      root = noteOrChord[0]; // Para C, D, E, etc.
+      root = noteOrChord[0];
     }
-    // 🚫 NÃO use "root" sozinho — use o acorde completo como nome de arquivo!
     filePath = HARMONIC_INSTRUMENTS[key] + root + '/' + noteOrChord + '.mp3';
-    bufferKey = `harmonic-${key}-${noteOrChord}`;
+    bufferKey = `harmonic-${HARMONIC_INSTRUMENTS[key]}-${noteOrChord}`;
   }
 
   if (!filePath) return;
-
-  if (state.loadedSamples.has(bufferKey)) {
-    return;
-  }
+  if (state.loadedSamples.has(bufferKey)) return;
 
   try {
     const response = await fetch(filePath);
@@ -602,6 +597,7 @@ async function loadSample(instrumentType, key, noteOrChord) {
     console.warn(`⚠️ Não encontrado: ${filePath}`);
   }
 }
+
 
 // ===== BLOCOS DE INSTRUMENTOS =====
 function addHarmonyBlock() {
@@ -1074,18 +1070,19 @@ function playChord(instrumentKey, chord, time, gainNode, volume = 1.0) {
   } else {
     root = chord[0];
   }
-  const bufferKey = `harmonic-${instrumentKey}-${chord}`;
+  const bufferKey = `harmonic-${HARMONIC_INSTRUMENTS[instrumentKey]}-${chord}`;
   const buffer = state.buffers.harmonic[bufferKey];
   if (!buffer) {
-    console.warn(`Acordo não encontrado: ${instrumentKey}/${chord}`);
+    console.warn(`Acorde não encontrado: ${instrumentKey}/${chord}`);
     return;
   }
   const source = state.audioCtx.createBufferSource();
   source.buffer = buffer;
   source.connect(gainNode);
   source.start(time);
-  source.stop(time + 1.0); // ← Semínima = 1.0s
+  source.stop(time + 1.0); // Semínima = 1.0s
 }
+
 
 function playDrum(drumKey, time, gainNode, volume = 1.0) {
   if (!state.audioCtx) return;
@@ -1097,14 +1094,13 @@ function playDrum(drumKey, time, gainNode, volume = 1.0) {
   const source = state.audioCtx.createBufferSource();
   source.buffer = buffer;
   const gain = state.audioCtx.createGain();
-  gain.gain.setValueAtTime(0, time);
-  gain.gain.linearRampToValueAtTime(volume * 1.5, time + 0.01);
-  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.2);
+  gain.gain.setValueAtTime(volume, time);
   source.connect(gain);
   gain.connect(gainNode);
   source.start(time);
-  source.stop(time + 0.2);
+  // ❌ não corta em 0.2s, deixa o sample tocar até o fim
 }
+
 
 function startScheduler() {
   state.isPlaying = true;
@@ -1152,7 +1148,7 @@ function onPlay() {
     // Harmonia
     state.playbackPlan.harmony.forEach(item => {
       if (item && item.chord !== 'X') {
-        const bufferKey = `harmonic-${item.instrument}-${item.chord}`;
+        const bufferKey = `harmonic-${HARMONIC_INSTRUMENTS[item.instrument]}-${item.chord}`;
         samplesToLoad.add(bufferKey);
       }
     });
@@ -1161,7 +1157,7 @@ function onPlay() {
     ['bass', 'melody1', 'melody2'].forEach(type => {
       state.playbackPlan[type].forEach(item => {
         if (item && item.note) {
-          const bufferKey = `melodic-${item.instrument}-${item.note}`;
+          const bufferKey = `melodic-${MELODIC_INSTRUMENTS[item.instrument]}-${item.note}`;
           samplesToLoad.add(bufferKey);
         }
       });
@@ -1274,20 +1270,14 @@ async function renderAndDownloadWAV(durationInSeconds) {
       if (step < state.playbackPlan.harmony.length && state.playbackPlan.harmony[step]) {
         const item = state.playbackPlan.harmony[step];
         if (item && item.chord !== 'X') {
-          let root;
-          if (item.chord.length >= 2 && ['AS','CS','DS','FS','GS'].includes(item.chord.slice(0, 2))) {
-            root = item.chord.slice(0, 2);
-          } else {
-            root = item.chord[0];
-          }
-          const bufferKey = `harmonic-${item.instrument}-${item.chord}`;
+          const bufferKey = `harmonic-${HARMONIC_INSTRUMENTS[item.instrument]}-${item.chord}`;
           const buffer = state.buffers.harmonic[bufferKey];
           if (buffer) {
             const source = offlineCtx.createBufferSource();
             source.buffer = buffer;
             source.connect(harmonicGain);
             source.start(time);
-            source.stop(time + 1.0); // ← Semínima = 1.0s
+            source.stop(time + 1.0); // Semínima = 1.0s
           }
         }
       }
@@ -1328,17 +1318,18 @@ async function renderAndDownloadWAV(durationInSeconds) {
 
       // Bateria — usa o key direto
       Object.keys(state.playbackPlan.drums).forEach(key => {
-        if (step < state.playbackPlan.drums[key].length && state.playbackPlan.drums[key][step]) {
-          const buffer = state.buffers.drums[key]; // ← CORRETO: usa o key sem prefixo
-          if (buffer) {
-            const source = offlineCtx.createBufferSource();
-            source.buffer = buffer;
-            source.connect(drumGain);
-            source.start(time);
-            source.stop(time + 0.2);
-          }
-        }
-      });
+  if (step < state.playbackPlan.drums[key].length && state.playbackPlan.drums[key][step]) {
+    const buffer = state.buffers.drums[key]; // ← CORRETO: usa o key sem prefixo
+    if (buffer) {
+      const source = offlineCtx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(drumGain);
+      source.start(time); 
+      // ❌ não corta o sample em 0.2s → toca até o final
+    }
+  }
+});
+
     }
 
     const renderedBuffer = await offlineCtx.startRendering();
@@ -1419,5 +1410,3 @@ window.addEventListener('load', initializeApp);
 </script>
 </body>
 </html>
-
-
