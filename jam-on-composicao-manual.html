@@ -270,7 +270,7 @@
   </header>
   <div class="card">
     <div id="statusIndicator" class="status-indicator status-loading">
-      Carregando... Clique 8 vezes para preparar o som.
+      Pronto para compor. Toque 8 beeps para iniciar.
     </div>
     <div class="countdown" id="countdown"></div>
 
@@ -327,7 +327,7 @@
     <div class="instructions">
       Clique em uma célula para escolher uma nota. Clique à esquerda do centro para diminuir, à direita para aumentar.<br>
       Duplo clique para pausa (X). Use "+" para adicionar uma coluna em todos os instrumentos.<br>
-      <strong>Clique 8 vezes em qualquer célula para preparar os sons.</strong>
+      <strong>Para iniciar: toque 8 beeps (apitos) seguidos. O sistema detectará e iniciará automaticamente.</strong>
     </div>
   </div>
 
@@ -371,7 +371,7 @@
     ];
     
     // Os nomes das notas são exatamente os nomes dos arquivos SEM .mp3
-    const ALL_NOTES = NOTE_NAMES.map(name => name.replace('.mp3', '')); // ['10CS', '11D', '12DS', ..., '1E', '2F', ...]
+    const ALL_NOTES = NOTE_NAMES.map(name => name.replace('.mp3', '')); // ['10CS', '11D', ..., '1E', '2F', ...]
 
     // Mapeamento de frequências base (A4 = 440Hz)
     const NOTE_FREQ = {
@@ -434,9 +434,9 @@
       isLoaded: false,
       isPlaying: false,
       isRendering: false,
-      clickCounter: 0,
-      preparing: false,
-      prepareTimeout: null,
+      beepCounter: 0,
+      isBeeping: false,
+      beepTimeout: null,
       currentlyPlaying: { 
         bass: null,
         melody1: null,
@@ -464,7 +464,7 @@
 
     // ===== INICIALIZAÇÃO =====
     async function initializeApp() {
-      updateStatus('Clique 8 vezes em qualquer célula para preparar os sons.', 'loading');
+      updateStatus('Pronto para compor. Toque 8 beeps para iniciar.', 'loading');
       try {
         state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         state.masterGain = state.audioCtx.createGain();
@@ -492,7 +492,10 @@
         addMelody2Block(); // 4 células
         addDrumBlock();    // 4 células
 
-        updateStatus('Pronto para compor. Clique 8 vezes para preparar os sons.', 'ready');
+        // Carrega apenas o beep (não carrega nada mais ainda!)
+        await loadBeepSample();
+        
+        updateStatus('Aguardando 8 beeps para iniciar...', 'ready');
         ui.btnPlay.disabled = true;
         ui.btnSaveWAV.disabled = true;
         ui.btnStop.disabled = true;
@@ -511,16 +514,12 @@
       ui.btnStop.addEventListener('click', onStop);
       ui.btnSaveWAV.addEventListener('click', () => renderAndDownloadWAV(16));
 
-      // Detecta cliques em qualquer célula para contagem de 8
+      // Detecta cliques em qualquer célula para iniciar contagem de beeps
       document.addEventListener('click', function(e) {
+        if (state.isBeeping) return; // Ignora enquanto estiver beeping
+        
         if (e.target.classList.contains('cell') || e.target.classList.contains('drum-cell')) {
-          if (!state.preparing) {
-            state.clickCounter++;
-            updateStatus(`Clique ${state.clickCounter}/8 para preparar os sons.`, 'loading');
-            if (state.clickCounter >= 8) {
-              startPreparation();
-            }
-          }
+          playBeep();
         }
       });
     }
@@ -539,34 +538,115 @@
       ui.statusIndicator.className = 'status-indicator status-' + type;
     }
 
-    // ===== PREPARAÇÃO COM 8 CLIQUES =====
-    function startPreparation() {
-      state.preparing = true;
-      state.clickCounter = 0;
-      updateStatus('Preparando sons... Carregando apenas os utilizados...', 'loading');
-      ui.countdown.textContent = '4';
-      
-      let seconds = 4;
-      const interval = setInterval(() => {
-        seconds--;
-        ui.countdown.textContent = seconds;
-        if (seconds <= 0) {
-          clearInterval(interval);
-          finishPreparation();
-        }
-      }, 1000);
-
-      setTimeout(finishPreparation, 4000);
+    // ===== CARREGAMENTO DO APITO =====
+    async function loadBeepSample() {
+      try {
+        const response = await fetch('assets/beep.mp3');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const arrayBuffer = await response.arrayBuffer();
+        state.beepBuffer = await state.audioCtx.decodeAudioData(arrayBuffer);
+        console.log('✅ Apito carregado!');
+      } catch (err) {
+        console.error('❌ Falha ao carregar beep.mp3', err);
+        // Fallback: gera um beep sintético
+        generateSyntheticBeep();
+      }
     }
 
-    function finishPreparation() {
-      state.preparing = false;
+    function generateSyntheticBeep() {
+      const buffer = state.audioCtx.createBuffer(2, state.audioCtx.sampleRate * 0.15, state.audioCtx.sampleRate); // 150ms
+      for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+        const data = buffer.getChannelData(channel);
+        for (let i = 0; i < buffer.length; i++) {
+          const time = i / buffer.sampleRate;
+          data[i] = Math.sin(time * 1000 * 2 * Math.PI) * (i / buffer.length);
+        }
+      }
+      state.beepBuffer = buffer;
+      console.log('⚠️ Gerado beep sintético (fallback)');
+    }
+
+    function playBeep() {
+      if (state.isBeeping) return;
+
+      state.beepCounter = 0;
+      state.isBeeping = true;
+      updateStatus('Iniciando contagem de beeps...', 'loading');
+      ui.countdown.textContent = 'Beep 1/8';
+
+      playNextBeep();
+    }
+
+    function playNextBeep() {
+      if (state.beepCounter >= 8) {
+        finishBeepSequence();
+        return;
+      }
+
+      const source = state.audioCtx.createBufferSource();
+      source.buffer = state.beepBuffer;
+      source.connect(state.masterGain);
+      source.start();
+
+      state.beepCounter++;
+      ui.countdown.textContent = `Beep ${state.beepCounter}/8`;
+
+      if (state.beepCounter < 8) {
+        setTimeout(playNextBeep, 500); // 500ms entre beeps
+      }
+    }
+
+    function finishBeepSequence() {
+      state.isBeeping = false;
       ui.countdown.textContent = '';
-      updateStatus('Sons preparados! Agora você pode tocar.', 'ready');
-      ui.btnPlay.disabled = false;
-      ui.btnSaveWAV.disabled = false;
-      ui.btnStop.disabled = false;
-      console.log('✅ Todos os sons usados foram carregados.');
+      
+      updateStatus('8 beeps concluídos! Carregando sons usados...', 'loading');
+      
+      // Agora carrega todos os sons usados nos blocos
+      collectAndLoadUsedSamples();
+    }
+
+    function collectAndLoadUsedSamples() {
+      const usedSamples = new Set();
+
+      // Coleta todas as notas usadas nas células
+      [...state.bassBlocks, ...state.melody1Blocks, ...state.melody2Blocks].forEach(block => {
+        const grid = block.querySelector('.note-grid');
+        const cells = grid.querySelectorAll('.cell');
+        cells.forEach(cell => {
+          if (cell.textContent !== 'X' && cell.textContent !== '1E') {
+            usedSamples.add(cell.textContent);
+          }
+        });
+      });
+
+      // Coleta todos os acordes usados
+      state.harmonyBlocks.forEach(block => {
+        const grid = block.querySelector('.note-grid');
+        const cells = grid.querySelectorAll('.cell');
+        cells.forEach(cell => {
+          if (cell.textContent !== 'X' && cell.textContent !== 'C') {
+            usedSamples.add(cell.textContent);
+          }
+        });
+      });
+
+      // Carrega todos os samples usados
+      Promise.all([
+        ...Array.from(usedSamples).map(note => loadSample('melodic', 'bass', note)),
+        ...Array.from(usedSamples).map(note => loadSample('melodic', 'piano', note)),
+        ...Array.from(usedSamples).map(note => loadSample('melodic', 'sax', note)),
+        ...Array.from(usedSamples).map(chord => loadSample('harmonic', 'distorted-guitar', chord)),
+        ...Array.from(usedSamples).map(chord => loadSample('harmonic', 'clean-guitar', chord)),
+        ...Array.from(usedSamples).map(chord => loadSample('harmonic', 'piano-chord', chord))
+      ]).then(() => {
+        updateStatus('Sons carregados! Iniciando reprodução automática...', 'ready');
+        setTimeout(onPlay, 500); // Pequeno delay para garantir que tudo esteja pronto
+      }).catch(err => {
+        console.warn('Alguns sons não foram encontrados, mas continuamos...');
+        updateStatus('Sons carregados! Iniciando reprodução automática...', 'ready');
+        setTimeout(onPlay, 500);
+      });
     }
 
     // ===== CARREGAMENTO SOB DEMANDA =====
@@ -578,10 +658,8 @@
         if (!sample) return;
         filePath = sample.path;
       } else if (instrumentType === 'melodic') {
-        // Para instrumentos melódicos: assets/BaixoMelodia/1E.mp3
         filePath = MELODIC_INSTRUMENTS[key] + noteOrChord + '.mp3';
       } else if (instrumentType === 'harmonic') {
-        // Para acordes: guitarraDistorcao/AS/ASm.mp3
         let root;
         if (['AS','CS','DS','FS','GS'].includes(noteOrChord.slice(0, 2))) {
           root = noteOrChord.slice(0, 2);
@@ -637,12 +715,11 @@
       grid.dataset.type = 'harmony';
       grid.dataset.blockIndex = blockIndex;
 
-      // SÓ 2 CÉLULAS (COLCHEIAS)
       for (let i = 0; i < 2; i++) {
         const cell = document.createElement('div');
         cell.className = 'cell';
         cell.dataset.step = i;
-        cell.textContent = 'C'; // Default chord
+        cell.textContent = 'C';
         cell.addEventListener('click', function() {
           const currentIndex = AVAILABLE_CHORDS.indexOf(this.textContent);
           const nextIndex = (currentIndex + 1) % AVAILABLE_CHORDS.length;
@@ -650,10 +727,6 @@
           
           if (state.currentlyPlaying.harmony !== null) {
             state.currentlyPlaying.harmony = null;
-          }
-          
-          if (state.preparing || state.isLoaded) {
-            loadSample('harmonic', this.parentElement.querySelector('.instrument-select').value, this.textContent);
           }
         });
         cell.addEventListener('dblclick', function() {
@@ -695,7 +768,7 @@
       `;
       block.appendChild(instrumentSelect);
 
-      const grid = createNoteGrid('bass', blockIndex, 4); // 4 células
+      const grid = createNoteGrid('bass', blockIndex, 4);
       block.appendChild(grid);
       ui.bassContainer.appendChild(block);
       state.bassBlocks.push(block);
@@ -726,7 +799,7 @@
       `;
       block.appendChild(instrumentSelect);
 
-      const grid = createNoteGrid('melody1', blockIndex, 4); // 4 células
+      const grid = createNoteGrid('melody1', blockIndex, 4);
       block.appendChild(grid);
       ui.melody1Container.appendChild(block);
       state.melody1Blocks.push(block);
@@ -757,7 +830,7 @@
       `;
       block.appendChild(instrumentSelect);
 
-      const grid = createNoteGrid('melody2', blockIndex, 4); // 4 células
+      const grid = createNoteGrid('melody2', blockIndex, 4);
       block.appendChild(grid);
       ui.melody2Container.appendChild(block);
       state.melody2Blocks.push(block);
@@ -795,9 +868,6 @@
           cell.dataset.block = blockIndex;
           cell.addEventListener('click', function() {
             this.classList.toggle('active');
-            if (state.preparing || state.isLoaded) {
-              loadSample('drum', drum.key, '');
-            }
           });
           row.appendChild(cell);
         }
@@ -820,7 +890,7 @@
         const cell = document.createElement('div');
         cell.className = 'cell';
         cell.dataset.step = i;
-        cell.textContent = ALL_NOTES[0]; // Padrão: '1E' (primeira nota da lista)
+        cell.textContent = ALL_NOTES[0]; // Padrão: '1E'
         cell.addEventListener('click', function(e) {
           const rect = this.getBoundingClientRect();
           const clickX = e.clientX - rect.left;
@@ -842,10 +912,6 @@
           if (state.currentlyPlaying[category] !== null) {
             state.currentlyPlaying[category] = null;
           }
-          
-          if (state.preparing || state.isLoaded) {
-            loadSample('melodic', instrument, this.textContent);
-          }
         });
         cell.addEventListener('dblclick', function() {
           if (this.textContent === 'X') {
@@ -863,7 +929,6 @@
 
     // ===== ADICIONAR COMPASSO EM TODOS OS INSTRUMENTOS =====
     function addCompasso() {
-      // Adiciona uma coluna (passo) em todos os blocos
       // Harmonia: +2 células
       state.harmonyBlocks.forEach(block => {
         const grid = block.querySelector('.note-grid');
@@ -881,10 +946,6 @@
             
             if (state.currentlyPlaying.harmony !== null) {
               state.currentlyPlaying.harmony = null;
-            }
-            
-            if (state.preparing || state.isLoaded) {
-              loadSample('harmonic', this.parentElement.querySelector('.instrument-select').value, this.textContent);
             }
           });
           cell.addEventListener('dblclick', function() {
@@ -928,13 +989,9 @@
               this.textContent = newNote;
               
               const instrument = this.parentElement.parentElement.querySelector('.instrument-select').value;
-              const category = 'bass'; // ou 'melody1'/'melody2' — só importa que não é harmonia
+              const category = 'bass'; // ou 'melody1'/'melody2'
               if (state.currentlyPlaying[category] !== null) {
                 state.currentlyPlaying[category] = null;
-              }
-              
-              if (state.preparing || state.isLoaded) {
-                loadSample('melodic', instrument, this.textContent);
               }
             });
             cell.addEventListener('dblclick', function() {
@@ -968,16 +1025,12 @@
             cell.dataset.block = block.dataset.blockIndex;
             cell.addEventListener('click', function() {
               this.classList.toggle('active');
-              if (state.preparing || state.isLoaded) {
-                loadSample('drum', drum.key, '');
-              }
             });
             row.appendChild(cell);
           }
         });
       });
 
-      // Atualiza total de passos
       state.totalSteps += 4;
       updateStatus(`Compasso adicionado. Total: ${state.totalSteps} passos.`, 'ready');
     }
@@ -1014,7 +1067,7 @@
           if (val === 'X') {
             plan.bass.push(null);
           } else {
-            plan.bass.push({ note: val, instrument: instrument }); // ← VALOR COMPLETO: '1E', '2F', etc.
+            plan.bass.push({ note: val, instrument: instrument });
           }
         });
       });
@@ -1028,7 +1081,7 @@
           if (val === 'X') {
             plan.melody1.push(null);
           } else {
-            plan.melody1.push({ note: val, instrument: instrument }); // ← VALOR COMPLETO: '1E', '2F', etc.
+            plan.melody1.push({ note: val, instrument: instrument });
           }
         });
       });
@@ -1042,7 +1095,7 @@
           if (val === 'X') {
             plan.melody2.push(null);
           } else {
-            plan.melody2.push({ note: val, instrument: instrument }); // ← VALOR COMPLETO: '1E', '2F', etc.
+            plan.melody2.push({ note: val, instrument: instrument });
           }
         });
       });
@@ -1064,7 +1117,7 @@
 
     function playNote(instrumentKey, note, time, gainNode, volume = 1.0) {
       if (!state.audioCtx) return;
-      const bufferKey = `melodic-${instrumentKey}-${note}`; // Ex: melodic-bass-1E
+      const bufferKey = `melodic-${instrumentKey}-${note}`;
       const buffer = state.buffers.melodic[bufferKey];
       if (!buffer) {
         console.warn(`Sample não encontrado: ${instrumentKey}/${note}`);
@@ -1134,7 +1187,7 @@
 
       if (idx < plan.bass.length) {
         const item = plan.bass[idx];
-        if (item && item.note) { // ← Garante que item.note existe
+        if (item && item.note) {
           if (state.currentlyPlaying.bass !== null) {
             state.currentlyPlaying.bass = null;
           }
@@ -1165,7 +1218,6 @@
         }
       }
 
-      // BATERIA NÃO MUTA
       Object.keys(plan.drums).forEach(key => {
         if (idx < plan.drums[key].length && plan.drums[key][idx]) {
           playDrum(key, time, state.drumGain, 0.8);
@@ -1194,8 +1246,8 @@
     }
 
     function onPlay() {
-      if (!state.isLoaded && !state.preparing) {
-        alert('Clique 8 vezes para preparar os sons primeiro.');
+      if (!state.isLoaded) {
+        alert('A aplicação ainda está carregando. Aguarde um momento.');
         return;
       }
       if (!state.audioCtx) {
@@ -1229,8 +1281,8 @@
 
     // ===== GRAVAÇÃO WAV =====
     async function renderAndDownloadWAV(durationInSeconds) {
-      if (!state.isLoaded && !state.preparing) {
-        alert('Clique 8 vezes para preparar os sons primeiro.');
+      if (!state.isLoaded) {
+        alert('A aplicação ainda está carregando. Aguarde um momento.');
         return;
       }
       updateStatus('Renderizando áudio...', 'loading');
