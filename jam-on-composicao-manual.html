@@ -333,6 +333,7 @@
 
   <script>
     // ===== CONSTANTES =====
+// ===== CONSTANTES =====
 const AVAILABLE_CHORDS = [
   'A', 'A11', 'A13', 'A4', 'A45+', 'A5', 'A5+', 'A6', 'A7', 'A75+', 'A9', 'A95+', 'Adim', 
   'Am', 'Am4', 'Am5', 'Am5+', 'Am6', 'Am7', 'Am75+', 'Am79', 'Am9',
@@ -409,6 +410,7 @@ const state = {
     melodic: {},
     harmonic: {}
   },
+  loadedSamples: new Set(), // 👈 NOVO: Evita carregar o mesmo sample mais de uma vez
   activeInput: null,
   schedulerTimer: null,
   harmonyBlocks: [],
@@ -422,8 +424,9 @@ const state = {
   isLoaded: false,
   isPlaying: false,
   isRendering: false,
-  countdownActive: false,
-  countdownValue: 4,
+  clickCounter: 0,
+  preparing: false,
+  prepareTimeout: null,
   currentlyPlaying: { 
     bass: null,
     melody1: null,
@@ -451,7 +454,7 @@ const ui = {
 
 // ===== INICIALIZAÇÃO =====
 async function initializeApp() {
-  updateStatus('Inicializando... Aguarde.', 'loading');
+  updateStatus('Clique 8 vezes em qualquer célula para preparar os sons.', 'loading');
   try {
     state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     state.masterGain = state.audioCtx.createGain();
@@ -479,9 +482,9 @@ async function initializeApp() {
     addMelody2Block(); // 4 células
     addDrumBlock();    // 4 células
 
-    updateStatus('Pronto para compor. Clique em Play para iniciar com contagem de 4 compassos.', 'ready');
-    ui.btnPlay.disabled = false;
-    ui.btnSaveWAV.disabled = true; // Ainda não pode salvar até ter algo criado
+    updateStatus('Pronto para compor. Clique 8 vezes para preparar os sons.', 'ready');
+    ui.btnPlay.disabled = true;
+    ui.btnSaveWAV.disabled = true;
     ui.btnStop.disabled = true;
   } catch (error) {
     console.error('Erro ao inicializar:', error);
@@ -496,6 +499,19 @@ function setupEventListeners() {
   ui.btnPlay.addEventListener('click', onPlay);
   ui.btnStop.addEventListener('click', onStop);
   ui.btnSaveWAV.addEventListener('click', () => renderAndDownloadWAV(16));
+
+  // Detecta cliques em qualquer célula para contagem de 8
+  document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('cell') || e.target.classList.contains('drum-cell')) {
+      if (!state.preparing) {
+        state.clickCounter++;
+        updateStatus(`Clique ${state.clickCounter}/8 para preparar os sons.`, 'loading');
+        if (state.clickCounter >= 8) {
+          startPreparation();
+        }
+      }
+    }
+  });
 }
 
 function handleBPMChange() {
@@ -512,7 +528,35 @@ function updateStatus(message, type) {
   ui.statusIndicator.className = 'status-indicator status-' + type;
 }
 
-// ===== CARREGAMENTO SOB DEMANDA (mantido, mas usado de forma proativa) =====
+// ===== PREPARAÇÃO COM 8 CLIQUES =====
+function startPreparation() {
+  state.preparing = true;
+  state.clickCounter = 0;
+  updateStatus('Preparando sons... Carregando apenas os utilizados...', 'loading');
+  ui.countdown.textContent = '4';
+  let seconds = 4;
+  const interval = setInterval(() => {
+    seconds--;
+    ui.countdown.textContent = seconds;
+    if (seconds <= 0) {
+      clearInterval(interval);
+      finishPreparation();
+    }
+  }, 1000);
+  setTimeout(finishPreparation, 4000); // Garantia
+}
+
+function finishPreparation() {
+  state.preparing = false;
+  ui.countdown.textContent = '';
+  updateStatus('Sons preparados! Agora você pode tocar.', 'ready');
+  ui.btnPlay.disabled = false;
+  ui.btnSaveWAV.disabled = false;
+  ui.btnStop.disabled = false;
+  console.log('✅ Todos os sons usados foram carregados.');
+}
+
+// ===== CARREGAMENTO SOB DEMANDA (OTIMIZADO) =====
 async function loadSample(instrumentType, key, noteOrChord) {
   let filePath;
   if (instrumentType === 'drum') {
@@ -522,14 +566,21 @@ async function loadSample(instrumentType, key, noteOrChord) {
   } else if (instrumentType === 'melodic') {
     filePath = MELODIC_INSTRUMENTS[key] + noteOrChord + '.mp3';
   } else if (instrumentType === 'harmonic') {
-    let root = ['AS','CS','DS','FS','GS'].includes(noteOrChord.slice(0, 2)) ? noteOrChord.slice(0, 2) : noteOrChord[0];
+    let root;
+    if (['AS','CS','DS','FS','GS'].includes(noteOrChord.slice(0, 2))) {
+      root = noteOrChord.slice(0, 2);
+    } else {
+      root = noteOrChord[0];
+    }
     filePath = HARMONIC_INSTRUMENTS[key] + root + '/' + noteOrChord + '.mp3';
   }
   if (!filePath) return;
 
   const bufferKey = `${instrumentType}-${key}-${noteOrChord}`;
-  if (state.buffers[instrumentType === 'drum' ? 'drums' : instrumentType === 'melodic' ? 'melodic' : 'harmonic'][bufferKey]) {
-    return;
+  
+  // 👇 Verifica se já foi carregado
+  if (state.loadedSamples.has(bufferKey)) {
+    return; // Já carregado, não faz nada
   }
 
   try {
@@ -537,7 +588,9 @@ async function loadSample(instrumentType, key, noteOrChord) {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const arrayBuffer = await response.arrayBuffer();
     const buffer = await state.audioCtx.decodeAudioData(arrayBuffer);
+    
     state.buffers[instrumentType === 'drum' ? 'drums' : instrumentType === 'melodic' ? 'melodic' : 'harmonic'][bufferKey] = buffer;
+    state.loadedSamples.add(bufferKey); // 👈 Marca como carregado
     console.log(`✅ Carregado: ${filePath}`);
   } catch (err) {
     console.warn(`⚠️ Não encontrado: ${filePath}`);
@@ -579,6 +632,9 @@ function addHarmonyBlock() {
       this.textContent = AVAILABLE_CHORDS[nextIndex];
       if (state.currentlyPlaying.harmony !== null) {
         state.currentlyPlaying.harmony = null;
+      }
+      if (state.preparing || state.isLoaded) {
+        loadSample('harmonic', this.parentElement.querySelector('.instrument-select').value, this.textContent);
       }
     });
     cell.addEventListener('dblclick', function() {
@@ -711,6 +767,9 @@ function addDrumBlock() {
       cell.dataset.block = blockIndex;
       cell.addEventListener('click', function() {
         this.classList.toggle('active');
+        if (state.preparing || state.isLoaded) {
+          loadSample('drum', drum.key, '');
+        }
       });
       row.appendChild(cell);
     }
@@ -750,6 +809,9 @@ function createNoteGrid(type, blockIndex, numCells) {
       if (state.currentlyPlaying[category] !== null) {
         state.currentlyPlaying[category] = null;
       }
+      if (state.preparing || state.isLoaded) {
+        loadSample('melodic', instrument, this.textContent);
+      }
     });
     cell.addEventListener('dblclick', function() {
       if (this.textContent === 'X') {
@@ -781,6 +843,9 @@ function addCompasso() {
         this.textContent = AVAILABLE_CHORDS[nextIndex];
         if (state.currentlyPlaying.harmony !== null) {
           state.currentlyPlaying.harmony = null;
+        }
+        if (state.preparing || state.isLoaded) {
+          loadSample('harmonic', this.parentElement.querySelector('.instrument-select').value, this.textContent);
         }
       });
       cell.addEventListener('dblclick', function() {
@@ -819,9 +884,12 @@ function addCompasso() {
           const newNote = ALL_NOTES[currentIndex];
           this.textContent = newNote;
           const instrument = this.parentElement.parentElement.querySelector('.instrument-select').value;
-          const category = 'bass'; // ou 'melody1'/'melody2'
+          const category = 'bass';
           if (state.currentlyPlaying[category] !== null) {
             state.currentlyPlaying[category] = null;
+          }
+          if (state.preparing || state.isLoaded) {
+            loadSample('melodic', instrument, this.textContent);
           }
         });
         cell.addEventListener('dblclick', function() {
@@ -852,6 +920,9 @@ function addCompasso() {
         cell.dataset.block = block.dataset.blockIndex;
         cell.addEventListener('click', function() {
           this.classList.toggle('active');
+          if (state.preparing || state.isLoaded) {
+            loadSample('drum', drum.key, '');
+          }
         });
         row.appendChild(cell);
       }
@@ -862,51 +933,7 @@ function addCompasso() {
   updateStatus(`Compasso adicionado. Total: ${state.totalSteps} passos.`, 'ready');
 }
 
-// ===== NOVA LÓGICA: CONTAGEM REGRESSIVA DE 4 COMPASSOS AO TOCAR =====
-function startCountdown() {
-  state.countdownActive = true;
-  state.countdownValue = 4;
-  ui.countdown.textContent = state.countdownValue;
-  ui.countdown.style.display = 'block';
-
-  const sixteenthDur = 60 / state.bpm / 4; // duração de uma semicolcheia
-  const beatDuration = sixteenthDur * 4;   // duração de um compasso (4 semicolcheias)
-  const totalDuration = beatDuration * 4;  // 4 compassos
-
-  let remaining = state.countdownValue;
-  const interval = setInterval(() => {
-    remaining--;
-    ui.countdown.textContent = remaining;
-    if (remaining <= 0) {
-      clearInterval(interval);
-      ui.countdown.style.display = 'none';
-      state.countdownActive = false;
-      startPlayback(); // Inicia a reprodução real após a contagem
-    }
-  }, beatDuration * 1000); // Converte segundos para ms
-}
-
-function startPlayback() {
-  state.isPlaying = true;
-  ui.btnPlay.textContent = '⏸ Pause';
-  updateStatus('Reproduzindo...', 'ready');
-
-  function tick() {
-    if (!state.isPlaying) return;
-    const now = state.audioCtx.currentTime;
-    const stepDuration = 60 / state.bpm / 4;
-    const nextStep = state.lastNoteTime + stepDuration;
-    if (now >= nextStep) {
-      scheduleStep(nextStep);
-      state.lastNoteTime = nextStep;
-    }
-    requestAnimationFrame(tick);
-  }
-
-  state.lastNoteTime = state.audioCtx.currentTime;
-  tick();
-}
-
+// ===== PLAYBACK =====
 function buildPlaybackPlan() {
   const plan = {
     harmony: [],
@@ -916,8 +943,6 @@ function buildPlaybackPlan() {
     drums: {}
   };
   DRUM_SAMPLES.forEach(d => plan.drums[d.key] = []);
-
-  // Coleta todas as notas e acordes usados nos blocos
   state.harmonyBlocks.forEach(block => {
     const grid = block.querySelector('.note-grid');
     const cells = grid.querySelectorAll('.cell');
@@ -929,24 +954,45 @@ function buildPlaybackPlan() {
       });
     });
   });
-
-  [state.bassBlocks, state.melody1Blocks, state.melody2Blocks].forEach((blocks, idx) => {
-    const type = ['bass', 'melody1', 'melody2'][idx];
-    blocks.forEach(block => {
-      const grid = block.querySelector('.note-grid');
-      const cells = grid.querySelectorAll('.cell');
-      const instrument = block.querySelector('.instrument-select').value;
-      cells.forEach(cell => {
-        const val = cell.textContent;
-        if (val === 'X') {
-          plan[type].push(null);
-        } else {
-          plan[type].push({ note: val, instrument: instrument });
-        }
-      });
+  state.bassBlocks.forEach(block => {
+    const grid = block.querySelector('.note-grid');
+    const cells = grid.querySelectorAll('.cell');
+    const instrument = block.querySelector('.instrument-select').value;
+    cells.forEach(cell => {
+      const val = cell.textContent;
+      if (val === 'X') {
+        plan.bass.push(null);
+      } else {
+        plan.bass.push({ note: val, instrument: instrument });
+      }
     });
   });
-
+  state.melody1Blocks.forEach(block => {
+    const grid = block.querySelector('.note-grid');
+    const cells = grid.querySelectorAll('.cell');
+    const instrument = block.querySelector('.instrument-select').value;
+    cells.forEach(cell => {
+      const val = cell.textContent;
+      if (val === 'X') {
+        plan.melody1.push(null);
+      } else {
+        plan.melody1.push({ note: val, instrument: instrument });
+      }
+    });
+  });
+  state.melody2Blocks.forEach(block => {
+    const grid = block.querySelector('.note-grid');
+    const cells = grid.querySelectorAll('.cell');
+    const instrument = block.querySelector('.instrument-select').value;
+    cells.forEach(cell => {
+      const val = cell.textContent;
+      if (val === 'X') {
+        plan.melody2.push(null);
+      } else {
+        plan.melody2.push({ note: val, instrument: instrument });
+      }
+    });
+  });
   state.drumBlocks.forEach(block => {
     DRUM_SAMPLES.forEach(drum => {
       const cells = block.querySelectorAll(`.drum-cell[data-instr="${drum.key}"]`);
@@ -955,81 +1001,160 @@ function buildPlaybackPlan() {
       });
     });
   });
-
   state.playbackPlan = plan;
   state.stepIndex = 0;
   state.lastNoteTime = 0;
   return plan;
 }
 
-// ===== FUNÇÃO CHAVE: CARREGAR TODOS OS SAMPLES USADOS NA PRÓXIMA REPRODUÇÃO =====
-async function preloadAllSamplesForPlayback() {
-  updateStatus('Carregando amostras... Por favor, aguarde.', 'loading');
-  ui.btnSaveWAV.disabled = true;
-
-  const plan = buildPlaybackPlan();
-  const promises = [];
-
-  // Carregar acordes da harmonia
-  plan.harmony.forEach(item => {
+// 👇 FUNÇÃO SCHEDULESTEP AGORA GLOBAL
+function scheduleStep(time) {
+  const idx = state.stepIndex;
+  const plan = state.playbackPlan;
+  if (idx < plan.harmony.length) {
+    const item = plan.harmony[idx];
     if (item && item.chord !== 'X' && item.chord !== 'C') {
-      const key = item.instrument;
-      const chord = item.chord;
-      promises.push(loadSample('harmonic', key, chord));
-    }
-  });
-
-  // Carregar notas da baixa, melodia 1 e 2
-  ['bass', 'melody1', 'melody2'].forEach(type => {
-    plan[type].forEach(item => {
-      if (item && item.note) {
-        const key = item.instrument;
-        const note = item.note;
-        promises.push(loadSample('melodic', key, note));
+      if (state.currentlyPlaying.harmony !== null) {
+        state.currentlyPlaying.harmony = null;
       }
-    });
-  });
-
-  // Carregar samples de bateria ativos
+      playChord(item.instrument, item.chord, time, state.harmonicGain, 0.5);
+      state.currentlyPlaying.harmony = item.chord;
+    }
+  }
+  if (idx < plan.bass.length) {
+    const item = plan.bass[idx];
+    if (item && item.note) {
+      if (state.currentlyPlaying.bass !== null) {
+        state.currentlyPlaying.bass = null;
+      }
+      playNote(item.instrument, item.note, time, state.bassGain, 0.7);
+      state.currentlyPlaying.bass = item.note;
+    }
+  }
+  if (idx < plan.melody1.length) {
+    const item = plan.melody1[idx];
+    if (item && item.note) {
+      if (state.currentlyPlaying.melody1 !== null) {
+        state.currentlyPlaying.melody1 = null;
+      }
+      playNote(item.instrument, item.note, time, state.melodyGain, 0.6);
+      state.currentlyPlaying.melody1 = item.note;
+    }
+  }
+  if (idx < plan.melody2.length) {
+    const item = plan.melody2[idx];
+    if (item && item.note) {
+      if (state.currentlyPlaying.melody2 !== null) {
+        state.currentlyPlaying.melody2 = null;
+      }
+      playNote(item.instrument, item.note, time, state.melodyGain, 0.6);
+      state.currentlyPlaying.melody2 = item.note;
+    }
+  }
   Object.keys(plan.drums).forEach(key => {
-    if (plan.drums[key].some(active => active)) {
-      promises.push(loadSample('drum', key, ''));
+    if (idx < plan.drums[key].length && plan.drums[key][idx]) {
+      playDrum(key, time, state.drumGain, 0.8);
     }
   });
+  state.stepIndex = (state.stepIndex + 1) % state.totalSteps;
+}
 
-  // Espera todos os carregamentos
-  await Promise.all(promises);
+function playNote(instrumentKey, note, time, gainNode, volume = 1.0) {
+  if (!state.audioCtx) return;
+  const bufferKey = `melodic-${instrumentKey}-${note}`;
+  const buffer = state.buffers.melodic[bufferKey];
+  if (!buffer) {
+    console.warn(`Sample não encontrado: ${instrumentKey}/${note}`);
+    return;
+  }
+  const source = state.audioCtx.createBufferSource();
+  source.buffer = buffer;
+  source.connect(gainNode);
+  source.start(time);
+  source.stop(time + 0.5);
+}
 
-  updateStatus('Amostras carregadas! Iniciando contagem regressiva...', 'ready');
-  ui.btnSaveWAV.disabled = false;
+function playChord(instrumentKey, chord, time, gainNode, volume = 0.5) {
+  if (!state.audioCtx) return;
+  let root;
+  if (['AS','CS','DS','FS','GS'].includes(chord.slice(0, 2))) {
+    root = chord.slice(0, 2);
+  } else {
+    root = chord[0];
+  }
+  const bufferKey = `harmonic-${instrumentKey}-${chord}`;
+  const buffer = state.buffers.harmonic[bufferKey];
+  if (!buffer) {
+    console.warn(`Acordo não encontrado: ${instrumentKey}/${chord}`);
+    return;
+  }
+  const source = state.audioCtx.createBufferSource();
+  source.buffer = buffer;
+  source.connect(gainNode);
+  source.start(time);
+  source.stop(time + 0.8);
+}
+
+function playDrum(drumKey, time, gainNode, volume = 0.8) {
+  if (!state.audioCtx) return;
+  const buffer = state.buffers.drums[drumKey];
+  if (!buffer) {
+    console.warn(`Sample de bateria não encontrado: ${drumKey}`);
+    return;
+  }
+  const source = state.audioCtx.createBufferSource();
+  source.buffer = buffer;
+  const gain = state.audioCtx.createGain();
+  gain.gain.setValueAtTime(0, time);
+  gain.gain.linearRampToValueAtTime(volume, time + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.2);
+  source.connect(gain);
+  gain.connect(gainNode);
+  source.start(time);
+  source.stop(time + 0.2);
+}
+
+function startScheduler() {
+  state.isPlaying = true;
+  ui.btnPlay.textContent = '⏸ Pause';
+
+  function tick() {
+    if (!state.isPlaying) return;
+    const now = state.audioCtx.currentTime;
+    const stepDuration = 60 / state.bpm / 4;
+    const nextStep = state.lastNoteTime + stepDuration;
+    if (now >= nextStep) {
+      scheduleStep(nextStep); // 👈 Agora acessível!
+      state.lastNoteTime = nextStep;
+    }
+    requestAnimationFrame(tick);
+  }
+
+  state.lastNoteTime = state.audioCtx.currentTime;
+  tick();
 }
 
 function onPlay() {
+  if (!state.isLoaded && !state.preparing) {
+    alert('Clique 8 vezes para preparar os sons primeiro.');
+    return;
+  }
   if (!state.audioCtx) {
     updateStatus('Erro: Audio Context não inicializado', 'error');
     return;
   }
-
   if (state.isPlaying) {
     state.isPlaying = false;
     ui.btnPlay.textContent = '▶ Play';
     return;
   }
-
   try {
     if (state.audioCtx.state === 'suspended') {
       state.audioCtx.resume();
     }
-
-    // Passo 1: Carregar todos os samples usados na composição atual
-    preloadAllSamplesForPlayback().then(() => {
-      // Passo 2: Iniciar contagem regressiva de 4 compassos
-      startCountdown();
-    }).catch(err => {
-      console.error('Erro ao carregar amostras:', err);
-      updateStatus('Erro ao carregar amostras. Verifique a conexão.', 'error');
-    });
-
+    buildPlaybackPlan();
+    startScheduler();
+    updateStatus('Reproduzindo...', 'ready');
   } catch (error) {
     console.error('Erro ao iniciar reprodução:', error);
     updateStatus('Erro ao iniciar: ' + error.message, 'error');
@@ -1040,20 +1165,18 @@ function onStop() {
   state.isPlaying = false;
   state.stepIndex = 0;
   ui.btnPlay.textContent = '▶ Play';
-  ui.countdown.style.display = 'none';
   updateStatus('Reprodução parada', 'ready');
 }
 
 // ===== GRAVAÇÃO WAV =====
 async function renderAndDownloadWAV(durationInSeconds) {
   if (!state.isLoaded && !state.preparing) {
-    alert('Clique em Play para gerar os sons primeiro.');
+    alert('Clique 8 vezes para preparar os sons primeiro.');
     return;
   }
   updateStatus('Renderizando áudio...', 'loading');
   ui.btnSaveWAV.disabled = true;
   ui.btnSaveWAV.textContent = '⏳ Renderizando...';
-
   try {
     const sampleRate = 44100;
     const totalSamples = Math.ceil(durationInSeconds * sampleRate);
@@ -1073,18 +1196,20 @@ async function renderAndDownloadWAV(durationInSeconds) {
     bassGain.gain.value = 0.5;
     melodyGain.gain.value = 0.5;
     harmonicGain.gain.value = 0.5;
-
     buildPlaybackPlan();
     const sixteenthDur = 60 / state.bpm / 4;
     const totalSteps = Math.min(state.totalSteps, Math.ceil(durationInSeconds / sixteenthDur));
-
     for (let step = 0; step < totalSteps; step++) {
       const time = step * sixteenthDur;
-
       if (step < state.playbackPlan.harmony.length) {
         const item = state.playbackPlan.harmony[step];
         if (item && item.chord !== 'X' && item.chord !== 'C') {
-          let root = ['AS','CS','DS','FS','GS'].includes(item.chord.slice(0, 2)) ? item.chord.slice(0, 2) : item.chord[0];
+          let root;
+          if (['AS','CS','DS','FS','GS'].includes(item.chord.slice(0, 2))) {
+            root = item.chord.slice(0, 2);
+          } else {
+            root = item.chord[0];
+          }
           const bufferKey = `harmonic-${item.instrument}-${item.chord}`;
           const buffer = state.buffers.harmonic[bufferKey];
           if (buffer) {
@@ -1096,7 +1221,6 @@ async function renderAndDownloadWAV(durationInSeconds) {
           }
         }
       }
-
       if (step < state.playbackPlan.bass.length) {
         const item = state.playbackPlan.bass[step];
         if (item && item.note) {
@@ -1111,7 +1235,6 @@ async function renderAndDownloadWAV(durationInSeconds) {
           }
         }
       }
-
       [[state.playbackPlan.melody1, melodyGain], [state.playbackPlan.melody2, melodyGain]].forEach(([melody, gain]) => {
         if (step < melody.length) {
           const item = melody[step];
@@ -1128,7 +1251,6 @@ async function renderAndDownloadWAV(durationInSeconds) {
           }
         }
       });
-
       Object.keys(state.playbackPlan.drums).forEach(key => {
         if (step < state.playbackPlan.drums[key].length && state.playbackPlan.drums[key][step]) {
           const buffer = state.buffers.drums[key];
@@ -1142,7 +1264,6 @@ async function renderAndDownloadWAV(durationInSeconds) {
         }
       });
     }
-
     const renderedBuffer = await offlineCtx.startRendering();
     const wavBlob = audioBufferToWav(renderedBuffer);
     const fileName = `jam-on-${new Date().toISOString().slice(0,10)}-${Math.floor(Math.random()*1000)}.wav`;
