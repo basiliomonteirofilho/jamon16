@@ -288,31 +288,31 @@
       <span style="color: #aaa; margin-left: 10px;">Adicionar compasso em todos os instrumentos</span>
     </div>
 
-    <!-- HARMONIA (2 células iniciais = colcheias) -->
+    <!-- HARMONIA (2 células = colcheias) -->
     <div class="section">
       <h3>🎸 Harmonia</h3>
       <div id="harmonyContainer" class="instrument-container"></div>
     </div>
 
-    <!-- BAIXO (4 células iniciais = semicolcheias) -->
+    <!-- BAIXO (4 células = semicolcheias) -->
     <div class="section">
       <h3>🎸 Baixo</h3>
       <div id="bassContainer" class="instrument-container"></div>
     </div>
 
-    <!-- MELODIA 1 (4 células iniciais = semicolcheias) -->
+    <!-- MELODIA 1 (4 células = semicolcheias) -->
     <div class="section">
       <h3>🎹 Melodia 1</h3>
       <div id="melody1Container" class="instrument-container"></div>
     </div>
 
-    <!-- MELODIA 2 (4 células iniciais = semicolcheias) -->
+    <!-- MELODIA 2 (4 células = semicolcheias) -->
     <div class="section">
       <h3>🎷 Melodia 2</h3>
       <div id="melody2Container" class="instrument-container"></div>
     </div>
 
-    <!-- BATERIA (4 células iniciais = semicolcheias) -->
+    <!-- BATERIA (4 células = semicolcheias) -->
     <div class="section">
       <h3>🥁 Bateria</h3>
       <div id="drumContainer" class="instrument-container"></div>
@@ -360,6 +360,7 @@
       'GSdim', 'GSm', 'GSm4', 'GSm5', 'GSm5+', 'GSm6', 'GSm7', 'GSm75+', 'GSm79', 'GSm9'
     ];
 
+    // NOMES DAS NOTAS MELÓDICAS (COM NÚMERO): EX: '1E.mp3', '2F.mp3', etc.
     const NOTE_NAMES = [
       '10CS.mp3', '11D.mp3', '12DS.mp3', '13E.mp3', '14F.mp3', '15FS.mp3', '16G.mp3', '17GS.mp3', 
       '18A.mp3', '19AS.mp3', '1E.mp3', '20B.mp3', '21C.mp3', '22CS.mp3', '23D.mp3', '24DS.mp3', 
@@ -368,27 +369,16 @@
       '3FS.mp3', '40G.mp3', '41GS.mp3', '42A.mp3', '43AS.mp3', '44B.mp3', '45C.mp3', '46CS.mp3', 
       '47D.mp3', '48DS.mp3', '49E.mp3', '4G.mp3', '5GS.mp3', '6A.mp3', '7AS.mp3', '8B.mp3', '9C.mp3'
     ];
-    const NOTE_IDS = NOTE_NAMES.map(name => name.replace('.mp3', ''));
-    const NUM_TO_NOTE = {};
-    const NOTE_TO_NUM = {};
-    NOTE_IDS.forEach(note => {
-      const match = note.match(/^(\d+)([A-Z]+)$/);
-      if (match) {
-        const num = parseInt(match[1]);
-        const noteName = match[2];
-        NUM_TO_NOTE[num] = noteName;
-        NOTE_TO_NUM[note] = num;
-      }
-    });
-    const ALL_NOTES = Object.keys(NUM_TO_NOTE).map(n => parseInt(n)).sort((a, b) => a - b);
-    const MIN_NOTE = Math.min(...ALL_NOTES);
-    const MAX_NOTE = Math.max(...ALL_NOTES);
+    const NOTE_IDS = NOTE_NAMES.map(name => name.replace('.mp3', '')); // ['10CS', '11D', '12DS', ...]
+    const ALL_NOTES = NOTE_IDS; // Já são os nomes completos com número!
 
+    // Mapeamento de frequências base (A4 = 440Hz)
     const NOTE_FREQ = {
       'C': 261.63, 'CS': 277.18, 'D': 293.66, 'DS': 311.13, 'E': 329.63, 'F': 349.23,
       'FS': 369.99, 'G': 392.00, 'GS': 415.30, 'A': 440.00, 'AS': 466.16, 'B': 493.88
     };
 
+    // Caminhos dos instrumentos melódicos → usa o nome da nota diretamente (ex: '1E.mp3')
     const MELODIC_INSTRUMENTS = {
       'acordeon': 'assets/AcordeonMelodia/',
       'bass': 'assets/BaixoMelodia/',
@@ -399,12 +389,14 @@
       'nylon-guitar': 'assets/ViolaoNylonMelodia/'
     };
 
+    // Caminhos dos instrumentos harmônicos → pasta/raiz/acorde.mp3
     const HARMONIC_INSTRUMENTS = {
       'distorted-guitar': 'guitarraDistorcao/',
       'clean-guitar': 'guitarraLimpa/',
       'piano-chord': 'assets/PianoStringChord/'
     };
 
+    // Caminhos dos samples de bateria
     const DRUM_SAMPLES = [
       { key: 'ataque', label: 'Caixa', path: 'assets/ataque.mp3' },
       { key: 'bumbo', label: 'Bumbo', path: 'assets/bumbo.mp3' },
@@ -578,23 +570,24 @@
 
     // ===== CARREGAMENTO SOB DEMANDA =====
     async function loadSample(instrumentType, key, noteOrChord) {
-      const basePath = instrumentType === 'drum' ? '' : 
-                       instrumentType === 'melodic' ? MELODIC_INSTRUMENTS[key] : 
-                       instrumentType === 'harmonic' ? HARMONIC_INSTRUMENTS[key] : '';
-
       let filePath;
+
       if (instrumentType === 'drum') {
-        filePath = DRUM_SAMPLES.find(d => d.key === key)?.path;
+        const sample = DRUM_SAMPLES.find(d => d.key === key);
+        if (!sample) return;
+        filePath = sample.path;
       } else if (instrumentType === 'melodic') {
-        filePath = basePath + noteOrChord + '.mp3';
+        // Para instrumentos melódicos: assets/BaixoMelodia/1E.mp3
+        filePath = MELODIC_INSTRUMENTS[key] + noteOrChord + '.mp3';
       } else if (instrumentType === 'harmonic') {
+        // Para acordes: guitarraDistorcao/AS/ASm.mp3
         let root;
         if (['AS','CS','DS','FS','GS'].includes(noteOrChord.slice(0, 2))) {
           root = noteOrChord.slice(0, 2);
         } else {
           root = noteOrChord[0];
         }
-        filePath = basePath + root + '/' + noteOrChord + '.mp3';
+        filePath = HARMONIC_INSTRUMENTS[key] + root + '/' + noteOrChord + '.mp3';
       }
 
       if (!filePath) return;
@@ -826,57 +819,36 @@
         const cell = document.createElement('div');
         cell.className = 'cell';
         cell.dataset.step = i;
-        cell.textContent = type === 'harmony' ? 'C' : '1E';
+        cell.textContent = ALL_NOTES[0]; // Padrão: '1E' (primeira nota da lista)
         cell.addEventListener('click', function(e) {
-          if (type === 'harmony') {
-            const currentIndex = AVAILABLE_CHORDS.indexOf(this.textContent);
-            const nextIndex = (currentIndex + 1) % AVAILABLE_CHORDS.length;
-            this.textContent = AVAILABLE_CHORDS[nextIndex];
-            
-            if (state.currentlyPlaying.harmony !== null) {
-              state.currentlyPlaying.harmony = null;
-            }
-            
-            if (state.preparing || state.isLoaded) {
-              loadSample('harmonic', this.parentElement.querySelector('.instrument-select').value, this.textContent);
-            }
+          const rect = this.getBoundingClientRect();
+          const clickX = e.clientX - rect.left;
+          const centerX = rect.width / 2;
+          let currentText = this.textContent;
+          let currentIndex = ALL_NOTES.indexOf(currentText);
+          
+          if (clickX < centerX) {
+            currentIndex = (currentIndex - 1 + ALL_NOTES.length) % ALL_NOTES.length;
           } else {
-            const rect = this.getBoundingClientRect();
-            const clickX = e.clientX - rect.left;
-            const centerX = rect.width / 2;
-            let currentText = this.textContent;
-            let currentNum = 1;
-            if (currentText === 'X') {
-              currentNum = 1;
-              this.classList.remove('x');
-            } else {
-              const match = currentText.match(/^(\d+)/);
-              if (match) currentNum = parseInt(match[1]);
-            }
-            let currentIndex = ALL_NOTES.indexOf(currentNum);
-            if (clickX < centerX) {
-              currentIndex = (currentIndex - 1 + ALL_NOTES.length) % ALL_NOTES.length;
-            } else {
-              currentIndex = (currentIndex + 1) % ALL_NOTES.length;
-            }
-            const newNum = ALL_NOTES[currentIndex];
-            const noteName = NUM_TO_NOTE[newNum] || '';
-            this.textContent = newNum + noteName;
-            
-            const instrument = this.parentElement.parentElement.querySelector('.instrument-select').value;
-            const category = type.replace('Block', '').toLowerCase();
-            if (state.currentlyPlaying[category] !== null) {
-              state.currentlyPlaying[category] = null;
-            }
-            
-            if (state.preparing || state.isLoaded) {
-              loadSample('melodic', instrument, this.textContent);
-            }
+            currentIndex = (currentIndex + 1) % ALL_NOTES.length;
+          }
+          
+          const newNote = ALL_NOTES[currentIndex];
+          this.textContent = newNote;
+          
+          const instrument = this.parentElement.parentElement.querySelector('.instrument-select').value;
+          const category = type.replace('Block', '').toLowerCase();
+          if (state.currentlyPlaying[category] !== null) {
+            state.currentlyPlaying[category] = null;
+          }
+          
+          if (state.preparing || state.isLoaded) {
+            loadSample('melodic', instrument, this.textContent);
           }
         });
         cell.addEventListener('dblclick', function() {
           if (this.textContent === 'X') {
-            this.textContent = type === 'harmony' ? 'C' : '1E';
+            this.textContent = ALL_NOTES[0];
             this.classList.remove('x');
           } else {
             this.textContent = 'X';
@@ -894,7 +866,7 @@
       // Harmonia: +2 células
       state.harmonyBlocks.forEach(block => {
         const grid = block.querySelector('.note-grid');
-        if (!grid) return; // Garante segurança
+        if (!grid) return;
         
         for (let i = 0; i < 2; i++) {
           const cell = document.createElement('div');
@@ -937,32 +909,25 @@
             const cell = document.createElement('div');
             cell.className = 'cell';
             cell.dataset.step = grid.children.length;
-            cell.textContent = '1E';
+            cell.textContent = ALL_NOTES[0]; // '1E'
             cell.addEventListener('click', function(e) {
               const rect = this.getBoundingClientRect();
               const clickX = e.clientX - rect.left;
               const centerX = rect.width / 2;
               let currentText = this.textContent;
-              let currentNum = 1;
-              if (currentText === 'X') {
-                currentNum = 1;
-                this.classList.remove('x');
-              } else {
-                const match = currentText.match(/^(\d+)/);
-                if (match) currentNum = parseInt(match[1]);
-              }
-              let currentIndex = ALL_NOTES.indexOf(currentNum);
+              let currentIndex = ALL_NOTES.indexOf(currentText);
+              
               if (clickX < centerX) {
                 currentIndex = (currentIndex - 1 + ALL_NOTES.length) % ALL_NOTES.length;
               } else {
                 currentIndex = (currentIndex + 1) % ALL_NOTES.length;
               }
-              const newNum = ALL_NOTES[currentIndex];
-              const noteName = NUM_TO_NOTE[newNum] || '';
-              this.textContent = newNum + noteName;
+              
+              const newNote = ALL_NOTES[currentIndex];
+              this.textContent = newNote;
               
               const instrument = this.parentElement.parentElement.querySelector('.instrument-select').value;
-              const category = 'bass'; // ou 'melody1'/'melody2' — aqui só importa que não é harmonia
+              const category = 'bass'; // ou 'melody1'/'melody2' — só importa que não é harmonia
               if (state.currentlyPlaying[category] !== null) {
                 state.currentlyPlaying[category] = null;
               }
@@ -973,7 +938,7 @@
             });
             cell.addEventListener('dblclick', function() {
               if (this.textContent === 'X') {
-                this.textContent = '1E';
+                this.textContent = ALL_NOTES[0];
                 this.classList.remove('x');
               } else {
                 this.textContent = 'X';
@@ -997,7 +962,7 @@
           for (let i = 0; i < 4; i++) {
             const cell = document.createElement('div');
             cell.className = 'drum-cell';
-            cell.dataset.step = row.children.length - 1; // índice da última célula
+            cell.dataset.step = row.children.length - 1;
             cell.dataset.instr = drum.key;
             cell.dataset.block = block.dataset.blockIndex;
             cell.addEventListener('click', function() {
@@ -1012,7 +977,7 @@
       });
 
       // Atualiza total de passos
-      state.totalSteps += 4; // Por padrão, avança 4 passos (semicolcheias)
+      state.totalSteps += 4;
       updateStatus(`Compasso adicionado. Total: ${state.totalSteps} passos.`, 'ready');
     }
 
@@ -1048,13 +1013,7 @@
           if (val === 'X') {
             plan.bass.push(null);
           } else {
-            const match = val.match(/^(\d+)([A-Z]+)/);
-            if (match) {
-              const num = parseInt(match[1]);
-              plan.bass.push({ note: num, instrument: instrument });
-            } else {
-              plan.bass.push(null);
-            }
+            plan.bass.push({ note: val, instrument: instrument }); // note é a STRING completa: '1E', '2F', etc.
           }
         });
       });
@@ -1068,13 +1027,7 @@
           if (val === 'X') {
             plan.melody1.push(null);
           } else {
-            const match = val.match(/^(\d+)([A-Z]+)/);
-            if (match) {
-              const num = parseInt(match[1]);
-              plan.melody1.push({ note: num, instrument: instrument });
-            } else {
-              plan.melody1.push(null);
-            }
+            plan.melody1.push({ note: val, instrument: instrument }); // note é a STRING completa: '1E', '2F', etc.
           }
         });
       });
@@ -1088,13 +1041,7 @@
           if (val === 'X') {
             plan.melody2.push(null);
           } else {
-            const match = val.match(/^(\d+)([A-Z]+)/);
-            if (match) {
-              const num = parseInt(match[1]);
-              plan.melody2.push({ note: num, instrument: instrument });
-            } else {
-              plan.melody2.push(null);
-            }
+            plan.melody2.push({ note: val, instrument: instrument }); // note é a STRING completa: '1E', '2F', etc.
           }
         });
       });
@@ -1114,14 +1061,12 @@
       return plan;
     }
 
-    function playNote(instrumentKey, noteNum, time, gainNode, volume = 1.0) {
+    function playNote(instrumentKey, note, time, gainNode, volume = 1.0) {
       if (!state.audioCtx) return;
-      const noteName = NUM_TO_NOTE[noteNum];
-      if (!noteName) return;
-      const bufferKey = `melodic-${instrumentKey}-${noteName}`;
+      const bufferKey = `melodic-${instrumentKey}-${note}`;
       const buffer = state.buffers.melodic[bufferKey];
       if (!buffer) {
-        console.warn(`Sample não encontrado: ${instrumentKey}/${noteName}`);
+        console.warn(`Sample não encontrado: ${instrumentKey}/${note}`);
         return;
       }
       const source = state.audioCtx.createBufferSource();
@@ -1188,7 +1133,7 @@
 
       if (idx < plan.bass.length) {
         const item = plan.bass[idx];
-        if (item && typeof item.note === 'number') {
+        if (item && item.note) {
           if (state.currentlyPlaying.bass !== null) {
             state.currentlyPlaying.bass = null;
           }
@@ -1199,7 +1144,7 @@
 
       if (idx < plan.melody1.length) {
         const item = plan.melody1[idx];
-        if (item && typeof item.note === 'number') {
+        if (item && item.note) {
           if (state.currentlyPlaying.melody1 !== null) {
             state.currentlyPlaying.melody1 = null;
           }
@@ -1210,7 +1155,7 @@
 
       if (idx < plan.melody2.length) {
         const item = plan.melody2[idx];
-        if (item && typeof item.note === 'number') {
+        if (item && item.note) {
           if (state.currentlyPlaying.melody2 !== null) {
             state.currentlyPlaying.melody2 = null;
           }
@@ -1336,9 +1281,8 @@
           }
           if (step < state.playbackPlan.bass.length) {
             const item = state.playbackPlan.bass[step];
-            if (item && typeof item.note === 'number') {
-              const noteName = NUM_TO_NOTE[item.note];
-              const bufferKey = `melodic-${item.instrument}-${noteName}`;
+            if (item && item.note) {
+              const bufferKey = `melodic-${item.instrument}-${item.note}`;
               const buffer = state.buffers.melodic[bufferKey];
               if (buffer) {
                 const source = offlineCtx.createBufferSource();
@@ -1352,9 +1296,8 @@
           [[state.playbackPlan.melody1, melodyGain], [state.playbackPlan.melody2, melodyGain]].forEach(([melody, gain]) => {
             if (step < melody.length) {
               const item = melody[step];
-              if (item && typeof item.note === 'number') {
-                const noteName = NUM_TO_NOTE[item.note];
-                const bufferKey = `melodic-${item.instrument}-${noteName}`;
+              if (item && item.note) {
+                const bufferKey = `melodic-${item.instrument}-${item.note}`;
                 const buffer = state.buffers.melodic[bufferKey];
                 if (buffer) {
                   const source = offlineCtx.createBufferSource();
