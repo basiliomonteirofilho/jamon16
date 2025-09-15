@@ -535,11 +535,12 @@ async function loadSample(instrumentType, key, noteOrChord) {
     filePath = sample.path;
     bufferKey = key;
   } else if (instrumentType === 'melodic') {
+    if (noteOrChord === 'X') return; // Ignora 'X'
     filePath = MELODIC_INSTRUMENTS[key] + noteOrChord + '.mp3';
     bufferKey = `melodic-${key}-${noteOrChord}`; // ← CORREÇÃO: Usa 'key', não 'MELODIC_INSTRUMENTS[key]'
   } else if (instrumentType === 'harmonic') {
+    if (noteOrChord === 'X') return; // Ignora 'X'
     let root;
-    if (noteOrChord === 'X') return; // Não carrega nada para "X"
     if (noteOrChord.length >= 2 && ['AS','CS','DS','FS','GS'].includes(noteOrChord.slice(0, 2))) {
       root = noteOrChord.slice(0, 2);
     } else {
@@ -1057,7 +1058,9 @@ function buildPlaybackPlan() {
   state.harmonyBlocks.forEach(block => {
     const grid = block.querySelector('.note-grid');
     const cells = grid.querySelectorAll('.cell');
-    const instrument = block.querySelector('.instrument-select').value;
+    // ADICIONADO: Verificação de segurança
+    const instrumentSelect = block.querySelector('.instrument-select');
+    const instrument = instrumentSelect ? instrumentSelect.value : 'distorted-guitar';
     cells.forEach(cell => {
       if (cell.textContent !== 'X') {
         plan.harmony.push({
@@ -1074,7 +1077,9 @@ function buildPlaybackPlan() {
     blocks.forEach(block => {
       const grid = block.querySelector('.note-grid');
       const cells = grid.querySelectorAll('.cell');
-      const instrument = block.querySelector('.instrument-select').value;
+      // ADICIONADO: Verificação de segurança
+      const instrumentSelect = block.querySelector('.instrument-select');
+      const instrument = instrumentSelect ? instrumentSelect.value : 'piano';
       cells.forEach(cell => {
         if (cell.textContent === 'X') {
           plan[type].push(null);
@@ -1169,7 +1174,15 @@ function playNote(instrumentKey, note, time, gainNode, volume = 1.0) {
 }
 function playChord(instrumentKey, chord, time, gainNode, volume = 1.0) {
   if (!state.audioCtx) return;
-  const bufferKey = `harmonic-${instrumentKey}-${chord}`; // ← CORREÇÃO: Usa o novo formato
+  // REMOVIDO: Código antigo que extraía a raiz (não é mais necessário para a chave do buffer)
+  // let root;
+  // if (chord.length >= 2 && ['AS','CS','DS','FS','GS'].includes(chord.slice(0, 2))) {
+  //   root = chord.slice(0, 2);
+  // } else {
+  //   root = chord[0];
+  // }
+  // CORREÇÃO: Usa o novo formato de chave
+  const bufferKey = `harmonic-${instrumentKey}-${chord}`;
   const buffer = state.buffers.harmonic[bufferKey];
   if (!buffer) {
     console.warn(`Acorde não encontrado: ${instrumentKey}/${chord}`);
@@ -1236,7 +1249,8 @@ function onPlay() {
     // Harmonia
     state.playbackPlan.harmony.forEach(item => {
       if (item && item.chord !== 'X') {
-        const bufferKey = `harmonic-${item.instrument}-${item.chord}`; // ← CORREÇÃO
+        // CORREÇÃO: Usa o novo formato de chave
+        const bufferKey = `harmonic-${item.instrument}-${item.chord}`;
         samplesToLoad.add(bufferKey);
       }
     });
@@ -1342,7 +1356,8 @@ async function renderAndDownloadWAV(durationInSeconds) {
       if (step < state.playbackPlan.harmony.length && state.playbackPlan.harmony[step]) {
         const item = state.playbackPlan.harmony[step];
         if (item && item.chord !== 'X') {
-          const bufferKey = `harmonic-${item.instrument}-${item.chord}`; // ← CORREÇÃO
+          // CORREÇÃO: Usa o novo formato de chave
+          const bufferKey = `harmonic-${item.instrument}-${item.chord}`;
           const buffer = state.buffers.harmonic[bufferKey];
           if (buffer) {
             const source = offlineCtx.createBufferSource();
