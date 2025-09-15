@@ -324,6 +324,7 @@
  <script>
 // ===== CONSTANTES =====
 const AVAILABLE_CHORDS = [
+  'X', // ← OPÇÃO EM BRANCO ADICIONADA
   // Acordes em A
   'A', 'A11', 'A13', 'A4', 'A45+', 'A5', 'A5+', 'A6', 'A7', 'A75+', 'A9', 'A95+', 'Adim', 
   'Am', 'Am4', 'Am5', 'Am5+', 'Am6', 'Am7', 'Am75+', 'Am79', 'Am9',
@@ -362,6 +363,7 @@ const AVAILABLE_CHORDS = [
   'GSdim', 'GSm', 'GSm4', 'GSm5', 'GSm5+', 'GSm6', 'GSm7', 'GSm75+', 'GSm79', 'GSm9'
 ];
 const NOTE_NAMES = [
+  'X', // ← OPÇÃO EM BRANCO ADICIONADA
   '10CS.mp3', '11D.mp3', '12DS.mp3', '13E.mp3', '14F.mp3', '15FS.mp3', '16G.mp3', '17GS.mp3', 
   '18A.mp3', '19AS.mp3', '1E.mp3', '20B.mp3', '21C.mp3', '22CS.mp3', '23D.mp3', '24DS.mp3', 
   '25E.mp3', '26F.mp3', '27FS.mp3', '28G.mp3', '29GS.mp3', '2F.mp3', '30A.mp3', '31AS.mp3', 
@@ -537,6 +539,7 @@ async function loadSample(instrumentType, key, noteOrChord) {
     bufferKey = `melodic-${key}-${noteOrChord}`; // ← CORREÇÃO: Usa 'key', não 'MELODIC_INSTRUMENTS[key]'
   } else if (instrumentType === 'harmonic') {
     let root;
+    if (noteOrChord === 'X') return; // Não carrega nada para "X"
     if (noteOrChord.length >= 2 && ['AS','CS','DS','FS','GS'].includes(noteOrChord.slice(0, 2))) {
       root = noteOrChord.slice(0, 2);
     } else {
@@ -607,7 +610,7 @@ function addHarmonyBlock() {
       dropdown.style.color = 'white';
       dropdown.style.border = '1px solid #5eead4';
 
-      // Preenche o dropdown com todos os acordes
+      // Preenche o dropdown com todos os acordes (incluindo 'X')
       AVAILABLE_CHORDS.forEach(chord => {
         const option = document.createElement('option');
         option.value = chord;
@@ -633,6 +636,11 @@ function addHarmonyBlock() {
       // Evento para quando o usuário selecionar uma opção
       dropdown.addEventListener('change', () => {
         this.textContent = dropdown.value;
+        if (this.textContent === 'X') {
+          this.classList.add('x');
+        } else {
+          this.classList.remove('x');
+        }
         if (state.currentlyPlaying.harmony !== null) {
           state.currentlyPlaying.harmony = null;
         }
@@ -650,15 +658,6 @@ function addHarmonyBlock() {
         }
       };
       document.addEventListener('click', handleClickOutside);
-    });
-    cell.addEventListener('dblclick', function() {
-      if (this.textContent === 'X') {
-        this.textContent = 'C';
-        this.classList.remove('x');
-      } else {
-        this.textContent = 'X';
-        this.classList.add('x');
-      }
     });
     grid.appendChild(cell);
   }
@@ -797,7 +796,7 @@ function createNoteGrid(type, blockIndex, numCells) {
     const cell = document.createElement('div');
     cell.className = 'cell';
     cell.dataset.step = i;
-    cell.textContent = ALL_NOTES[0]; // Inicia com 10CS
+    cell.textContent = ALL_NOTES[1]; // Inicia com 10CS (índice 1, pois índice 0 é 'X')
     cell.addEventListener('click', function(e) {
       e.stopPropagation(); // Impede propagação
 
@@ -811,7 +810,7 @@ function createNoteGrid(type, blockIndex, numCells) {
       dropdown.style.color = 'white';
       dropdown.style.border = '1px solid #555';
 
-      // Preenche o dropdown com todas as notas
+      // Preenche o dropdown com todas as notas (incluindo 'X')
       ALL_NOTES.forEach(note => {
         const option = document.createElement('option');
         option.value = note;
@@ -837,6 +836,11 @@ function createNoteGrid(type, blockIndex, numCells) {
       // Evento para quando o usuário selecionar uma opção
       dropdown.addEventListener('change', () => {
         this.textContent = dropdown.value;
+        if (this.textContent === 'X') {
+          this.classList.add('x');
+        } else {
+          this.classList.remove('x');
+        }
         const instrument = this.parentElement.parentElement.querySelector('.instrument-select').value;
         const category = type.replace('Block', '').toLowerCase();
         if (state.currentlyPlaying[category] !== null) {
@@ -856,15 +860,6 @@ function createNoteGrid(type, blockIndex, numCells) {
         }
       };
       document.addEventListener('click', handleClickOutside);
-    });
-    cell.addEventListener('dblclick', function() {
-      if (this.textContent === 'X') {
-        this.textContent = ALL_NOTES[0];
-        this.classList.remove('x');
-      } else {
-        this.textContent = 'X';
-        this.classList.add('x');
-      }
     });
     grid.appendChild(cell);
   }
@@ -920,6 +915,11 @@ function addCompasso() {
         // Evento para quando o usuário selecionar uma opção
         dropdown.addEventListener('change', () => {
           this.textContent = dropdown.value;
+          if (this.textContent === 'X') {
+            this.classList.add('x');
+          } else {
+            this.classList.remove('x');
+          }
           if (state.currentlyPlaying.harmony !== null) {
             state.currentlyPlaying.harmony = null;
           }
@@ -938,20 +938,12 @@ function addCompasso() {
         };
         document.addEventListener('click', handleClickOutside);
       });
-      cell.addEventListener('dblclick', function() {
-        if (this.textContent === 'X') {
-          this.textContent = 'C';
-          this.classList.remove('x');
-        } else {
-          this.textContent = 'X';
-          this.classList.add('x');
-        }
-      });
       grid.appendChild(cell);
     }
   });
   // Baixo, Melodia 1, Melodia 2: +4 células cada
   [state.bassBlocks, state.melody1Blocks, state.melody2Blocks].forEach((blocks, idx) => {
+    const type = ['bass', 'melody1', 'melody2'][idx];
     blocks.forEach(block => {
       const grid = block.querySelector('.note-grid');
       if (!grid) return;
@@ -959,7 +951,7 @@ function addCompasso() {
         const cell = document.createElement('div');
         cell.className = 'cell';
         cell.dataset.step = grid.children.length;
-        cell.textContent = ALL_NOTES[0];
+        cell.textContent = ALL_NOTES[1]; // Inicia com 10CS
         cell.addEventListener('click', function(e) {
           e.stopPropagation(); // Impede propagação
 
@@ -999,6 +991,11 @@ function addCompasso() {
           // Evento para quando o usuário selecionar uma opção
           dropdown.addEventListener('change', () => {
             this.textContent = dropdown.value;
+            if (this.textContent === 'X') {
+              this.classList.add('x');
+            } else {
+              this.classList.remove('x');
+            }
             const instrument = this.parentElement.parentElement.querySelector('.instrument-select').value;
             const category = this.parentElement.dataset.type.replace('Block', '').toLowerCase();
             if (state.currentlyPlaying[category] !== null) {
@@ -1018,15 +1015,6 @@ function addCompasso() {
             }
           };
           document.addEventListener('click', handleClickOutside);
-        });
-        cell.addEventListener('dblclick', function() {
-          if (this.textContent === 'X') {
-            this.textContent = ALL_NOTES[0];
-            this.classList.remove('x');
-          } else {
-            this.textContent = 'X';
-            this.classList.add('x');
-          }
         });
         grid.appendChild(cell);
       }
