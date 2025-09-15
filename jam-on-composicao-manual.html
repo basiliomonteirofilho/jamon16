@@ -526,6 +526,7 @@ function updateStatus(message, type) {
 async function loadSample(instrumentType, key, noteOrChord) {
   let filePath;
   let bufferKey;
+
   if (instrumentType === 'drum') {
     const sample = DRUM_SAMPLES.find(d => d.key === key);
     if (!sample) return;
@@ -533,7 +534,7 @@ async function loadSample(instrumentType, key, noteOrChord) {
     bufferKey = key;
   } else if (instrumentType === 'melodic') {
     filePath = MELODIC_INSTRUMENTS[key] + noteOrChord + '.mp3';
-    bufferKey = `melodic-${MELODIC_INSTRUMENTS[key]}-${noteOrChord}`;
+    bufferKey = `melodic-${key}-${noteOrChord}`; // ← CORREÇÃO: Usa 'key', não 'MELODIC_INSTRUMENTS[key]'
   } else if (instrumentType === 'harmonic') {
     let root;
     if (noteOrChord.length >= 2 && ['AS','CS','DS','FS','GS'].includes(noteOrChord.slice(0, 2))) {
@@ -542,15 +543,18 @@ async function loadSample(instrumentType, key, noteOrChord) {
       root = noteOrChord[0];
     }
     filePath = HARMONIC_INSTRUMENTS[key] + root + '/' + noteOrChord + '.mp3';
-    bufferKey = `harmonic-${HARMONIC_INSTRUMENTS[key]}-${noteOrChord}`;
+    bufferKey = `harmonic-${key}-${noteOrChord}`; // ← CORREÇÃO: Usa 'key', não 'HARMONIC_INSTRUMENTS[key]'
   }
+
   if (!filePath) return;
   if (state.loadedSamples.has(bufferKey)) return;
+
   try {
     const response = await fetch(filePath);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const arrayBuffer = await response.arrayBuffer();
     const buffer = await state.audioCtx.decodeAudioData(arrayBuffer);
+
     if (instrumentType === 'drum') {
       state.buffers.drums[bufferKey] = buffer;
     } else if (instrumentType === 'melodic') {
@@ -558,6 +562,7 @@ async function loadSample(instrumentType, key, noteOrChord) {
     } else if (instrumentType === 'harmonic') {
       state.buffers.harmonic[bufferKey] = buffer;
     }
+
     state.loadedSamples.add(bufferKey);
     console.log(`✅ Carregado: ${filePath} → chave: ${bufferKey}`);
   } catch (err) {
@@ -793,15 +798,51 @@ function addCompasso() {
       cell.className = 'cell';
       cell.dataset.step = grid.children.length;
       cell.textContent = 'C';
-      cell.addEventListener('click', function() {
-        const currentIndex = AVAILABLE_CHORDS.indexOf(this.textContent);
-        const nextIndex = (currentIndex + 1) % AVAILABLE_CHORDS.length;
-        this.textContent = AVAILABLE_CHORDS[nextIndex];
-        if (state.currentlyPlaying.harmony !== null) {
-          state.currentlyPlaying.harmony = null;
-        }
-        loadSample('harmonic', this.parentElement.querySelector('.instrument-select').value, this.textContent);
-      });
+      cell.addEventListener('click', function(e) {
+  e.stopPropagation(); // Impede propagação
+
+  const dropdown = document.createElement('select');
+  dropdown.style.position = 'absolute';
+  dropdown.style.zIndex = '1000';
+  dropdown.style.fontSize = '12px';
+  dropdown.style.padding = '2px';
+  dropdown.style.backgroundColor = '#444';
+  dropdown.style.color = 'white';
+  dropdown.style.border = '1px solid #5eead4';
+
+  AVAILABLE_CHORDS.forEach(chord => {
+    const option = document.createElement('option');
+    option.value = chord;
+    option.textContent = chord;
+    dropdown.appendChild(option);
+  });
+
+  const cellRect = this.getBoundingClientRect();
+  dropdown.style.top = `${cellRect.top + window.scrollY}px`;
+  dropdown.style.left = `${cellRect.left + window.scrollX}px`;
+  dropdown.style.width = `${cellRect.width}px`;
+  dropdown.value = this.textContent;
+
+  document.body.appendChild(dropdown);
+  dropdown.focus();
+
+  dropdown.addEventListener('change', () => {
+    this.textContent = dropdown.value;
+    if (state.currentlyPlaying.harmony !== null) {
+      state.currentlyPlaying.harmony = null;
+    }
+    loadSample('harmonic', this.parentElement.querySelector('.instrument-select').value, this.textContent);
+    document.body.removeChild(dropdown);
+  });
+
+  const handleClickOutside = (e) => {
+    if (!dropdown.contains(e.target) && e.target !== this) {
+      document.body.removeChild(dropdown);
+      document.removeEventListener('click', handleClickOutside);
+    }
+  };
+  document.addEventListener('click', handleClickOutside);
+});
       cell.addEventListener('dblclick', function() {
         if (this.textContent === 'X') {
           this.textContent = 'C';
@@ -824,26 +865,53 @@ function addCompasso() {
         cell.className = 'cell';
         cell.dataset.step = grid.children.length;
         cell.textContent = ALL_NOTES[0];
-        cell.addEventListener('click', function(e) {
-          const rect = this.getBoundingClientRect();
-          const clickX = e.clientX - rect.left;
-          const centerX = rect.width / 2;
-          let currentText = this.textContent;
-          let currentIndex = ALL_NOTES.indexOf(currentText);
-          if (clickX < centerX) {
-            currentIndex = (currentIndex - 1 + ALL_NOTES.length) % ALL_NOTES.length;
-          } else {
-            currentIndex = (currentIndex + 1) % ALL_NOTES.length;
-          }
-          const newNote = ALL_NOTES[currentIndex];
-          this.textContent = newNote;
-          const instrument = this.parentElement.parentElement.querySelector('.instrument-select').value;
-          const category = this.parentElement.dataset.type.replace('Block', '').toLowerCase();
-          if (state.currentlyPlaying[category] !== null) {
-            state.currentlyPlaying[category] = null;
-          }
-          loadSample('melodic', instrument, this.textContent);
-        });
+       cell.addEventListener('click', function(e) {
+  e.stopPropagation(); // Impede propagação
+
+  const dropdown = document.createElement('select');
+  dropdown.style.position = 'absolute';
+  dropdown.style.zIndex = '1000';
+  dropdown.style.fontSize = '12px';
+  dropdown.style.padding = '2px';
+  dropdown.style.backgroundColor = '#444';
+  dropdown.style.color = 'white';
+  dropdown.style.border = '1px solid #555';
+
+  ALL_NOTES.forEach(note => {
+    const option = document.createElement('option');
+    option.value = note;
+    option.textContent = note;
+    dropdown.appendChild(option);
+  });
+
+  const cellRect = this.getBoundingClientRect();
+  dropdown.style.top = `${cellRect.top + window.scrollY}px`;
+  dropdown.style.left = `${cellRect.left + window.scrollX}px`;
+  dropdown.style.width = `${cellRect.width}px`;
+  dropdown.value = this.textContent;
+
+  document.body.appendChild(dropdown);
+  dropdown.focus();
+
+  dropdown.addEventListener('change', () => {
+    this.textContent = dropdown.value;
+    const instrument = this.parentElement.parentElement.querySelector('.instrument-select').value;
+    const category = type.replace('Block', '').toLowerCase();
+    if (state.currentlyPlaying[category] !== null) {
+      state.currentlyPlaying[category] = null;
+    }
+    loadSample('melodic', instrument, this.textContent);
+    document.body.removeChild(dropdown);
+  });
+
+  const handleClickOutside = (e) => {
+    if (!dropdown.contains(e.target) && e.target !== this) {
+      document.body.removeChild(dropdown);
+      document.removeEventListener('click', handleClickOutside);
+    }
+  };
+  document.addEventListener('click', handleClickOutside);
+});
         cell.addEventListener('dblclick', function() {
           if (this.textContent === 'X') {
             this.textContent = ALL_NOTES[0];
@@ -1006,13 +1074,13 @@ function playNote(instrumentKey, note, time, gainNode, volume = 1.0) {
 }
 function playChord(instrumentKey, chord, time, gainNode, volume = 1.0) {
   if (!state.audioCtx) return;
-  let root;
-  if (chord.length >= 2 && ['AS','CS','DS','FS','GS'].includes(chord.slice(0, 2))) {
-    root = chord.slice(0, 2);
-  } else {
-    root = chord[0];
-  }
-  const bufferKey = `harmonic-${HARMONIC_INSTRUMENTS[instrumentKey]}-${chord}`;
+  // let root; // Não é mais necessário para a chave do buffer
+  // if (chord.length >= 2 && ['AS','CS','DS','FS','GS'].includes(chord.slice(0, 2))) {
+  //   root = chord.slice(0, 2);
+  // } else {
+  //   root = chord[0];
+  // }
+  const bufferKey = `harmonic-${instrumentKey}-${chord}`; // ← CORREÇÃO: Usa o novo formato
   const buffer = state.buffers.harmonic[bufferKey];
   if (!buffer) {
     console.warn(`Acorde não encontrado: ${instrumentKey}/${chord}`);
@@ -1078,11 +1146,11 @@ function onPlay() {
     const samplesToLoad = new Set();
     // Harmonia
     state.playbackPlan.harmony.forEach(item => {
-      if (item && item.chord !== 'X') {
-        const bufferKey = `harmonic-${HARMONIC_INSTRUMENTS[item.instrument]}-${item.chord}`;
-        samplesToLoad.add(bufferKey);
-      }
-    });
+  if (item && item.chord !== 'X') {
+    const bufferKey = `harmonic-${item.instrument}-${item.chord}`; // ← CORREÇÃO
+    samplesToLoad.add(bufferKey);
+  }
+});
     // Melódicas
     ['bass', 'melody1', 'melody2'].forEach(type => {
       state.playbackPlan[type].forEach(item => {
@@ -1184,19 +1252,19 @@ async function renderAndDownloadWAV(durationInSeconds) {
       const time = step * sixteenthDur;
       // Harmonia
       if (step < state.playbackPlan.harmony.length && state.playbackPlan.harmony[step]) {
-        const item = state.playbackPlan.harmony[step];
-        if (item && item.chord !== 'X') {
-          const bufferKey = `harmonic-${HARMONIC_INSTRUMENTS[item.instrument]}-${item.chord}`;
-          const buffer = state.buffers.harmonic[bufferKey];
-          if (buffer) {
-            const source = offlineCtx.createBufferSource();
-            source.buffer = buffer;
-            source.connect(harmonicGain);
-            source.start(time);
-            source.stop(time + 1.0); // Semínima = 1.0s
-          }
-        }
-      }
+  const item = state.playbackPlan.harmony[step];
+  if (item && item.chord !== 'X') {
+    const bufferKey = `harmonic-${item.instrument}-${item.chord}`; // ← CORREÇÃO
+    const buffer = state.buffers.harmonic[bufferKey];
+    if (buffer) {
+      const source = offlineCtx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(harmonicGain);
+      source.start(time);
+      source.stop(time + 1.0); // Semínima = 1.0s
+    }
+  }
+}
       // Baixo
       if (step < state.playbackPlan.bass.length && state.playbackPlan.bass[step]) {
         const item = state.playbackPlan.bass[step];
