@@ -246,6 +246,58 @@
       margin: 20px 0;
       font-weight: bold;
     }
+
+    /* ===== ESTILO DO MODAL ===== */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+    }
+    .modal {
+      background: #2a2a2a;
+      border: 2px solid #5eead4;
+      border-radius: 12px;
+      padding: 20px;
+      max-width: 90%;
+      max-height: 90%;
+      overflow-y: auto;
+      box-shadow: 0 0 30px rgba(94, 234, 212, 0.5);
+    }
+    .modal h2 {
+      color: #5eead4;
+      margin-top: 0;
+      text-align: center;
+    }
+    .modal-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+      gap: 8px;
+      margin-top: 20px;
+    }
+    .modal-option {
+      padding: 10px;
+      background: #333;
+      border: 1px solid #555;
+      border-radius: 6px;
+      text-align: center;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .modal-option:hover {
+      background: #444;
+    }
+    .modal-option.x {
+      background: #555;
+      color: #888;
+    }
+
     @media (max-width: 768px) {
       .cell, .drum-cell { 
         width: 35px;
@@ -321,6 +373,17 @@
       <strong>Clique 8 vezes em qualquer célula para preparar os sons.</strong>
     </div>
   </div>
+
+  <!-- MODAL (inicialmente oculto) -->
+  <div id="selectionModal" class="modal-overlay" style="display: none;">
+    <div class="modal">
+      <h2 id="modalTitle">Selecione uma opção</h2>
+      <div id="modalGrid" class="modal-grid">
+        <!-- As opções serão inseridas aqui dinamicamente -->
+      </div>
+    </div>
+  </div>
+
  <script>
 // ===== CONSTANTES =====
 const AVAILABLE_CHORDS = [
@@ -435,7 +498,13 @@ const state = {
     melody2: null,
     harmony: null
   },
-  playbackPlan: null
+  playbackPlan: null,
+  // Estado do Modal
+  modal: {
+    targetCell: null,
+    type: null, // 'harmony' ou 'melodic'
+    instrumentKey: null
+  }
 };
 // ===== ELEMENTOS =====
 const ui = {
@@ -451,7 +520,10 @@ const ui = {
   bassContainer: document.getElementById('bassContainer'),
   melody1Container: document.getElementById('melody1Container'),
   melody2Container: document.getElementById('melody2Container'),
-  drumContainer: document.getElementById('drumContainer')
+  drumContainer: document.getElementById('drumContainer'),
+  selectionModal: document.getElementById('selectionModal'),
+  modalTitle: document.getElementById('modalTitle'),
+  modalGrid: document.getElementById('modalGrid')
 };
 // ===== INICIALIZAÇÃO =====
 async function initializeApp() {
@@ -513,6 +585,12 @@ function setupEventListeners() {
       }
     }
   });
+  // Evento para fechar o modal ao clicar fora dele
+  ui.selectionModal.addEventListener('click', function(e) {
+    if (e.target === this) {
+      closeModal();
+    }
+  });
 }
 function handleBPMChange() {
   state.bpm = parseInt(ui.bpmSlider.value);
@@ -548,7 +626,6 @@ async function loadSample(instrumentType, key, noteOrChord) {
     }
     filePath = HARMONIC_INSTRUMENTS[key] + root + '/' + noteOrChord + '.mp3';
     // CORREÇÃO FINAL: A chave do buffer é o caminho do arquivo em si
-    // Isso garante que a busca seja feita exatamente com o caminho usado para carregar
     bufferKey = filePath;
   }
   if (!filePath) return;
@@ -570,6 +647,54 @@ async function loadSample(instrumentType, key, noteOrChord) {
   } catch (err) {
     console.warn(`⚠️ Não encontrado: ${filePath}`);
   }
+}
+// ===== MODAL DE SELEÇÃO =====
+function openModal(type, options, targetCell, instrumentKey) {
+  state.modal.type = type;
+  state.modal.targetCell = targetCell;
+  state.modal.instrumentKey = instrumentKey;
+  ui.modalTitle.textContent = type === 'harmony' ? 'Selecione um Acorde' : 'Selecione uma Nota';
+  // Limpa o grid
+  ui.modalGrid.innerHTML = '';
+  // Preenche o grid com as opções
+  options.forEach(option => {
+    const div = document.createElement('div');
+    div.className = 'modal-option';
+    if (option === 'X') {
+      div.classList.add('x');
+    }
+    div.textContent = option;
+    div.addEventListener('click', function() {
+      targetCell.textContent = option;
+      if (option === 'X') {
+        targetCell.classList.add('x');
+      } else {
+        targetCell.classList.remove('x');
+      }
+      // Muta o som anterior
+      const category = type === 'harmony' ? 'harmony' : targetCell.parentElement.dataset.type.replace('Block', '').toLowerCase();
+      if (state.currentlyPlaying[category] !== null) {
+        state.currentlyPlaying[category] = null;
+      }
+      // Carrega a amostra
+      if (type === 'harmony') {
+        loadSample('harmonic', instrumentKey, option);
+      } else {
+        loadSample('melodic', instrumentKey, option);
+      }
+      closeModal();
+    });
+    ui.modalGrid.appendChild(div);
+  });
+  ui.selectionModal.style.display = 'flex';
+}
+function closeModal() {
+  ui.selectionModal.style.display = 'none';
+  state.modal = {
+    targetCell: null,
+    type: null,
+    instrumentKey: null
+  };
 }
 // ===== BLOCOS DE INSTRUMENTOS =====
 function addHarmonyBlock() {
@@ -597,70 +722,13 @@ function addHarmonyBlock() {
   grid.dataset.blockIndex = blockIndex;
   for (let i = 0; i < 2; i++) {
     const cell = document.createElement('div');
-    cell.className = 'cell';
+    cell.className = 'cell x'; // ← INICIALIZA COM 'X'
     cell.dataset.step = i;
-    cell.textContent = 'C'; // Inicializa com C
+    cell.textContent = 'X';
     cell.addEventListener('click', function(e) {
       e.stopPropagation(); // Impede propagação
-
-      // Cria o dropdown
-      const dropdown = document.createElement('select');
-      dropdown.style.position = 'absolute';
-      dropdown.style.zIndex = '1000';
-      dropdown.style.fontSize = '12px';
-      dropdown.style.padding = '2px';
-      dropdown.style.backgroundColor = '#444';
-      dropdown.style.color = 'white';
-      dropdown.style.border = '1px solid #5eead4';
-
-      // Preenche o dropdown com todos os acordes (incluindo 'X')
-      AVAILABLE_CHORDS.forEach(chord => {
-        const option = document.createElement('option');
-        option.value = chord;
-        option.textContent = chord;
-        dropdown.appendChild(option);
-      });
-
-      // Posiciona o dropdown sobre a célula
-      const cellRect = this.getBoundingClientRect();
-      dropdown.style.top = `${cellRect.top + window.scrollY}px`;
-      dropdown.style.left = `${cellRect.left + window.scrollX}px`;
-      dropdown.style.width = `${cellRect.width}px`;
-
-      // Define o valor selecionado como o texto atual da célula
-      dropdown.value = this.textContent;
-
-      // Adiciona o dropdown ao body
-      document.body.appendChild(dropdown);
-
-      // Foca no dropdown para facilitar a seleção
-      dropdown.focus();
-
-      // Evento para quando o usuário selecionar uma opção
-      dropdown.addEventListener('change', () => {
-        this.textContent = dropdown.value;
-        if (this.textContent === 'X') {
-          this.classList.add('x');
-        } else {
-          this.classList.remove('x');
-        }
-        if (state.currentlyPlaying.harmony !== null) {
-          state.currentlyPlaying.harmony = null;
-        }
-        loadSample('harmonic', this.parentElement.querySelector('.instrument-select').value, this.textContent);
-        document.body.removeChild(dropdown);
-      });
-
-      // Evento para remover o dropdown se o usuário clicar fora
-      const handleClickOutside = (e) => {
-        if (!dropdown.contains(e.target) && e.target !== this) {
-          if (document.body.contains(dropdown)) {
-            document.body.removeChild(dropdown);
-          }
-          document.removeEventListener('click', handleClickOutside);
-        }
-      };
-      document.addEventListener('click', handleClickOutside);
+      const instrumentKey = this.parentElement.querySelector('.instrument-select').value;
+      openModal('harmony', AVAILABLE_CHORDS, this, instrumentKey);
     });
     grid.appendChild(cell);
   }
@@ -797,72 +865,13 @@ function createNoteGrid(type, blockIndex, numCells) {
   grid.dataset.blockIndex = blockIndex;
   for (let i = 0; i < numCells; i++) {
     const cell = document.createElement('div');
-    cell.className = 'cell';
+    cell.className = 'cell x'; // ← INICIALIZA COM 'X'
     cell.dataset.step = i;
-    cell.textContent = ALL_NOTES[1]; // Inicia com 10CS (índice 1, pois índice 0 é 'X')
+    cell.textContent = 'X';
     cell.addEventListener('click', function(e) {
       e.stopPropagation(); // Impede propagação
-
-      // Cria o dropdown
-      const dropdown = document.createElement('select');
-      dropdown.style.position = 'absolute';
-      dropdown.style.zIndex = '1000';
-      dropdown.style.fontSize = '12px';
-      dropdown.style.padding = '2px';
-      dropdown.style.backgroundColor = '#444';
-      dropdown.style.color = 'white';
-      dropdown.style.border = '1px solid #555';
-
-      // Preenche o dropdown com todas as notas (incluindo 'X')
-      ALL_NOTES.forEach(note => {
-        const option = document.createElement('option');
-        option.value = note;
-        option.textContent = note;
-        dropdown.appendChild(option);
-      });
-
-      // Posiciona o dropdown sobre a célula
-      const cellRect = this.getBoundingClientRect();
-      dropdown.style.top = `${cellRect.top + window.scrollY}px`;
-      dropdown.style.left = `${cellRect.left + window.scrollX}px`;
-      dropdown.style.width = `${cellRect.width}px`;
-
-      // Define o valor selecionado como o texto atual da célula
-      dropdown.value = this.textContent;
-
-      // Adiciona o dropdown ao body
-      document.body.appendChild(dropdown);
-
-      // Foca no dropdown
-      dropdown.focus();
-
-      // Evento para quando o usuário selecionar uma opção
-      dropdown.addEventListener('change', () => {
-        this.textContent = dropdown.value;
-        if (this.textContent === 'X') {
-          this.classList.add('x');
-        } else {
-          this.classList.remove('x');
-        }
-        const instrument = this.parentElement.parentElement.querySelector('.instrument-select').value;
-        const category = type.replace('Block', '').toLowerCase();
-        if (state.currentlyPlaying[category] !== null) {
-          state.currentlyPlaying[category] = null;
-        }
-        loadSample('melodic', instrument, this.textContent);
-        document.body.removeChild(dropdown);
-      });
-
-      // Evento para remover o dropdown se o usuário clicar fora
-      const handleClickOutside = (e) => {
-        if (!dropdown.contains(e.target) && e.target !== this) {
-          if (document.body.contains(dropdown)) {
-            document.body.removeChild(dropdown);
-          }
-          document.removeEventListener('click', handleClickOutside);
-        }
-      };
-      document.addEventListener('click', handleClickOutside);
+      const instrumentKey = this.parentElement.parentElement.querySelector('.instrument-select').value;
+      openModal('melodic', ALL_NOTES, this, instrumentKey);
     });
     grid.appendChild(cell);
   }
@@ -876,70 +885,13 @@ function addCompasso() {
     if (!grid) return;
     for (let i = 0; i < 2; i++) {
       const cell = document.createElement('div');
-      cell.className = 'cell';
+      cell.className = 'cell x'; // ← INICIALIZA COM 'X'
       cell.dataset.step = grid.children.length;
-      cell.textContent = 'C';
+      cell.textContent = 'X';
       cell.addEventListener('click', function(e) {
         e.stopPropagation(); // Impede propagação
-
-        // Cria o dropdown
-        const dropdown = document.createElement('select');
-        dropdown.style.position = 'absolute';
-        dropdown.style.zIndex = '1000';
-        dropdown.style.fontSize = '12px';
-        dropdown.style.padding = '2px';
-        dropdown.style.backgroundColor = '#444';
-        dropdown.style.color = 'white';
-        dropdown.style.border = '1px solid #5eead4';
-
-        // Preenche o dropdown com todos os acordes
-        AVAILABLE_CHORDS.forEach(chord => {
-          const option = document.createElement('option');
-          option.value = chord;
-          option.textContent = chord;
-          dropdown.appendChild(option);
-        });
-
-        // Posiciona o dropdown sobre a célula
-        const cellRect = this.getBoundingClientRect();
-        dropdown.style.top = `${cellRect.top + window.scrollY}px`;
-        dropdown.style.left = `${cellRect.left + window.scrollX}px`;
-        dropdown.style.width = `${cellRect.width}px`;
-
-        // Define o valor selecionado como o texto atual da célula
-        dropdown.value = this.textContent;
-
-        // Adiciona o dropdown ao body
-        document.body.appendChild(dropdown);
-
-        // Foca no dropdown para facilitar a seleção
-        dropdown.focus();
-
-        // Evento para quando o usuário selecionar uma opção
-        dropdown.addEventListener('change', () => {
-          this.textContent = dropdown.value;
-          if (this.textContent === 'X') {
-            this.classList.add('x');
-          } else {
-            this.classList.remove('x');
-          }
-          if (state.currentlyPlaying.harmony !== null) {
-            state.currentlyPlaying.harmony = null;
-          }
-          loadSample('harmonic', this.parentElement.querySelector('.instrument-select').value, this.textContent);
-          document.body.removeChild(dropdown);
-        });
-
-        // Evento para remover o dropdown se o usuário clicar fora
-        const handleClickOutside = (e) => {
-          if (!dropdown.contains(e.target) && e.target !== this) {
-            if (document.body.contains(dropdown)) {
-              document.body.removeChild(dropdown);
-            }
-            document.removeEventListener('click', handleClickOutside);
-          }
-        };
-        document.addEventListener('click', handleClickOutside);
+        const instrumentKey = this.parentElement.querySelector('.instrument-select').value;
+        openModal('harmony', AVAILABLE_CHORDS, this, instrumentKey);
       });
       grid.appendChild(cell);
     }
@@ -952,72 +904,13 @@ function addCompasso() {
       if (!grid) return;
       for (let i = 0; i < 4; i++) {
         const cell = document.createElement('div');
-        cell.className = 'cell';
+        cell.className = 'cell x'; // ← INICIALIZA COM 'X'
         cell.dataset.step = grid.children.length;
-        cell.textContent = ALL_NOTES[1]; // Inicia com 10CS
+        cell.textContent = 'X';
         cell.addEventListener('click', function(e) {
           e.stopPropagation(); // Impede propagação
-
-          // Cria o dropdown
-          const dropdown = document.createElement('select');
-          dropdown.style.position = 'absolute';
-          dropdown.style.zIndex = '1000';
-          dropdown.style.fontSize = '12px';
-          dropdown.style.padding = '2px';
-          dropdown.style.backgroundColor = '#444';
-          dropdown.style.color = 'white';
-          dropdown.style.border = '1px solid #555';
-
-          // Preenche o dropdown com todas as notas
-          ALL_NOTES.forEach(note => {
-            const option = document.createElement('option');
-            option.value = note;
-            option.textContent = note;
-            dropdown.appendChild(option);
-          });
-
-          // Posiciona o dropdown sobre a célula
-          const cellRect = this.getBoundingClientRect();
-          dropdown.style.top = `${cellRect.top + window.scrollY}px`;
-          dropdown.style.left = `${cellRect.left + window.scrollX}px`;
-          dropdown.style.width = `${cellRect.width}px`;
-
-          // Define o valor selecionado como o texto atual da célula
-          dropdown.value = this.textContent;
-
-          // Adiciona o dropdown ao body
-          document.body.appendChild(dropdown);
-
-          // Foca no dropdown
-          dropdown.focus();
-
-          // Evento para quando o usuário selecionar uma opção
-          dropdown.addEventListener('change', () => {
-            this.textContent = dropdown.value;
-            if (this.textContent === 'X') {
-              this.classList.add('x');
-            } else {
-              this.classList.remove('x');
-            }
-            const instrument = this.parentElement.parentElement.querySelector('.instrument-select').value;
-            const category = this.parentElement.dataset.type.replace('Block', '').toLowerCase();
-            if (state.currentlyPlaying[category] !== null) {
-              state.currentlyPlaying[category] = null;
-            }
-            loadSample('melodic', instrument, this.textContent);
-            document.body.removeChild(dropdown);
-          });
-
-          // Evento para remover o dropdown se o usuário clicar fora
-          const handleClickOutside = (e) => {
-            if (!dropdown.contains(e.target) && e.target !== this) {
-              if (document.body.contains(dropdown)) {
-                document.body.removeChild(dropdown);
-              }
-              document.removeEventListener('click', handleClickOutside);
-            }
-          };
-          document.addEventListener('click', handleClickOutside);
+          const instrumentKey = this.parentElement.parentElement.querySelector('.instrument-select').value;
+          openModal('melodic', ALL_NOTES, this, instrumentKey);
         });
         grid.appendChild(cell);
       }
@@ -1288,9 +1181,6 @@ function onPlay() {
         return loadSample('melodic', instrumentKey, noteOrChord);
       } else if (bufferKey.includes('guitarra') || bufferKey.includes('PianoStringChord')) {
         // Para instrumentos harmônicos, o bufferKey é o próprio caminho
-        // Não precisamos fazer nada, pois loadSample já usa o caminho como chave
-        // Mas precisamos extrair o instrumentKey e o acorde do caminho para chamar loadSample
-        // Vamos fazer isso de forma robusta
         let instrumentKey = '';
         let chord = '';
         if (bufferKey.startsWith('guitarraDistorcao/')) {
