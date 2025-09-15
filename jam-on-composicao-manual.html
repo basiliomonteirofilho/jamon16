@@ -547,7 +547,9 @@ async function loadSample(instrumentType, key, noteOrChord) {
       root = noteOrChord[0];
     }
     filePath = HARMONIC_INSTRUMENTS[key] + root + '/' + noteOrChord + '.mp3';
-    bufferKey = `harmonic-${key}-${noteOrChord}`; // ← CORREÇÃO: Usa 'key', não 'HARMONIC_INSTRUMENTS[key]'
+    // CORREÇÃO FINAL: A chave do buffer é o caminho do arquivo em si
+    // Isso garante que a busca seja feita exatamente com o caminho usado para carregar
+    bufferKey = filePath;
   }
   if (!filePath) return;
   if (state.loadedSamples.has(bufferKey)) return;
@@ -1174,18 +1176,18 @@ function playNote(instrumentKey, note, time, gainNode, volume = 1.0) {
 }
 function playChord(instrumentKey, chord, time, gainNode, volume = 1.0) {
   if (!state.audioCtx) return;
-  // REMOVIDO: Código antigo que extraía a raiz (não é mais necessário para a chave do buffer)
-  // let root;
-  // if (chord.length >= 2 && ['AS','CS','DS','FS','GS'].includes(chord.slice(0, 2))) {
-  //   root = chord.slice(0, 2);
-  // } else {
-  //   root = chord[0];
-  // }
-  // CORREÇÃO: Usa o novo formato de chave
-  const bufferKey = `harmonic-${instrumentKey}-${chord}`;
-  const buffer = state.buffers.harmonic[bufferKey];
+  if (chord === 'X') return;
+  let root;
+  if (chord.length >= 2 && ['AS','CS','DS','FS','GS'].includes(chord.slice(0, 2))) {
+    root = chord.slice(0, 2);
+  } else {
+    root = chord[0];
+  }
+  // CORREÇÃO FINAL: Monta o caminho exato do arquivo e usa como chave
+  const filePath = HARMONIC_INSTRUMENTS[instrumentKey] + root + '/' + chord + '.mp3';
+  const buffer = state.buffers.harmonic[filePath]; // ← BUSCA PELO CAMINHO COMPLETO
   if (!buffer) {
-    console.warn(`Acorde não encontrado: ${instrumentKey}/${chord}`);
+    console.warn(`Acorde não encontrado: ${filePath}`);
     return;
   }
   const source = state.audioCtx.createBufferSource();
@@ -1249,9 +1251,15 @@ function onPlay() {
     // Harmonia
     state.playbackPlan.harmony.forEach(item => {
       if (item && item.chord !== 'X') {
-        // CORREÇÃO: Usa o novo formato de chave
-        const bufferKey = `harmonic-${item.instrument}-${item.chord}`;
-        samplesToLoad.add(bufferKey);
+        // CORREÇÃO FINAL: Monta o caminho exato do arquivo
+        let root;
+        if (item.chord.length >= 2 && ['AS','CS','DS','FS','GS'].includes(item.chord.slice(0, 2))) {
+          root = item.chord.slice(0, 2);
+        } else {
+          root = item.chord[0];
+        }
+        const filePath = HARMONIC_INSTRUMENTS[item.instrument] + root + '/' + item.chord + '.mp3';
+        samplesToLoad.add(filePath);
       }
     });
     // Melódicas
@@ -1273,12 +1281,34 @@ function onPlay() {
     ui.btnSaveWAV.disabled = true;
     ui.countdown.style.display = 'block';
     const promises = Array.from(samplesToLoad).map(bufferKey => {
-      if (bufferKey.includes('melodic-') || bufferKey.includes('harmonic-')) {
+      if (bufferKey.includes('melodic-')) {
         const parts = bufferKey.split('-');
-        const type = bufferKey.startsWith('melodic') ? 'melodic' : 'harmonic';
         const instrumentKey = parts[1];
         const noteOrChord = parts.slice(2).join('-'); // Caso a nota tenha hífen
-        return loadSample(type, instrumentKey, noteOrChord);
+        return loadSample('melodic', instrumentKey, noteOrChord);
+      } else if (bufferKey.includes('guitarra') || bufferKey.includes('PianoStringChord')) {
+        // Para instrumentos harmônicos, o bufferKey é o próprio caminho
+        // Não precisamos fazer nada, pois loadSample já usa o caminho como chave
+        // Mas precisamos extrair o instrumentKey e o acorde do caminho para chamar loadSample
+        // Vamos fazer isso de forma robusta
+        let instrumentKey = '';
+        let chord = '';
+        if (bufferKey.startsWith('guitarraDistorcao/')) {
+          instrumentKey = 'distorted-guitar';
+          chord = bufferKey.replace('guitarraDistorcao/', '').replace('.mp3', '').split('/').pop();
+        } else if (bufferKey.startsWith('guitarraLimpa/')) {
+          instrumentKey = 'clean-guitar';
+          chord = bufferKey.replace('guitarraLimpa/', '').replace('.mp3', '').split('/').pop();
+        } else if (bufferKey.startsWith('assets/PianoStringChord/')) {
+          instrumentKey = 'piano-chord';
+          chord = bufferKey.replace('assets/PianoStringChord/', '').replace('.mp3', '').split('/').pop();
+        }
+        if (instrumentKey && chord) {
+          return loadSample('harmonic', instrumentKey, chord);
+        } else {
+          console.warn('Caminho de acorde inválido:', bufferKey);
+          return Promise.resolve();
+        }
       } else {
         return loadSample('drum', bufferKey, '');
       }
@@ -1356,9 +1386,15 @@ async function renderAndDownloadWAV(durationInSeconds) {
       if (step < state.playbackPlan.harmony.length && state.playbackPlan.harmony[step]) {
         const item = state.playbackPlan.harmony[step];
         if (item && item.chord !== 'X') {
-          // CORREÇÃO: Usa o novo formato de chave
-          const bufferKey = `harmonic-${item.instrument}-${item.chord}`;
-          const buffer = state.buffers.harmonic[bufferKey];
+          // CORREÇÃO FINAL: Monta o caminho exato do arquivo
+          let root;
+          if (item.chord.length >= 2 && ['AS','CS','DS','FS','GS'].includes(item.chord.slice(0, 2))) {
+            root = item.chord.slice(0, 2);
+          } else {
+            root = item.chord[0];
+          }
+          const filePath = HARMONIC_INSTRUMENTS[item.instrument] + root + '/' + item.chord + '.mp3';
+          const buffer = state.buffers.harmonic[filePath]; // ← BUSCA PELO CAMINHO COMPLETO
           if (buffer) {
             const source = offlineCtx.createBufferSource();
             source.buffer = buffer;
