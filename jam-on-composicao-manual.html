@@ -316,8 +316,8 @@
       <button id="btnSaveWAV" class="primary" disabled>💾 Salvar como WAV</button>
     </div>
     <div class="instructions">
-      Clique em uma célula para escolher uma nota. Clique à esquerda do centro para diminuir, à direita para aumentar.<br>
-      Duplo clique para pausa (X). Use "+" para adicionar uma coluna em todos os instrumentos.<br>
+      Clique em uma célula para escolher uma nota ou acorde.<br>
+      Use "+" para adicionar uma coluna em todos os instrumentos.<br>
       <strong>Clique 8 vezes em qualquer célula para preparar os sons.</strong>
     </div>
   </div>
@@ -395,6 +395,7 @@ const DRUM_SAMPLES = [
   { key: 'chimbal', label: 'Chimbal Fechado', path: 'assets/chimbal.mp3' },
   { key: 'chimbal-aberto', label: 'Chimbal Aberto', path: 'assets/chimbal-aberto.mp3' },
   { key: 'conducao', label: 'Condução', path: 'assets/conducao.mp3' },
+  { key: 'conducao-centro', label: 'Condução Centro', path: 'assets/conducao-centro.mp3' },
   { key: 'surdo', label: 'Surdo', path: 'assets/surdo.mp3' },
   { key: 'tom-1', label: 'Tom 1', path: 'assets/tom-1.mp3' },
   { key: 'tom-2', label: 'Tom 2', path: 'assets/tom-2.mp3' }
@@ -526,7 +527,6 @@ function updateStatus(message, type) {
 async function loadSample(instrumentType, key, noteOrChord) {
   let filePath;
   let bufferKey;
-
   if (instrumentType === 'drum') {
     const sample = DRUM_SAMPLES.find(d => d.key === key);
     if (!sample) return;
@@ -545,16 +545,13 @@ async function loadSample(instrumentType, key, noteOrChord) {
     filePath = HARMONIC_INSTRUMENTS[key] + root + '/' + noteOrChord + '.mp3';
     bufferKey = `harmonic-${key}-${noteOrChord}`; // ← CORREÇÃO: Usa 'key', não 'HARMONIC_INSTRUMENTS[key]'
   }
-
   if (!filePath) return;
   if (state.loadedSamples.has(bufferKey)) return;
-
   try {
     const response = await fetch(filePath);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const arrayBuffer = await response.arrayBuffer();
     const buffer = await state.audioCtx.decodeAudioData(arrayBuffer);
-
     if (instrumentType === 'drum') {
       state.buffers.drums[bufferKey] = buffer;
     } else if (instrumentType === 'melodic') {
@@ -562,7 +559,6 @@ async function loadSample(instrumentType, key, noteOrChord) {
     } else if (instrumentType === 'harmonic') {
       state.buffers.harmonic[bufferKey] = buffer;
     }
-
     state.loadedSamples.add(bufferKey);
     console.log(`✅ Carregado: ${filePath} → chave: ${bufferKey}`);
   } catch (err) {
@@ -599,60 +595,62 @@ function addHarmonyBlock() {
     cell.dataset.step = i;
     cell.textContent = 'C'; // Inicializa com C
     cell.addEventListener('click', function(e) {
-  e.stopPropagation(); // Impede propagação para o handler de click outside
+      e.stopPropagation(); // Impede propagação
 
-  // Cria o dropdown
-  const dropdown = document.createElement('select');
-  dropdown.style.position = 'absolute';
-  dropdown.style.zIndex = '1000';
-  dropdown.style.fontSize = '12px';
-  dropdown.style.padding = '2px';
-  dropdown.style.backgroundColor = '#444';
-  dropdown.style.color = 'white';
-  dropdown.style.border = '1px solid #5eead4';
+      // Cria o dropdown
+      const dropdown = document.createElement('select');
+      dropdown.style.position = 'absolute';
+      dropdown.style.zIndex = '1000';
+      dropdown.style.fontSize = '12px';
+      dropdown.style.padding = '2px';
+      dropdown.style.backgroundColor = '#444';
+      dropdown.style.color = 'white';
+      dropdown.style.border = '1px solid #5eead4';
 
-  // Preenche o dropdown com todos os acordes
-  AVAILABLE_CHORDS.forEach(chord => {
-    const option = document.createElement('option');
-    option.value = chord;
-    option.textContent = chord;
-    dropdown.appendChild(option);
-  });
+      // Preenche o dropdown com todos os acordes
+      AVAILABLE_CHORDS.forEach(chord => {
+        const option = document.createElement('option');
+        option.value = chord;
+        option.textContent = chord;
+        dropdown.appendChild(option);
+      });
 
-  // Posiciona o dropdown sobre a célula
-  const cellRect = this.getBoundingClientRect();
-  dropdown.style.top = `${cellRect.top + window.scrollY}px`;
-  dropdown.style.left = `${cellRect.left + window.scrollX}px`;
-  dropdown.style.width = `${cellRect.width}px`;
+      // Posiciona o dropdown sobre a célula
+      const cellRect = this.getBoundingClientRect();
+      dropdown.style.top = `${cellRect.top + window.scrollY}px`;
+      dropdown.style.left = `${cellRect.left + window.scrollX}px`;
+      dropdown.style.width = `${cellRect.width}px`;
 
-  // Define o valor selecionado como o texto atual da célula
-  dropdown.value = this.textContent;
+      // Define o valor selecionado como o texto atual da célula
+      dropdown.value = this.textContent;
 
-  // Adiciona o dropdown ao body
-  document.body.appendChild(dropdown);
+      // Adiciona o dropdown ao body
+      document.body.appendChild(dropdown);
 
-  // Foca no dropdown para facilitar a seleção
-  dropdown.focus();
+      // Foca no dropdown para facilitar a seleção
+      dropdown.focus();
 
-  // Evento para quando o usuário selecionar uma opção
-  dropdown.addEventListener('change', () => {
-    this.textContent = dropdown.value;
-    if (state.currentlyPlaying.harmony !== null) {
-      state.currentlyPlaying.harmony = null;
-    }
-    loadSample('harmonic', this.parentElement.querySelector('.instrument-select').value, this.textContent);
-    document.body.removeChild(dropdown);
-  });
+      // Evento para quando o usuário selecionar uma opção
+      dropdown.addEventListener('change', () => {
+        this.textContent = dropdown.value;
+        if (state.currentlyPlaying.harmony !== null) {
+          state.currentlyPlaying.harmony = null;
+        }
+        loadSample('harmonic', this.parentElement.querySelector('.instrument-select').value, this.textContent);
+        document.body.removeChild(dropdown);
+      });
 
-  // Evento para remover o dropdown se o usuário clicar fora
-  const handleClickOutside = (e) => {
-    if (!dropdown.contains(e.target) && e.target !== this) {
-      document.body.removeChild(dropdown);
-      document.removeEventListener('click', handleClickOutside);
-    }
-  };
-  document.addEventListener('click', handleClickOutside);
-});
+      // Evento para remover o dropdown se o usuário clicar fora
+      const handleClickOutside = (e) => {
+        if (!dropdown.contains(e.target) && e.target !== this) {
+          if (document.body.contains(dropdown)) {
+            document.body.removeChild(dropdown);
+          }
+          document.removeEventListener('click', handleClickOutside);
+        }
+      };
+      document.addEventListener('click', handleClickOutside);
+    });
     cell.addEventListener('dblclick', function() {
       if (this.textContent === 'X') {
         this.textContent = 'C';
@@ -801,62 +799,64 @@ function createNoteGrid(type, blockIndex, numCells) {
     cell.dataset.step = i;
     cell.textContent = ALL_NOTES[0]; // Inicia com 10CS
     cell.addEventListener('click', function(e) {
-  e.stopPropagation(); // Impede propagação
+      e.stopPropagation(); // Impede propagação
 
-  // Cria o dropdown
-  const dropdown = document.createElement('select');
-  dropdown.style.position = 'absolute';
-  dropdown.style.zIndex = '1000';
-  dropdown.style.fontSize = '12px';
-  dropdown.style.padding = '2px';
-  dropdown.style.backgroundColor = '#444';
-  dropdown.style.color = 'white';
-  dropdown.style.border = '1px solid #555';
+      // Cria o dropdown
+      const dropdown = document.createElement('select');
+      dropdown.style.position = 'absolute';
+      dropdown.style.zIndex = '1000';
+      dropdown.style.fontSize = '12px';
+      dropdown.style.padding = '2px';
+      dropdown.style.backgroundColor = '#444';
+      dropdown.style.color = 'white';
+      dropdown.style.border = '1px solid #555';
 
-  // Preenche o dropdown com todas as notas
-  ALL_NOTES.forEach(note => {
-    const option = document.createElement('option');
-    option.value = note;
-    option.textContent = note;
-    dropdown.appendChild(option);
-  });
+      // Preenche o dropdown com todas as notas
+      ALL_NOTES.forEach(note => {
+        const option = document.createElement('option');
+        option.value = note;
+        option.textContent = note;
+        dropdown.appendChild(option);
+      });
 
-  // Posiciona o dropdown sobre a célula
-  const cellRect = this.getBoundingClientRect();
-  dropdown.style.top = `${cellRect.top + window.scrollY}px`;
-  dropdown.style.left = `${cellRect.left + window.scrollX}px`;
-  dropdown.style.width = `${cellRect.width}px`;
+      // Posiciona o dropdown sobre a célula
+      const cellRect = this.getBoundingClientRect();
+      dropdown.style.top = `${cellRect.top + window.scrollY}px`;
+      dropdown.style.left = `${cellRect.left + window.scrollX}px`;
+      dropdown.style.width = `${cellRect.width}px`;
 
-  // Define o valor selecionado como o texto atual da célula
-  dropdown.value = this.textContent;
+      // Define o valor selecionado como o texto atual da célula
+      dropdown.value = this.textContent;
 
-  // Adiciona o dropdown ao body
-  document.body.appendChild(dropdown);
+      // Adiciona o dropdown ao body
+      document.body.appendChild(dropdown);
 
-  // Foca no dropdown
-  dropdown.focus();
+      // Foca no dropdown
+      dropdown.focus();
 
-  // Evento para quando o usuário selecionar uma opção
-  dropdown.addEventListener('change', () => {
-    this.textContent = dropdown.value;
-    const instrument = this.parentElement.parentElement.querySelector('.instrument-select').value;
-    const category = type.replace('Block', '').toLowerCase();
-    if (state.currentlyPlaying[category] !== null) {
-      state.currentlyPlaying[category] = null;
-    }
-    loadSample('melodic', instrument, this.textContent);
-    document.body.removeChild(dropdown);
-  });
+      // Evento para quando o usuário selecionar uma opção
+      dropdown.addEventListener('change', () => {
+        this.textContent = dropdown.value;
+        const instrument = this.parentElement.parentElement.querySelector('.instrument-select').value;
+        const category = type.replace('Block', '').toLowerCase();
+        if (state.currentlyPlaying[category] !== null) {
+          state.currentlyPlaying[category] = null;
+        }
+        loadSample('melodic', instrument, this.textContent);
+        document.body.removeChild(dropdown);
+      });
 
-  // Evento para remover o dropdown se o usuário clicar fora
-  const handleClickOutside = (e) => {
-    if (!dropdown.contains(e.target) && e.target !== this) {
-      document.body.removeChild(dropdown);
-      document.removeEventListener('click', handleClickOutside);
-    }
-  };
-  document.addEventListener('click', handleClickOutside);
-});
+      // Evento para remover o dropdown se o usuário clicar fora
+      const handleClickOutside = (e) => {
+        if (!dropdown.contains(e.target) && e.target !== this) {
+          if (document.body.contains(dropdown)) {
+            document.body.removeChild(dropdown);
+          }
+          document.removeEventListener('click', handleClickOutside);
+        }
+      };
+      document.addEventListener('click', handleClickOutside);
+    });
     cell.addEventListener('dblclick', function() {
       if (this.textContent === 'X') {
         this.textContent = ALL_NOTES[0];
@@ -882,50 +882,62 @@ function addCompasso() {
       cell.dataset.step = grid.children.length;
       cell.textContent = 'C';
       cell.addEventListener('click', function(e) {
-  e.stopPropagation(); // Impede propagação
+        e.stopPropagation(); // Impede propagação
 
-  const dropdown = document.createElement('select');
-  dropdown.style.position = 'absolute';
-  dropdown.style.zIndex = '1000';
-  dropdown.style.fontSize = '12px';
-  dropdown.style.padding = '2px';
-  dropdown.style.backgroundColor = '#444';
-  dropdown.style.color = 'white';
-  dropdown.style.border = '1px solid #5eead4';
+        // Cria o dropdown
+        const dropdown = document.createElement('select');
+        dropdown.style.position = 'absolute';
+        dropdown.style.zIndex = '1000';
+        dropdown.style.fontSize = '12px';
+        dropdown.style.padding = '2px';
+        dropdown.style.backgroundColor = '#444';
+        dropdown.style.color = 'white';
+        dropdown.style.border = '1px solid #5eead4';
 
-  AVAILABLE_CHORDS.forEach(chord => {
-    const option = document.createElement('option');
-    option.value = chord;
-    option.textContent = chord;
-    dropdown.appendChild(option);
-  });
+        // Preenche o dropdown com todos os acordes
+        AVAILABLE_CHORDS.forEach(chord => {
+          const option = document.createElement('option');
+          option.value = chord;
+          option.textContent = chord;
+          dropdown.appendChild(option);
+        });
 
-  const cellRect = this.getBoundingClientRect();
-  dropdown.style.top = `${cellRect.top + window.scrollY}px`;
-  dropdown.style.left = `${cellRect.left + window.scrollX}px`;
-  dropdown.style.width = `${cellRect.width}px`;
-  dropdown.value = this.textContent;
+        // Posiciona o dropdown sobre a célula
+        const cellRect = this.getBoundingClientRect();
+        dropdown.style.top = `${cellRect.top + window.scrollY}px`;
+        dropdown.style.left = `${cellRect.left + window.scrollX}px`;
+        dropdown.style.width = `${cellRect.width}px`;
 
-  document.body.appendChild(dropdown);
-  dropdown.focus();
+        // Define o valor selecionado como o texto atual da célula
+        dropdown.value = this.textContent;
 
-  dropdown.addEventListener('change', () => {
-    this.textContent = dropdown.value;
-    if (state.currentlyPlaying.harmony !== null) {
-      state.currentlyPlaying.harmony = null;
-    }
-    loadSample('harmonic', this.parentElement.querySelector('.instrument-select').value, this.textContent);
-    document.body.removeChild(dropdown);
-  });
+        // Adiciona o dropdown ao body
+        document.body.appendChild(dropdown);
 
-  const handleClickOutside = (e) => {
-    if (!dropdown.contains(e.target) && e.target !== this) {
-      document.body.removeChild(dropdown);
-      document.removeEventListener('click', handleClickOutside);
-    }
-  };
-  document.addEventListener('click', handleClickOutside);
-});
+        // Foca no dropdown para facilitar a seleção
+        dropdown.focus();
+
+        // Evento para quando o usuário selecionar uma opção
+        dropdown.addEventListener('change', () => {
+          this.textContent = dropdown.value;
+          if (state.currentlyPlaying.harmony !== null) {
+            state.currentlyPlaying.harmony = null;
+          }
+          loadSample('harmonic', this.parentElement.querySelector('.instrument-select').value, this.textContent);
+          document.body.removeChild(dropdown);
+        });
+
+        // Evento para remover o dropdown se o usuário clicar fora
+        const handleClickOutside = (e) => {
+          if (!dropdown.contains(e.target) && e.target !== this) {
+            if (document.body.contains(dropdown)) {
+              document.body.removeChild(dropdown);
+            }
+            document.removeEventListener('click', handleClickOutside);
+          }
+        };
+        document.addEventListener('click', handleClickOutside);
+      });
       cell.addEventListener('dblclick', function() {
         if (this.textContent === 'X') {
           this.textContent = 'C';
@@ -939,7 +951,7 @@ function addCompasso() {
     }
   });
   // Baixo, Melodia 1, Melodia 2: +4 células cada
-  [state.bassBlocks, state.melody1Blocks, state.melody2Blocks].forEach(blocks => {
+  [state.bassBlocks, state.melody1Blocks, state.melody2Blocks].forEach((blocks, idx) => {
     blocks.forEach(block => {
       const grid = block.querySelector('.note-grid');
       if (!grid) return;
@@ -948,53 +960,65 @@ function addCompasso() {
         cell.className = 'cell';
         cell.dataset.step = grid.children.length;
         cell.textContent = ALL_NOTES[0];
-       cell.addEventListener('click', function(e) {
-  e.stopPropagation(); // Impede propagação
+        cell.addEventListener('click', function(e) {
+          e.stopPropagation(); // Impede propagação
 
-  const dropdown = document.createElement('select');
-  dropdown.style.position = 'absolute';
-  dropdown.style.zIndex = '1000';
-  dropdown.style.fontSize = '12px';
-  dropdown.style.padding = '2px';
-  dropdown.style.backgroundColor = '#444';
-  dropdown.style.color = 'white';
-  dropdown.style.border = '1px solid #555';
+          // Cria o dropdown
+          const dropdown = document.createElement('select');
+          dropdown.style.position = 'absolute';
+          dropdown.style.zIndex = '1000';
+          dropdown.style.fontSize = '12px';
+          dropdown.style.padding = '2px';
+          dropdown.style.backgroundColor = '#444';
+          dropdown.style.color = 'white';
+          dropdown.style.border = '1px solid #555';
 
-  ALL_NOTES.forEach(note => {
-    const option = document.createElement('option');
-    option.value = note;
-    option.textContent = note;
-    dropdown.appendChild(option);
-  });
+          // Preenche o dropdown com todas as notas
+          ALL_NOTES.forEach(note => {
+            const option = document.createElement('option');
+            option.value = note;
+            option.textContent = note;
+            dropdown.appendChild(option);
+          });
 
-  const cellRect = this.getBoundingClientRect();
-  dropdown.style.top = `${cellRect.top + window.scrollY}px`;
-  dropdown.style.left = `${cellRect.left + window.scrollX}px`;
-  dropdown.style.width = `${cellRect.width}px`;
-  dropdown.value = this.textContent;
+          // Posiciona o dropdown sobre a célula
+          const cellRect = this.getBoundingClientRect();
+          dropdown.style.top = `${cellRect.top + window.scrollY}px`;
+          dropdown.style.left = `${cellRect.left + window.scrollX}px`;
+          dropdown.style.width = `${cellRect.width}px`;
 
-  document.body.appendChild(dropdown);
-  dropdown.focus();
+          // Define o valor selecionado como o texto atual da célula
+          dropdown.value = this.textContent;
 
-  dropdown.addEventListener('change', () => {
-    this.textContent = dropdown.value;
-    const instrument = this.parentElement.parentElement.querySelector('.instrument-select').value;
-    const category = type.replace('Block', '').toLowerCase();
-    if (state.currentlyPlaying[category] !== null) {
-      state.currentlyPlaying[category] = null;
-    }
-    loadSample('melodic', instrument, this.textContent);
-    document.body.removeChild(dropdown);
-  });
+          // Adiciona o dropdown ao body
+          document.body.appendChild(dropdown);
 
-  const handleClickOutside = (e) => {
-    if (!dropdown.contains(e.target) && e.target !== this) {
-      document.body.removeChild(dropdown);
-      document.removeEventListener('click', handleClickOutside);
-    }
-  };
-  document.addEventListener('click', handleClickOutside);
-});
+          // Foca no dropdown
+          dropdown.focus();
+
+          // Evento para quando o usuário selecionar uma opção
+          dropdown.addEventListener('change', () => {
+            this.textContent = dropdown.value;
+            const instrument = this.parentElement.parentElement.querySelector('.instrument-select').value;
+            const category = this.parentElement.dataset.type.replace('Block', '').toLowerCase();
+            if (state.currentlyPlaying[category] !== null) {
+              state.currentlyPlaying[category] = null;
+            }
+            loadSample('melodic', instrument, this.textContent);
+            document.body.removeChild(dropdown);
+          });
+
+          // Evento para remover o dropdown se o usuário clicar fora
+          const handleClickOutside = (e) => {
+            if (!dropdown.contains(e.target) && e.target !== this) {
+              if (document.body.contains(dropdown)) {
+                document.body.removeChild(dropdown);
+              }
+              document.removeEventListener('click', handleClickOutside);
+            }
+          };
+          document.addEventListener('click', handleClickOutside);
+        });
         cell.addEventListener('dblclick', function() {
           if (this.textContent === 'X') {
             this.textContent = ALL_NOTES[0];
@@ -1008,7 +1032,7 @@ function addCompasso() {
       }
     });
   });
-  // BATERIA: ADICIONA 4 COLUNAS POR PEÇA (8 peças x 4 = 32 novas células)
+  // BATERIA: ADICIONA 4 COLUNAS POR PEÇA (10 peças x 4 = 40 novas células)
   state.drumBlocks.forEach(block => {
     const drumGrid = block.querySelector('.drum-grid');
     if (!drumGrid) return;
@@ -1222,12 +1246,12 @@ function onPlay() {
     buildPlaybackPlan();
     const samplesToLoad = new Set();
     // Harmonia
-   state.playbackPlan.harmony.forEach(item => {
-  if (item && item.chord !== 'X') {
-    const bufferKey = `harmonic-${item.instrument}-${item.chord}`; // ← CORREÇÃO
-    samplesToLoad.add(bufferKey);
-  }
-});
+    state.playbackPlan.harmony.forEach(item => {
+      if (item && item.chord !== 'X') {
+        const bufferKey = `harmonic-${item.instrument}-${item.chord}`; // ← CORREÇÃO
+        samplesToLoad.add(bufferKey);
+      }
+    });
     // Melódicas
     ['bass', 'melody1', 'melody2'].forEach(type => {
       state.playbackPlan[type].forEach(item => {
@@ -1248,12 +1272,11 @@ function onPlay() {
     ui.countdown.style.display = 'block';
     const promises = Array.from(samplesToLoad).map(bufferKey => {
       if (bufferKey.includes('melodic-') || bufferKey.includes('harmonic-')) {
-        const [_, inst, note] = bufferKey.split('-');
-        if (bufferKey.startsWith('melodic')) {
-          return loadSample('melodic', inst, note);
-        } else {
-          return loadSample('harmonic', inst, note);
-        }
+        const parts = bufferKey.split('-');
+        const type = bufferKey.startsWith('melodic') ? 'melodic' : 'harmonic';
+        const instrumentKey = parts[1];
+        const noteOrChord = parts.slice(2).join('-'); // Caso a nota tenha hífen
+        return loadSample(type, instrumentKey, noteOrChord);
       } else {
         return loadSample('drum', bufferKey, '');
       }
@@ -1295,7 +1318,7 @@ function onStop() {
   ui.btnStop.disabled = true;
   updateStatus('Reprodução parada', 'ready');
 }
-// ===== GRAVAÇÃO WAV (COPIADA DO SEGUNDO CÓDIGO — FUNCIONAL) =====
+// ===== GRAVAÇÃO WAV =====
 async function renderAndDownloadWAV(durationInSeconds) {
   if (!state.playbackPlan) {
     alert('Crie alguma música primeiro.');
@@ -1329,19 +1352,19 @@ async function renderAndDownloadWAV(durationInSeconds) {
       const time = step * sixteenthDur;
       // Harmonia
       if (step < state.playbackPlan.harmony.length && state.playbackPlan.harmony[step]) {
-  const item = state.playbackPlan.harmony[step];
-  if (item && item.chord !== 'X') {
-    const bufferKey = `harmonic-${item.instrument}-${item.chord}`; // ← CORREÇÃO
-    const buffer = state.buffers.harmonic[bufferKey];
-    if (buffer) {
-      const source = offlineCtx.createBufferSource();
-      source.buffer = buffer;
-      source.connect(harmonicGain);
-      source.start(time);
-      source.stop(time + 1.0); // Semínima = 1.0s
-    }
-  }
-}
+        const item = state.playbackPlan.harmony[step];
+        if (item && item.chord !== 'X') {
+          const bufferKey = `harmonic-${item.instrument}-${item.chord}`; // ← CORREÇÃO
+          const buffer = state.buffers.harmonic[bufferKey];
+          if (buffer) {
+            const source = offlineCtx.createBufferSource();
+            source.buffer = buffer;
+            source.connect(harmonicGain);
+            source.start(time);
+            source.stop(time + 1.0); // Semínima = 1.0s
+          }
+        }
+      }
       // Baixo
       if (step < state.playbackPlan.bass.length && state.playbackPlan.bass[step]) {
         const item = state.playbackPlan.bass[step];
@@ -1376,17 +1399,17 @@ async function renderAndDownloadWAV(durationInSeconds) {
       });
       // Bateria — usa o key direto
       Object.keys(state.playbackPlan.drums).forEach(key => {
-  if (step < state.playbackPlan.drums[key].length && state.playbackPlan.drums[key][step]) {
-    const buffer = state.buffers.drums[key]; // ← CORRETO: usa o key sem prefixo
-    if (buffer) {
-      const source = offlineCtx.createBufferSource();
-      source.buffer = buffer;
-      source.connect(drumGain);
-      source.start(time); 
-      // ❌ não corta o sample em 0.2s → toca até o final
-    }
-  }
-});
+        if (step < state.playbackPlan.drums[key].length && state.playbackPlan.drums[key][step]) {
+          const buffer = state.buffers.drums[key]; // ← CORRETO: usa o key sem prefixo
+          if (buffer) {
+            const source = offlineCtx.createBufferSource();
+            source.buffer = buffer;
+            source.connect(drumGain);
+            source.start(time); 
+            // ❌ não corta o sample em 0.2s → toca até o final
+          }
+        }
+      });
     }
     const renderedBuffer = await offlineCtx.startRendering();
     const wavBlob = audioBufferToWav(renderedBuffer);
