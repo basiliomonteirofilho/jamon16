@@ -598,15 +598,61 @@ function addHarmonyBlock() {
     cell.className = 'cell';
     cell.dataset.step = i;
     cell.textContent = 'C'; // Inicializa com C
-    cell.addEventListener('click', function() {
-      const currentIndex = AVAILABLE_CHORDS.indexOf(this.textContent);
-      const nextIndex = (currentIndex + 1) % AVAILABLE_CHORDS.length;
-      this.textContent = AVAILABLE_CHORDS[nextIndex];
-      if (state.currentlyPlaying.harmony !== null) {
-        state.currentlyPlaying.harmony = null;
-      }
-      loadSample('harmonic', this.parentElement.querySelector('.instrument-select').value, this.textContent);
-    });
+    cell.addEventListener('click', function(e) {
+  e.stopPropagation(); // Impede propagação para o handler de click outside
+
+  // Cria o dropdown
+  const dropdown = document.createElement('select');
+  dropdown.style.position = 'absolute';
+  dropdown.style.zIndex = '1000';
+  dropdown.style.fontSize = '12px';
+  dropdown.style.padding = '2px';
+  dropdown.style.backgroundColor = '#444';
+  dropdown.style.color = 'white';
+  dropdown.style.border = '1px solid #5eead4';
+
+  // Preenche o dropdown com todos os acordes
+  AVAILABLE_CHORDS.forEach(chord => {
+    const option = document.createElement('option');
+    option.value = chord;
+    option.textContent = chord;
+    dropdown.appendChild(option);
+  });
+
+  // Posiciona o dropdown sobre a célula
+  const cellRect = this.getBoundingClientRect();
+  dropdown.style.top = `${cellRect.top + window.scrollY}px`;
+  dropdown.style.left = `${cellRect.left + window.scrollX}px`;
+  dropdown.style.width = `${cellRect.width}px`;
+
+  // Define o valor selecionado como o texto atual da célula
+  dropdown.value = this.textContent;
+
+  // Adiciona o dropdown ao body
+  document.body.appendChild(dropdown);
+
+  // Foca no dropdown para facilitar a seleção
+  dropdown.focus();
+
+  // Evento para quando o usuário selecionar uma opção
+  dropdown.addEventListener('change', () => {
+    this.textContent = dropdown.value;
+    if (state.currentlyPlaying.harmony !== null) {
+      state.currentlyPlaying.harmony = null;
+    }
+    loadSample('harmonic', this.parentElement.querySelector('.instrument-select').value, this.textContent);
+    document.body.removeChild(dropdown);
+  });
+
+  // Evento para remover o dropdown se o usuário clicar fora
+  const handleClickOutside = (e) => {
+    if (!dropdown.contains(e.target) && e.target !== this) {
+      document.body.removeChild(dropdown);
+      document.removeEventListener('click', handleClickOutside);
+    }
+  };
+  document.addEventListener('click', handleClickOutside);
+});
     cell.addEventListener('dblclick', function() {
       if (this.textContent === 'X') {
         this.textContent = 'C';
@@ -755,25 +801,62 @@ function createNoteGrid(type, blockIndex, numCells) {
     cell.dataset.step = i;
     cell.textContent = ALL_NOTES[0]; // Inicia com 10CS
     cell.addEventListener('click', function(e) {
-      const rect = this.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      const centerX = rect.width / 2;
-      let currentText = this.textContent;
-      let currentIndex = ALL_NOTES.indexOf(currentText);
-      if (clickX < centerX) {
-        currentIndex = (currentIndex - 1 + ALL_NOTES.length) % ALL_NOTES.length;
-      } else {
-        currentIndex = (currentIndex + 1) % ALL_NOTES.length;
-      }
-      const newNote = ALL_NOTES[currentIndex];
-      this.textContent = newNote;
-      const instrument = this.parentElement.parentElement.querySelector('.instrument-select').value;
-      const category = type.replace('Block', '').toLowerCase();
-      if (state.currentlyPlaying[category] !== null) {
-        state.currentlyPlaying[category] = null; // Muta anterior
-      }
-      loadSample('melodic', instrument, this.textContent);
-    });
+  e.stopPropagation(); // Impede propagação
+
+  // Cria o dropdown
+  const dropdown = document.createElement('select');
+  dropdown.style.position = 'absolute';
+  dropdown.style.zIndex = '1000';
+  dropdown.style.fontSize = '12px';
+  dropdown.style.padding = '2px';
+  dropdown.style.backgroundColor = '#444';
+  dropdown.style.color = 'white';
+  dropdown.style.border = '1px solid #555';
+
+  // Preenche o dropdown com todas as notas
+  ALL_NOTES.forEach(note => {
+    const option = document.createElement('option');
+    option.value = note;
+    option.textContent = note;
+    dropdown.appendChild(option);
+  });
+
+  // Posiciona o dropdown sobre a célula
+  const cellRect = this.getBoundingClientRect();
+  dropdown.style.top = `${cellRect.top + window.scrollY}px`;
+  dropdown.style.left = `${cellRect.left + window.scrollX}px`;
+  dropdown.style.width = `${cellRect.width}px`;
+
+  // Define o valor selecionado como o texto atual da célula
+  dropdown.value = this.textContent;
+
+  // Adiciona o dropdown ao body
+  document.body.appendChild(dropdown);
+
+  // Foca no dropdown
+  dropdown.focus();
+
+  // Evento para quando o usuário selecionar uma opção
+  dropdown.addEventListener('change', () => {
+    this.textContent = dropdown.value;
+    const instrument = this.parentElement.parentElement.querySelector('.instrument-select').value;
+    const category = type.replace('Block', '').toLowerCase();
+    if (state.currentlyPlaying[category] !== null) {
+      state.currentlyPlaying[category] = null;
+    }
+    loadSample('melodic', instrument, this.textContent);
+    document.body.removeChild(dropdown);
+  });
+
+  // Evento para remover o dropdown se o usuário clicar fora
+  const handleClickOutside = (e) => {
+    if (!dropdown.contains(e.target) && e.target !== this) {
+      document.body.removeChild(dropdown);
+      document.removeEventListener('click', handleClickOutside);
+    }
+  };
+  document.addEventListener('click', handleClickOutside);
+});
     cell.addEventListener('dblclick', function() {
       if (this.textContent === 'X') {
         this.textContent = ALL_NOTES[0];
@@ -1074,12 +1157,6 @@ function playNote(instrumentKey, note, time, gainNode, volume = 1.0) {
 }
 function playChord(instrumentKey, chord, time, gainNode, volume = 1.0) {
   if (!state.audioCtx) return;
-  // let root; // Não é mais necessário para a chave do buffer
-  // if (chord.length >= 2 && ['AS','CS','DS','FS','GS'].includes(chord.slice(0, 2))) {
-  //   root = chord.slice(0, 2);
-  // } else {
-  //   root = chord[0];
-  // }
   const bufferKey = `harmonic-${instrumentKey}-${chord}`; // ← CORREÇÃO: Usa o novo formato
   const buffer = state.buffers.harmonic[bufferKey];
   if (!buffer) {
@@ -1145,7 +1222,7 @@ function onPlay() {
     buildPlaybackPlan();
     const samplesToLoad = new Set();
     // Harmonia
-    state.playbackPlan.harmony.forEach(item => {
+   state.playbackPlan.harmony.forEach(item => {
   if (item && item.chord !== 'X') {
     const bufferKey = `harmonic-${item.instrument}-${item.chord}`; // ← CORREÇÃO
     samplesToLoad.add(bufferKey);
