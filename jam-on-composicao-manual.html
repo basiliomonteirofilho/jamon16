@@ -1248,24 +1248,24 @@ function buildPlaybackPlan() {
   DRUM_SAMPLES.forEach(d => plan.drums[d.key] = []);
 
   // --- CORREÇÃO DEFINITIVA: Coleta todas as colunas da Harmonia ---
-  state.harmonyBlocks.forEach(harmonyBlock => {
-    const grid = harmonyBlock.wrapper.querySelector('.columns-grid');
-    const columns = grid.querySelectorAll('.column');
-    // Usa a referência armazenada ao criar o bloco
-    const instrument = harmonyBlock.instrumentSelect.value;
-    columns.forEach(column => {
-      const cell = column.querySelector('.cell');
-      const chordValue = getCellNoteValue(cell);
-      if (chordValue !== 'X') {
-        plan.harmony.push({
-          chord: chordValue,
-          instrument: instrument
-        });
-      } else {
-        plan.harmony.push(null);
-      }
-    });
+state.harmonyBlocks.forEach(harmonyBlock => {
+  const grid = harmonyBlock.wrapper.querySelector('.columns-grid');
+  const columns = grid.querySelectorAll('.column');
+  // Usa a referência armazenada ao criar o bloco
+  const instrument = harmonyBlock.instrumentSelect.value;
+  columns.forEach(column => {
+    const cell = column.querySelector('.cell');
+    const chordValue = getCellNoteValue(cell);
+    if (chordValue !== 'X') {
+      plan.harmony.push({
+        chord: chordValue,
+        instrument: instrument
+      });
+    } else {
+      plan.harmony.push(null);
+    }
   });
+});
 
   // Coleta todas as colunas dos instrumentos melódicos (Baixo, Melodia 1, Melodia 2)
   [state.bassBlocks, state.melody1Blocks, state.melody2Blocks].forEach((blocks, idx) => {
