@@ -533,18 +533,22 @@ const NOTE_FREQ = {
   'FS': 369.99, 'G': 392.00, 'GS': 415.30, 'A': 440.00, 'AS': 466.16, 'B': 493.88
 };
 const MELODIC_INSTRUMENTS = {
-  'acordeon': 'assets/AcordeonMelodia/',
-  'bass': 'assets/BaixoMelodia/',
-  'strings': 'assets/Cordas/',
-  'piano': 'assets/PianoString/',
-  'sax': 'assets/SaxMelodia/',
-  'acoustic-guitar': 'assets/ViolaoAcoMelodia/',
-  'nylon-guitar': 'assets/ViolaoNylonMelodia/'
+  'acordeon': 'assets/AcordeonMelodia/',       // assets/AcordeonMelodia/nota.mp3
+  'bass': 'assets/BaixoMelodia/',              // assets/BaixoMelodia/nota.mp3
+  'strings': 'assets/Cordas/',                 // assets/Cordas/nota.mp3
+  'piano': 'assets/PianoString/',              // assets/PianoString/nota.mp3
+  'sax': 'assets/SaxMelodia/',                 // assets/SaxMelodia/nota.mp3
+  'sinos': 'assets/SinosMelodia/',             // assets/SinosMelodia/nota.mp3 (adicionado)
+  'acoustic-guitar': 'assets/ViolaoAcoMelodia/', // assets/ViolaoAcoMelodia/nota.mp3
+  'nylon-guitar': 'assets/ViolaoNylonMelodia/',  // assets/ViolaoNylonMelodia/nota.mp3
+  'distorted-guitar-melody': 'guitarraDistorcao/Melodia/' // guitarraDistorcao/Melodia/nota.mp3
 };
+
+// ===== CORREÇÃO AQUI: Caminhos dos Instrumentos Harmônicos =====
 const HARMONIC_INSTRUMENTS = {
-  'distorted-guitar': 'guitarraDistorcao/',   // ← CORRETO: termina com /
-  'clean-guitar': 'guitarraLimpa/',          // ← CORRETO: termina com /
-  'piano-chord': 'assets/PianoStringChord/'  // ← CORRETO: termina com /
+  'distorted-guitar': 'guitarraDistorcao/',    // guitarraDistorcao/Nota/acorde.mp3
+  'clean-guitar': 'guitarraLimpa/',            // guitarraLimpa/Nota/acorde.mp3
+  'piano-chord': 'assets/PianoStringChord/'    // assets/PianoStringChord/Nota/acorde.mp3
 };
 const DRUM_SAMPLES = [
   { key: 'ataque', label: 'Prato De Ataque', path: 'assets/ataque.mp3' },
@@ -713,7 +717,7 @@ async function loadSample(instrumentType, key, noteOrChord) {
   } else if (instrumentType === 'melodic') {
     if (noteOrChord === 'X') return; // Ignora 'X'
     filePath = MELODIC_INSTRUMENTS[key] + noteOrChord + '.mp3';
-    bufferKey = `melodic-${key}-${noteOrChord}`; // ← CORREÇÃO: Usa 'key', não 'MELODIC_INSTRUMENTS[key]'
+    bufferKey = `melodic-${key}-${noteOrChord}`;
   } else if (instrumentType === 'harmonic') {
     if (noteOrChord === 'X') return; // Ignora 'X'
     let root;
@@ -722,9 +726,9 @@ async function loadSample(instrumentType, key, noteOrChord) {
     } else {
       root = noteOrChord[0];
     }
+    // Monta o caminho: HARMONIC_INSTRUMENTS[key] + root + '/' + noteOrChord + '.mp3'
     filePath = HARMONIC_INSTRUMENTS[key] + root + '/' + noteOrChord + '.mp3';
-    // CORREÇÃO FINAL: A chave do buffer é o caminho do arquivo em si
-    bufferKey = filePath;
+    bufferKey = filePath; // Usa o caminho completo como chave
   }
   if (!filePath) return;
   if (state.loadedSamples.has(bufferKey)) return;
@@ -896,10 +900,7 @@ function addBassBlock() {
   instrumentSelect.style.width = '120px';
   instrumentSelect.style.marginRight = '10px';
   instrumentSelect.innerHTML = `
-    <option value="bass">Baixo</option>
-    <option value="acoustic-guitar">Violão Aço</option>
-    <option value="nylon-guitar">Violão Nylon</option>
-    <option value="strings">Cordas</option>
+    <option value="bass">Baixo</option>   
   `;
   const block = document.createElement('div');
   block.className = 'instrument-block bass-block';
@@ -928,11 +929,14 @@ function addMelody1Block() {
   instrumentSelect.style.marginRight = '10px';
   instrumentSelect.innerHTML = `
     <option value="piano">Piano</option>
-    <option value="sax">Saxofone</option>
-    <option value="acordeon">Acordeon</option>
-    <option value="strings">Cordas</option>
-    <option value="acoustic-guitar">Violão Aço</option>
-    <option value="nylon-guitar">Violão Nylon</option>
+  <option value="sax">Saxofone</option>
+  <option value="acordeon">Acordeon</option>
+  <option value="strings">Cordas</option>
+  <option value="sinos">Sinos</option> <!-- Adicionado -->
+  <option value="acoustic-guitar">Violão Aço</option>
+  <option value="nylon-guitar">Violão Nylon</option>
+  <option value="distorted-guitar-melody">Guitarra Distorcida (Melodia)
+  </option>
   `;
   const block = document.createElement('div');
   block.className = 'instrument-block melody1-block';
@@ -960,12 +964,15 @@ function addMelody2Block() {
   instrumentSelect.style.width = '120px';
   instrumentSelect.style.marginRight = '10px';
   instrumentSelect.innerHTML = `
-    <option value="sax">Saxofone</option>
     <option value="piano">Piano</option>
-    <option value="acordeon">Acordeon</option>
-    <option value="strings">Cordas</option>
-    <option value="acoustic-guitar">Violão Aço</option>
-    <option value="nylon-guitar">Violão Nylon</option>
+  <option value="sax">Saxofone</option>
+  <option value="acordeon">Acordeon</option>
+  <option value="strings">Cordas</option>
+  <option value="sinos">Sinos</option> <!-- Adicionado -->
+  <option value="acoustic-guitar">Violão Aço</option>
+  <option value="nylon-guitar">Violão Nylon</option>
+  <option value="distorted-guitar-melody">Guitarra Distorcida (Melodia)
+  </option>
   `;
   const block = document.createElement('div');
   block.className = 'instrument-block melody2-block';
