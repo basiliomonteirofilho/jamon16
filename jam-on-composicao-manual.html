@@ -1165,17 +1165,28 @@ function addSemibreveMarkers(grid) {
   // Limpa marcadores existentes primeiro
   const existingMarkers = grid.querySelectorAll('.semibreve-marker');
   existingMarkers.forEach(marker => marker.remove());
-  // Adiciona um marcador a cada 4 colunas
+
   const columns = grid.querySelectorAll('.column');
-  for (let i = 4; i < columns.length; i += 4) {
-    const marker = document.createElement('div');
-    marker.className = 'semibreve-marker';
+  let cumulativeWidth = 0;
+
+  for (let i = 0; i < columns.length; i++) {
     const column = columns[i];
-    const columnRect = column.getBoundingClientRect();
-    const gridRect = grid.getBoundingClientRect();
-    const leftPosition = columnRect.left - gridRect.left;
-    marker.style.left = `${leftPosition}px`;
-    grid.appendChild(marker);
+    const columnWidth = column.offsetWidth;
+    const gap = 2; // Valor do 'gap' definido no CSS da .columns-grid
+
+    // Adiciona um marcador a cada 4 colunas, começando da 4ª (índice 3)
+    if ((i + 1) % 4 === 0 && i > 0) {
+      const marker = document.createElement('div');
+      marker.className = 'semibreve-marker';
+      // Calcula a posição à esquerda do marcador
+      // É a largura acumulada até a coluna atual, mais metade da largura da coluna atual para centralizar o marcador
+      const leftPosition = cumulativeWidth + columnWidth / 2;
+      marker.style.left = `${leftPosition}px`;
+      grid.appendChild(marker);
+    }
+
+    // Atualiza a largura acumulada para a próxima iteração
+    cumulativeWidth += columnWidth + gap;
   }
 }
 
