@@ -1199,6 +1199,18 @@ function addCompasso() {
   updateStatus(`Compasso adicionado. Total: ${state.totalSteps} passos.`, 'ready');
 }
 // ===== PLAYBACK =====
+// ===== FUNÇÃO AUXILIAR: Obtém o valor da nota ou acorde da célula =====
+function getCellNoteValue(cellElement) {
+  // Lê o primeiro nó de texto da célula, ignorando o botão
+  for (let node of cellElement.childNodes) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      return node.textContent.trim();
+    }
+  }
+  return 'X'; // valor padrão de fallback
+}
+
+// ===== PLAYBACK =====
 function buildPlaybackPlan() {
   const plan = {
     harmony: [],
@@ -1217,9 +1229,10 @@ function buildPlaybackPlan() {
     const instrument = instrumentSelect ? instrumentSelect.value : 'distorted-guitar';
     columns.forEach(column => {
       const cell = column.querySelector('.cell');
-      if (cell.textContent !== 'X') {
+      const chordValue = getCellNoteValue(cell); // ← CORREÇÃO AQUI: Usa a função auxiliar
+      if (chordValue !== 'X') {
         plan.harmony.push({
-          chord: cell.textContent,
+          chord: chordValue,
           instrument: instrument
         });
       } else {
@@ -1238,15 +1251,16 @@ function buildPlaybackPlan() {
       const instrument = instrumentSelect ? instrumentSelect.value : 'piano';
       columns.forEach(column => {
         const cell = column.querySelector('.cell');
-        if (cell.textContent === 'X') {
+        const noteValue = getCellNoteValue(cell); // ← CORREÇÃO AQUI: Usa a função auxiliar
+        if (noteValue === 'X') {
           plan[type].push(null);
         } else {
-          plan[type].push({ note: cell.textContent, instrument: instrument });
+          plan[type].push({ note: noteValue, instrument: instrument });
         }
       });
     });
   });
-  // Coleta as células da bateria
+  // Coleta as células da bateria (sem alteração, pois usa classList)
   state.drumBlocks.forEach(block => {
     const grid = block.querySelector('.columns-grid');
     const columns = grid.querySelectorAll('.column');
