@@ -626,7 +626,6 @@ const ui = {
   progressText: document.getElementById('progressText')
 };
 // ===== INICIALIZAÇÃO =====
-// ===== INICIALIZAÇÃO =====
 async function initializeApp() {
   updateStatus('Pronto para compor. Clique nas células para criar sua música.', 'ready');
   try {
@@ -770,14 +769,28 @@ function openModal(type, options, targetCell, instrumentKey) {
   state.modal.instrumentKey = instrumentKey;
   ui.modalTitle.textContent = type === 'harmony' ? 'Selecione um Acorde' : 'Selecione uma Nota';
   ui.modalGrid.innerHTML = '';
+  
+  // CORREÇÃO: Substitui "S" por "#" apenas na exibição
   options.forEach(option => {
     const div = document.createElement('div');
     div.className = 'modal-option';
     if (option === 'X') {
       div.classList.add('x');
     }
-    div.textContent = option;
+    
+    // Exibe "#" em vez de "S" na interface, mas mantém o valor original
+    let displayText = option;
+    if (option !== 'X') {
+      displayText = option.replace(/S/g, '#');
+    }
+    div.textContent = displayText;
+    
+    // Armazena o valor original como atributo
+    div.dataset.originalValue = option;
+    
     div.addEventListener('click', function() {
+      const originalValue = this.dataset.originalValue;
+      
       // --- CORREÇÃO AQUI ---
       // 1. Guarda uma referência ao botão de delete
       const deleteBtn = targetCell.querySelector('.delete-cell-btn');
@@ -785,15 +798,17 @@ function openModal(type, options, targetCell, instrumentKey) {
       if (deleteBtn) {
         targetCell.removeChild(deleteBtn);
       }
-      // 3. Define o novo texto da célula
-      targetCell.textContent = option;
-      // 4. Reaplica a classe 'x' conforme necessário
-      if (option === 'X') {
+      // 3. Define o novo texto da célula (com # na interface)
+      targetCell.textContent = displayText;
+      // 4. Armazena o valor original
+      targetCell.dataset.originalValue = originalValue;
+      // 5. Reaplica a classe 'x' conforme necessário
+      if (originalValue === 'X') {
         targetCell.classList.add('x');
       } else {
         targetCell.classList.remove('x');
       }
-      // 5. Adiciona o botão de volta
+      // 6. Adiciona o botão de volta
       if (deleteBtn) {
         targetCell.appendChild(deleteBtn);
       }
@@ -802,11 +817,11 @@ function openModal(type, options, targetCell, instrumentKey) {
       if (state.currentlyPlaying[category] !== null) {
         state.currentlyPlaying[category] = null;
       }
-      // Carrega a amostra
+      // Carrega a amostra (usa o valor original)
       if (type === 'harmony') {
-        loadSample('harmonic', instrumentKey, option);
+        loadSample('harmonic', instrumentKey, originalValue);
       } else {
-        loadSample('melodic', instrumentKey, option);
+        loadSample('melodic', instrumentKey, originalValue);
       }
       closeModal();
     });
@@ -1208,6 +1223,11 @@ function addCompasso() {
 }
 // ===== FUNÇÃO AUXILIAR: Obtém o valor da nota ou acorde da célula =====
 function getCellNoteValue(cellElement) {
+  // Usa o valor original armazenado no dataset, se disponível
+  if (cellElement.dataset.originalValue) {
+    return cellElement.dataset.originalValue;
+  }
+  
   // Lê o primeiro nó de texto da célula, ignorando o botão
   for (let node of cellElement.childNodes) {
     if (node.nodeType === Node.TEXT_NODE) {
@@ -1231,21 +1251,20 @@ function buildPlaybackPlan() {
   DRUM_SAMPLES.forEach(d => plan.drums[d.key] = []);
 
   // --- CORREÇÃO DEFINITIVA: Coleta todas as colunas da Harmonia ---
-state.harmonyBlocks.forEach(harmonyBlock => {
-  const grid = harmonyBlock.grid;
-  const instrument = harmonyBlock.instrumentSelect.value;
-  const columns = grid.querySelectorAll('.column');
-  columns.forEach(column => {
-    const cell = column.querySelector('.cell');
-    const chordValue = getCellNoteValue(cell);
-    if (chordValue !== 'X') {
-      plan.harmony.push({ chord: chordValue, instrument });
-    } else {
-      plan.harmony.push(null);
-    }
+  state.harmonyBlocks.forEach(harmonyBlock => {
+    const grid = harmonyBlock.grid;
+    const instrument = harmonyBlock.instrumentSelect.value;
+    const columns = grid.querySelectorAll('.column');
+    columns.forEach(column => {
+      const cell = column.querySelector('.cell');
+      const chordValue = getCellNoteValue(cell);
+      if (chordValue !== 'X') {
+        plan.harmony.push({ chord: chordValue, instrument });
+      } else {
+        plan.harmony.push(null);
+      }
+    });
   });
-});
-
 
   // Coleta todas as colunas dos instrumentos melódicos (Baixo, Melodia 1, Melodia 2)
   [state.bassBlocks, state.melody1Blocks, state.melody2Blocks].forEach((blocks, idx) => {
@@ -1413,11 +1432,28 @@ function startScheduler() {
     if (now >= nextStep) {
       scheduleStep(nextStep);
       state.lastNoteTime = nextStep;
+      updatePlaybackProgress(); // Atualiza o progresso visual
     }
     requestAnimationFrame(tick);
   }
   state.lastNoteTime = state.audioCtx.currentTime;
   tick();
+}
+// ===== FUNÇÃO PARA ATUALIZAR PROGRESSO VISUAL =====
+function updatePlaybackProgress() {
+  // Limpa destaque anterior
+  document.querySelectorAll('.cell, .drum-cell').forEach(cell => {
+    cell.style.boxShadow = 'none';
+  });
+  
+  // Destaca a célula atual
+  const currentStep = state.stepIndex;
+  document.querySelectorAll(`.column:nth-child(${currentStep + 1}) .cell`).forEach(cell => {
+    cell.style.boxShadow = '0 0 5px 2px #5eead4';
+  });
+  document.querySelectorAll(`.column:nth-child(${currentStep + 1}) .drum-cell`).forEach(cell => {
+    cell.style.boxShadow = '0 0 5px 2px #5eead4';
+  });
 }
 // ===== PLAY COM CONTAGEM REGRESSIVA DE 4 COMPASSOS =====
 function onPlay() {
