@@ -751,13 +751,13 @@ async function loadSample(instrumentType, key, noteOrChord) {
   }
 }
 // ===== MODAL DE SELEÇÃO =====
+// ===== MODAL DE SELEÇÃO =====
 function openModal(type, options, targetCell, instrumentKey) {
   state.modal.type = type;
   state.modal.targetCell = targetCell;
   state.modal.instrumentKey = instrumentKey;
   ui.modalTitle.textContent = type === 'harmony' ? 'Selecione um Acorde' : 'Selecione uma Nota';
   ui.modalGrid.innerHTML = '';
-
   options.forEach(option => {
     const div = document.createElement('div');
     div.className = 'modal-option';
@@ -767,42 +767,39 @@ function openModal(type, options, targetCell, instrumentKey) {
     div.textContent = option;
     div.addEventListener('click', function() {
       // --- CORREÇÃO AQUI ---
-      // Em vez de substituir todo o conteúdo, preservamos os filhos e alteramos apenas o texto principal.
-      // Primeiro, removemos qualquer nó de texto direto (não o botão)
-      for (let i = targetCell.childNodes.length - 1; i >= 0; i--) {
-        const node = targetCell.childNodes[i];
-        if (node.nodeType === Node.TEXT_NODE) {
-          targetCell.removeChild(node);
-        }
+      // 1. Guarda uma referência ao botão de delete
+      const deleteBtn = targetCell.querySelector('.delete-cell-btn');
+      // 2. Remove o botão temporariamente
+      if (deleteBtn) {
+        targetCell.removeChild(deleteBtn);
       }
-      // Depois, adicionamos o novo texto como primeiro filho
-      targetCell.insertBefore(document.createTextNode(option), targetCell.firstChild);
-
-      // Atualiza a classe 'x' conforme necessário
+      // 3. Define o novo texto da célula
+      targetCell.textContent = option;
+      // 4. Reaplica a classe 'x' conforme necessário
       if (option === 'X') {
         targetCell.classList.add('x');
       } else {
         targetCell.classList.remove('x');
       }
-
+      // 5. Adiciona o botão de volta
+      if (deleteBtn) {
+        targetCell.appendChild(deleteBtn);
+      }
       // Muta o som anterior
       const category = type === 'harmony' ? 'harmony' : targetCell.parentElement.parentElement.dataset.type.replace('Block', '').toLowerCase();
       if (state.currentlyPlaying[category] !== null) {
         state.currentlyPlaying[category] = null;
       }
-
       // Carrega a amostra
       if (type === 'harmony') {
         loadSample('harmonic', instrumentKey, option);
       } else {
         loadSample('melodic', instrumentKey, option);
       }
-
       closeModal();
     });
     ui.modalGrid.appendChild(div);
   });
-
   ui.selectionModal.style.display = 'flex';
 }
 function closeModal() {
