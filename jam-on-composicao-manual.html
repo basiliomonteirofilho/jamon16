@@ -647,18 +647,15 @@ async function initializeApp() {
     state.harmonicGain.gain.value = 0.5;
     setupEventListeners();
 
-    // --- CORREÇÃO DEFINITIVA: Garante 3 blocos independentes ---
-    // Limpa os arrays de estado antes de adicionar os blocos
-    state.harmonyBlocks = [];
-    state.bassBlocks = [];
-    state.melody1Blocks = [];
-    state.melody2Blocks = [];
-    state.drumBlocks = [];
-
-    // Adiciona 3 blocos de harmonia
-    for (let i = 0; i < 3; i++) {
-      addHarmonyBlock();
-    }
+   // --- CORREÇÃO DEFINITIVA: Garante 1 bloco de harmonia ---
+// Limpa os arrays de estado antes de adicionar os blocos
+state.harmonyBlocks = [];
+state.bassBlocks = [];
+state.melody1Blocks = [];
+state.melody2Blocks = [];
+state.drumBlocks = [];
+// Adiciona 1 bloco de harmonia
+addHarmonyBlock();
 
     // Adiciona 1 bloco de cada instrumento melódico e de bateria
     addBassBlock();
