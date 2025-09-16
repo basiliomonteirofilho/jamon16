@@ -94,11 +94,21 @@
       position: relative;
     }
     .column {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      align-items: center;
-    }
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+  /* --- NOVO: Fundo alternado a cada 4 colunas --- */
+  background-color: transparent; /* Fundo padrão */
+}
+.column:nth-child(4n+1),
+.column:nth-child(4n+2),
+.column:nth-child(4n+3) {
+  background-color: rgba(255, 255, 255, 0.03); /* Cinza muito claro */
+}
+.column:nth-child(4n) {
+  background-color: rgba(255, 255, 255, 0.08); /* Cinza um pouco mais escuro, marca o final do compasso */
+}
     .cell {
       width: 45px;
       height: 45px;
@@ -891,7 +901,7 @@ function addHarmonyBlock(containerIndex) {
   block.appendChild(grid);
   wrapper.appendChild(instrumentSelect);
   wrapper.appendChild(block);
-  addSemibreveMarkers(grid);
+  
   
   // Adiciona ao container correto
   const containerId = `harmonyContainer${containerIndex + 1}`;
@@ -951,7 +961,7 @@ function addBassBlock() {
   block.dataset.blockIndex = blockIndex;
   const grid = createMelodicGrid('bass', blockIndex, 4);
   // Adiciona marcadores de semínima
-  addSemibreveMarkers(grid);
+  
   block.appendChild(grid);
   wrapper.appendChild(instrumentSelect);
   wrapper.appendChild(block);
@@ -988,7 +998,7 @@ function addMelody1Block() {
   block.dataset.blockIndex = blockIndex;
   const grid = createMelodicGrid('melody1', blockIndex, 4);
   // Adiciona marcadores de semínima
-  addSemibreveMarkers(grid);
+  
   block.appendChild(grid);
   wrapper.appendChild(instrumentSelect);
   wrapper.appendChild(block);
@@ -1025,7 +1035,7 @@ function addMelody2Block() {
   block.dataset.blockIndex = blockIndex;
   const grid = createMelodicGrid('melody2', blockIndex, 4);
   // Adiciona marcadores de semínima
-  addSemibreveMarkers(grid);
+  
   block.appendChild(grid);
   wrapper.appendChild(instrumentSelect);
   wrapper.appendChild(block);
@@ -1064,8 +1074,8 @@ function addDrumBlock() {
   for (let step = 0; step < 4; step++) {
     createDrumColumn(grid, step, blockIndex);
   }
-  // Adiciona marcadores de semínima
-  addSemibreveMarkers(grid);
+ 
+  
   // Monta a estrutura
   drumWrapper.appendChild(labelsColumn);
   drumWrapper.appendChild(grid);
@@ -1160,33 +1170,7 @@ function createMelodicColumn(parentGrid, type, columnIndex) {
   parentGrid.appendChild(column);
 }
 
-function addSemibreveMarkers(grid) {
-  // Limpa marcadores existentes primeiro
-  const existingMarkers = grid.querySelectorAll('.semibreve-marker');
-  existingMarkers.forEach(marker => marker.remove());
 
-  const columns = grid.querySelectorAll('.column');
-  if (columns.length < 4) return;
-
-  // Obtém a largura da primeira coluna e o gap do CSS
-  const columnWidth = columns[0].offsetWidth;
-  const gap = 2; // Deve corresponder ao valor definido em .columns-grid { gap: 2px; }
-
-  // Adiciona um marcador APÓS cada grupo de 4 colunas (após a 4ª, 8ª, 12ª, etc.)
-  // Isso significa que o marcador fica entre a 4ª e 5ª, 8ª e 9ª, etc.
-  for (let i = 4; i <= columns.length; i += 4) {
-    const marker = document.createElement('div');
-    marker.className = 'semibreve-marker';
-
-    // --- CÁLCULO CORRIGIDO ---
-    // A posição 'left' é a soma da largura de 'i' colunas + o gap entre elas.
-    // Como há (i - 1) gaps entre 'i' colunas, a posição total é:
-    const leftPosition = (i * columnWidth) + ((i - 1) * gap);
-
-    marker.style.left = `${leftPosition}px`;
-    grid.appendChild(marker);
-  }
-}
 
 // ===== FUNÇÃO PARA EXCLUIR COLUNA =====
 function deleteColumn(columnIndex) {
@@ -1221,7 +1205,7 @@ function addCompasso() {
       const grid = harmonyBlock.grid;
       if (!grid) return;
       createHarmonyColumn(grid, newColumnIndex, harmonyBlock);
-      addSemibreveMarkers(grid);
+      
     });
   }
   
@@ -1232,7 +1216,7 @@ function addCompasso() {
       if (!grid) return;
       const type = grid.dataset.type;
       createMelodicColumn(grid, type, newColumnIndex);
-      addSemibreveMarkers(grid);
+      
     });
   });
   
@@ -1241,7 +1225,6 @@ function addCompasso() {
     const grid = block.querySelector('.columns-grid');
     if (!grid) return;
     createDrumColumn(grid, newColumnIndex, block.dataset.blockIndex);
-    addSemibreveMarkers(grid);
   });
   
   state.totalSteps += 1;
