@@ -1241,15 +1241,23 @@ function deleteColumn(columnIndex) {
   });
 }
 
-
 function addCompasso() {
   const newColumnIndex = state.totalSteps;
 
-  // Harmonia
-  state.harmonyBlocks.forEach(harmonyBlock => {
+  // Harmonia - Usa a função específica para cada bloco
+  state.harmonyBlocks.forEach((harmonyBlock, idx) => {
     const grid = harmonyBlock.wrapper.querySelector('.columns-grid');
     if (!grid) return;
-    createHarmonyColumn(grid, newColumnIndex, harmonyBlock); // ← Passa harmonyBlock
+
+    // Usa a função específica baseada no índice do bloco
+    if (idx === 0) {
+      createHarmonyColumn1(grid, newColumnIndex, harmonyBlock);
+    } else if (idx === 1) {
+      createHarmonyColumn2(grid, newColumnIndex, harmonyBlock);
+    } else if (idx === 2) {
+      createHarmonyColumn3(grid, newColumnIndex, harmonyBlock);
+    }
+
     // Chama addSemibreveMarkers APÓS adicionar a coluna
     addSemibreveMarkers(grid);
   });
