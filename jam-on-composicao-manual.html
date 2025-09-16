@@ -77,19 +77,12 @@
       padding: 15px;
       border-radius: 8px;
       min-width: 220px;
-      border-left: 4px solid #5eead4;
     }
-    .bass-block { border-left-color: #ffcc00; }
-    .melody1-block { border-left-color: #ff6b6b; }
-    .melody2-block { border-left-color: #4ecdc4; }
-    .drum-block { border-left-color: #8e44ad; }
-    .harmony-block { border-left-color: #9b59b6; }
-    .block-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-    }
+    .bass-block { border-left: 4px solid #ffcc00; }
+    .melody1-block { border-left: 4px solid #ff6b6b; }
+    .melody2-block { border-left: 4px solid #4ecdc4; }
+    .drum-block { border-left: 4px solid #8e44ad; }
+    .harmony-block { border-left: 4px solid #9b59b6; }
     /* ===== ESTILO DO GRID DE COLUNAS ===== */
     .columns-grid {
       display: flex;
@@ -147,7 +140,7 @@
       justify-content: center;
       padding: 0;
       line-height: 1;
-      z-index: 10; /* ← ADICIONADO: Garante que o botão fique acima da célula */
+      z-index: 10; /* ← Garante que o botão fique acima da célula */
     }
     .delete-column-btn:hover {
       background: #d32f2f;
@@ -388,27 +381,27 @@
       <button id="addCompassoBtn" class="add-btn">+</button>
       <span style="color: #aaa; margin-left: 10px;">Adicionar compasso em todos os instrumentos</span>
     </div>
-    <!-- HARMONIA (2 células = colcheias) -->
+    <!-- HARMONIA (4 células por instrumento = 1 compasso) -->
     <div class="section">
       <h3>🎸 Harmonia</h3>
       <div id="harmonyContainer" class="instrument-container"></div>
     </div>
-    <!-- BAIXO (4 células = semicolcheias) -->
+    <!-- BAIXO (4 células = 1 compasso) -->
     <div class="section">
       <h3>🎸 Baixo</h3>
       <div id="bassContainer" class="instrument-container"></div>
     </div>
-    <!-- MELODIA 1 (4 células = semicolcheias) -->
+    <!-- MELODIA 1 (4 células = 1 compasso) -->
     <div class="section">
       <h3>🎹 Melodia 1</h3>
       <div id="melody1Container" class="instrument-container"></div>
     </div>
-    <!-- MELODIA 2 (4 células = semicolcheias) -->
+    <!-- MELODIA 2 (4 células = 1 compasso) -->
     <div class="section">
       <h3>🎷 Melodia 2</h3>
       <div id="melody2Container" class="instrument-container"></div>
     </div>
-    <!-- BATERIA (4 células = semicolcheias) -->
+    <!-- BATERIA (4 células = 1 compasso) -->
     <div class="section">
       <h3>🥁 Bateria</h3>
       <div id="drumContainer" class="instrument-container"></div>
@@ -606,14 +599,12 @@ async function initializeApp() {
     state.melodyGain.gain.value = 0.5;
     state.harmonicGain.gain.value = 0.5;
     setupEventListeners();
-    // Inicia com 4 blocos de harmonia (8 células) e 1 bloco dos demais
-    for (let i = 0; i < 4; i++) { // ← CORREÇÃO: 4 colunas de harmonia (8 células)
-      addHarmonyBlock();
-    }
-    addBassBlock();    // 4 células
-    addMelody1Block(); // 4 células
-    addMelody2Block(); // 4 células
-    addDrumBlock();    // 4 células
+    // Inicia com 1 bloco de cada tipo
+    addHarmonyBlock(); // 4 células (1 compasso)
+    addBassBlock();    // 4 células (1 compasso)
+    addMelody1Block(); // 4 células (1 compasso)
+    addMelody2Block(); // 4 células (1 compasso)
+    addDrumBlock();    // 4 células (1 compasso)
     ui.btnPlay.disabled = false;
     ui.btnSaveWAV.disabled = true;
     ui.btnStop.disabled = true;
@@ -765,12 +756,8 @@ function addHarmonyBlock() {
   const block = document.createElement('div');
   block.className = 'instrument-block harmony-block';
   block.dataset.blockIndex = blockIndex;
-  const title = document.createElement('div');
-  title.textContent = `Bloco ${blockIndex + 1}`;
-  title.style.fontWeight = 'bold';
-  title.style.color = '#9b59b6';
-  title.style.marginBottom = '10px';
-  block.appendChild(title);
+  // Remove o título "Bloco X"
+  // Adiciona o seletor de instrumento
   const instrumentSelect = document.createElement('select');
   instrumentSelect.className = 'instrument-select';
   instrumentSelect.innerHTML = `
@@ -783,7 +770,7 @@ function addHarmonyBlock() {
   grid.className = 'columns-grid';
   grid.dataset.type = 'harmony';
   grid.dataset.blockIndex = blockIndex;
-  for (let i = 0; i < 2; i++) {
+  for (let i = 0; i < 4; i++) { // ← 4 células por instrumento (1 compasso)
     createHarmonyColumn(grid, i);
   }
   block.appendChild(grid);
@@ -819,12 +806,8 @@ function addBassBlock() {
   const block = document.createElement('div');
   block.className = 'instrument-block bass-block';
   block.dataset.blockIndex = blockIndex;
-  const title = document.createElement('div');
-  title.textContent = `Bloco ${blockIndex + 1}`;
-  title.style.fontWeight = 'bold';
-  title.style.color = '#ffcc00';
-  title.style.marginBottom = '10px';
-  block.appendChild(title);
+  // Remove o título "Bloco X"
+  // Adiciona o seletor de instrumento
   const instrumentSelect = document.createElement('select');
   instrumentSelect.className = 'instrument-select';
   instrumentSelect.innerHTML = `
@@ -845,12 +828,8 @@ function addMelody1Block() {
   const block = document.createElement('div');
   block.className = 'instrument-block melody1-block';
   block.dataset.blockIndex = blockIndex;
-  const title = document.createElement('div');
-  title.textContent = `Bloco ${blockIndex + 1}`;
-  title.style.fontWeight = 'bold';
-  title.style.color = '#ff6b6b';
-  title.style.marginBottom = '10px';
-  block.appendChild(title);
+  // Remove o título "Bloco X"
+  // Adiciona o seletor de instrumento
   const instrumentSelect = document.createElement('select');
   instrumentSelect.className = 'instrument-select';
   instrumentSelect.innerHTML = `
@@ -873,12 +852,8 @@ function addMelody2Block() {
   const block = document.createElement('div');
   block.className = 'instrument-block melody2-block';
   block.dataset.blockIndex = blockIndex;
-  const title = document.createElement('div');
-  title.textContent = `Bloco ${blockIndex + 1}`;
-  title.style.fontWeight = 'bold';
-  title.style.color = '#4ecdc4';
-  title.style.marginBottom = '10px';
-  block.appendChild(title);
+  // Remove o título "Bloco X"
+  // Adiciona o seletor de instrumento
   const instrumentSelect = document.createElement('select');
   instrumentSelect.className = 'instrument-select';
   instrumentSelect.innerHTML = `
@@ -901,45 +876,31 @@ function addDrumBlock() {
   const block = document.createElement('div');
   block.className = 'instrument-block drum-block';
   block.dataset.blockIndex = blockIndex;
-  const title = document.createElement('div');
-  title.textContent = `Bloco ${blockIndex + 1}`;
-  title.style.fontWeight = 'bold';
-  title.style.color = '#8e44ad';
-  title.style.marginBottom = '10px';
-  block.appendChild(title);
-  // CORREÇÃO: Usa o sistema de columns-grid para alinhar perfeitamente
-  const grid = document.createElement('div');
-  grid.className = 'columns-grid';
-  grid.dataset.type = 'drum';
-  grid.dataset.blockIndex = blockIndex;
-  // Cria uma coluna para cada "passo" (4 colunas)
-  for (let col = 0; col < 4; col++) {
-    const column = document.createElement('div');
-    column.className = 'column';
-    column.dataset.columnIndex = col;
-    // Para cada peça de bateria, cria uma célula na coluna
-    DRUM_SAMPLES.forEach(drum => {
+  // Remove o título "Bloco X"
+  const drumGrid = document.createElement('div');
+  drumGrid.className = 'drum-grid';
+  DRUM_SAMPLES.forEach(drum => {
+    const row = document.createElement('div');
+    row.className = 'drum-row';
+    const label = document.createElement('div');
+    label.className = 'drum-label';
+    label.textContent = drum.label;
+    row.appendChild(label);
+    for (let i = 0; i < 4; i++) { // 4 células (1 compasso)
       const cell = document.createElement('div');
       cell.className = 'drum-cell';
-      cell.dataset.step = col;
+      cell.dataset.step = i;
       cell.dataset.instr = drum.key;
       cell.dataset.block = blockIndex;
       cell.addEventListener('click', function() {
         this.classList.toggle('active');
         loadSample('drum', drum.key, '');
       });
-      // Adiciona um rótulo acima da primeira coluna
-      if (col === 0) {
-        const label = document.createElement('div');
-        label.className = 'drum-label';
-        label.textContent = drum.label;
-        column.appendChild(label);
-      }
-      column.appendChild(cell);
-    });
-    grid.appendChild(column);
-  }
-  block.appendChild(grid);
+      row.appendChild(cell);
+    }
+    drumGrid.appendChild(row);
+  });
+  block.appendChild(drumGrid);
   ui.drumContainer.appendChild(block);
   state.drumBlocks.push(block);
   return block;
@@ -1000,11 +961,13 @@ function deleteColumn(columnIndex) {
     });
     // Remove coluna da Bateria
     state.drumBlocks.forEach(block => {
-      const grid = block.querySelector('.columns-grid');
-      const column = grid.querySelector(`.column[data-column-index="${columnIndex}"]`);
-      if (column) {
-        grid.removeChild(column);
-      }
+      const drumGrid = block.querySelector('.drum-grid');
+      DRUM_SAMPLES.forEach(drum => {
+        const row = Array.from(drumGrid.children).find(r => r.querySelector('.drum-label')?.textContent === drum.label);
+        if (row && row.children[columnIndex + 1]) { // +1 por causa do label
+          row.removeChild(row.children[columnIndex + 1]);
+        }
+      });
     });
     // Atualiza o total de passos
     state.totalSteps -= 1;
@@ -1013,13 +976,13 @@ function deleteColumn(columnIndex) {
 }
 // ===== ADICIONAR COMPASSO EM TODOS OS INSTRUMENTOS =====
 function addCompasso() {
-  // Harmonia: +1 coluna (2 células = 1 coluna)
+  // Harmonia: +1 coluna (4 células = 1 compasso)
   state.harmonyBlocks.forEach(block => {
     const grid = block.querySelector('.columns-grid');
     if (!grid) return;
     createHarmonyColumn(grid, grid.children.length);
   });
-  // Baixo, Melodia 1, Melodia 2: +1 coluna cada (1 coluna = 4 células)
+  // Baixo, Melodia 1, Melodia 2: +1 coluna cada (4 células = 1 compasso)
   [state.bassBlocks, state.melody1Blocks, state.melody2Blocks].forEach(blocks => {
     blocks.forEach(block => {
       const grid = block.querySelector('.columns-grid');
@@ -1028,27 +991,24 @@ function addCompasso() {
       createMelodicColumn(grid, type, grid.children.length);
     });
   });
-  // BATERIA: ADICIONA 1 COLUNA
+  // BATERIA: ADICIONA 1 COLUNA POR PEÇA
   state.drumBlocks.forEach(block => {
-    const grid = block.querySelector('.columns-grid');
-    if (!grid) return;
-    const columnIndex = grid.children.length;
-    const column = document.createElement('div');
-    column.className = 'column';
-    column.dataset.columnIndex = columnIndex;
+    const drumGrid = block.querySelector('.drum-grid');
+    if (!drumGrid) return;
     DRUM_SAMPLES.forEach(drum => {
+      const row = Array.from(drumGrid.children).find(r => r.querySelector('.drum-label')?.textContent === drum.label);
+      if (!row) return;
       const cell = document.createElement('div');
       cell.className = 'drum-cell';
-      cell.dataset.step = columnIndex;
+      cell.dataset.step = row.children.length - 1;
       cell.dataset.instr = drum.key;
       cell.dataset.block = block.dataset.blockIndex;
       cell.addEventListener('click', function() {
         this.classList.toggle('active');
         loadSample('drum', drum.key, '');
       });
-      column.appendChild(cell);
+      row.appendChild(cell);
     });
-    grid.appendChild(column);
   });
   state.totalSteps += 1;
   updateStatus(`Compasso adicionado. Total: ${state.totalSteps} passos.`, 'ready');
@@ -1101,15 +1061,14 @@ function buildPlaybackPlan() {
   });
   // Coleta as células da bateria
   state.drumBlocks.forEach(block => {
-    const grid = block.querySelector('.columns-grid');
-    const columns = grid.querySelectorAll('.column');
+    const drumGrid = block.querySelector('.drum-grid');
     DRUM_SAMPLES.forEach(drum => {
-      columns.forEach((column, colIndex) => {
-        const cell = column.querySelector(`.drum-cell[data-instr="${drum.key}"]`);
-        if (cell) {
-          plan.drums[drum.key].push(cell.classList.contains('active'));
-        }
-      });
+      const row = Array.from(drumGrid.children).find(r => r.querySelector('.drum-label')?.textContent === drum.label);
+      if (!row) return;
+      for (let i = 1; i < row.children.length; i++) { // Começa em 1 para pular o label
+        const cell = row.children[i];
+        plan.drums[drum.key].push(cell.classList.contains('active'));
+      }
     });
   });
   state.playbackPlan = plan;
@@ -1413,7 +1372,6 @@ async function renderAndDownloadWAV() {
           } else {
             root = item.chord[0];
           }
-          // CORREÇÃO FINAL: Usa o caminho completo como chave, assim como playChord
           const filePath = HARMONIC_INSTRUMENTS[item.instrument] + root + '/' + item.chord + '.mp3';
           const buffer = state.buffers.harmonic[filePath];
           if (buffer) {
