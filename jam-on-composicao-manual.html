@@ -840,12 +840,6 @@ function addHarmonyBlock() {
     <option value="piano-chord">Piano</option>
   `;
 
-  const harmonyBlock = {
-    wrapper: wrapper,
-    instrumentSelect: instrumentSelect,
-    grid: null
-  };
-
   const block = document.createElement('div');
   block.className = 'instrument-block harmony-block';
   block.style.flex = '1';
@@ -859,21 +853,27 @@ function addHarmonyBlock() {
 
   // Cria as 4 colunas iniciais
   for (let i = 0; i < 4; i++) {
-    createHarmonyColumn(grid, i, harmonyBlock);
+    createHarmonyColumn(grid, i, { instrumentSelect });
   }
 
-  // Anexa o grid ao bloco ANTES de chamar addSemibreveMarkers
   block.appendChild(grid);
   wrapper.appendChild(instrumentSelect);
   wrapper.appendChild(block);
 
-  // Só agora chama addSemibreveMarkers, pois o grid está no DOM
   addSemibreveMarkers(grid);
+
+  // 🔑 GUARDA grid e instrumentSelect no objeto
+  const harmonyBlock = {
+    wrapper,
+    instrumentSelect,
+    grid
+  };
 
   ui.harmonyContainer.appendChild(wrapper);
   state.harmonyBlocks.push(harmonyBlock);
   return wrapper;
 }
+
 function createHarmonyColumn(parentGrid, columnIndex, harmonyBlock) {
   const column = document.createElement('div');
   column.className = 'column';
@@ -1249,7 +1249,7 @@ function buildPlaybackPlan() {
 
   // --- CORREÇÃO DEFINITIVA: Coleta todas as colunas da Harmonia ---
 state.harmonyBlocks.forEach(harmonyBlock => {
-  const grid = harmonyBlock.wrapper.querySelector('.columns-grid');
+  const grid = harmonyBlock.grid;
   const columns = grid.querySelectorAll('.column');
   // Usa a referência armazenada ao criar o bloco
   const instrument = harmonyBlock.instrumentSelect.value;
