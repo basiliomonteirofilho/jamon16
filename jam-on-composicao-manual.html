@@ -647,16 +647,15 @@ async function initializeApp() {
     state.harmonicGain.gain.value = 0.5;
     setupEventListeners();
 
-   // --- CORREÇÃO DEFINITIVA: Garante 1 bloco de harmonia ---
-// Limpa os arrays de estado antes de adicionar os blocos
-state.harmonyBlocks = [];
-state.bassBlocks = [];
-state.melody1Blocks = [];
-state.melody2Blocks = [];
-state.drumBlocks = [];
-// Adiciona 1 bloco de harmonia
-addHarmonyBlock();
+    // --- CORREÇÃO DEFINITIVA: Garante 3 blocos independentes ---
+    // Limpa os arrays de estado antes de adicionar os blocos
+    state.harmonyBlocks = [];
+    state.bassBlocks = [];
+    state.melody1Blocks = [];
+    state.melody2Blocks = [];
+    state.drumBlocks = [];
 
+    
     // Adiciona 1 bloco de cada instrumento melódico e de bateria
     addBassBlock();
     addMelody1Block();
@@ -913,67 +912,7 @@ function createHarmonyColumn1(parentGrid, columnIndex, harmonyBlock) {
   });
 }
 
-// ===== FUNÇÃO PARA O SEGUNDO BLOCO DE HARMONIA =====
-function createHarmonyColumn2(parentGrid, columnIndex, harmonyBlock) {
-  const column = document.createElement('div');
-  column.className = 'column';
-  column.dataset.columnIndex = columnIndex;
-  const cell = document.createElement('div');
-  cell.className = 'cell x';
-  cell.textContent = 'X';
-  const deleteCellBtn = document.createElement('button');
-  deleteCellBtn.className = 'delete-cell-btn';
-  deleteCellBtn.textContent = '✖';
-  deleteCellBtn.addEventListener('click', function(e) {
-    e.stopPropagation();
-    if (confirm('Excluir toda a coluna vertical (inclusive bateria, harmonia e melodias)?')) {
-      deleteColumn(columnIndex);
-    } else {
-      cell.textContent = 'X';
-      cell.classList.add('x');
-      cell.appendChild(deleteCellBtn);
-    }
-  });
-  cell.appendChild(deleteCellBtn);
-  column.appendChild(cell);
-  parentGrid.appendChild(column);
-  cell.addEventListener('click', function(e) {
-    e.stopPropagation();
-    const instrumentKey = harmonyBlock.instrumentSelect.value;
-    openModal('harmony', AVAILABLE_CHORDS, this, instrumentKey);
-  });
-}
 
-// ===== FUNÇÃO PARA O TERCEIRO BLOCO DE HARMONIA =====
-function createHarmonyColumn3(parentGrid, columnIndex, harmonyBlock) {
-  const column = document.createElement('div');
-  column.className = 'column';
-  column.dataset.columnIndex = columnIndex;
-  const cell = document.createElement('div');
-  cell.className = 'cell x';
-  cell.textContent = 'X';
-  const deleteCellBtn = document.createElement('button');
-  deleteCellBtn.className = 'delete-cell-btn';
-  deleteCellBtn.textContent = '✖';
-  deleteCellBtn.addEventListener('click', function(e) {
-    e.stopPropagation();
-    if (confirm('Excluir toda a coluna vertical (inclusive bateria, harmonia e melodias)?')) {
-      deleteColumn(columnIndex);
-    } else {
-      cell.textContent = 'X';
-      cell.classList.add('x');
-      cell.appendChild(deleteCellBtn);
-    }
-  });
-  cell.appendChild(deleteCellBtn);
-  column.appendChild(cell);
-  parentGrid.appendChild(column);
-  cell.addEventListener('click', function(e) {
-    e.stopPropagation();
-    const instrumentKey = harmonyBlock.instrumentSelect.value;
-    openModal('harmony', AVAILABLE_CHORDS, this, instrumentKey);
-  });
-}
 
 function addBassBlock() {
   const blockIndex = state.bassBlocks.length;
