@@ -1329,9 +1329,15 @@ async function renderAndDownloadWAV() {
   ui.progressContainer.style.display = 'block';
   try {
     const sampleRate = 44100;
-    // Calcula a duração total baseada no número de passos
-    const durationInSeconds = (state.totalSteps * 60) / (state.bpm * 4);
-    const totalSamples = Math.ceil(durationInSeconds * sampleRate);
+    // --- CORREÇÃO AQUI ---
+    // Calcula a duração total baseada no número de passos.
+    // Cada passo é uma semicolcheia.
+    const secondsPerStep = 60 / state.bpm / 4;
+    const totalDurationInSeconds = state.totalSteps * secondsPerStep;
+    // Adiciona 1 segundo de margem de segurança para garantir que o último som termine.
+    const safeDuration = totalDurationInSeconds + 1.0;
+    const totalSamples = Math.ceil(safeDuration * sampleRate);
+    // --- FIM DA CORREÇÃO ---
     const offlineCtx = new OfflineAudioContext(2, totalSamples, sampleRate);
     const master = offlineCtx.createGain();
     const drumGain = offlineCtx.createGain();
