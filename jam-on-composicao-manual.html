@@ -1391,9 +1391,9 @@ function playChord(instrumentKey, chord, time, gainNode, volume = 1.0) {
   } else {
     root = chord[0];
   }
-  // CORREÇÃO FINAL: Monta o caminho exato do arquivo e usa como chave
+  // Usa a mesma lógica de montagem de caminho da função loadSample
   const filePath = HARMONIC_INSTRUMENTS[instrumentKey] + root + '/' + chord + '.mp3';
-  const buffer = state.buffers.harmonic[filePath]; // ← BUSCA PELO CAMINHO COMPLETO
+  const buffer = state.buffers.harmonic[filePath]; // Busca pelo caminho completo, como em loadSample
   if (!buffer) {
     console.warn(`Acorde não encontrado: ${filePath}`);
     return;
