@@ -873,7 +873,6 @@ function addHarmonyBlock() {
   return wrapper;
 }
 
-
 function createHarmonyColumn(parentGrid, columnIndex, harmonyBlock) {
   const column = document.createElement('div');
   column.className = 'column';
@@ -882,29 +881,38 @@ function createHarmonyColumn(parentGrid, columnIndex, harmonyBlock) {
   const cell = document.createElement('div');
   cell.className = 'cell x';
   cell.textContent = 'X';
-  cell.addEventListener('click', function(e) {
-    e.stopPropagation();
-    const instrumentKey = harmonyBlock.instrumentSelect.value;
-    openModal('harmony', AVAILABLE_CHORDS, this, instrumentKey);
-  });
 
+  // Botão de exclusão dentro da célula
   const deleteCellBtn = document.createElement('button');
   deleteCellBtn.className = 'delete-cell-btn';
   deleteCellBtn.textContent = '✖';
   deleteCellBtn.addEventListener('click', function(e) {
     e.stopPropagation();
-    if (confirm('Excluir esta célula individualmente ou toda a coluna vertical?')) {
-      deleteColumn(columnIndex);
+    const parentGrid = column.parentElement;
+    const colIndex = [...parentGrid.children].indexOf(column);
+
+    if (confirm('Excluir toda a coluna vertical (inclusive bateria, harmonia e melodia)?')) {
+      deleteColumn(parentGrid, colIndex);
     } else {
-      this.parentElement.querySelector('.cell').textContent = 'X';
-      this.parentElement.querySelector('.cell').classList.add('x');
+      // Apenas limpa a célula
+      cell.textContent = 'X';
+      cell.classList.add('x');
+      cell.appendChild(deleteCellBtn); // mantém o botão dentro
     }
   });
 
   cell.appendChild(deleteCellBtn);
   column.appendChild(cell);
   parentGrid.appendChild(column);
+
+  // Clique para abrir o modal de acordes
+  cell.addEventListener('click', function(e) {
+    e.stopPropagation();
+    const instrumentKey = harmonyBlock.instrumentSelect.value;
+    openModal('harmony', AVAILABLE_CHORDS, this, instrumentKey);
+  });
 }
+
 
 function addBassBlock() {
   const blockIndex = state.bassBlocks.length;
@@ -1148,48 +1156,23 @@ function addSemibreveMarkers(grid) {
   }
 }
 // ===== FUNÇÃO PARA EXCLUIR COLUNA =====
-function deleteColumn(columnIndex) {
-  if (confirm('Tem certeza que deseja excluir esta coluna de todos os instrumentos?')) {
-    // Remove coluna da Harmonia
-    state.harmonyBlocks.forEach(wrapper => {
-      const grid = wrapper.querySelector('.columns-grid');
-      const column = grid.querySelector(`.column[data-column-index="${columnIndex}"]`);
-      if (column) {
-        grid.removeChild(column);
-      }
-      // Atualiza os marcadores de semínima
-      addSemibreveMarkers(grid);
-    });
-    // Remove coluna do Baixo, Melodia 1 e Melodia 2
-    [state.bassBlocks, state.melody1Blocks, state.melody2Blocks].forEach(blocks => {
-      blocks.forEach(wrapper => {
-        const grid = wrapper.querySelector('.columns-grid');
-        const column = grid.querySelector(`.column[data-column-index="${columnIndex}"]`);
-        if (column) {
-          grid.removeChild(column);
-        }
-        // Atualiza os marcadores de semínima
-        addSemibreveMarkers(grid);
-      });
-    });
-    // Remove coluna da Bateria
-    state.drumBlocks.forEach(block => {
-      const grid = block.querySelector('.columns-grid');
-      const column = grid.querySelector(`.column[data-column-index="${columnIndex}"]`);
-      if (column) {
-        grid.removeChild(column);
-      }
-      // Atualiza os marcadores de semínima
-      addSemibreveMarkers(grid);
-    });
-    // Atualiza o total de passos
-    state.totalSteps -= 1;
-    updateStatus(`Coluna excluída. Total: ${state.totalSteps} passos.`, 'ready');
-  }
+function deleteColumn(grid, columnIndex) {
+  // Coleta todos os grids: bateria, harmonia e melodia
+  const allGrids = [
+    ui.drumGrid,
+    ...state.harmonyBlocks.map(hb => hb.grid),
+    ...state.melodyBlocks.map(mb => mb.grid)
+  ];
+
+  // Remove a coluna correspondente em todos os grids
+  allGrids.forEach(g => {
+    const columns = g.querySelectorAll('.column');
+    if (columns[columnIndex]) {
+      g.removeChild(columns[columnIndex]);
+    }
+  });
 }
-// ===== ADICIONAR COMPASSO EM TODOS OS INSTRUMENTOS =====
-// ===== ADICIONAR COMPASSO EM TODOS OS INSTRUMENTOS =====
-// ===== ADICIONAR COMPASSO EM TODOS OS INSTRUMENTOS =====
+
 function addCompasso() {
   const newColumnIndex = state.totalSteps;
 
