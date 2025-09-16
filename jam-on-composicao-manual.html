@@ -1299,22 +1299,20 @@ function getCellNoteValue(cellElement) {
   }
   return 'X'; // valor padrão de fallback
 }
-
-// ===== PLAYBACK =====
 function buildPlaybackPlan() {
   const plan = {
-    harmony: [],
+    harmony: [[], [], []], // cada bloco de harmonia separado
     bass: [],
     melody1: [],
     melody2: [],
     drums: {}
   };
 
-  // Inicializa os arrays de cada peça de bateria
+  // Inicializa os arrays da bateria
   DRUM_SAMPLES.forEach(d => plan.drums[d.key] = []);
 
-  // --- CORREÇÃO DEFINITIVA: Coleta todas as colunas da Harmonia ---
-  state.harmonyBlocks.forEach(harmonyBlock => {
+  // --- COLETA HARMONIA BLOCO POR BLOCO ---
+  state.harmonyBlocks.forEach((harmonyBlock, idx) => {
     const grid = harmonyBlock.grid;
     const instrument = harmonyBlock.instrumentSelect.value;
     const columns = grid.querySelectorAll('.column');
@@ -1322,21 +1320,20 @@ function buildPlaybackPlan() {
       const cell = column.querySelector('.cell');
       const chordValue = getCellNoteValue(cell);
       if (chordValue !== 'X') {
-        plan.harmony.push({ chord: chordValue, instrument });
+        plan.harmony[idx].push({ chord: chordValue, instrument });
       } else {
-        plan.harmony.push(null);
+        plan.harmony[idx].push(null);
       }
     });
   });
 
-  // Coleta todas as colunas dos instrumentos melódicos (Baixo, Melodia 1, Melodia 2)
+  // --- COLETA BAIXO / MELODIA 1 / MELODIA 2 ---
   [state.bassBlocks, state.melody1Blocks, state.melody2Blocks].forEach((blocks, idx) => {
     const type = ['bass', 'melody1', 'melody2'][idx];
     blocks.forEach(wrapper => {
       const block = wrapper.querySelector('.instrument-block');
       const grid = block.querySelector('.columns-grid');
       const columns = grid.querySelectorAll('.column');
-      // O seletor de instrumento está no wrapper pai
       const instrumentSelect = wrapper.querySelector('.instrument-select');
       const instrument = instrumentSelect ? instrumentSelect.value : 'piano';
       columns.forEach(column => {
@@ -1351,9 +1348,8 @@ function buildPlaybackPlan() {
     });
   });
 
-  // Coleta as células da bateria
+  // --- COLETA BATERIA ---
   state.drumBlocks.forEach(block => {
-    // Navega até o .columns-grid dentro do .drum-wrapper, se existir
     const drumWrapper = block.querySelector('.drum-wrapper');
     const grid = drumWrapper ? drumWrapper.querySelector('.columns-grid') : block.querySelector('.columns-grid');
     if (!grid) return;
@@ -1369,7 +1365,6 @@ function buildPlaybackPlan() {
     });
   });
 
-  // Armazena o plano de playback no estado global
   state.playbackPlan = plan;
   state.stepIndex = 0;
   state.lastNoteTime = 0;
@@ -1379,18 +1374,22 @@ function scheduleStep(time) {
   const idx = state.stepIndex;
   const plan = state.playbackPlan;
   if (!plan) return;
-  // HARMONIA: MUTE ANTERIOR E TOCA NOVO
-  if (idx < plan.harmony.length && plan.harmony[idx]) {
-    const item = plan.harmony[idx];
-    if (item && item.chord !== 'X') {
-      if (state.currentlyPlaying.harmony !== null) {
-        state.currentlyPlaying.harmony = null;
+
+  // --- HARMONIA: percorre os 3 blocos ---
+  plan.harmony.forEach((block, blockIdx) => {
+    if (idx < block.length && block[idx]) {
+      const item = block[idx];
+      if (item && item.chord !== 'X') {
+        if (state.currentlyPlaying.harmony !== null) {
+          state.currentlyPlaying.harmony = null;
+        }
+        playChord(item.instrument, item.chord, time, state.harmonicGain, 1.0);
+        state.currentlyPlaying.harmony = item.chord;
       }
-      playChord(item.instrument, item.chord, time, state.harmonicGain, 1.0); // ← DURAÇÃO DE 1.0s (semínima)
-      state.currentlyPlaying.harmony = item.chord;
     }
-  }
-  // BAIXO
+  });
+
+  // --- BAIXO ---
   if (idx < plan.bass.length && plan.bass[idx]) {
     const item = plan.bass[idx];
     if (item && item.note) {
@@ -1401,7 +1400,8 @@ function scheduleStep(time) {
       state.currentlyPlaying.bass = item.note;
     }
   }
-  // MELODIA 1
+
+  // --- MELODIA 1 ---
   if (idx < plan.melody1.length && plan.melody1[idx]) {
     const item = plan.melody1[idx];
     if (item && item.note) {
@@ -1412,7 +1412,8 @@ function scheduleStep(time) {
       state.currentlyPlaying.melody1 = item.note;
     }
   }
-  // MELODIA 2
+
+  // --- MELODIA 2 ---
   if (idx < plan.melody2.length && plan.melody2[idx]) {
     const item = plan.melody2[idx];
     if (item && item.note) {
@@ -1423,14 +1424,17 @@ function scheduleStep(time) {
       state.currentlyPlaying.melody2 = item.note;
     }
   }
-  // BATERIA: NÃO MUTA — PERMITE SOBREPOSIÇÃO NATURAL
+
+  // --- BATERIA ---
   Object.keys(plan.drums).forEach(key => {
     if (idx < plan.drums[key].length && plan.drums[key][idx]) {
-      playDrum(key, time, state.drumGain, 1.0); // ↑ Ganho aumentado
+      playDrum(key, time, state.drumGain, 1.0);
     }
   });
+
   state.stepIndex = (state.stepIndex + 1) % state.totalSteps;
 }
+
 function playNote(instrumentKey, note, time, gainNode, volume = 1.0) {
   if (!state.audioCtx) return;
   const bufferKey = `melodic-${instrumentKey}-${note}`;
