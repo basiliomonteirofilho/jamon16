@@ -1166,16 +1166,20 @@ function deleteColumn(columnIndex) {
   }
 }
 // ===== ADICIONAR COMPASSO EM TODOS OS INSTRUMENTOS =====
+// ===== ADICIONAR COMPASSO EM TODOS OS INSTRUMENTOS =====
 function addCompasso() {
   const newColumnIndex = state.totalSteps; // Índice da nova coluna
+
   // Harmonia
   state.harmonyBlocks.forEach(wrapper => {
     const grid = wrapper.querySelector('.columns-grid');
     if (!grid) return;
     createHarmonyColumn(grid, newColumnIndex);
-    // Atualiza os marcadores de semínima
+    // --- CORREÇÃO AQUI ---
+    // Chama addSemibreveMarkers no grid, não no wrapper
     addSemibreveMarkers(grid);
   });
+
   // Baixo, Melodia 1, Melodia 2
   [state.bassBlocks, state.melody1Blocks, state.melody2Blocks].forEach(blocks => {
     blocks.forEach(wrapper => {
@@ -1183,22 +1187,23 @@ function addCompasso() {
       if (!grid) return;
       const type = grid.dataset.type;
       createMelodicColumn(grid, type, newColumnIndex);
-      // Atualiza os marcadores de semínima
+      // --- CORREÇÃO AQUI ---
       addSemibreveMarkers(grid);
     });
   });
+
   // BATERIA
   state.drumBlocks.forEach(block => {
     const grid = block.querySelector('.columns-grid');
     if (!grid) return;
     createDrumColumn(grid, newColumnIndex, block.dataset.blockIndex);
-    // Atualiza os marcadores de semínima
+    // --- CORREÇÃO AQUI ---
     addSemibreveMarkers(grid);
   });
+
   state.totalSteps += 1;
   updateStatus(`Compasso adicionado. Total: ${state.totalSteps} passos.`, 'ready');
 }
-// ===== PLAYBACK =====
 // ===== FUNÇÃO AUXILIAR: Obtém o valor da nota ou acorde da célula =====
 function getCellNoteValue(cellElement) {
   // Lê o primeiro nó de texto da célula, ignorando o botão
@@ -1265,18 +1270,23 @@ function buildPlaybackPlan() {
     });
   });
   // Coleta as células da bateria
-  state.drumBlocks.forEach(block => {
-    const grid = block.querySelector('.columns-grid');
-    const columns = grid.querySelectorAll('.column');
-    columns.forEach((column, stepIndex) => {
-      DRUM_SAMPLES.forEach(drum => {
-        const cell = column.querySelector(`.drum-cell[data-instr="${drum.key}"]`);
-        if (cell) {
-          plan.drums[drum.key].push(cell.classList.contains('active'));
-        }
-      });
+state.drumBlocks.forEach(block => {
+  // --- CORREÇÃO AQUI ---
+  // Navega até o .columns-grid dentro do .drum-wrapper
+  const drumWrapper = block.querySelector('.drum-wrapper');
+  const grid = drumWrapper ? drumWrapper.querySelector('.columns-grid') : block.querySelector('.columns-grid');
+  if (!grid) return;
+
+  const columns = grid.querySelectorAll('.column');
+  columns.forEach((column, stepIndex) => {
+    DRUM_SAMPLES.forEach(drum => {
+      const cell = column.querySelector(`.drum-cell[data-instr="${drum.key}"]`);
+      if (cell) {
+        plan.drums[drum.key].push(cell.classList.contains('active'));
+      }
     });
   });
+});
   state.playbackPlan = plan;
   state.stepIndex = 0;
   state.lastNoteTime = 0;
