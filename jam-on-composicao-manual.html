@@ -149,10 +149,12 @@
     /* ===== ESTILO DA BATERIA ===== */
     /* Container principal da bateria com layout em grid */
     .drum-wrapper {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-    }
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%; /* Força o wrapper a respeitar a largura do pai */
+  min-width: 0; /* Permite que o conteúdo interno seja cortado (crucial para overflow) */
+}
     /* Coluna fixa para os rótulos das peças da bateria */
     .drum-labels {
       display: flex;
