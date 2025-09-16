@@ -844,6 +844,7 @@ function addHarmonyBlock() {
   wrapper.style.display = 'flex';
   wrapper.style.alignItems = 'flex-start';
   wrapper.dataset.blockIndex = blockIndex;
+
   const instrumentSelect = document.createElement('select');
   instrumentSelect.className = 'instrument-select';
   instrumentSelect.style.width = '120px';
@@ -853,46 +854,48 @@ function addHarmonyBlock() {
     <option value="clean-guitar">Guitarra Limpa</option>
     <option value="piano-chord">Piano</option>
   `;
+
   const block = document.createElement('div');
   block.className = 'instrument-block harmony-block';
   block.style.flex = '1';
   block.dataset.blockIndex = blockIndex;
+
   const grid = document.createElement('div');
   grid.className = 'columns-grid';
   grid.dataset.type = 'harmony';
   grid.dataset.blockIndex = blockIndex;
   grid.style.position = 'relative';
+
   const harmonyBlock = {
     wrapper,
     instrumentSelect,
     grid
   };
-  // 🔑 Cria colunas usando a função específica para este bloco
+
+  // 🔑 passa o harmonyBlock inteiro
   for (let i = 0; i < 4; i++) {
-    if (blockIndex === 0) {
-      createHarmonyColumn1(grid, i, harmonyBlock);
-    } else if (blockIndex === 1) {
-      createHarmonyColumn2(grid, i, harmonyBlock);
-    } else if (blockIndex === 2) {
-      createHarmonyColumn3(grid, i, harmonyBlock);
-    }
+    createHarmonyColumn(grid, i, harmonyBlock);
   }
+
   block.appendChild(grid);
   wrapper.appendChild(instrumentSelect);
   wrapper.appendChild(block);
+
   addSemibreveMarkers(grid);
+
   ui.harmonyContainer.appendChild(wrapper);
   state.harmonyBlocks.push(harmonyBlock);
   return wrapper;
 }
-// ===== FUNÇÃO PARA O PRIMEIRO BLOCO DE HARMONIA =====
-function createHarmonyColumn1(parentGrid, columnIndex, harmonyBlock) {
+function createHarmonyColumn(parentGrid, columnIndex, harmonyBlock) {
   const column = document.createElement('div');
   column.className = 'column';
   column.dataset.columnIndex = columnIndex;
+
   const cell = document.createElement('div');
   cell.className = 'cell x';
   cell.textContent = 'X';
+
   const deleteCellBtn = document.createElement('button');
   deleteCellBtn.className = 'delete-cell-btn';
   deleteCellBtn.textContent = '✖';
@@ -906,9 +909,11 @@ function createHarmonyColumn1(parentGrid, columnIndex, harmonyBlock) {
       cell.appendChild(deleteCellBtn);
     }
   });
+
   cell.appendChild(deleteCellBtn);
   column.appendChild(cell);
   parentGrid.appendChild(column);
+
   cell.addEventListener('click', function(e) {
     e.stopPropagation();
     const instrumentKey = harmonyBlock.instrumentSelect.value;
@@ -916,67 +921,7 @@ function createHarmonyColumn1(parentGrid, columnIndex, harmonyBlock) {
   });
 }
 
-// ===== FUNÇÃO PARA O SEGUNDO BLOCO DE HARMONIA =====
-function createHarmonyColumn2(parentGrid, columnIndex, harmonyBlock) {
-  const column = document.createElement('div');
-  column.className = 'column';
-  column.dataset.columnIndex = columnIndex;
-  const cell = document.createElement('div');
-  cell.className = 'cell x';
-  cell.textContent = 'X';
-  const deleteCellBtn = document.createElement('button');
-  deleteCellBtn.className = 'delete-cell-btn';
-  deleteCellBtn.textContent = '✖';
-  deleteCellBtn.addEventListener('click', function(e) {
-    e.stopPropagation();
-    if (confirm('Excluir toda a coluna vertical (inclusive bateria, harmonia e melodias)?')) {
-      deleteColumn(columnIndex);
-    } else {
-      cell.textContent = 'X';
-      cell.classList.add('x');
-      cell.appendChild(deleteCellBtn);
-    }
-  });
-  cell.appendChild(deleteCellBtn);
-  column.appendChild(cell);
-  parentGrid.appendChild(column);
-  cell.addEventListener('click', function(e) {
-    e.stopPropagation();
-    const instrumentKey = harmonyBlock.instrumentSelect.value;
-    openModal('harmony', AVAILABLE_CHORDS, this, instrumentKey);
-  });
-}
 
-// ===== FUNÇÃO PARA O TERCEIRO BLOCO DE HARMONIA =====
-function createHarmonyColumn3(parentGrid, columnIndex, harmonyBlock) {
-  const column = document.createElement('div');
-  column.className = 'column';
-  column.dataset.columnIndex = columnIndex;
-  const cell = document.createElement('div');
-  cell.className = 'cell x';
-  cell.textContent = 'X';
-  const deleteCellBtn = document.createElement('button');
-  deleteCellBtn.className = 'delete-cell-btn';
-  deleteCellBtn.textContent = '✖';
-  deleteCellBtn.addEventListener('click', function(e) {
-    e.stopPropagation();
-    if (confirm('Excluir toda a coluna vertical (inclusive bateria, harmonia e melodias)?')) {
-      deleteColumn(columnIndex);
-    } else {
-      cell.textContent = 'X';
-      cell.classList.add('x');
-      cell.appendChild(deleteCellBtn);
-    }
-  });
-  cell.appendChild(deleteCellBtn);
-  column.appendChild(cell);
-  parentGrid.appendChild(column);
-  cell.addEventListener('click', function(e) {
-    e.stopPropagation();
-    const instrumentKey = harmonyBlock.instrumentSelect.value;
-    openModal('harmony', AVAILABLE_CHORDS, this, instrumentKey);
-  });
-}
 
 function addBassBlock() {
   const blockIndex = state.bassBlocks.length;
@@ -1241,23 +1186,15 @@ function deleteColumn(columnIndex) {
   });
 }
 
+
 function addCompasso() {
   const newColumnIndex = state.totalSteps;
 
-  // Harmonia - Usa a função específica para cada bloco
-  state.harmonyBlocks.forEach((harmonyBlock, idx) => {
+  // Harmonia
+  state.harmonyBlocks.forEach(harmonyBlock => {
     const grid = harmonyBlock.wrapper.querySelector('.columns-grid');
     if (!grid) return;
-
-    // Usa a função específica baseada no índice do bloco
-    if (idx === 0) {
-      createHarmonyColumn1(grid, newColumnIndex, harmonyBlock);
-    } else if (idx === 1) {
-      createHarmonyColumn2(grid, newColumnIndex, harmonyBlock);
-    } else if (idx === 2) {
-      createHarmonyColumn3(grid, newColumnIndex, harmonyBlock);
-    }
-
+    createHarmonyColumn(grid, newColumnIndex, harmonyBlock); // ← Passa harmonyBlock
     // Chama addSemibreveMarkers APÓS adicionar a coluna
     addSemibreveMarkers(grid);
   });
@@ -1299,20 +1236,22 @@ function getCellNoteValue(cellElement) {
   }
   return 'X'; // valor padrão de fallback
 }
+
+// ===== PLAYBACK =====
 function buildPlaybackPlan() {
   const plan = {
-    harmony: [[], [], []], // cada bloco de harmonia separado
+    harmony: [],
     bass: [],
     melody1: [],
     melody2: [],
     drums: {}
   };
 
-  // Inicializa os arrays da bateria
+  // Inicializa os arrays de cada peça de bateria
   DRUM_SAMPLES.forEach(d => plan.drums[d.key] = []);
 
-  // --- COLETA HARMONIA BLOCO POR BLOCO ---
-  state.harmonyBlocks.forEach((harmonyBlock, idx) => {
+  // --- CORREÇÃO DEFINITIVA: Coleta todas as colunas da Harmonia ---
+  state.harmonyBlocks.forEach(harmonyBlock => {
     const grid = harmonyBlock.grid;
     const instrument = harmonyBlock.instrumentSelect.value;
     const columns = grid.querySelectorAll('.column');
@@ -1320,20 +1259,21 @@ function buildPlaybackPlan() {
       const cell = column.querySelector('.cell');
       const chordValue = getCellNoteValue(cell);
       if (chordValue !== 'X') {
-        plan.harmony[idx].push({ chord: chordValue, instrument });
+        plan.harmony.push({ chord: chordValue, instrument });
       } else {
-        plan.harmony[idx].push(null);
+        plan.harmony.push(null);
       }
     });
   });
 
-  // --- COLETA BAIXO / MELODIA 1 / MELODIA 2 ---
+  // Coleta todas as colunas dos instrumentos melódicos (Baixo, Melodia 1, Melodia 2)
   [state.bassBlocks, state.melody1Blocks, state.melody2Blocks].forEach((blocks, idx) => {
     const type = ['bass', 'melody1', 'melody2'][idx];
     blocks.forEach(wrapper => {
       const block = wrapper.querySelector('.instrument-block');
       const grid = block.querySelector('.columns-grid');
       const columns = grid.querySelectorAll('.column');
+      // O seletor de instrumento está no wrapper pai
       const instrumentSelect = wrapper.querySelector('.instrument-select');
       const instrument = instrumentSelect ? instrumentSelect.value : 'piano';
       columns.forEach(column => {
@@ -1348,8 +1288,9 @@ function buildPlaybackPlan() {
     });
   });
 
-  // --- COLETA BATERIA ---
+  // Coleta as células da bateria
   state.drumBlocks.forEach(block => {
+    // Navega até o .columns-grid dentro do .drum-wrapper, se existir
     const drumWrapper = block.querySelector('.drum-wrapper');
     const grid = drumWrapper ? drumWrapper.querySelector('.columns-grid') : block.querySelector('.columns-grid');
     if (!grid) return;
@@ -1365,6 +1306,7 @@ function buildPlaybackPlan() {
     });
   });
 
+  // Armazena o plano de playback no estado global
   state.playbackPlan = plan;
   state.stepIndex = 0;
   state.lastNoteTime = 0;
@@ -1374,22 +1316,18 @@ function scheduleStep(time) {
   const idx = state.stepIndex;
   const plan = state.playbackPlan;
   if (!plan) return;
-
-  // --- HARMONIA: percorre os 3 blocos ---
-  plan.harmony.forEach((block, blockIdx) => {
-    if (idx < block.length && block[idx]) {
-      const item = block[idx];
-      if (item && item.chord !== 'X') {
-        if (state.currentlyPlaying.harmony !== null) {
-          state.currentlyPlaying.harmony = null;
-        }
-        playChord(item.instrument, item.chord, time, state.harmonicGain, 1.0);
-        state.currentlyPlaying.harmony = item.chord;
+  // HARMONIA: MUTE ANTERIOR E TOCA NOVO
+  if (idx < plan.harmony.length && plan.harmony[idx]) {
+    const item = plan.harmony[idx];
+    if (item && item.chord !== 'X') {
+      if (state.currentlyPlaying.harmony !== null) {
+        state.currentlyPlaying.harmony = null;
       }
+      playChord(item.instrument, item.chord, time, state.harmonicGain, 1.0); // ← DURAÇÃO DE 1.0s (semínima)
+      state.currentlyPlaying.harmony = item.chord;
     }
-  });
-
-  // --- BAIXO ---
+  }
+  // BAIXO
   if (idx < plan.bass.length && plan.bass[idx]) {
     const item = plan.bass[idx];
     if (item && item.note) {
@@ -1400,8 +1338,7 @@ function scheduleStep(time) {
       state.currentlyPlaying.bass = item.note;
     }
   }
-
-  // --- MELODIA 1 ---
+  // MELODIA 1
   if (idx < plan.melody1.length && plan.melody1[idx]) {
     const item = plan.melody1[idx];
     if (item && item.note) {
@@ -1412,8 +1349,7 @@ function scheduleStep(time) {
       state.currentlyPlaying.melody1 = item.note;
     }
   }
-
-  // --- MELODIA 2 ---
+  // MELODIA 2
   if (idx < plan.melody2.length && plan.melody2[idx]) {
     const item = plan.melody2[idx];
     if (item && item.note) {
@@ -1424,17 +1360,14 @@ function scheduleStep(time) {
       state.currentlyPlaying.melody2 = item.note;
     }
   }
-
-  // --- BATERIA ---
+  // BATERIA: NÃO MUTA — PERMITE SOBREPOSIÇÃO NATURAL
   Object.keys(plan.drums).forEach(key => {
     if (idx < plan.drums[key].length && plan.drums[key][idx]) {
-      playDrum(key, time, state.drumGain, 1.0);
+      playDrum(key, time, state.drumGain, 1.0); // ↑ Ganho aumentado
     }
   });
-
   state.stepIndex = (state.stepIndex + 1) % state.totalSteps;
 }
-
 function playNote(instrumentKey, note, time, gainNode, volume = 1.0) {
   if (!state.audioCtx) return;
   const bufferKey = `melodic-${instrumentKey}-${note}`;
@@ -1458,9 +1391,9 @@ function playChord(instrumentKey, chord, time, gainNode, volume = 1.0) {
   } else {
     root = chord[0];
   }
-  // Usa a mesma lógica de montagem de caminho da função loadSample
+  // CORREÇÃO FINAL: Monta o caminho exato do arquivo e usa como chave
   const filePath = HARMONIC_INSTRUMENTS[instrumentKey] + root + '/' + chord + '.mp3';
-  const buffer = state.buffers.harmonic[filePath]; // Busca pelo caminho completo, como em loadSample
+  const buffer = state.buffers.harmonic[filePath]; // ← BUSCA PELO CAMINHO COMPLETO
   if (!buffer) {
     console.warn(`Acorde não encontrado: ${filePath}`);
     return;
