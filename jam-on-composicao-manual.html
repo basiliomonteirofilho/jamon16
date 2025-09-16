@@ -916,9 +916,11 @@ function createHarmonyColumn(parentGrid, columnIndex, harmonyBlock) {
 
   cell.addEventListener('click', function(e) {
     e.stopPropagation();
-    const instrumentKey = harmonyBlock.instrumentSelect.value;
+    // Navega pelo DOM para encontrar o seletor de instrumento do bloco PAI correto
+    const instrumentSelect = this.closest('.instrument-wrapper').querySelector('.instrument-select');
+    const instrumentKey = instrumentSelect.value;
     openModal('harmony', AVAILABLE_CHORDS, this, instrumentKey);
-  });
+});
 }
 
 
