@@ -1160,33 +1160,29 @@ function createMelodicColumn(parentGrid, type, columnIndex) {
   parentGrid.appendChild(column);
 }
 
-// ===== FUNÇÃO PARA ADICIONAR MARCADORES DE SEMÍNIMA =====
 function addSemibreveMarkers(grid) {
   // Limpa marcadores existentes primeiro
   const existingMarkers = grid.querySelectorAll('.semibreve-marker');
   existingMarkers.forEach(marker => marker.remove());
 
   const columns = grid.querySelectorAll('.column');
-  let cumulativeWidth = 0;
+  if (columns.length < 4) return; // Só adiciona marcadores se houver pelo menos 4 colunas
 
-  for (let i = 0; i < columns.length; i++) {
-    const column = columns[i];
-    const columnWidth = column.offsetWidth;
-    const gap = 2; // Valor do 'gap' definido no CSS da .columns-grid
+  // Calcula a largura de uma coluna (assumindo que todas têm a mesma largura)
+  const columnWidth = columns[0].offsetWidth;
+  const gap = 2; // Valor do 'gap' definido no CSS da .columns-grid
 
-    // Adiciona um marcador a cada 4 colunas, começando da 4ª (índice 3)
-    if ((i + 1) % 4 === 0 && i > 0) {
-      const marker = document.createElement('div');
-      marker.className = 'semibreve-marker';
-      // Calcula a posição à esquerda do marcador
-      // É a largura acumulada até a coluna atual, mais metade da largura da coluna atual para centralizar o marcador
-      const leftPosition = cumulativeWidth + columnWidth / 2;
-      marker.style.left = `${leftPosition}px`;
-      grid.appendChild(marker);
-    }
+  // Adiciona um marcador após cada grupo de 4 colunas (após a 4ª, 8ª, 12ª, etc.)
+  for (let i = 4; i <= columns.length; i += 4) {
+    const marker = document.createElement('div');
+    marker.className = 'semibreve-marker';
 
-    // Atualiza a largura acumulada para a próxima iteração
-    cumulativeWidth += columnWidth + gap;
+    // Calcula a posição à esquerda do marcador
+    // É a largura de 'i' colunas + o gap entre elas, menos metade da largura do gap para centralizar no espaço
+    const leftPosition = (i * columnWidth) + ((i - 1) * gap) - (gap / 2);
+
+    marker.style.left = `${leftPosition}px`;
+    grid.appendChild(marker);
   }
 }
 
