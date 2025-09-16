@@ -1166,20 +1166,22 @@ function addSemibreveMarkers(grid) {
   existingMarkers.forEach(marker => marker.remove());
 
   const columns = grid.querySelectorAll('.column');
-  if (columns.length < 4) return; // Só adiciona marcadores se houver pelo menos 4 colunas
+  if (columns.length < 4) return;
 
-  // Calcula a largura de uma coluna (assumindo que todas têm a mesma largura)
+  // Obtém a largura da primeira coluna e o gap do CSS
   const columnWidth = columns[0].offsetWidth;
-  const gap = 2; // Valor do 'gap' definido no CSS da .columns-grid
+  const gap = 2; // Deve corresponder ao valor definido em .columns-grid { gap: 2px; }
 
-  // Adiciona um marcador após cada grupo de 4 colunas (após a 4ª, 8ª, 12ª, etc.)
+  // Adiciona um marcador APÓS cada grupo de 4 colunas (após a 4ª, 8ª, 12ª, etc.)
+  // Isso significa que o marcador fica entre a 4ª e 5ª, 8ª e 9ª, etc.
   for (let i = 4; i <= columns.length; i += 4) {
     const marker = document.createElement('div');
     marker.className = 'semibreve-marker';
 
-    // Calcula a posição à esquerda do marcador
-    // É a largura de 'i' colunas + o gap entre elas, menos metade da largura do gap para centralizar no espaço
-    const leftPosition = (i * columnWidth) + ((i - 1) * gap) - (gap / 2);
+    // --- CÁLCULO CORRIGIDO ---
+    // A posição 'left' é a soma da largura de 'i' colunas + o gap entre elas.
+    // Como há (i - 1) gaps entre 'i' colunas, a posição total é:
+    const leftPosition = (i * columnWidth) + ((i - 1) * gap);
 
     marker.style.left = `${leftPosition}px`;
     grid.appendChild(marker);
