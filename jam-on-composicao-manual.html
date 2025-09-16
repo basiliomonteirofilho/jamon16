@@ -626,6 +626,7 @@ const ui = {
   progressText: document.getElementById('progressText')
 };
 // ===== INICIALIZAÇÃO =====
+// ===== INICIALIZAÇÃO =====
 async function initializeApp() {
   updateStatus('Pronto para compor. Clique nas células para criar sua música.', 'ready');
   try {
@@ -641,19 +642,31 @@ async function initializeApp() {
     state.melodyGain.connect(state.masterGain);
     state.harmonicGain.connect(state.masterGain);
     state.masterGain.gain.value = 0.8;
-    state.drumGain.gain.value = 1.0; // ↑ Para evitar abafamento
+    state.drumGain.gain.value = 1.0;
     state.bassGain.gain.value = 0.5;
     state.melodyGain.gain.value = 0.5;
     state.harmonicGain.gain.value = 0.5;
     setupEventListeners();
-    // Inicia com 3 blocos harmônicos e 1 de cada outro tipo
-    addHarmonyBlock(); // 4 células (1 compasso)
-    addHarmonyBlock(); // Segundo bloco harmônico
-    addHarmonyBlock(); // Terceiro bloco harmônico
-    addBassBlock();    // 4 células (1 compasso)
-    addMelody1Block(); // 4 células (1 compasso)
-    addMelody2Block(); // 4 células (1 compasso)
-    addDrumBlock();    // 4 células (1 compasso)
+
+    // --- CORREÇÃO DEFINITIVA: Garante 3 blocos independentes ---
+    // Limpa os arrays de estado antes de adicionar os blocos
+    state.harmonyBlocks = [];
+    state.bassBlocks = [];
+    state.melody1Blocks = [];
+    state.melody2Blocks = [];
+    state.drumBlocks = [];
+
+    // Adiciona 3 blocos de harmonia
+    for (let i = 0; i < 3; i++) {
+      addHarmonyBlock();
+    }
+
+    // Adiciona 1 bloco de cada instrumento melódico e de bateria
+    addBassBlock();
+    addMelody1Block();
+    addMelody2Block();
+    addDrumBlock();
+
     ui.btnPlay.disabled = false;
     ui.btnSaveWAV.disabled = true;
     ui.btnStop.disabled = true;
@@ -827,11 +840,9 @@ function addHarmonyBlock() {
     <option value="piano-chord">Piano</option>
   `;
 
-  // --- CORREÇÃO DEFINITIVA: Armazena a referência ao seletor no estado ---
-  // Cria um objeto para representar este bloco de harmonia
   const harmonyBlock = {
     wrapper: wrapper,
-    instrumentSelect: instrumentSelect, // ← Armazena a referência aqui
+    instrumentSelect: instrumentSelect,
     grid: null
   };
 
@@ -846,18 +857,20 @@ function addHarmonyBlock() {
   grid.dataset.blockIndex = blockIndex;
   grid.style.position = 'relative';
 
+  // Cria as 4 colunas iniciais
   for (let i = 0; i < 4; i++) {
-    createHarmonyColumn(grid, i, harmonyBlock); // ← Passa o objeto harmonyBlock
+    createHarmonyColumn(grid, i, harmonyBlock);
   }
 
-  addSemibreveMarkers(grid);
-
+  // Anexa o grid ao bloco ANTES de chamar addSemibreveMarkers
   block.appendChild(grid);
   wrapper.appendChild(instrumentSelect);
   wrapper.appendChild(block);
 
+  // Só agora chama addSemibreveMarkers, pois o grid está no DOM
+  addSemibreveMarkers(grid);
+
   ui.harmonyContainer.appendChild(wrapper);
-  // --- CORREÇÃO DEFINITIVA: Armazena o objeto, não apenas o wrapper ---
   state.harmonyBlocks.push(harmonyBlock);
   return wrapper;
 }
@@ -1175,16 +1188,16 @@ function deleteColumn(columnIndex) {
 }
 // ===== ADICIONAR COMPASSO EM TODOS OS INSTRUMENTOS =====
 // ===== ADICIONAR COMPASSO EM TODOS OS INSTRUMENTOS =====
+// ===== ADICIONAR COMPASSO EM TODOS OS INSTRUMENTOS =====
 function addCompasso() {
-  const newColumnIndex = state.totalSteps; // Índice da nova coluna
+  const newColumnIndex = state.totalSteps;
 
   // Harmonia
-  state.harmonyBlocks.forEach(wrapper => {
-    const grid = wrapper.querySelector('.columns-grid');
+  state.harmonyBlocks.forEach(harmonyBlock => {
+    const grid = harmonyBlock.wrapper.querySelector('.columns-grid');
     if (!grid) return;
-    createHarmonyColumn(grid, newColumnIndex);
-    // --- CORREÇÃO AQUI ---
-    // Chama addSemibreveMarkers no grid, não no wrapper
+    createHarmonyColumn(grid, newColumnIndex, harmonyBlock); // ← Passa harmonyBlock
+    // Chama addSemibreveMarkers APÓS adicionar a coluna
     addSemibreveMarkers(grid);
   });
 
@@ -1195,7 +1208,6 @@ function addCompasso() {
       if (!grid) return;
       const type = grid.dataset.type;
       createMelodicColumn(grid, type, newColumnIndex);
-      // --- CORREÇÃO AQUI ---
       addSemibreveMarkers(grid);
     });
   });
@@ -1205,7 +1217,6 @@ function addCompasso() {
     const grid = block.querySelector('.columns-grid');
     if (!grid) return;
     createDrumColumn(grid, newColumnIndex, block.dataset.blockIndex);
-    // --- CORREÇÃO AQUI ---
     addSemibreveMarkers(grid);
   });
 
