@@ -851,9 +851,15 @@ function addHarmonyBlock() {
   grid.dataset.blockIndex = blockIndex;
   grid.style.position = 'relative';
 
-  // Cria as 4 colunas iniciais
+  const harmonyBlock = {
+    wrapper,
+    instrumentSelect,
+    grid
+  };
+
+  // 🔑 passa o harmonyBlock inteiro
   for (let i = 0; i < 4; i++) {
-    createHarmonyColumn(grid, i, { instrumentSelect });
+    createHarmonyColumn(grid, i, harmonyBlock);
   }
 
   block.appendChild(grid);
@@ -862,28 +868,22 @@ function addHarmonyBlock() {
 
   addSemibreveMarkers(grid);
 
-  // 🔑 GUARDA grid e instrumentSelect no objeto
-  const harmonyBlock = {
-    wrapper,
-    instrumentSelect,
-    grid
-  };
-
   ui.harmonyContainer.appendChild(wrapper);
   state.harmonyBlocks.push(harmonyBlock);
   return wrapper;
 }
 
+
 function createHarmonyColumn(parentGrid, columnIndex, harmonyBlock) {
   const column = document.createElement('div');
   column.className = 'column';
   column.dataset.columnIndex = columnIndex;
+
   const cell = document.createElement('div');
   cell.className = 'cell x';
   cell.textContent = 'X';
   cell.addEventListener('click', function(e) {
     e.stopPropagation();
-    // --- CORREÇÃO DEFINITIVA: Usa a referência armazenada ---
     const instrumentKey = harmonyBlock.instrumentSelect.value;
     openModal('harmony', AVAILABLE_CHORDS, this, instrumentKey);
   });
@@ -905,6 +905,7 @@ function createHarmonyColumn(parentGrid, columnIndex, harmonyBlock) {
   column.appendChild(cell);
   parentGrid.appendChild(column);
 }
+
 function addBassBlock() {
   const blockIndex = state.bassBlocks.length;
   const wrapper = document.createElement('div');
@@ -1250,22 +1251,19 @@ function buildPlaybackPlan() {
   // --- CORREÇÃO DEFINITIVA: Coleta todas as colunas da Harmonia ---
 state.harmonyBlocks.forEach(harmonyBlock => {
   const grid = harmonyBlock.grid;
-  const columns = grid.querySelectorAll('.column');
-  // Usa a referência armazenada ao criar o bloco
   const instrument = harmonyBlock.instrumentSelect.value;
+  const columns = grid.querySelectorAll('.column');
   columns.forEach(column => {
     const cell = column.querySelector('.cell');
     const chordValue = getCellNoteValue(cell);
     if (chordValue !== 'X') {
-      plan.harmony.push({
-        chord: chordValue,
-        instrument: instrument
-      });
+      plan.harmony.push({ chord: chordValue, instrument });
     } else {
       plan.harmony.push(null);
     }
   });
 });
+
 
   // Coleta todas as colunas dos instrumentos melódicos (Baixo, Melodia 1, Melodia 2)
   [state.bassBlocks, state.melody1Blocks, state.melody2Blocks].forEach((blocks, idx) => {
