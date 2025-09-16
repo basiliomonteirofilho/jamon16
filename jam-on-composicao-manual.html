@@ -91,6 +91,7 @@
       flex-wrap: nowrap;
       overflow-x: auto;
       padding: 5px 0;
+      position: relative;
     }
     .column {
       display: flex;
@@ -122,8 +123,8 @@
       color: #888;
       font-weight: bold;
     }
-    /* Botão de Excluir Coluna - CORRIGIDO: Adicionado z-index */
-    .delete-column-btn {
+    /* Botão de Excluir Célula Individual (e agora também Coluna) */
+    .delete-cell-btn {
       position: absolute;
       top: -8px;
       right: -8px;
@@ -140,32 +141,44 @@
       justify-content: center;
       padding: 0;
       line-height: 1;
-      z-index: 10; /* ← Garante que o botão fique acima da célula */
+      z-index: 10;
     }
-    .delete-column-btn:hover {
+    .delete-cell-btn:hover {
       background: #d32f2f;
     }
-    .drum-grid {
+    /* ===== ESTILO DA BATERIA ===== */
+    /* Container principal da bateria com layout em grid */
+    .drum-wrapper {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    /* Coluna fixa para os rótulos das peças da bateria */
+    .drum-labels {
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      margin: 10px 0;
+      gap: 2px;
+      align-items: flex-start;
+      justify-content: flex-start;
+      padding-top: 5px; /* Ajuste fino para alinhar verticalmente */
     }
-    .drum-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .drum-label {
+    /* Estilo do rótulo da peça da bateria */
+    .drum-label-item {
       width: 120px;
-      padding: 5px;
+      height: 45px;
       background: #2a2a2a;
       border: 1px solid #444;
-      text-align: right;
-      font-size: 0.8em;
+      border-right: none;
+      border-radius: 4px 0 0 4px;
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      text-align: left;
+      font-size: 0.7em;
       color: #ccc;
-      border-radius: 4px;
+      box-sizing: border-box;
     }
+    /* Célula da bateria - agora sem o label interno */
     .drum-cell {
       width: 45px;
       height: 45px;
@@ -179,6 +192,7 @@
       cursor: pointer;
       color: #ccc;
       transition: background 0.2s;
+      position: relative;
     }
     .drum-cell.active {
       background: #5eead4;
@@ -337,21 +351,41 @@
       width: 0%;
       transition: width 0.3s ease;
     }
+    /* ===== MARCADOR DE SEMÍNIMA ===== */
+    .semibreve-marker {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: rgba(255, 255, 255, 0.3);
+      z-index: 5;
+      pointer-events: none;
+    }
+    .semibreve-marker::after {
+      content: '|';
+      position: absolute;
+      top: -20px;
+      left: -5px;
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 14px;
+      font-weight: bold;
+    }
     @media (max-width: 768px) {
       .cell, .drum-cell { 
         width: 35px;
         height: 35px;
         font-size: 0.6em;
       }
-      .drum-label { 
+      .drum-label-item { 
         width: 80px;
-        font-size: 0.7em; 
-        padding: 4px;
+        font-size: 0.6em; 
+        padding: 0 6px;
+        height: 35px;
       }
       button { padding: 10px 15px; }
       .add-btn { width: 25px; height: 25px; font-size: 1em; }
       .instrument-block { min-width: 160px; }
-      .delete-column-btn {
+      .delete-cell-btn {
         width: 14px;
         height: 14px;
         font-size: 0.5em;
@@ -513,7 +547,7 @@ const HARMONIC_INSTRUMENTS = {
   'piano-chord': 'assets/PianoStringChord/'  // ← CORRETO: termina com /
 };
 const DRUM_SAMPLES = [
-  { key: 'ataque', label: 'Prato de Ataque', path: 'assets/ataque.mp3' },
+  { key: 'ataque', label: 'Prato De Ataque', path: 'assets/ataque.mp3' },
   { key: 'bumbo', label: 'Bumbo', path: 'assets/bumbo.mp3' },
   { key: 'caixa', label: 'Caixa', path: 'assets/caixa.mp3' },
   { key: 'chimbal', label: 'Chimbal Fechado', path: 'assets/chimbal.mp3' },
@@ -717,11 +751,9 @@ function openModal(type, options, targetCell, instrumentKey) {
   state.modal.type = type;
   state.modal.targetCell = targetCell;
   state.modal.instrumentKey = instrumentKey;
-  // CORREÇÃO: Usa 'type' para definir o título corretamente
   ui.modalTitle.textContent = type === 'harmony' ? 'Selecione um Acorde' : 'Selecione uma Nota';
-  // Limpa o grid
   ui.modalGrid.innerHTML = '';
-  // Preenche o grid com as opções
+
   options.forEach(option => {
     const div = document.createElement('div');
     div.className = 'modal-option';
@@ -730,27 +762,43 @@ function openModal(type, options, targetCell, instrumentKey) {
     }
     div.textContent = option;
     div.addEventListener('click', function() {
-      targetCell.textContent = option;
+      // --- CORREÇÃO AQUI ---
+      // Em vez de substituir todo o conteúdo, preservamos os filhos e alteramos apenas o texto principal.
+      // Primeiro, removemos qualquer nó de texto direto (não o botão)
+      for (let i = targetCell.childNodes.length - 1; i >= 0; i--) {
+        const node = targetCell.childNodes[i];
+        if (node.nodeType === Node.TEXT_NODE) {
+          targetCell.removeChild(node);
+        }
+      }
+      // Depois, adicionamos o novo texto como primeiro filho
+      targetCell.insertBefore(document.createTextNode(option), targetCell.firstChild);
+
+      // Atualiza a classe 'x' conforme necessário
       if (option === 'X') {
         targetCell.classList.add('x');
       } else {
         targetCell.classList.remove('x');
       }
+
       // Muta o som anterior
       const category = type === 'harmony' ? 'harmony' : targetCell.parentElement.parentElement.dataset.type.replace('Block', '').toLowerCase();
       if (state.currentlyPlaying[category] !== null) {
         state.currentlyPlaying[category] = null;
       }
+
       // Carrega a amostra
       if (type === 'harmony') {
         loadSample('harmonic', instrumentKey, option);
       } else {
         loadSample('melodic', instrumentKey, option);
       }
+
       closeModal();
     });
     ui.modalGrid.appendChild(div);
   });
+
   ui.selectionModal.style.display = 'flex';
 }
 function closeModal() {
@@ -761,50 +809,49 @@ function closeModal() {
     instrumentKey: null
   };
 }
+// ===== FUNÇÃO AUXILIAR: Cria a linha de cabeçalho com botões de delete =====
+// **REMOVIDA** - Não é mais usada
+// function createColumnHeaderRow(parentGrid, numColumns) { ... }
 // ===== BLOCOS DE INSTRUMENTOS =====
 function addHarmonyBlock() {
   const blockIndex = state.harmonyBlocks.length;
   const wrapper = document.createElement('div');
   wrapper.className = 'instrument-wrapper';
   wrapper.style.display = 'flex';
-  wrapper.style.alignItems = 'center';
+  wrapper.style.alignItems = 'flex-start'; // Alinha ao topo
   wrapper.dataset.blockIndex = blockIndex;
-
   // Seletor de instrumento à esquerda
   const instrumentSelect = document.createElement('select');
   instrumentSelect.className = 'instrument-select';
-  instrumentSelect.style.width = '120px'; // Largura fixa para alinhamento
+  instrumentSelect.style.width = '120px';
   instrumentSelect.style.marginRight = '10px';
   instrumentSelect.innerHTML = `
     <option value="distorted-guitar">Guitarra Distorcida</option>
     <option value="clean-guitar">Guitarra Limpa</option>
     <option value="piano-chord">Piano</option>
   `;
-
   // Bloco de grade
   const block = document.createElement('div');
   block.className = 'instrument-block harmony-block';
-  block.style.flex = '1'; // Ocupa o espaço restante
+  block.style.flex = '1';
   block.dataset.blockIndex = blockIndex;
-
   const grid = document.createElement('div');
   grid.className = 'columns-grid';
   grid.dataset.type = 'harmony';
   grid.dataset.blockIndex = blockIndex;
-
+  grid.style.position = 'relative';
   for (let i = 0; i < 4; i++) {
     createHarmonyColumn(grid, i);
   }
-
+  // Adiciona marcadores de semínima
+  addSemibreveMarkers(grid);
   block.appendChild(grid);
   wrapper.appendChild(instrumentSelect);
   wrapper.appendChild(block);
-
   ui.harmonyContainer.appendChild(wrapper);
-  state.harmonyBlocks.push(wrapper); // Agora o wrapper é o que é armazenado
+  state.harmonyBlocks.push(wrapper);
   return wrapper;
 }
-
 function createHarmonyColumn(parentGrid, columnIndex) {
   const column = document.createElement('div');
   column.className = 'column';
@@ -817,26 +864,33 @@ function createHarmonyColumn(parentGrid, columnIndex) {
     const instrumentKey = this.closest('.instrument-block').parentElement.querySelector('.instrument-select').value;
     openModal('harmony', AVAILABLE_CHORDS, this, instrumentKey);
   });
-  const deleteBtn = document.createElement('button');
-  deleteBtn.className = 'delete-column-btn';
-  deleteBtn.textContent = '🗑️';
-  deleteBtn.addEventListener('click', function(e) {
+  // Botão de exclusão individual da célula (agora também exclui coluna)
+  const deleteCellBtn = document.createElement('button');
+  deleteCellBtn.className = 'delete-cell-btn';
+  deleteCellBtn.textContent = '✖';
+  deleteCellBtn.addEventListener('click', function(e) {
     e.stopPropagation();
-    deleteColumn(columnIndex);
+    // Primeiro, pergunta ao usuário
+    if (confirm('Excluir esta célula individualmente ou toda a coluna vertical?')) {
+      // Exclui toda a coluna vertical
+      deleteColumn(columnIndex);
+    } else {
+      // Exclui apenas esta célula
+      this.parentElement.querySelector('.cell').textContent = 'X';
+      this.parentElement.querySelector('.cell').classList.add('x');
+    }
   });
+  cell.appendChild(deleteCellBtn);
   column.appendChild(cell);
-  column.appendChild(deleteBtn);
   parentGrid.appendChild(column);
 }
-
 function addBassBlock() {
   const blockIndex = state.bassBlocks.length;
   const wrapper = document.createElement('div');
   wrapper.className = 'instrument-wrapper';
   wrapper.style.display = 'flex';
-  wrapper.style.alignItems = 'center';
+  wrapper.style.alignItems = 'flex-start';
   wrapper.dataset.blockIndex = blockIndex;
-
   const instrumentSelect = document.createElement('select');
   instrumentSelect.className = 'instrument-select';
   instrumentSelect.style.width = '120px';
@@ -847,31 +901,27 @@ function addBassBlock() {
     <option value="nylon-guitar">Violão Nylon</option>
     <option value="strings">Cordas</option>
   `;
-
   const block = document.createElement('div');
   block.className = 'instrument-block bass-block';
   block.style.flex = '1';
   block.dataset.blockIndex = blockIndex;
-
   const grid = createMelodicGrid('bass', blockIndex, 4);
+  // Adiciona marcadores de semínima
+  addSemibreveMarkers(grid);
   block.appendChild(grid);
-
   wrapper.appendChild(instrumentSelect);
   wrapper.appendChild(block);
-
   ui.bassContainer.appendChild(wrapper);
   state.bassBlocks.push(wrapper);
   return wrapper;
 }
-
 function addMelody1Block() {
   const blockIndex = state.melody1Blocks.length;
   const wrapper = document.createElement('div');
   wrapper.className = 'instrument-wrapper';
   wrapper.style.display = 'flex';
-  wrapper.style.alignItems = 'center';
+  wrapper.style.alignItems = 'flex-start';
   wrapper.dataset.blockIndex = blockIndex;
-
   const instrumentSelect = document.createElement('select');
   instrumentSelect.className = 'instrument-select';
   instrumentSelect.style.width = '120px';
@@ -884,31 +934,27 @@ function addMelody1Block() {
     <option value="acoustic-guitar">Violão Aço</option>
     <option value="nylon-guitar">Violão Nylon</option>
   `;
-
   const block = document.createElement('div');
   block.className = 'instrument-block melody1-block';
   block.style.flex = '1';
   block.dataset.blockIndex = blockIndex;
-
   const grid = createMelodicGrid('melody1', blockIndex, 4);
+  // Adiciona marcadores de semínima
+  addSemibreveMarkers(grid);
   block.appendChild(grid);
-
   wrapper.appendChild(instrumentSelect);
   wrapper.appendChild(block);
-
   ui.melody1Container.appendChild(wrapper);
   state.melody1Blocks.push(wrapper);
   return wrapper;
 }
-
 function addMelody2Block() {
   const blockIndex = state.melody2Blocks.length;
   const wrapper = document.createElement('div');
   wrapper.className = 'instrument-wrapper';
   wrapper.style.display = 'flex';
-  wrapper.style.alignItems = 'center';
+  wrapper.style.alignItems = 'flex-start';
   wrapper.dataset.blockIndex = blockIndex;
-
   const instrumentSelect = document.createElement('select');
   instrumentSelect.className = 'instrument-select';
   instrumentSelect.style.width = '120px';
@@ -921,110 +967,100 @@ function addMelody2Block() {
     <option value="acoustic-guitar">Violão Aço</option>
     <option value="nylon-guitar">Violão Nylon</option>
   `;
-
   const block = document.createElement('div');
   block.className = 'instrument-block melody2-block';
   block.style.flex = '1';
   block.dataset.blockIndex = blockIndex;
-
   const grid = createMelodicGrid('melody2', blockIndex, 4);
+  // Adiciona marcadores de semínima
+  addSemibreveMarkers(grid);
   block.appendChild(grid);
-
   wrapper.appendChild(instrumentSelect);
   wrapper.appendChild(block);
-
   ui.melody2Container.appendChild(wrapper);
   state.melody2Blocks.push(wrapper);
   return wrapper;
 }
-
 function addDrumBlock() {
   const blockIndex = state.drumBlocks.length;
   const block = document.createElement('div');
   block.className = 'instrument-block drum-block';
   block.dataset.blockIndex = blockIndex;
   block.style.display = 'flex';
-  block.style.alignItems = 'stretch'; // ← Alterado para 'stretch' para preencher a altura
-  block.style.flexDirection = 'column'; // ← Adicionado: os filhos serão empilhados verticalmente
-
-  // Cria a grade de colunas
+  block.style.alignItems = 'flex-start'; // Alinha ao topo
+  // Cria o wrapper principal da bateria (labels + grid)
+  const drumWrapper = document.createElement('div');
+  drumWrapper.className = 'drum-wrapper';
+  drumWrapper.style.position = 'relative';
+  // Cria a coluna de rótulos (labels)
+  const labelsColumn = document.createElement('div');
+  labelsColumn.className = 'drum-labels';
+  // Adiciona os rótulos
+  DRUM_SAMPLES.forEach(drum => {
+    const labelItem = document.createElement('div');
+    labelItem.className = 'drum-label-item';
+    labelItem.textContent = drum.label;
+    labelsColumn.appendChild(labelItem);
+  });
+  // Cria a grade de colunas (sem os labels internos)
   const grid = document.createElement('div');
   grid.className = 'columns-grid';
   grid.dataset.type = 'drum';
   grid.dataset.blockIndex = blockIndex;
-  grid.style.flex = '1'; // ← Ocupa o espaço restante verticalmente
-
   // Para cada passo (coluna)
   for (let step = 0; step < 4; step++) {
     createDrumColumn(grid, step, blockIndex);
   }
-
-  block.appendChild(grid);
+  // Adiciona marcadores de semínima
+  addSemibreveMarkers(grid);
+  // Monta a estrutura
+  drumWrapper.appendChild(labelsColumn);
+  drumWrapper.appendChild(grid);
+  block.appendChild(drumWrapper);
   ui.drumContainer.appendChild(block);
   state.drumBlocks.push(block);
   return block;
 }
-
 function createDrumColumn(parentGrid, stepIndex, blockIndex) {
   const column = document.createElement('div');
   column.className = 'column';
   column.dataset.columnIndex = stepIndex;
-  column.style.alignItems = 'stretch'; // Para ocupar toda a largura da coluna
-
+  column.style.alignItems = 'stretch';
+  column.style.display = 'flex';
+  column.style.flexDirection = 'column';
   // Para cada peça de bateria, cria uma célula dentro desta coluna
-  DRUM_SAMPLES.forEach(drum => {
-    const rowWrapper = document.createElement('div'); // ← Novo: um wrapper para cada linha (peça)
-    rowWrapper.style.display = 'flex';
-    rowWrapper.style.alignItems = 'center';
-
-    // Cria o rótulo da peça (à esquerda)
-    const labelDiv = document.createElement('div');
-    labelDiv.style.width = '120px'; // Mesma largura dos selects
-    labelDiv.style.padding = '5px';
-    labelDiv.style.textAlign = 'left';
-    labelDiv.style.color = '#ccc';
-    labelDiv.style.fontSize = '0.9em';
-    labelDiv.textContent = drum.label;
-    rowWrapper.appendChild(labelDiv);
-
-    // Cria a célula clicável (à direita)
+  DRUM_SAMPLES.forEach((drum, idx) => {
     const cell = document.createElement('div');
     cell.className = 'drum-cell';
     cell.dataset.step = stepIndex;
     cell.dataset.instr = drum.key;
     cell.dataset.block = blockIndex;
-    cell.style.height = '20px'; // Ajusta a altura para caber todas as peças
-    cell.style.fontSize = '0.6em'; // Ajusta a fonte para caber
-    cell.style.flex = '1'; // ← Ocupa o espaço restante da linha
+    cell.style.height = '45px'; // ← FIX: Mesma altura da célula melódica
+    cell.style.fontSize = '0.7em'; // ← FIX: Mesma fonte da célula melódica
     cell.addEventListener('click', function() {
       this.classList.toggle('active');
       loadSample('drum', drum.key, '');
     });
-    rowWrapper.appendChild(cell);
-
-    // Adiciona o botão de excluir à célula da bateria
-    if (stepIndex === 0) { // Adiciona o botão apenas na primeira coluna, mas ele afeta toda a coluna vertical
-      const deleteBtn = document.createElement('button');
-      deleteBtn.className = 'delete-column-btn';
-      deleteBtn.textContent = '🗑️';
-      deleteBtn.style.position = 'absolute';
-      deleteBtn.style.top = '-8px';
-      deleteBtn.style.right = '-8px';
-      deleteBtn.style.zIndex = '10';
-      deleteBtn.addEventListener('click', function(e) {
-        e.stopPropagation();
+    // Botão de exclusão individual da célula (agora também exclui coluna)
+    const deleteCellBtn = document.createElement('button');
+    deleteCellBtn.className = 'delete-cell-btn';
+    deleteCellBtn.textContent = '✖';
+    deleteCellBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      // Primeiro, pergunta ao usuário
+      if (confirm('Excluir este acento individualmente ou toda a coluna vertical?')) {
+        // Exclui toda a coluna vertical
         deleteColumn(stepIndex);
-      });
-      cell.style.position = 'relative'; // Para o botão absoluto funcionar
-      cell.appendChild(deleteBtn);
-    }
-
-    column.appendChild(rowWrapper);
+      } else {
+        // Exclui apenas este acento
+        this.parentElement.classList.remove('active');
+      }
+    });
+    cell.appendChild(deleteCellBtn);
+    column.appendChild(cell);
   });
-
   parentGrid.appendChild(column);
 }
-
 function createMelodicGrid(type, blockIndex, numColumns) {
   const grid = document.createElement('div');
   grid.className = 'columns-grid';
@@ -1035,7 +1071,6 @@ function createMelodicGrid(type, blockIndex, numColumns) {
   }
   return grid;
 }
-
 function createMelodicColumn(parentGrid, type, columnIndex) {
   const column = document.createElement('div');
   column.className = 'column';
@@ -1048,38 +1083,68 @@ function createMelodicColumn(parentGrid, type, columnIndex) {
     const instrumentKey = this.closest('.instrument-block').parentElement.querySelector('.instrument-select').value;
     openModal('melodic', ALL_NOTES, this, instrumentKey);
   });
-  const deleteBtn = document.createElement('button');
-  deleteBtn.className = 'delete-column-btn';
-  deleteBtn.textContent = '🗑️';
-  deleteBtn.addEventListener('click', function(e) {
+  // Botão de exclusão individual da célula (agora também exclui coluna)
+  const deleteCellBtn = document.createElement('button');
+  deleteCellBtn.className = 'delete-cell-btn';
+  deleteCellBtn.textContent = '✖';
+  deleteCellBtn.addEventListener('click', function(e) {
     e.stopPropagation();
-    deleteColumn(columnIndex);
+    // Primeiro, pergunta ao usuário
+    if (confirm('Excluir esta nota individualmente ou toda a coluna vertical?')) {
+      // Exclui toda a coluna vertical
+      deleteColumn(columnIndex);
+    } else {
+      // Exclui apenas esta nota
+      this.parentElement.querySelector('.cell').textContent = 'X';
+      this.parentElement.querySelector('.cell').classList.add('x');
+    }
   });
+  cell.appendChild(deleteCellBtn);
   column.appendChild(cell);
-  column.appendChild(deleteBtn);
   parentGrid.appendChild(column);
+}
+// ===== FUNÇÃO PARA ADICIONAR MARCADORES DE SEMÍNIMA =====
+function addSemibreveMarkers(grid) {
+  // Limpa marcadores existentes primeiro
+  const existingMarkers = grid.querySelectorAll('.semibreve-marker');
+  existingMarkers.forEach(marker => marker.remove());
+  
+  // Adiciona um marcador a cada 4 colunas
+  const columns = grid.querySelectorAll('.column');
+  for (let i = 4; i < columns.length; i += 4) {
+    const marker = document.createElement('div');
+    marker.className = 'semibreve-marker';
+    const column = columns[i];
+    const columnRect = column.getBoundingClientRect();
+    const gridRect = grid.getBoundingClientRect();
+    const leftPosition = columnRect.left - gridRect.left;
+    marker.style.left = `${leftPosition}px`;
+    grid.appendChild(marker);
+  }
 }
 // ===== FUNÇÃO PARA EXCLUIR COLUNA =====
 function deleteColumn(columnIndex) {
   if (confirm('Tem certeza que deseja excluir esta coluna de todos os instrumentos?')) {
     // Remove coluna da Harmonia
     state.harmonyBlocks.forEach(wrapper => {
-      const block = wrapper.querySelector('.instrument-block');
-      const grid = block.querySelector('.columns-grid');
+      const grid = wrapper.querySelector('.columns-grid');
       const column = grid.querySelector(`.column[data-column-index="${columnIndex}"]`);
       if (column) {
         grid.removeChild(column);
       }
+      // Atualiza os marcadores de semínima
+      addSemibreveMarkers(grid);
     });
     // Remove coluna do Baixo, Melodia 1 e Melodia 2
     [state.bassBlocks, state.melody1Blocks, state.melody2Blocks].forEach(blocks => {
       blocks.forEach(wrapper => {
-        const block = wrapper.querySelector('.instrument-block');
-        const grid = block.querySelector('.columns-grid');
+        const grid = wrapper.querySelector('.columns-grid');
         const column = grid.querySelector(`.column[data-column-index="${columnIndex}"]`);
         if (column) {
           grid.removeChild(column);
         }
+        // Atualiza os marcadores de semínima
+        addSemibreveMarkers(grid);
       });
     });
     // Remove coluna da Bateria
@@ -1089,6 +1154,8 @@ function deleteColumn(columnIndex) {
       if (column) {
         grid.removeChild(column);
       }
+      // Atualiza os marcadores de semínima
+      addSemibreveMarkers(grid);
     });
     // Atualiza o total de passos
     state.totalSteps -= 1;
@@ -1097,28 +1164,33 @@ function deleteColumn(columnIndex) {
 }
 // ===== ADICIONAR COMPASSO EM TODOS OS INSTRUMENTOS =====
 function addCompasso() {
-  // Harmonia: +1 coluna (4 células = 1 compasso)
+  const newColumnIndex = state.totalSteps; // Índice da nova coluna
+  // Harmonia
   state.harmonyBlocks.forEach(wrapper => {
-    const block = wrapper.querySelector('.instrument-block');
-    const grid = block.querySelector('.columns-grid');
+    const grid = wrapper.querySelector('.columns-grid');
     if (!grid) return;
-    createHarmonyColumn(grid, grid.children.length);
+    createHarmonyColumn(grid, newColumnIndex);
+    // Atualiza os marcadores de semínima
+    addSemibreveMarkers(grid);
   });
-  // Baixo, Melodia 1, Melodia 2: +1 coluna cada (4 células = 1 compasso)
+  // Baixo, Melodia 1, Melodia 2
   [state.bassBlocks, state.melody1Blocks, state.melody2Blocks].forEach(blocks => {
     blocks.forEach(wrapper => {
-      const block = wrapper.querySelector('.instrument-block');
-      const grid = block.querySelector('.columns-grid');
+      const grid = wrapper.querySelector('.columns-grid');
       if (!grid) return;
       const type = grid.dataset.type;
-      createMelodicColumn(grid, type, grid.children.length);
+      createMelodicColumn(grid, type, newColumnIndex);
+      // Atualiza os marcadores de semínima
+      addSemibreveMarkers(grid);
     });
   });
-  // BATERIA: ADICIONA 1 COLUNA
+  // BATERIA
   state.drumBlocks.forEach(block => {
     const grid = block.querySelector('.columns-grid');
     if (!grid) return;
-    createDrumColumn(grid, grid.children.length, block.dataset.blockIndex);
+    createDrumColumn(grid, newColumnIndex, block.dataset.blockIndex);
+    // Atualiza os marcadores de semínima
+    addSemibreveMarkers(grid);
   });
   state.totalSteps += 1;
   updateStatus(`Compasso adicionado. Total: ${state.totalSteps} passos.`, 'ready');
@@ -1177,16 +1249,9 @@ function buildPlaybackPlan() {
     const columns = grid.querySelectorAll('.column');
     columns.forEach((column, stepIndex) => {
       DRUM_SAMPLES.forEach(drum => {
-        // Procura a célula dentro do rowWrapper
-        const rowWrapper = Array.from(column.children).find(rw => {
-          const cell = rw.querySelector('.drum-cell');
-          return cell && cell.dataset.instr === drum.key;
-        });
-        if (rowWrapper) {
-          const cell = rowWrapper.querySelector('.drum-cell');
-          if (cell) {
-            plan.drums[drum.key].push(cell.classList.contains('active'));
-          }
+        const cell = column.querySelector(`.drum-cell[data-instr="${drum.key}"]`);
+        if (cell) {
+          plan.drums[drum.key].push(cell.classList.contains('active'));
         }
       });
     });
@@ -1450,7 +1515,6 @@ async function renderAndDownloadWAV() {
   try {
     const sampleRate = 44100;
     const sixteenthDur = 60 / state.bpm / 4;
-
     // --- CÁLCULO CORRIGIDO DA DURAÇÃO ---
     // O último evento significativo termina 1 segundo após o último passo (duração do acorde).
     const lastEventTime = (state.totalSteps - 1) * sixteenthDur + 1.0;
@@ -1458,41 +1522,34 @@ async function renderAndDownloadWAV() {
     const safeDuration = lastEventTime + 2.0;
     const totalSamples = Math.ceil(safeDuration * sampleRate);
     // --- FIM DO CÁLCULO CORRIGIDO ---
-
     const offlineCtx = new OfflineAudioContext(2, totalSamples, sampleRate);
     const master = offlineCtx.createGain();
     const drumGain = offlineCtx.createGain();
     const bassGain = offlineCtx.createGain();
     const melodyGain = offlineCtx.createGain();
     const harmonicGain = offlineCtx.createGain();
-
     master.connect(offlineCtx.destination);
     drumGain.connect(master);
     bassGain.connect(master);
     melodyGain.connect(master);
     harmonicGain.connect(master);
-
     master.gain.value = 0.8;
     drumGain.gain.value = 1.0;
     bassGain.gain.value = 0.5;
     melodyGain.gain.value = 0.5;
     harmonicGain.gain.value = 0.5;
-
     const totalSteps = state.totalSteps;
-
     // Função para atualizar a barra de progresso
     const updateProgress = (currentStep) => {
       const percent = Math.round((currentStep / totalSteps) * 100);
       ui.progressBar.style.width = `${percent}%`;
       ui.progressText.textContent = `${percent}%`;
     };
-
     for (let step = 0; step < totalSteps; step++) {
       const time = step * sixteenthDur;
       if (step % 10 === 0) {
         updateProgress(step);
       }
-
       // Harmonia (dura 1.0s)
       if (step < state.playbackPlan.harmony.length && state.playbackPlan.harmony[step]) {
         const item = state.playbackPlan.harmony[step];
@@ -1511,7 +1568,6 @@ async function renderAndDownloadWAV() {
           }
         }
       }
-
       // Baixo (dura 0.5s)
       if (step < state.playbackPlan.bass.length && state.playbackPlan.bass[step]) {
         const item = state.playbackPlan.bass[step];
@@ -1527,7 +1583,6 @@ async function renderAndDownloadWAV() {
           }
         }
       }
-
       // Melodia 1 & 2 (duram 0.5s)
       [[state.playbackPlan.melody1, melodyGain], [state.playbackPlan.melody2, melodyGain]].forEach(([melody, gain]) => {
         if (step < melody.length && melody[step]) {
@@ -1545,7 +1600,6 @@ async function renderAndDownloadWAV() {
           }
         }
       });
-
       // Bateria (não para, deixa tocar até o fim)
       Object.keys(state.playbackPlan.drums).forEach(key => {
         if (step < state.playbackPlan.drums[key].length && state.playbackPlan.drums[key][step]) {
@@ -1560,9 +1614,7 @@ async function renderAndDownloadWAV() {
         }
       });
     }
-
     updateProgress(totalSteps);
-
     const renderedBuffer = await offlineCtx.startRendering();
     const wavBlob = audioBufferToWav(renderedBuffer);
     const fileName = `jam-on-${new Date().toISOString().slice(0,10)}-${Math.floor(Math.random()*1000)}.wav`;
