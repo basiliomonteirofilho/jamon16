@@ -872,7 +872,6 @@ function addHarmonyBlock() {
   state.harmonyBlocks.push(harmonyBlock);
   return wrapper;
 }
-
 function createHarmonyColumn(parentGrid, columnIndex, harmonyBlock) {
   const column = document.createElement('div');
   column.className = 'column';
@@ -882,22 +881,17 @@ function createHarmonyColumn(parentGrid, columnIndex, harmonyBlock) {
   cell.className = 'cell x';
   cell.textContent = 'X';
 
-  // Botão de exclusão dentro da célula
   const deleteCellBtn = document.createElement('button');
   deleteCellBtn.className = 'delete-cell-btn';
   deleteCellBtn.textContent = '✖';
   deleteCellBtn.addEventListener('click', function(e) {
     e.stopPropagation();
-    const parentGrid = column.parentElement;
-    const colIndex = [...parentGrid.children].indexOf(column);
-
-    if (confirm('Excluir toda a coluna vertical (inclusive bateria, harmonia e melodia)?')) {
-      deleteColumn(parentGrid, colIndex);
+    if (confirm('Excluir toda a coluna vertical (inclusive bateria, harmonia e melodias)?')) {
+      deleteColumn(columnIndex);
     } else {
-      // Apenas limpa a célula
       cell.textContent = 'X';
       cell.classList.add('x');
-      cell.appendChild(deleteCellBtn); // mantém o botão dentro
+      cell.appendChild(deleteCellBtn);
     }
   });
 
@@ -905,13 +899,13 @@ function createHarmonyColumn(parentGrid, columnIndex, harmonyBlock) {
   column.appendChild(cell);
   parentGrid.appendChild(column);
 
-  // Clique para abrir o modal de acordes
   cell.addEventListener('click', function(e) {
     e.stopPropagation();
     const instrumentKey = harmonyBlock.instrumentSelect.value;
     openModal('harmony', AVAILABLE_CHORDS, this, instrumentKey);
   });
 }
+
 
 
 function addBassBlock() {
@@ -1058,42 +1052,42 @@ function createDrumColumn(parentGrid, stepIndex, blockIndex) {
   const column = document.createElement('div');
   column.className = 'column';
   column.dataset.columnIndex = stepIndex;
-  column.style.alignItems = 'stretch';
   column.style.display = 'flex';
   column.style.flexDirection = 'column';
-  // Para cada peça de bateria, cria uma célula dentro desta coluna
-  DRUM_SAMPLES.forEach((drum, idx) => {
+
+  DRUM_SAMPLES.forEach((drum) => {
     const cell = document.createElement('div');
     cell.className = 'drum-cell';
     cell.dataset.step = stepIndex;
     cell.dataset.instr = drum.key;
     cell.dataset.block = blockIndex;
-    cell.style.height = '45px'; // ← FIX: Mesma altura da célula melódica
-    cell.style.fontSize = '0.7em'; // ← FIX: Mesma fonte da célula melódica
+    cell.style.height = '45px';
+    cell.style.fontSize = '0.7em';
+
     cell.addEventListener('click', function() {
       this.classList.toggle('active');
       loadSample('drum', drum.key, '');
     });
-    // Botão de exclusão individual da célula (agora também exclui coluna)
+
     const deleteCellBtn = document.createElement('button');
     deleteCellBtn.className = 'delete-cell-btn';
     deleteCellBtn.textContent = '✖';
     deleteCellBtn.addEventListener('click', function(e) {
       e.stopPropagation();
-      // Primeiro, pergunta ao usuário
-      if (confirm('Excluir este acento individualmente ou toda a coluna vertical?')) {
-        // Exclui toda a coluna vertical
+      if (confirm('Excluir toda a coluna vertical (inclusive bateria, harmonia e melodias)?')) {
         deleteColumn(stepIndex);
       } else {
-        // Exclui apenas este acento
-        this.parentElement.classList.remove('active');
+        cell.classList.remove('active');
       }
     });
+
     cell.appendChild(deleteCellBtn);
     column.appendChild(cell);
   });
+
   parentGrid.appendChild(column);
 }
+
 function createMelodicGrid(type, blockIndex, numColumns) {
   const grid = document.createElement('div');
   grid.className = 'columns-grid';
@@ -1108,34 +1102,36 @@ function createMelodicColumn(parentGrid, type, columnIndex) {
   const column = document.createElement('div');
   column.className = 'column';
   column.dataset.columnIndex = columnIndex;
+
   const cell = document.createElement('div');
   cell.className = 'cell x';
   cell.textContent = 'X';
+
   cell.addEventListener('click', function(e) {
     e.stopPropagation();
     const instrumentKey = this.closest('.instrument-block').parentElement.querySelector('.instrument-select').value;
     openModal('melodic', ALL_NOTES, this, instrumentKey);
   });
-  // Botão de exclusão individual da célula (agora também exclui coluna)
+
   const deleteCellBtn = document.createElement('button');
   deleteCellBtn.className = 'delete-cell-btn';
   deleteCellBtn.textContent = '✖';
   deleteCellBtn.addEventListener('click', function(e) {
     e.stopPropagation();
-    // Primeiro, pergunta ao usuário
-    if (confirm('Excluir esta nota individualmente ou toda a coluna vertical?')) {
-      // Exclui toda a coluna vertical
+    if (confirm('Excluir toda a coluna vertical (inclusive bateria, harmonia e melodias)?')) {
       deleteColumn(columnIndex);
     } else {
-      // Exclui apenas esta nota
-      this.parentElement.querySelector('.cell').textContent = 'X';
-      this.parentElement.querySelector('.cell').classList.add('x');
+      cell.textContent = 'X';
+      cell.classList.add('x');
+      cell.appendChild(deleteCellBtn);
     }
   });
+
   cell.appendChild(deleteCellBtn);
   column.appendChild(cell);
   parentGrid.appendChild(column);
 }
+
 // ===== FUNÇÃO PARA ADICIONAR MARCADORES DE SEMÍNIMA =====
 function addSemibreveMarkers(grid) {
   // Limpa marcadores existentes primeiro
@@ -1156,13 +1152,15 @@ function addSemibreveMarkers(grid) {
   }
 }
 // ===== FUNÇÃO PARA EXCLUIR COLUNA =====
-function deleteColumn(grid, columnIndex) {
-  // Coleta todos os grids: bateria, harmonia e melodia
+function deleteColumn(columnIndex) {
+  // Coleta todos os grids: bateria, harmonia e melodias
   const allGrids = [
-    ui.drumGrid,
     ...state.harmonyBlocks.map(hb => hb.grid),
-    ...state.melodyBlocks.map(mb => mb.grid)
-  ];
+    ...state.bassBlocks.map(b => b.querySelector('.columns-grid')),
+    ...state.melody1Blocks.map(m => m.querySelector('.columns-grid')),
+    ...state.melody2Blocks.map(m => m.querySelector('.columns-grid')),
+    ...state.drumBlocks.map(d => d.querySelector('.columns-grid'))
+  ].filter(Boolean); // remove nulos
 
   // Remove a coluna correspondente em todos os grids
   allGrids.forEach(g => {
@@ -1172,6 +1170,7 @@ function deleteColumn(grid, columnIndex) {
     }
   });
 }
+
 
 function addCompasso() {
   const newColumnIndex = state.totalSteps;
