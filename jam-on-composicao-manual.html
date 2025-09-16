@@ -1641,7 +1641,9 @@ function onPlay() {
       }
     });
     
-    Promise.all(promises).then(() => {
+     Promise.all(promises).then(() => {
+      // >>>>> ADICIONE ESTA LINHA ABAIXO <<<<<
+      ui.btnSaveWAV.disabled = false;
       startCountdown();
     }).catch(err => {
       console.error('Erro ao carregar amostras:', err);
