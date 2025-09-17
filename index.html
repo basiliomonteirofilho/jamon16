@@ -439,30 +439,30 @@
 </div>
 <!-- ... resto dos controles ... -->
       <h3 style="color: #5eead4; margin: 15px 0 5px;">Controle de Volume</h3>
-      <div class="slider-row">
-        <label>Baixo</label>
-        <input type="range" id="volBass" min="0" max="1" step="0.01" value="0.45">
-        <span class="slider-value" id="volBassLabel">45%</span>
-      </div>
-      <div class="slider-row">
-        <label>Bateria</label>
-        <input type="range" id="volDrums" min="0" max="1" step="0.01" value="0.6">
-        <span class="slider-value" id="volDrumsLabel">60%</span>
-      </div>
-      <div class="slider-row">
-        <label>Limpa</label>
-        <input type="range" id="volClean" min="0" max="1" step="0.01" value="0.45">
-        <span class="slider-value" id="volCleanLabel">45%</span>
-      </div>
-      <div class="slider-row">
-        <label>Distorcida</label>
-        <input type="range" id="volDist" min="0" max="1" step="0.01" value="0.35">
-        <span class="slider-value" id="volDistLabel">35%</span>
-      </div>
-      <div class="slider-row">
+     <div class="slider-row">
+  <label>Baixo</label>
+  <input type="range" id="volBass" min="0" max="1" step="0.01" value="0.70"> <!-- Aumentado para 70% -->
+  <span class="slider-value" id="volBassLabel">70%</span>
+</div>
+<div class="slider-row">
+  <label>Bateria</label>
+  <input type="range" id="volDrums" min="0" max="1" step="0.01" value="0.80"> <!-- Aumentado para 80% -->
+  <span class="slider-value" id="volDrumsLabel">80%</span>
+</div>
+<div class="slider-row">
+  <label>Limpa</label>
+  <input type="range" id="volClean" min="0" max="1" step="0.01" value="0.00"> <!-- ZERADO -->
+  <span class="slider-value" id="volCleanLabel">0%</span>
+</div>
+<div class="slider-row">
+  <label>Distorcida</label>
+  <input type="range" id="volDist" min="0" max="1" step="0.01" value="0.00"> <!-- ZERADO -->
+  <span class="slider-value" id="volDistLabel">0%</span>
+</div>
+<div class="slider-row">
   <label>Piano</label>
-  <input type="range" id="volPianoString" min="0" max="1" step="0.01" value="0.50">
-  <span class="slider-value" id="volPianoStringLabel">50%</span>
+  <input type="range" id="volPianoString" min="0" max="1" step="0.01" value="0.00"> <!-- ZERADO -->
+  <span class="slider-value" id="volPianoStringLabel">0%</span>
 </div>
       <div class="slider-row">
         <label>Melodia</label>
@@ -754,15 +754,15 @@ function initializeStyleAndKeySelectors() {
           audio.cleanGain = audio.ctx.createGain();
           audio.distGain = audio.ctx.createGain();
           audio.pianoStringGain = audio.ctx.createGain();
-          audio.pianoStringGain.gain.value = 0.50;
+          audio.pianoStringGain.gain.value = 0.00;
           audio.melodyGain = audio.ctx.createGain();
           audio.melodyGain.gain.value = 0.50;
           audio.melodyGain.connect(audio.master);
           audio.master.gain.value = 0.9;
-          audio.drumGain.gain.value = 0.6;
-          audio.bassGain.gain.value = 0.45;
-          audio.cleanGain.gain.value = 0.45;
-          audio.distGain.gain.value = 0.35;
+          audio.drumGain.gain.value = 0.80;
+          audio.bassGain.gain.value = 0.70;
+          audio.cleanGain.gain.value = 0.00;
+          audio.distGain.gain.value = 0.00;
           audio.master.connect(audio.mix);
           audio.mix.connect(audio.ctx.destination);
           audio.drumGain.connect(audio.master);
