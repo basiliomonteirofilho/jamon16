@@ -1394,9 +1394,10 @@ function duplicateComposition() {
           newCell.classList.add('x');
         } else {
           newCell.classList.remove('x');
-          // >>>>> CORREÇÃO: Carrega o sample do acorde duplicado <<<<<
+          // >>>>> CORREÇÃO AQUI: Converte # de volta para S antes de carregar o sample <<<<<
           const instrumentKey = harmonyBlock.instrumentSelect.value;
-          loadSample('harmonic', instrumentKey, originalText);
+          const noteOrChordForLoading = originalText.replace(/#/g, 'S');
+          loadSample('harmonic', instrumentKey, noteOrChordForLoading);
         }
         // Adiciona o botão de volta
         if (deleteBtn) newCell.appendChild(deleteBtn);
@@ -1421,9 +1422,10 @@ function duplicateComposition() {
           newCell.classList.add('x');
         } else {
           newCell.classList.remove('x');
-          // >>>>> CORREÇÃO: Carrega o sample da nota duplicada <<<<<
+          // >>>>> CORREÇÃO AQUI: Converte # de volta para S antes de carregar o sample <<<<<
           const instrumentKey = wrapper.querySelector('.instrument-select').value;
-          loadSample('melodic', instrumentKey, originalText);
+          const noteOrChordForLoading = originalText.replace(/#/g, 'S');
+          loadSample('melodic', instrumentKey, noteOrChordForLoading);
         }
         if (deleteBtn) newCell.appendChild(deleteBtn);
       });
