@@ -418,12 +418,9 @@
 <div class="row">
   <label>Qualidade</label>
   <select id="qualitySelect">
-  <option value="maj">Maior</option>
-  <option value="min">Menor Natural</option>
-  <option value="minH">Menor Harmônico</option>
-  <option value="minM">Menor Melódico</option>
-</select>
-
+    <option value="maj" selected>Maior</option>
+    <option value="min">Menor</option>
+  </select>
 </div>
 <!-- FIM DOS NOVOS CONTROLES -->
 <div class="row">
@@ -830,6 +827,12 @@ function initializeStyleAndKeySelectors() {
     }
     // ===== FUNÇÕES PRINCIPAIS =====
  function getChordTypeByDegree(degree, quality) {
+  // --- NOVA LÓGICA: Se o estilo for Blues, força 7ª dominante ---
+  if (state.currentGroove && state.currentGroove.name.includes("Blues")) {
+    return '7'; // Todos os acordes viram dominantes no Blues
+  }
+  // --- FIM DA NOVA LÓGICA ---
+
   if (quality === 'maj') {
     // Campo harmônico maior: I ii iii IV V vi vii°
     switch (degree) {
@@ -837,43 +840,69 @@ function initializeStyleAndKeySelectors() {
       case 2: case 3: case 6: return 'm';      // menor
       case 7: return 'dim';                    // diminuto
     }
-  } else if (quality === 'min') {
+  } else {
     // Campo harmônico menor natural: i ii° III iv v VI VII
     switch (degree) {
-      case 1: return 'm';    // i
-      case 2: return 'dim';  // ii°
-      case 3: return '';     // III
-      case 4: return 'm';    // iv
-      case 5: return 'm';    // v
-      case 6: return '';     // VI
-      case 7: return '';     // VII
-    }
-  } else if (quality === 'minH') {
-    // Campo harmônico menor harmônico: i ii° III+ iv V VI vii°
-    switch (degree) {
-      case 1: return 'm';     // i
-      case 2: return 'dim';   // ii°
-      case 3: return 'aug';   // III+
-      case 4: return 'm';     // iv
-      case 5: return '';      // V
-      case 6: return '';      // VI
-      case 7: return 'dim';   // vii°
-    }
-  } else if (quality === 'minM') {
-    // Campo harmônico menor melódico: i ii III+ IV V vi° vii°
-    switch (degree) {
-      case 1: return 'm';     // i
-      case 2: return 'm';     // ii
-      case 3: return 'aug';   // III+
-      case 4: return '';      // IV
-      case 5: return '';      // V
-      case 6: return 'dim';   // vi°
-      case 7: return 'dim';   // vii°
+      case 1: return 'm';       // i
+      case 2: return 'dim';     // ii°
+      case 3: return '';        // III
+      case 4: return 'm';       // iv
+      case 5: return 'm';       // v
+      case 6: return '';        // VI
+      case 7: return '';        // VII
     }
   }
-  return '';
+  return ''; // Retorna acorde maior caso o grau seja inválido ou não mapeado
 }
 
+// ===== FUNÇÃO getBassNotesFromScale (FALTANDO NO CÓDIGO) =====
+function getBassNotesFromScale(degree, scale, chordType) {
+  // Se a escala for "chromatic", retorna todas as 12 notas (ex: Jazz)
+  if (scale === "chromatic") {
+    return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+  }
+
+  // Mapeia o grau do acorde para sua tônica relativa dentro da escala maior/menor
+  // Isso define a "raiz" da escala a ser usada para o baixo neste acorde
+  let rootOffset = 0;
+  switch (degree) {
+    case 1: rootOffset = 0; break; // Tônica
+    case 2: rootOffset = 2; break; // Supertônica
+    case 3: rootOffset = 4; break; // Mediante
+    case 4: rootOffset = 5; break; // Subdominante
+    case 5: rootOffset = 7; break; // Dominante
+    case 6: rootOffset = 9; break; // Superdominante / Submediante
+    case 7: rootOffset = 11; break; // Sensível
+    default: rootOffset = 0;
+  }
+
+  // Ajusta a escala se o acorde for menor ou diminuto
+  // Isso é uma simplificação. Em uma implementação mais avançada, você poderia
+  // ter escalas específicas para acordes menores (ex: Dórico, Eólio) ou diminutos.
+  let adjustedScale = [...scale]; // Trabalha com uma cópia
+
+  if (chordType === 'm' || chordType === 'dim') {
+    // Para acordes menores, abaixa a 3ª (índice 1 na escala) em 1 semitom
+    // Isso simula a mudança de modo (ex: de maior para menor)
+    if (adjustedScale.length > 1 && adjustedScale[1] === 3) {
+      adjustedScale[1] = 2; // Transforma a terça maior em menor
+    }
+    // Para diminuto, também abaixa a 5ª (índice 2 na escala)
+    if (chordType === 'dim' && adjustedScale.length > 2 && adjustedScale[2] === 5) {
+      adjustedScale[2] = 4; // Transforma a quinta justa em diminuta
+    }
+  }
+
+  // Aplica o offset da raiz à escala
+  return adjustedScale.map(note => {
+    // Calcula a nota absoluta na escala cromática (1-12)
+    let absoluteNote = note + rootOffset;
+    // Garante que fique dentro do range 1-12
+    while (absoluteNote > 12) absoluteNote -= 12;
+    while (absoluteNote < 1) absoluteNote += 12;
+    return absoluteNote;
+  });
+}
 
 // ==================== FUNÇÃO CORRIGIDA COMPLETA ====================
 async function buildBassAndChordPlan() {
