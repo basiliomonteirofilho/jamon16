@@ -414,6 +414,14 @@
     <!-- As opções serão preenchidas dinamicamente pelo JavaScript -->
   </select>
 </div>
+<!-- ADICIONA O NOVO CONTROLE DE QUALIDADE -->
+<div class="row">
+  <label>Qualidade</label>
+  <select id="qualitySelect">
+    <option value="maj" selected>Maior</option>
+    <option value="min">Menor</option>
+  </select>
+</div>
 <!-- FIM DOS NOVOS CONTROLES -->
 <div class="row">
   <label>Melodia</label>
@@ -509,6 +517,7 @@ const ui = {
   // --- NOVOS ELEMENTOS ---
   styleSelect: document.getElementById('styleSelect'),
   keySelect: document.getElementById('keySelect'),
+  qualitySelect: document.getElementById('qualitySelect'), // <-- Nova linha
   // --- FIM DOS NOVOS ELEMENTOS ---
   state: document.getElementById('state'),
   currentChord: document.getElementById('currentChord'),
@@ -549,8 +558,9 @@ function initializeStyleAndKeySelectors() {
   const uniqueKeys = [...new Set(PITCHES)].sort();
   uniqueKeys.forEach(keyName => {
     const opt = document.createElement('option');
-    opt.value = keyName;
-    opt.textContent = keyName;
+    opt.value = keyName; // Valor interno mantém 'S'
+    // Exibe '#' para o usuário, mas mantém 'S' no value
+    opt.textContent = keyName.replace('S', '#');
     ui.keySelect.appendChild(opt);
   });
 }
@@ -715,7 +725,7 @@ function initializeStyleAndKeySelectors() {
       return Number(meter.split('/')[0]) || 4;
     }
     function setStatePanel() {
-      ui.state.innerHTML = `<div>Levada: ${state.signatureTag || '—'}</div><div>Key: ${state.key || '—'} ${state.quality}</div>`;
+      ui.state.innerHTML = `<div>Levada: ${state.signatureTag || '—'}</div><div>Key: ${state.key?.replace('S', '#') || '—'} ${state.quality === 'maj' ? 'Maior' : 'Menor'}</div>`;
     }
     let initPromise = null;
     function updateVolume() {
@@ -827,27 +837,26 @@ function initializeStyleAndKeySelectors() {
   }
   state.signatureTag = state.currentGroove.name;
   state.meter = ui.meter.value === 'auto' ? state.currentGroove.meter : ui.meter.value;
-
   if (state.currentGroove.name === "Samba") {
     ui.bpm.value = 70;
     state.bpm = 70;
   } else {
     state.bpm = Number(ui.bpm.value) || 100;
   }
-
   const beats = meterToBeats(state.meter);
   const sixteenthsPerBar = beats * 4;
-
-  // Escolhe a tonalidade baseada na seleção do usuário ou aleatoriamente
+  // Escolhe a tonalidade e qualidade baseadas na seleção do usuário ou aleatoriamente
   if (!ui.keySelect || ui.keySelect.value === 'auto') {
     state.keyIdx = Math.floor(Math.random() * PITCHES.length);
     state.key = PITCHES[state.keyIdx];
+    // Se for aleatório, define qualidade aleatória
+    state.quality = Math.random() > 0.5 ? 'maj' : 'min';
   } else {
-    state.key = ui.keySelect.value;
+    state.key = ui.keySelect.value; // Recebe 'CS', 'DS', etc.
     state.keyIdx = PITCHES.indexOf(state.key);
+    // Define a qualidade baseada na nova seleção do usuário
+    state.quality = ui.qualitySelect.value; // 'maj' ou 'min'
   }
-
-  state.quality = 'maj';
   const grooveName = state.currentGroove.name;
   let styleKey = "Rock";
   if (grooveName.includes("Samba")) styleKey = "Samba";
@@ -855,24 +864,18 @@ function initializeStyleAndKeySelectors() {
   else if (grooveName.includes("Forró")) styleKey = "Forró";
   else if (grooveName.includes("Metal")) styleKey = "Metal";
   else if (grooveName.includes("Blues")) styleKey = "Blues";
-
   const progressions = STYLE_PROGRESSIONS[styleKey] || STYLE_PROGRESSIONS.Rock;
-
   // 🔹 Aqui removemos todas as progressões que contenham o grau 7 (diminuto)
   let availableProgressions = progressions.filter(prog => !prog.includes(7));
   if (availableProgressions.length === 0) {
     availableProgressions = progressions; // fallback
   }
-
   state.chordProgression = availableProgressions[Math.floor(Math.random() * availableProgressions.length)];
-
   const totalBars = Math.min(state.chordProgression.length, 64);
   const totalSteps = sixteenthsPerBar * totalBars;
   const rhythm = expandRhythm(state.currentGroove.bassRhythm, totalSteps);
-
   const bassPlan = [];
   const chordPlan = [];
-
   function getBassNotesFromScale(degree, scale, chordType) {
     const isMinor = (
       chordType.startsWith('m') ||
@@ -1039,7 +1042,6 @@ function initializeStyleAndKeySelectors() {
     }
 async function onPlay() {
   if (state.running && !state.paused) return;
-
   try {
     if (!audio.ctx) {
       await initAudio();
@@ -1052,7 +1054,6 @@ async function onPlay() {
     alert('Erro ao iniciar o sistema de áudio. Recarregue a página e clique em Play.');
     return;
   }
-
   // Se estiver pausado, retoma de onde parou
   if (state.paused) {
     state.paused = false;
@@ -1062,7 +1063,6 @@ async function onPlay() {
     state.nextNoteTime = state.nextNoteTime + timeSincePause;
     return;
   }
-
   // 🔹 Salva o playback atual ANTES de gerar um novo
   if (state.bassPlan.length > 0 && state.chordPlan.length > 0) {
     if (!state.previousPlaybacks) state.previousPlaybacks = [];
@@ -1081,11 +1081,9 @@ async function onPlay() {
       chordProgression: [...state.chordProgression]
     });
   }
-
   // Agora inicia um novo playback
   state.bpm = Number(ui.bpm.value) || 100;
   state.sixteenthDur = 60 / state.bpm / 4;
-
   try {
     await buildBassAndChordPlan();
   } catch (e) {
@@ -1093,27 +1091,23 @@ async function onPlay() {
     alert('Erro ao gerar a progressão musical. Tente novamente.');
     return;
   }
-
   try {
     buildMelodyPlanFromBlocks();
     await ensureMelodySamplesNeeded();
   } catch (e) {
     console.error('Erro na melodia:', e);
   }
-
   state.running = false;
   state.stepIndex = 0;
   state.nextNoteTime = audio.ctx.currentTime + 0.05;
   const beats = meterToBeats(state.meter);
   const quarterDur = 60 / state.bpm;
   const startTime = audio.ctx.currentTime + 0.05;
-
   for (let i = 0; i < beats; i++) {
     const t = startTime + i * quarterDur;
     const isStrong = (i % beats) === 0;
     playClickAtTime(t, isStrong);
   }
-
   const schedulerStartTime = startTime + beats * quarterDur;
   setTimeout(() => {
     state.running = true;
@@ -1121,7 +1115,6 @@ async function onPlay() {
     startScheduler();
   }, Math.max(0, (schedulerStartTime - audio.ctx.currentTime) * 1000 + 10));
 }
-
 function onPause() {
   if (state.running && !state.paused) {
     state.paused = true;
@@ -1129,16 +1122,13 @@ function onPause() {
     ui.state.textContent = "Pausado";
   }
 }
-
   function onPrevious() {
   if (!state.previousPlaybacks || state.previousPlaybacks.length === 0) {
     alert('Nenhum playback anterior disponível.');
     return;
   }
-
   // Recupera o último playback salvo
   const prev = state.previousPlaybacks.pop();
-
   // Salva o atual antes de trocar (para permitir "Avançar" futuramente se quiser)
   if (!state.nextPlaybacks) state.nextPlaybacks = [];
   state.nextPlaybacks.push({
@@ -1155,7 +1145,6 @@ function onPause() {
     signatureTag: state.signatureTag,
     chordProgression: [...state.chordProgression]
   });
-
   // Restaura o playback anterior
   state.bassPlan = [...prev.bassPlan];
   state.chordPlan = [...prev.chordPlan];
@@ -1169,12 +1158,10 @@ function onPause() {
   state.quality = prev.quality;
   state.signatureTag = prev.signatureTag;
   state.chordProgression = [...prev.chordProgression];
-
   // Atualiza a interface
   ui.bpm.value = state.bpm;
   ui.meter.value = state.meter;
   setStatePanel();
-
   const progEl = document.getElementById('chordProgression');
   if (progEl && state.chordPlan.length > 0) {
     const chordLabels = state.chordPlan.map(ch => ch.displayed);
@@ -1182,12 +1169,9 @@ function onPause() {
       .map((label, i) => `<span class="chord-item" data-index="${i}">${label}</span>`)
       .join(' ');
   }
-
   // Inicia o playback restaurado
   onPlay();
 }
-
-
     function scheduler() {
       if (!state.running || state.paused) return;
       const lookahead = 0.20;
