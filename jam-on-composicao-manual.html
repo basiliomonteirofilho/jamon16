@@ -1361,95 +1361,119 @@ function addCompasso() {
 updateEditMap();
 
 }
+
 function duplicateComposition() {
   if (state.totalSteps === 0) {
     alert('Nenhuma composição para duplicar.');
     return;
   }
   const originalTotalSteps = state.totalSteps;
-  // Para cada coluna existente, cria uma cópia
+
   for (let i = 0; i < originalTotalSteps; i++) {
     const newColumnIndex = state.totalSteps; // Sempre adiciona no final
-    // Harmonia 1, 2, 3
+
+    // --- HARMONIA 1, 2 e 3 ---
     for (let containerIndex = 0; containerIndex < 3; containerIndex++) {
       state.harmonyBlocks[containerIndex].forEach(harmonyBlock => {
         const grid = harmonyBlock.grid;
         if (!grid) return;
-        // Encontra a célula original
+
+        const instrument = harmonyBlock.instrumentSelect.value;
         const originalColumn = grid.querySelector(`.column:nth-child(${i + 1})`);
         const originalCell = originalColumn.querySelector('.cell');
         const originalText = originalCell.textContent;
         const isX = originalCell.classList.contains('x');
-        // Cria nova coluna
+
         createHarmonyColumn(grid, newColumnIndex, harmonyBlock);
-        // Configura a nova célula com o conteúdo da original
+
         const newColumn = grid.querySelector(`.column:nth-child(${newColumnIndex + 1})`);
         const newCell = newColumn.querySelector('.cell');
-        // Remove o botão temporariamente para manipular o texto
+
         const deleteBtn = newCell.querySelector('.delete-cell-btn');
         if (deleteBtn) newCell.removeChild(deleteBtn);
+
         newCell.textContent = originalText;
+
         if (isX) {
           newCell.classList.add('x');
         } else {
           newCell.classList.remove('x');
-          // Armazena o valor original (com 'S') no dataset para uso posterior pelo sistema de playback
           newCell.dataset.originalValue = originalText.replace(/#/g, 'S');
+          // 🔑 Carrega o acorde duplicado
+          loadSample('harmonic', instrument, newCell.dataset.originalValue);
         }
-        // Adiciona o botão de volta
+
         if (deleteBtn) newCell.appendChild(deleteBtn);
       });
     }
-    // Baixo, Melodia 1, Melodia 2
+
+    // --- BAIXO, MELODIA 1, MELODIA 2 ---
     [state.bassBlocks, state.melody1Blocks, state.melody2Blocks].forEach(blocks => {
       blocks.forEach(wrapper => {
         const grid = wrapper.querySelector('.columns-grid');
         if (!grid) return;
+
+        const instrumentSelect = wrapper.querySelector('.instrument-select');
+        const instrument = instrumentSelect ? instrumentSelect.value : 'piano';
+
         const originalColumn = grid.querySelector(`.column:nth-child(${i + 1})`);
         const originalCell = originalColumn.querySelector('.cell');
         const originalText = originalCell.textContent;
         const isX = originalCell.classList.contains('x');
+
         createMelodicColumn(grid, grid.dataset.type, newColumnIndex);
+
         const newColumn = grid.querySelector(`.column:nth-child(${newColumnIndex + 1})`);
         const newCell = newColumn.querySelector('.cell');
+
         const deleteBtn = newCell.querySelector('.delete-cell-btn');
         if (deleteBtn) newCell.removeChild(deleteBtn);
+
         newCell.textContent = originalText;
+
         if (isX) {
           newCell.classList.add('x');
         } else {
           newCell.classList.remove('x');
-          // Armazena o valor original (com 'S') no dataset
           newCell.dataset.originalValue = originalText.replace(/#/g, 'S');
+          // 🔑 Carrega a nota duplicada
+          loadSample('melodic', instrument, newCell.dataset.originalValue);
         }
+
         if (deleteBtn) newCell.appendChild(deleteBtn);
       });
     });
-    // BATERIA (este trecho está correto e pode permanecer)
+
+    // --- BATERIA (já estava correto) ---
     state.drumBlocks.forEach(block => {
       const drumWrapper = block.querySelector('.drum-wrapper');
       const grid = drumWrapper ? drumWrapper.querySelector('.columns-grid') : block.querySelector('.columns-grid');
       if (!grid) return;
+
       const originalColumn = grid.querySelector(`.column:nth-child(${i + 1})`);
       createDrumColumn(grid, newColumnIndex, block.dataset.blockIndex);
+
       const newColumn = grid.querySelector(`.column:nth-child(${newColumnIndex + 1})`);
-      DRUM_SAMPLES.forEach((drum, drumIndex) => {
+
+      DRUM_SAMPLES.forEach(drum => {
         const originalCell = originalColumn.querySelector(`.drum-cell[data-instr="${drum.key}"]`);
         const newCell = newColumn.querySelector(`.drum-cell[data-instr="${drum.key}"]`);
         if (originalCell.classList.contains('active')) {
           newCell.classList.add('active');
-          // Carregar o sample da bateria aqui é aceitável porque é um evento simples e o sistema de playback da bateria é menos complexo.
           loadSample('drum', drum.key, '');
         } else {
           newCell.classList.remove('active');
         }
       });
     });
+
     state.totalSteps += 1;
   }
+
   updateStatus(`Composição duplicada. Total: ${state.totalSteps} passos.`, 'ready');
   updateEditMap();
 }
+
 function updateEditMap() {
   const mapContent = document.getElementById('editMapContent');
   mapContent.innerHTML = '';
