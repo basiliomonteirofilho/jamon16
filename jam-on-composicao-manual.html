@@ -1368,108 +1368,91 @@ function duplicateComposition() {
     alert('Nenhuma composição para duplicar.');
     return;
   }
-
   const originalTotalSteps = state.totalSteps;
-
   // Para cada coluna existente, cria uma cópia
   for (let i = 0; i < originalTotalSteps; i++) {
     const newColumnIndex = state.totalSteps; // Sempre adiciona no final
-
     // Harmonia 1, 2, 3
     for (let containerIndex = 0; containerIndex < 3; containerIndex++) {
       state.harmonyBlocks[containerIndex].forEach(harmonyBlock => {
         const grid = harmonyBlock.grid;
         if (!grid) return;
-
         // Encontra a célula original
         const originalColumn = grid.querySelector(`.column:nth-child(${i + 1})`);
         const originalCell = originalColumn.querySelector('.cell');
         const originalText = originalCell.textContent;
         const isX = originalCell.classList.contains('x');
-
         // Cria nova coluna
         createHarmonyColumn(grid, newColumnIndex, harmonyBlock);
-
         // Configura a nova célula com o conteúdo da original
         const newColumn = grid.querySelector(`.column:nth-child(${newColumnIndex + 1})`);
         const newCell = newColumn.querySelector('.cell');
-
         // Remove o botão temporariamente para manipular o texto
         const deleteBtn = newCell.querySelector('.delete-cell-btn');
         if (deleteBtn) newCell.removeChild(deleteBtn);
-
         newCell.textContent = originalText;
         if (isX) {
           newCell.classList.add('x');
         } else {
           newCell.classList.remove('x');
+          // >>>>> CORREÇÃO: Carrega o sample do acorde duplicado <<<<<
+          const instrumentKey = harmonyBlock.instrumentSelect.value;
+          loadSample('harmonic', instrumentKey, originalText);
         }
-
         // Adiciona o botão de volta
         if (deleteBtn) newCell.appendChild(deleteBtn);
       });
     }
-
     // Baixo, Melodia 1, Melodia 2
     [state.bassBlocks, state.melody1Blocks, state.melody2Blocks].forEach(blocks => {
       blocks.forEach(wrapper => {
         const grid = wrapper.querySelector('.columns-grid');
         if (!grid) return;
-
         const originalColumn = grid.querySelector(`.column:nth-child(${i + 1})`);
         const originalCell = originalColumn.querySelector('.cell');
         const originalText = originalCell.textContent;
         const isX = originalCell.classList.contains('x');
-
         createMelodicColumn(grid, grid.dataset.type, newColumnIndex);
-
         const newColumn = grid.querySelector(`.column:nth-child(${newColumnIndex + 1})`);
         const newCell = newColumn.querySelector('.cell');
-
         const deleteBtn = newCell.querySelector('.delete-cell-btn');
         if (deleteBtn) newCell.removeChild(deleteBtn);
-
         newCell.textContent = originalText;
         if (isX) {
           newCell.classList.add('x');
         } else {
           newCell.classList.remove('x');
+          // >>>>> CORREÇÃO: Carrega o sample da nota duplicada <<<<<
+          const instrumentKey = wrapper.querySelector('.instrument-select').value;
+          loadSample('melodic', instrumentKey, originalText);
         }
-
         if (deleteBtn) newCell.appendChild(deleteBtn);
       });
     });
-
     // BATERIA
     state.drumBlocks.forEach(block => {
       const drumWrapper = block.querySelector('.drum-wrapper');
       const grid = drumWrapper ? drumWrapper.querySelector('.columns-grid') : block.querySelector('.columns-grid');
       if (!grid) return;
-
       const originalColumn = grid.querySelector(`.column:nth-child(${i + 1})`);
       createDrumColumn(grid, newColumnIndex, block.dataset.blockIndex);
-
       const newColumn = grid.querySelector(`.column:nth-child(${newColumnIndex + 1})`);
       DRUM_SAMPLES.forEach((drum, drumIndex) => {
         const originalCell = originalColumn.querySelector(`.drum-cell[data-instr="${drum.key}"]`);
         const newCell = newColumn.querySelector(`.drum-cell[data-instr="${drum.key}"]`);
-
         if (originalCell.classList.contains('active')) {
           newCell.classList.add('active');
+          // >>>>> CORREÇÃO: Carrega o sample da peça de bateria <<<<<
+          loadSample('drum', drum.key, '');
         } else {
           newCell.classList.remove('active');
         }
       });
     });
-
     state.totalSteps += 1;
   }
-
   updateStatus(`Composição duplicada. Total: ${state.totalSteps} passos.`, 'ready');
-
-  
-updateEditMap();
-
+  updateEditMap();
 }
 function updateEditMap() {
   const mapContent = document.getElementById('editMapContent');
