@@ -817,101 +817,106 @@ function initializeStyleAndKeySelectors() {
     }
     // ===== FUNÇÕES PRINCIPAIS =====
     async function buildBassAndChordPlan() {
-      // Escolhe o groove baseado na seleção do usuário ou aleatoriamente
-if (!ui.styleSelect || ui.styleSelect.value === 'auto') {
-  state.currentGroove = ALL_GROOVES[Math.floor(Math.random() * ALL_GROOVES.length)];
-} else {
-  // Filtra os grooves que correspondem ao estilo selecionado
-  const matchingGrooves = ALL_GROOVES.filter(g => g.name === ui.styleSelect.value);
-  state.currentGroove = matchingGrooves[Math.floor(Math.random() * matchingGrooves.length)] || ALL_GROOVES[0];
-}
-state.signatureTag = state.currentGroove.name;
-state.meter = ui.meter.value === 'auto' ? state.currentGroove.meter : ui.meter.value;
-      if (state.currentGroove.name === "Samba") {
-        ui.bpm.value = 70;
-        state.bpm = 70;
-      } else {
-        state.bpm = Number(ui.bpm.value) || 100;
-      }
-      const beats = meterToBeats(state.meter);
-      const sixteenthsPerBar = beats * 4;
-      // Escolhe a tonalidade baseada na seleção do usuário ou aleatoriamente
-if (!ui.keySelect || ui.keySelect.value === 'auto') {
-  state.keyIdx = Math.floor(Math.random() * PITCHES.length);
-  state.key = PITCHES[state.keyIdx];
-} else {
-  state.key = ui.keySelect.value;
-  state.keyIdx = PITCHES.indexOf(state.key);
-}
-      state.quality = 'maj';
-      const grooveName = state.currentGroove.name;
-      let styleKey = "Rock";
-      if (grooveName.includes("Samba")) styleKey = "Samba";
-      else if (grooveName.includes("Jazz")) styleKey = "Jazz";
-      else if (grooveName.includes("Forró")) styleKey = "Forró";
-      else if (grooveName.includes("Metal")) styleKey = "Metal";
-      else if (grooveName.includes("Blues")) styleKey = "Blues";
-      const progressions = STYLE_PROGRESSIONS[styleKey] || STYLE_PROGRESSIONS.Rock;
-      let availableProgressions = progressions.filter(prog => prog[0] !== 7);
-      if (availableProgressions.length === 0) {
-        availableProgressions = progressions;
-      }
-      state.chordProgression = availableProgressions[Math.floor(Math.random() * availableProgressions.length)];
-      const totalBars = Math.min(state.chordProgression.length, 64);
-      const totalSteps = sixteenthsPerBar * totalBars;
-      const rhythm = expandRhythm(state.currentGroove.bassRhythm, totalSteps);
-      const bassPlan = [];
-      const chordPlan = [];
-      function getBassNotesFromScale(degree, scale, chordType) {
-        // Determina se o acorde é menor ou de tipo específico que requer escala menor
-        const isMinor = (
-          chordType.startsWith('m') ||
-          chordType.includes('dim') ||
-          ['5+', '75+', '95+'].includes(chordType)
-        );
-        if (scale === "chromatic") {
-          const rootIdx = (state.keyIdx + DEGREE_TO_ROOT[degree]) % 12;
-          const rootNote = PITCHES[rootIdx];
-          const octave = 8;
-          return Array(8).fill().map((_, i) => {
-            const noteIdx = (rootIdx - i + 12) % 12;
-            const p = PITCHES[noteIdx];
-            return p.endsWith('S') ? `${p.replace('S', '')}${octave}S` : `${p}${octave}`;
-          });
+  // Escolhe o groove baseado na seleção do usuário ou aleatoriamente
+  if (!ui.styleSelect || ui.styleSelect.value === 'auto') {
+    state.currentGroove = ALL_GROOVES[Math.floor(Math.random() * ALL_GROOVES.length)];
+  } else {
+    // Filtra os grooves que correspondem ao estilo selecionado
+    const matchingGrooves = ALL_GROOVES.filter(g => g.name === ui.styleSelect.value);
+    state.currentGroove = matchingGrooves[Math.floor(Math.random() * matchingGrooves.length)] || ALL_GROOVES[0];
+  }
+  state.signatureTag = state.currentGroove.name;
+  state.meter = ui.meter.value === 'auto' ? state.currentGroove.meter : ui.meter.value;
+
+  if (state.currentGroove.name === "Samba") {
+    ui.bpm.value = 70;
+    state.bpm = 70;
+  } else {
+    state.bpm = Number(ui.bpm.value) || 100;
+  }
+
+  const beats = meterToBeats(state.meter);
+  const sixteenthsPerBar = beats * 4;
+
+  // Escolhe a tonalidade baseada na seleção do usuário ou aleatoriamente
+  if (!ui.keySelect || ui.keySelect.value === 'auto') {
+    state.keyIdx = Math.floor(Math.random() * PITCHES.length);
+    state.key = PITCHES[state.keyIdx];
+  } else {
+    state.key = ui.keySelect.value;
+    state.keyIdx = PITCHES.indexOf(state.key);
+  }
+
+  state.quality = 'maj';
+  const grooveName = state.currentGroove.name;
+  let styleKey = "Rock";
+  if (grooveName.includes("Samba")) styleKey = "Samba";
+  else if (grooveName.includes("Jazz")) styleKey = "Jazz";
+  else if (grooveName.includes("Forró")) styleKey = "Forró";
+  else if (grooveName.includes("Metal")) styleKey = "Metal";
+  else if (grooveName.includes("Blues")) styleKey = "Blues";
+
+  const progressions = STYLE_PROGRESSIONS[styleKey] || STYLE_PROGRESSIONS.Rock;
+
+  // 🔹 Aqui removemos todas as progressões que contenham o grau 7 (diminuto)
+  let availableProgressions = progressions.filter(prog => !prog.includes(7));
+  if (availableProgressions.length === 0) {
+    availableProgressions = progressions; // fallback
+  }
+
+  state.chordProgression = availableProgressions[Math.floor(Math.random() * availableProgressions.length)];
+
+  const totalBars = Math.min(state.chordProgression.length, 64);
+  const totalSteps = sixteenthsPerBar * totalBars;
+  const rhythm = expandRhythm(state.currentGroove.bassRhythm, totalSteps);
+
+  const bassPlan = [];
+  const chordPlan = [];
+
+  function getBassNotesFromScale(degree, scale, chordType) {
+    const isMinor = (
+      chordType.startsWith('m') ||
+      chordType.includes('dim') ||
+      ['5+', '75+', '95+'].includes(chordType)
+    );
+    if (scale === "chromatic") {
+      const rootIdx = (state.keyIdx + DEGREE_TO_ROOT[degree]) % 12;
+      const rootNote = PITCHES[rootIdx];
+      const octave = 8;
+      return Array(8).fill().map((_, i) => {
+        const noteIdx = (rootIdx - i + 12) % 12;
+        const p = PITCHES[noteIdx];
+        return p.endsWith('S') ? `${p.replace('S', '')}${octave}S` : `${p}${octave}`;
+      });
+    }
+    if (Array.isArray(scale)) {
+      const rootIdx = (state.keyIdx + DEGREE_TO_ROOT[degree]) % 12;
+      return scale.map(interval => {
+        let intervalOffset;
+        if (isMinor) {
+          const minorIntervals = { 1: 0, 2: 2, 3: 3, 4: 5, 5: 7, 6: 8, 7: 10, 8: 12 };
+          intervalOffset = minorIntervals[interval] || 0;
+        } else {
+          const majorIntervals = { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11, 8: 12 };
+          intervalOffset = majorIntervals[interval] || 0;
         }
-        if (Array.isArray(scale)) {
-          const rootIdx = (state.keyIdx + DEGREE_TO_ROOT[degree]) % 12;
-          return scale.map(interval => {
-            // Mapeia os intervalos para tons maiores ou menores
-            let intervalOffset;
-            if (isMinor) {
-              // Escala menor natural: 1, 2, ♭3, 4, 5, ♭6, ♭7, 8
-              const minorIntervals = { 1: 0, 2: 2, 3: 3, 4: 5, 5: 7, 6: 8, 7: 10, 8: 12 };
-              intervalOffset = minorIntervals[interval] || 0;
-            } else {
-              // Escala maior: 1, 2, 3, 4, 5, 6, 7, 8
-              const majorIntervals = { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11, 8: 12 };
-              intervalOffset = majorIntervals[interval] || 0;
-            }
-            const noteIdx = (rootIdx + intervalOffset) % 12;
-            const octave = interval === 1 ? '' : '8'; // A nota raiz (1) não tem oitava no nome do arquivo
-            const noteName = PITCHES[noteIdx];
-            if (interval === 1) {
-              return noteName; // Ex: 'D'
-            } else {
-              // Para notas com oitava, retorna no formato 'F8' ou 'FS8'
-              return noteName.endsWith('S') ? `${noteName.replace('S', '')}${octave}S` : `${noteName}${octave}`;
-            }
-          });
+        const noteIdx = (rootIdx + intervalOffset) % 12;
+        const octave = interval === 1 ? '' : '8';
+        const noteName = PITCHES[noteIdx];
+        if (interval === 1) {
+          return noteName;
+        } else {
+          return noteName.endsWith('S') ? `${noteName.replace('S', '')}${octave}S` : `${noteName}${octave}`;
         }
-        // Fallback
-        return [PITCHES[(state.keyIdx + DEGREE_TO_ROOT[degree]) % 12]];
-      }
+      });
+    }
+    return [PITCHES[(state.keyIdx + DEGREE_TO_ROOT[degree]) % 12]];
+  }
       let globalChordVariation = '';
       if (styleKey === "Blues") {
         globalChordVariation = '7';
       } else {
-        const allVariations = ['', '11', '13', '4', '45+', '5', '5+', '6', '7', '75+', '9', '95+', 'm', 'm4', 'm5', 'm5+', 'm6', 'm7', 'm75+', 'm79', 'm9', 'dim'];
+        const allVariations = ['', '11', '13', '4', '5', '6', '7', '9', 'm', 'm4', 'm5', 'm6', 'm7', 'm79', 'm9'];
         globalChordVariation = allVariations[Math.floor(Math.random() * allVariations.length)];
       }
       for (let bar = 0; bar < totalBars; bar++) {
