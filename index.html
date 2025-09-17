@@ -367,6 +367,7 @@
         <button id="btnPlay" class="primary">▶ Play</button>
         <button id="btnPause">⏸ Pause</button>
         <button id="btnStop" class="danger">⏹ Stop</button>
+        <button id="btnPrevious" class="primary">⏮ Voltar</button>
         <button id="btnSaveWAV" class="primary">💾 Salvar como WAV</button>
         <button id="btnOpenManual" class="primary" style="font-size: 1em; padding: 14px 24px;">
       🎛️ Abrir Composição Manual
@@ -498,6 +499,7 @@ const ui = {
   play: document.getElementById('btnPlay'),
   pause: document.getElementById('btnPause'),
   stop: document.getElementById('btnStop'),
+  previous: document.getElementById('btnPrevious'), // Novo botão
   muteBass: document.getElementById('muteBass'),
   muteDrums: document.getElementById('muteDrums'),
   muteClean: document.getElementById('muteClean'),
@@ -627,11 +629,11 @@ function initializeStyleAndKeySelectors() {
       { name: "Rock2", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 5] },
       { name: "Rock3", meter: "4/4", drumPattern: ["bch - ch bu cch bu ch - bch - ch - cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo x bo x bo x"], bassScale: [1, 1, 1, 1] },
       { name: "Rock4", meter: "4/4", drumPattern: ["ba - co - cco - co - bco - co - cco bu bco bu"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 7, 8, 7, 5, 3] },
-      { name: "Rock5", meter: "4/4", drumPattern: ["bch ch ch ch cch ch ch ch bch ch ch ch cch ch ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo x bo x bo x"], bassScale: [1, 3, 1, 5] },
+      { name: "Rock5", meter: "4/4", drumPattern: ["bch ch ch ch cch ch ch ch bch ch ch ch cch ch ch -"], bassRhythm: ["bo - - bo - - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 1, 5] },
       { name: "Rock6", meter: "4/4", drumPattern: ["bco co co co cco co co co bco co co co cco co co co"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [8, 8, 1, 1] },
       { name: "Rock7", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - co - cco - co -"], bassRhythm: ["bo - - bo - - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 1] },
       { name: "Rock_Progressivo", meter: "7/4", drumPattern: ["bch - ch -  cch - ch - bch - ch - cch - ch bu bch - ch - cch - ch - bch - ch bu"], bassRhythm: ["bo - - - - - - - bo - - - - - - bo - - bo bo bo bo bo bo bo bo bo bo"], bassScale: [1, 1, 1, 3, 5, 8, 3, 5, 8, 3, 5, 8, 5] },
-      { name: "Rock_Progressivo2", meter: "5/4", drumPattern: ["ba - ch - bch - ch - cch - ch - bch - ch - cch - ch bu"], bassRhythm: ["bo - x x bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 1, 3, 5, 8, 1, 3, 5, 8] },
+      { name: "Rock_Progressivo2", meter: "5/4", drumPattern: ["ba - ch - bch - ch - cch - ch - bch - ch - cch - ch bu"], bassRhythm: ["bo - x x bo - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 1, 3, 5, 8, 1, 3, 5, 8] },
       { name: "Rock_Progressivo3", meter: "6/4", drumPattern: ["ba - - - ch - - bu cch - - - ch - - - bch - - - ch - - -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 3, 1, 1, 1, 3, 5, 5, 5, 1] },
       { name: "Rock_Progressivo4", meter: "4/4", drumPattern: ["ba - ch bu cch - ch - bch - ch bu cch - ch bu"], bassRhythm: ["bo - - bo - - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 8] },
       { name: "Rock_Progressivo5", meter: "7/4", drumPattern: ["ba - co -  cco - co - bco - co bu cco - co bu bch bu co - cch - ch - bch - ch bu"], bassRhythm: ["bo - - bo bo - - - bo - - bo bo - - bo - - bo bo - - bo bo - - bo bo"], bassScale: [1, 3, 5, 8] },
@@ -697,7 +699,11 @@ function initializeStyleAndKeySelectors() {
   schedulerTimer: null,
   isRecording: false,
   mediaRecorder: null,
-  recordedChunks: []
+  recordedChunks: [],
+  // --- NOVOS ESTADOS PARA PAUSE E RETORNO ---
+  pauseTime: 0,
+  previousPlayback: null,
+  currentPlayback: null
 };
     const mute = { bass: false, drums: false, clean: false, dist: false, pianoString: false };
     // ===== FUNÇÕES UTILITÁRIAS =====
@@ -1040,6 +1046,19 @@ if (!ui.keySelect || ui.keySelect.value === 'auto') {
         alert('Erro ao iniciar o sistema de áudio. Por favor, recarregue a página e clique novamente em Play.');
         return;
       }
+      
+      // Se estiver pausado, retoma de onde parou
+      if (state.paused) {
+        state.paused = false;
+        state.running = true;
+        // Ajusta o nextNoteTime para o tempo atual + pequeno offset
+        const currentTime = audio.ctx.currentTime;
+        const timeSincePause = currentTime - state.pauseTime;
+        state.nextNoteTime = state.nextNoteTime + timeSincePause;
+        return;
+      }
+      
+      // Se não estiver pausado, inicia um novo playback
       state.bpm = Number(ui.bpm.value) || 100;
       state.sixteenthDur = 60 / state.bpm / 4;
       try {
@@ -1055,10 +1074,25 @@ if (!ui.keySelect || ui.keySelect.value === 'auto') {
       } catch (e) {
         console.error('Erro na melodia:', e);
       }
-      if (state.paused) {
-        state.paused = false;
-        return;
+      
+      // Salva o playback atual como anterior
+      if (state.running) {
+        state.previousPlayback = {
+          bassPlan: [...state.bassPlan],
+          chordPlan: [...state.chordPlan],
+          drumSeq: [...state.drumSeq],
+          melodyPlan: [...state.melodyPlan],
+          currentGroove: {...state.currentGroove},
+          meter: state.meter,
+          bpm: state.bpm,
+          key: state.key,
+          keyIdx: state.keyIdx,
+          quality: state.quality,
+          signatureTag: state.signatureTag,
+          chordProgression: [...state.chordProgression]
+        };
       }
+      
       state.running = false;
       state.stepIndex = 0;
       state.nextNoteTime = audio.ctx.currentTime + 0.05;
@@ -1077,6 +1111,54 @@ if (!ui.keySelect || ui.keySelect.value === 'auto') {
         startScheduler();
       }, Math.max(0, (schedulerStartTime - audio.ctx.currentTime) * 1000 + 10));
     }
+    
+    function onPause() {
+      if (state.running && !state.paused) {
+        state.paused = true;
+        state.pauseTime = audio.ctx.currentTime;
+        ui.state.textContent = "Pausado";
+      }
+    }
+    
+    function onPrevious() {
+      if (!state.previousPlayback) {
+        alert('Nenhum playback anterior disponível.');
+        return;
+      }
+      
+      // Para o playback atual
+      onStop();
+      
+      // Restaura o playback anterior
+      state.bassPlan = [...state.previousPlayback.bassPlan];
+      state.chordPlan = [...state.previousPlayback.chordPlan];
+      state.drumSeq = [...state.previousPlayback.drumSeq];
+      state.melodyPlan = [...state.previousPlayback.melodyPlan];
+      state.currentGroove = {...state.previousPlayback.currentGroove};
+      state.meter = state.previousPlayback.meter;
+      state.bpm = state.previousPlayback.bpm;
+      state.key = state.previousPlayback.key;
+      state.keyIdx = state.previousPlayback.keyIdx;
+      state.quality = state.previousPlayback.quality;
+      state.signatureTag = state.previousPlayback.signatureTag;
+      state.chordProgression = [...state.previousPlayback.chordProgression];
+      
+      // Atualiza a interface
+      ui.bpm.value = state.bpm;
+      ui.meter.value = state.meter;
+      setStatePanel();
+      
+      // Atualiza a exibição da progressão de acordes
+      const progEl = document.getElementById('chordProgression');
+      if (progEl && state.chordPlan.length > 0) {
+        const chordLabels = state.chordPlan.map(ch => ch.displayed);
+        progEl.innerHTML = chordLabels.map((label, i) => `<span class="chord-item" data-index="${i}">${label}</span>`).join(' ');
+      }
+      
+      // Inicia o playback
+      onPlay();
+    }
+    
     function scheduler() {
       if (!state.running || state.paused) return;
       const lookahead = 0.20;
@@ -1367,12 +1449,6 @@ if (!mute.pianoString && chord && isNewBar) {
         g.gain.linearRampToValueAtTime(1.0, time + 0.01);
         src.start(time);
         state.lastCleanSource = src;
-      }
-    }
-    function onPause() {
-      if (state.running && !state.paused) {
-        state.paused = true;
-        ui.state.textContent = "Pausado";
       }
     }
     function onStop() {
@@ -1979,6 +2055,7 @@ if (!mute.pianoString && chord && isNewBar) {
       ui.play.addEventListener('click', onPlay);
       ui.pause.addEventListener('click', onPause);
       ui.stop.addEventListener('click', onStop);
+      ui.previous.addEventListener('click', onPrevious); // Novo listener
       ui.muteBass.addEventListener('click', () => toggleMute('bass', ui.muteBass));
       ui.muteDrums.addEventListener('click', () => toggleMute('drums', ui.muteDrums));
       ui.muteClean.addEventListener('click', () => toggleMute('clean', ui.muteClean));
@@ -2014,4 +2091,3 @@ if (!mute.pianoString && chord && isNewBar) {
   </script>
 </body>
 </html>
-
