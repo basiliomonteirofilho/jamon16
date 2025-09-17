@@ -627,7 +627,7 @@ function initializeStyleAndKeySelectors() {
     const ALL_GROOVES = [
       { name: "Rock", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch bu"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 8] },
       { name: "Rock2", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 5] },
-      { name: "Rock3", meter: "4/4", drumPattern: ["bch - ch bu cch bu ch - bch - ch - cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo x bo x bo x"], bassScale: [1, 1, 1, 1] },
+      { name: "Rock3", meter: "4/4", drumPattern: ["bch - ch bu cch bu ch - bch - ch - cch - ch -"], bassRhythm: ["bo - - bo - - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 1] },
       { name: "Rock4", meter: "4/4", drumPattern: ["ba - co - cco - co - bco - co - cco bu bco bu"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 7, 8, 7, 5, 3] },
       { name: "Rock5", meter: "4/4", drumPattern: ["bch ch ch ch cch ch ch ch bch ch ch ch cch ch ch -"], bassRhythm: ["bo - - bo - - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 1, 5] },
       { name: "Rock6", meter: "4/4", drumPattern: ["bco co co co cco co co co bco co co co cco co co co"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [8, 8, 1, 1] },
@@ -1032,7 +1032,6 @@ if (!ui.keySelect || ui.keySelect.value === 'auto') {
       osc.start(time);
       osc.stop(time + 0.07);
     }
-    
     async function onPlay() {
   if (state.running && !state.paused) return;
   try {
@@ -1048,7 +1047,6 @@ if (!ui.keySelect || ui.keySelect.value === 'auto') {
     alert('Erro ao iniciar o sistema de áudio. Por favor, recarregue a página e clique novamente em Play.');
     return;
   }
-  
   // Se estiver pausado, retoma de onde parou
   if (state.paused) {
     state.paused = false;
@@ -1059,7 +1057,6 @@ if (!ui.keySelect || ui.keySelect.value === 'auto') {
     state.nextNoteTime = state.nextNoteTime + timeSincePause;
     return;
   }
-  
   // Se não estiver pausado, inicia um novo playback
   state.bpm = Number(ui.bpm.value) || 100;
   state.sixteenthDur = 60 / state.bpm / 4;
@@ -1076,7 +1073,6 @@ if (!ui.keySelect || ui.keySelect.value === 'auto') {
   } catch (e) {
     console.error('Erro na melodia:', e);
   }
-  
   // Salva o playback atual como anterior
   if (state.running) {
     state.previousPlayback = {
@@ -1094,7 +1090,6 @@ if (!ui.keySelect || ui.keySelect.value === 'auto') {
       chordProgression: [...state.chordProgression]
     };
   }
-  
   state.running = false;
   state.stepIndex = 0;
   state.nextNoteTime = audio.ctx.currentTime + 0.05;
@@ -1113,7 +1108,6 @@ if (!ui.keySelect || ui.keySelect.value === 'auto') {
     startScheduler();
   }, Math.max(0, (schedulerStartTime - audio.ctx.currentTime) * 1000 + 10));
 }
-    
     function onPause() {
   if (state.running && !state.paused) {
     state.paused = true;
@@ -1127,7 +1121,6 @@ if (!ui.keySelect || ui.keySelect.value === 'auto') {
         return;
     }
     // REMOVIDO: onStop(); // <-- Esta linha causava o problema
-
     // Restaura o playback anterior
     state.bassPlan = [...state.previousPlayback.bassPlan];
     state.chordPlan = [...state.previousPlayback.chordPlan];
@@ -1154,7 +1147,6 @@ if (!ui.keySelect || ui.keySelect.value === 'auto') {
     // Inicia o playback
     onPlay();
 }
-    
     function scheduler() {
       if (!state.running || state.paused) return;
       const lookahead = 0.20;
