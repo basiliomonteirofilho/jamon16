@@ -876,45 +876,57 @@ function initializeStyleAndKeySelectors() {
   const rhythm = expandRhythm(state.currentGroove.bassRhythm, totalSteps);
   const bassPlan = [];
   const chordPlan = [];
-  function getBassNotesFromScale(degree, scale, chordType) {
-    const isMinor = (
+function getBassNotesFromScale(degree, scale, chordType) {
+  // Determina se o acorde DEVE ser menor com base na qualidade da tonalidade
+  // Para os graus I, IV e V, a qualidade da tonalidade define se o acorde é maior ou menor.
+  // Para os demais graus (II, III, VI), a lógica anterior se mantém.
+  let isMinor = false;
+
+  if ([1, 4, 5].includes(degree)) {
+    // Graus I, IV e V seguem a qualidade da tonalidade
+    isMinor = (state.quality === 'min');
+  } else {
+    // Graus II, III, VI, VII usam a lógica baseada no chordType
+    isMinor = (
       chordType.startsWith('m') ||
       chordType.includes('dim') ||
       ['5+', '75+', '95+'].includes(chordType)
     );
-    if (scale === "chromatic") {
-      const rootIdx = (state.keyIdx + DEGREE_TO_ROOT[degree]) % 12;
-      const rootNote = PITCHES[rootIdx];
-      const octave = 8;
-      return Array(8).fill().map((_, i) => {
-        const noteIdx = (rootIdx - i + 12) % 12;
-        const p = PITCHES[noteIdx];
-        return p.endsWith('S') ? `${p.replace('S', '')}${octave}S` : `${p}${octave}`;
-      });
-    }
-    if (Array.isArray(scale)) {
-      const rootIdx = (state.keyIdx + DEGREE_TO_ROOT[degree]) % 12;
-      return scale.map(interval => {
-        let intervalOffset;
-        if (isMinor) {
-          const minorIntervals = { 1: 0, 2: 2, 3: 3, 4: 5, 5: 7, 6: 8, 7: 10, 8: 12 };
-          intervalOffset = minorIntervals[interval] || 0;
-        } else {
-          const majorIntervals = { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11, 8: 12 };
-          intervalOffset = majorIntervals[interval] || 0;
-        }
-        const noteIdx = (rootIdx + intervalOffset) % 12;
-        const octave = interval === 1 ? '' : '8';
-        const noteName = PITCHES[noteIdx];
-        if (interval === 1) {
-          return noteName;
-        } else {
-          return noteName.endsWith('S') ? `${noteName.replace('S', '')}${octave}S` : `${noteName}${octave}`;
-        }
-      });
-    }
-    return [PITCHES[(state.keyIdx + DEGREE_TO_ROOT[degree]) % 12]];
   }
+
+  if (scale === "chromatic") {
+    const rootIdx = (state.keyIdx + DEGREE_TO_ROOT[degree]) % 12;
+    const rootNote = PITCHES[rootIdx];
+    const octave = 8;
+    return Array(8).fill().map((_, i) => {
+      const noteIdx = (rootIdx - i + 12) % 12;
+      const p = PITCHES[noteIdx];
+      return p.endsWith('S') ? `${p.replace('S', '')}${octave}S` : `${p}${octave}`;
+    });
+  }
+  if (Array.isArray(scale)) {
+    const rootIdx = (state.keyIdx + DEGREE_TO_ROOT[degree]) % 12;
+    return scale.map(interval => {
+      let intervalOffset;
+      if (isMinor) {
+        const minorIntervals = { 1: 0, 2: 2, 3: 3, 4: 5, 5: 7, 6: 8, 7: 10, 8: 12 };
+        intervalOffset = minorIntervals[interval] || 0;
+      } else {
+        const majorIntervals = { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11, 8: 12 };
+        intervalOffset = majorIntervals[interval] || 0;
+      }
+      const noteIdx = (rootIdx + intervalOffset) % 12;
+      const octave = interval === 1 ? '' : '8';
+      const noteName = PITCHES[noteIdx];
+      if (interval === 1) {
+        return noteName;
+      } else {
+        return noteName.endsWith('S') ? `${noteName.replace('S', '')}${octave}S` : `${noteName}${octave}`;
+      }
+    });
+  }
+  return [PITCHES[(state.keyIdx + DEGREE_TO_ROOT[degree]) % 12]];
+}
       let globalChordVariation = '';
       if (styleKey === "Blues") {
         globalChordVariation = '7';
