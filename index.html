@@ -662,6 +662,7 @@ function initializeStyleAndKeySelectors() {
     const state = {
   running: false,
   paused: false,
+  pauseTime: 0,
   nextNoteTime: 0,
   meter: '4/4',
   bpm: 100,
@@ -1031,133 +1032,128 @@ if (!ui.keySelect || ui.keySelect.value === 'auto') {
       osc.start(time);
       osc.stop(time + 0.07);
     }
+    
     async function onPlay() {
-      if (state.running && !state.paused) return;
-      try {
-        if (!audio.ctx) {
-          await initAudio();
-        }
-        // Alguns navegadores iniciam o contexto suspenso
-        if (audio.ctx.state === "suspended") {
-          await audio.ctx.resume();
-        }
-      } catch (e) {
-        console.error('Falha ao inicializar áudio:', e);
-        alert('Erro ao iniciar o sistema de áudio. Por favor, recarregue a página e clique novamente em Play.');
-        return;
-      }
-      
-      // Se estiver pausado, retoma de onde parou
-      if (state.paused) {
-        state.paused = false;
-        state.running = true;
-        // Ajusta o nextNoteTime para o tempo atual + pequeno offset
-        const currentTime = audio.ctx.currentTime;
-        const timeSincePause = currentTime - state.pauseTime;
-        state.nextNoteTime = state.nextNoteTime + timeSincePause;
-        return;
-      }
-      
-      // Se não estiver pausado, inicia um novo playback
-      state.bpm = Number(ui.bpm.value) || 100;
-      state.sixteenthDur = 60 / state.bpm / 4;
-      try {
-        await buildBassAndChordPlan();
-      } catch (e) {
-        console.error('Erro ao gerar plano de baixo/acordes:', e);
-        alert('Erro ao gerar a progressão musical. Tente novamente.');
-        return;
-      }
-      try {
-        buildMelodyPlanFromBlocks();
-        await ensureMelodySamplesNeeded();
-      } catch (e) {
-        console.error('Erro na melodia:', e);
-      }
-      
-      // Salva o playback atual como anterior
-      if (state.running) {
-        state.previousPlayback = {
-          bassPlan: [...state.bassPlan],
-          chordPlan: [...state.chordPlan],
-          drumSeq: [...state.drumSeq],
-          melodyPlan: [...state.melodyPlan],
-          currentGroove: {...state.currentGroove},
-          meter: state.meter,
-          bpm: state.bpm,
-          key: state.key,
-          keyIdx: state.keyIdx,
-          quality: state.quality,
-          signatureTag: state.signatureTag,
-          chordProgression: [...state.chordProgression]
-        };
-      }
-      
-      state.running = false;
-      state.stepIndex = 0;
-      state.nextNoteTime = audio.ctx.currentTime + 0.05;
-      const beats = meterToBeats(state.meter);
-      const quarterDur = 60 / state.bpm;
-      const startTime = audio.ctx.currentTime + 0.05;
-      for (let i = 0; i < beats; i++) {
-        const t = startTime + i * quarterDur;
-        const isStrong = (i % beats) === 0;
-        playClickAtTime(t, isStrong);
-      }
-      const schedulerStartTime = startTime + beats * quarterDur;
-      setTimeout(() => {
-        state.running = true;
-        state.nextNoteTime = schedulerStartTime;
-        startScheduler();
-      }, Math.max(0, (schedulerStartTime - audio.ctx.currentTime) * 1000 + 10));
+  if (state.running && !state.paused) return;
+  try {
+    if (!audio.ctx) {
+      await initAudio();
     }
+    // Alguns navegadores iniciam o contexto suspenso
+    if (audio.ctx.state === "suspended") {
+      await audio.ctx.resume();
+    }
+  } catch (e) {
+    console.error('Falha ao inicializar áudio:', e);
+    alert('Erro ao iniciar o sistema de áudio. Por favor, recarregue a página e clique novamente em Play.');
+    return;
+  }
+  
+  // Se estiver pausado, retoma de onde parou
+  if (state.paused) {
+    state.paused = false;
+    state.running = true;
+    // Ajusta o nextNoteTime para o tempo atual + pequeno offset
+    const currentTime = audio.ctx.currentTime;
+    const timeSincePause = currentTime - state.pauseTime;
+    state.nextNoteTime = state.nextNoteTime + timeSincePause;
+    return;
+  }
+  
+  // Se não estiver pausado, inicia um novo playback
+  state.bpm = Number(ui.bpm.value) || 100;
+  state.sixteenthDur = 60 / state.bpm / 4;
+  try {
+    await buildBassAndChordPlan();
+  } catch (e) {
+    console.error('Erro ao gerar plano de baixo/acordes:', e);
+    alert('Erro ao gerar a progressão musical. Tente novamente.');
+    return;
+  }
+  try {
+    buildMelodyPlanFromBlocks();
+    await ensureMelodySamplesNeeded();
+  } catch (e) {
+    console.error('Erro na melodia:', e);
+  }
+  
+  // Salva o playback atual como anterior
+  if (state.running) {
+    state.previousPlayback = {
+      bassPlan: [...state.bassPlan],
+      chordPlan: [...state.chordPlan],
+      drumSeq: [...state.drumSeq],
+      melodyPlan: [...state.melodyPlan],
+      currentGroove: {...state.currentGroove},
+      meter: state.meter,
+      bpm: state.bpm,
+      key: state.key,
+      keyIdx: state.keyIdx,
+      quality: state.quality,
+      signatureTag: state.signatureTag,
+      chordProgression: [...state.chordProgression]
+    };
+  }
+  
+  state.running = false;
+  state.stepIndex = 0;
+  state.nextNoteTime = audio.ctx.currentTime + 0.05;
+  const beats = meterToBeats(state.meter);
+  const quarterDur = 60 / state.bpm;
+  const startTime = audio.ctx.currentTime + 0.05;
+  for (let i = 0; i < beats; i++) {
+    const t = startTime + i * quarterDur;
+    const isStrong = (i % beats) === 0;
+    playClickAtTime(t, isStrong);
+  }
+  const schedulerStartTime = startTime + beats * quarterDur;
+  setTimeout(() => {
+    state.running = true;
+    state.nextNoteTime = schedulerStartTime;
+    startScheduler();
+  }, Math.max(0, (schedulerStartTime - audio.ctx.currentTime) * 1000 + 10));
+}
     
     function onPause() {
-      if (state.running && !state.paused) {
-        state.paused = true;
-        state.pauseTime = audio.ctx.currentTime;
-        ui.state.textContent = "Pausado";
-      }
-    }
-    
+  if (state.running && !state.paused) {
+    state.paused = true;
+    state.pauseTime = audio.ctx.currentTime;
+    ui.state.textContent = "Pausado";
+  }
+}
     function onPrevious() {
-      if (!state.previousPlayback) {
+    if (!state.previousPlayback) {
         alert('Nenhum playback anterior disponível.');
         return;
-      }
-      
-      // Para o playback atual
-      onStop();
-      
-      // Restaura o playback anterior
-      state.bassPlan = [...state.previousPlayback.bassPlan];
-      state.chordPlan = [...state.previousPlayback.chordPlan];
-      state.drumSeq = [...state.previousPlayback.drumSeq];
-      state.melodyPlan = [...state.previousPlayback.melodyPlan];
-      state.currentGroove = {...state.previousPlayback.currentGroove};
-      state.meter = state.previousPlayback.meter;
-      state.bpm = state.previousPlayback.bpm;
-      state.key = state.previousPlayback.key;
-      state.keyIdx = state.previousPlayback.keyIdx;
-      state.quality = state.previousPlayback.quality;
-      state.signatureTag = state.previousPlayback.signatureTag;
-      state.chordProgression = [...state.previousPlayback.chordProgression];
-      
-      // Atualiza a interface
-      ui.bpm.value = state.bpm;
-      ui.meter.value = state.meter;
-      setStatePanel();
-      
-      // Atualiza a exibição da progressão de acordes
-      const progEl = document.getElementById('chordProgression');
-      if (progEl && state.chordPlan.length > 0) {
+    }
+    // REMOVIDO: onStop(); // <-- Esta linha causava o problema
+
+    // Restaura o playback anterior
+    state.bassPlan = [...state.previousPlayback.bassPlan];
+    state.chordPlan = [...state.previousPlayback.chordPlan];
+    state.drumSeq = [...state.previousPlayback.drumSeq];
+    state.melodyPlan = [...state.previousPlayback.melodyPlan];
+    state.currentGroove = {...state.previousPlayback.currentGroove};
+    state.meter = state.previousPlayback.meter;
+    state.bpm = state.previousPlayback.bpm;
+    state.key = state.previousPlayback.key;
+    state.keyIdx = state.previousPlayback.keyIdx;
+    state.quality = state.previousPlayback.quality;
+    state.signatureTag = state.previousPlayback.signatureTag;
+    state.chordProgression = [...state.previousPlayback.chordProgression];
+    // Atualiza a interface
+    ui.bpm.value = state.bpm;
+    ui.meter.value = state.meter;
+    setStatePanel();
+    // Atualiza a exibição da progressão de acordes
+    const progEl = document.getElementById('chordProgression');
+    if (progEl && state.chordPlan.length > 0) {
         const chordLabels = state.chordPlan.map(ch => ch.displayed);
         progEl.innerHTML = chordLabels.map((label, i) => `<span class="chord-item" data-index="${i}">${label}</span>`).join(' ');
-      }
-      
-      // Inicia o playback
-      onPlay();
     }
+    // Inicia o playback
+    onPlay();
+}
     
     function scheduler() {
       if (!state.running || state.paused) return;
