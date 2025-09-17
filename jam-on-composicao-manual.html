@@ -103,7 +103,11 @@
 }
 .column:nth-child(4n+1),
 .column:nth-child(4n+2),
-.column:nth-child(4n+3) {
+.column:nth-child(4n+3),
+.column:nth-child(4n+4),
+.column:nth-child(4n+5),
+.column:nth-child(4n+6),
+.column:nth-child(4n+7) {
   background-color: rgba(255, 255, 255, 0.03); /* Cinza muito claro */
 }
 .column:nth-child(4n) {
@@ -125,7 +129,6 @@
   transition: background 0.2s;
   position: relative; /* Para posicionar o botão de delete e o rótulo */
 }
-
 /* Estilo do rótulo numérico (aparece a cada 4 colunas) */
 .cell .column-number-label {
   position: absolute;
@@ -401,6 +404,25 @@
       font-size: 14px;
       font-weight: bold;
     }
+
+    /* ===== ESTILO DOS SLIDERS DE VOLUME ===== */
+    .volume-control {
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .volume-label {
+      font-size: 0.8em;
+      color: #aaa;
+    }
+    .volume-slider {
+      height: 6px;
+    }
+    .drum-volume-slider {
+      height: 4px;
+    }
+
     /* ===== ESTILO DO MAPA DE EDIÇÃO ===== */
 .edit-map-container {
   position: fixed;
@@ -416,14 +438,12 @@
   z-index: 1000;
   width: 200px;
 }
-
 .edit-map-title {
   color: #5eead4;
   font-size: 1.1em;
   margin: 0 0 15px 0;
   text-align: center;
 }
-
 .edit-map-item {
   display: flex;
   align-items: center;
@@ -433,17 +453,14 @@
   cursor: pointer;
   transition: background 0.2s;
 }
-
 .edit-map-item:hover {
   background: #3a3a3a;
 }
-
 .edit-map-item.active {
   background: #5eead4;
   color: #121212;
   font-weight: bold;
 }
-
 .edit-map-number {
   font-weight: bold;
   width: 25px;
@@ -451,12 +468,10 @@
   margin-right: 10px;
   color: #5eead4;
 }
-
 .edit-map-cells {
   display: flex;
   gap: 2px;
 }
-
 .edit-map-cell {
   width: 12px;
   height: 12px;
@@ -464,14 +479,13 @@
   border-radius: 2px;
   background: #333;
 }
-
 .edit-map-cell.filled {
   background: #5eead4;
 }
-
 .edit-map-cell.x {
   background: #555;
 }
+
     @media (max-width: 768px) {
       .cell, .drum-cell { 
         width: 35px;
@@ -498,7 +512,7 @@
 <body>
   <header>
     <h1>Jam On – Composição Manual</h1>
-    <div class="pill">Cada célula = semicolcheia (1/4 da semínima)</div>
+    <div class="pill">Cada célula = colcheia (1/8 da semínima)</div>
   </header>
   <div class="card">
     <div id="statusIndicator" class="status-indicator status-loading">
@@ -517,7 +531,7 @@
       <button id="addCompassoBtn" class="add-btn">+</button>
       <span style="color: #aaa; margin-left: 10px;">Adicionar compasso em todos os instrumentos</span>
     </div>
-    <!-- HARMONIA (4 células por instrumento = 1 compasso) -->
+    <!-- HARMONIA (8 células por instrumento = 1 compasso) -->
     <div class="section">
       <h3>🎸 Harmonia 1</h3>
       <div id="harmonyContainer1" class="instrument-container"></div>
@@ -530,22 +544,22 @@
       <h3>🎸 Harmonia 3</h3>
       <div id="harmonyContainer3" class="instrument-container"></div>
     </div>
-    <!-- BAIXO (4 células = 1 compasso) -->
+    <!-- BAIXO (8 células = 1 compasso) -->
     <div class="section">
       <h3>🎸 Baixo</h3>
       <div id="bassContainer" class="instrument-container"></div>
     </div>
-    <!-- MELODIA 1 (4 células = 1 compasso) -->
+    <!-- MELODIA 1 (8 células = 1 compasso) -->
     <div class="section">
       <h3>🎹 Melodia 1</h3>
       <div id="melody1Container" class="instrument-container"></div>
     </div>
-    <!-- MELODIA 2 (4 células = 1 compasso) -->
+    <!-- MELODIA 2 (8 células = 1 compasso) -->
     <div class="section">
       <h3>🎷 Melodia 2</h3>
       <div id="melody2Container" class="instrument-container"></div>
     </div>
-    <!-- BATERIA (4 células = 1 compasso) -->
+    <!-- BATERIA (8 células = 1 compasso) -->
     <div class="section">
       <h3>🥁 Bateria</h3>
       <div id="drumContainer" class="instrument-container"></div>
@@ -678,7 +692,7 @@ const state = {
   paused: false,
   bpm: 100,
   stepIndex: 0,
-  totalSteps: 4,
+  totalSteps: 8, // Inicia com 8 passos (1 compasso em colcheias)
   buffers: {
     drums: {},
     melodic: {},
@@ -767,12 +781,10 @@ async function initializeApp() {
     state.melody1Blocks = [];
     state.melody2Blocks = [];
     state.drumBlocks = [];
-    
     // Adiciona 1 bloco em cada container de harmonia
     addHarmonyBlock(0); // Harmonia 1
     addHarmonyBlock(1); // Harmonia 2
     addHarmonyBlock(2); // Harmonia 3
-    
     // Adiciona 1 bloco de cada instrumento melódico e de bateria
     addBassBlock();
     addMelody1Block();
@@ -783,7 +795,7 @@ async function initializeApp() {
     ui.btnStop.disabled = true;
     updateStatus('Componha sua música. Clique em Play para iniciar com contagem de 4 compassos.', 'ready');
     updateEditMap();
-} catch (error) {
+  } catch (error) {
     console.error('Erro ao inicializar:', error);
     updateStatus('Erro ao inicializar: ' + error.message, 'error');
   }
@@ -819,8 +831,6 @@ function setupEventListeners() {
       closeModal();
     }
   });
-
-  
 }
 function handleBPMChange() {
   state.bpm = parseInt(ui.bpmSlider.value);
@@ -948,7 +958,6 @@ function closeModal() {
     instrumentKey: null
   };
 }
-
 // Função modificada para aceitar um índice de container
 function addHarmonyBlock(containerIndex) {
   const blockIndex = state.harmonyBlocks[containerIndex].length;
@@ -958,7 +967,6 @@ function addHarmonyBlock(containerIndex) {
   wrapper.style.alignItems = 'flex-start';
   wrapper.dataset.blockIndex = blockIndex;
   wrapper.dataset.containerIndex = containerIndex; // Identifica qual container pertence
-  
   const instrumentSelect = document.createElement('select');
   instrumentSelect.className = 'instrument-select';
   instrumentSelect.style.width = '120px';
@@ -968,41 +976,38 @@ function addHarmonyBlock(containerIndex) {
     <option value="clean-guitar">Guitarra Limpa</option>
     <option value="piano-chord">Piano</option>
   `;
-  
   const block = document.createElement('div');
   block.className = 'instrument-block harmony-block';
   block.style.flex = '1';
   block.dataset.blockIndex = blockIndex;
   block.dataset.containerIndex = containerIndex;
-  
   const grid = document.createElement('div');
   grid.className = 'columns-grid';
   grid.dataset.type = 'harmony';
   grid.dataset.blockIndex = blockIndex;
   grid.dataset.containerIndex = containerIndex;
   grid.style.position = 'relative';
-  
   const harmonyBlock = {
     wrapper,
     instrumentSelect,
     grid,
     containerIndex
   };
-  
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 8; i++) { // 8 colunas por bloco inicial
     createHarmonyColumn(grid, i, harmonyBlock);
   }
-  
   block.appendChild(grid);
   wrapper.appendChild(instrumentSelect);
   wrapper.appendChild(block);
-  
-  
   // Adiciona ao container correto
   const containerId = `harmonyContainer${containerIndex + 1}`;
   document.getElementById(containerId).appendChild(wrapper);
-  
   state.harmonyBlocks[containerIndex].push(harmonyBlock);
+  // ===== ADICIONAR CONTROLE DE VOLUME =====
+  const volumeControl = createVolumeControl();
+  block.appendChild(volumeControl);
+  // Armazena referência ao slider
+  grid._volumeSlider = volumeControl.querySelector('.volume-slider');
   return wrapper;
 }
 function createHarmonyColumn(parentGrid, columnIndex, harmonyBlock) {
@@ -1012,7 +1017,6 @@ function createHarmonyColumn(parentGrid, columnIndex, harmonyBlock) {
   const cell = document.createElement('div');
   cell.className = 'cell x';
   cell.textContent = 'X';
-
   // --- ADICIONA O RÓTULO NUMÉRICO A CADA 4 COLUNAS ---
   if ((columnIndex + 1) % 4 === 0 && columnIndex > 0) {
     const label = document.createElement('div');
@@ -1020,7 +1024,6 @@ function createHarmonyColumn(parentGrid, columnIndex, harmonyBlock) {
     label.textContent = columnIndex + 1; // Exibe o número da coluna (1-indexed)
     cell.appendChild(label);
   }
-
   const deleteCellBtn = document.createElement('button');
   deleteCellBtn.className = 'delete-cell-btn';
   deleteCellBtn.textContent = '✖';
@@ -1043,7 +1046,6 @@ function createHarmonyColumn(parentGrid, columnIndex, harmonyBlock) {
     openModal('harmony', AVAILABLE_CHORDS, this, instrumentKey);
   });
 }
-
 function addBassBlock() {
   const blockIndex = state.bassBlocks.length;
   const wrapper = document.createElement('div');
@@ -1062,17 +1064,20 @@ function addBassBlock() {
   block.className = 'instrument-block bass-block';
   block.style.flex = '1';
   block.dataset.blockIndex = blockIndex;
-  const grid = createMelodicGrid('bass', blockIndex, 4);
+  const grid = createMelodicGrid('bass', blockIndex, 8); // 8 colunas
   // Adiciona marcadores de semínima
-  
   block.appendChild(grid);
   wrapper.appendChild(instrumentSelect);
   wrapper.appendChild(block);
   ui.bassContainer.appendChild(wrapper);
   state.bassBlocks.push(wrapper);
+  // ===== ADICIONAR CONTROLE DE VOLUME =====
+  const volumeControl = createVolumeControl();
+  block.appendChild(volumeControl);
+  // Armazena referência ao slider
+  grid._volumeSlider = volumeControl.querySelector('.volume-slider');
   return wrapper;
 }
-
 function addMelody1Block() {
   const blockIndex = state.melody1Blocks.length;
   const wrapper = document.createElement('div');
@@ -1099,17 +1104,20 @@ function addMelody1Block() {
   block.className = 'instrument-block melody1-block';
   block.style.flex = '1';
   block.dataset.blockIndex = blockIndex;
-  const grid = createMelodicGrid('melody1', blockIndex, 4);
+  const grid = createMelodicGrid('melody1', blockIndex, 8); // 8 colunas
   // Adiciona marcadores de semínima
-  
   block.appendChild(grid);
   wrapper.appendChild(instrumentSelect);
   wrapper.appendChild(block);
   ui.melody1Container.appendChild(wrapper);
   state.melody1Blocks.push(wrapper);
+  // ===== ADICIONAR CONTROLE DE VOLUME =====
+  const volumeControl = createVolumeControl();
+  block.appendChild(volumeControl);
+  // Armazena referência ao slider
+  grid._volumeSlider = volumeControl.querySelector('.volume-slider');
   return wrapper;
 }
-
 function addMelody2Block() {
   const blockIndex = state.melody2Blocks.length;
   const wrapper = document.createElement('div');
@@ -1136,17 +1144,20 @@ function addMelody2Block() {
   block.className = 'instrument-block melody2-block';
   block.style.flex = '1';
   block.dataset.blockIndex = blockIndex;
-  const grid = createMelodicGrid('melody2', blockIndex, 4);
+  const grid = createMelodicGrid('melody2', blockIndex, 8); // 8 colunas
   // Adiciona marcadores de semínima
-  
   block.appendChild(grid);
   wrapper.appendChild(instrumentSelect);
   wrapper.appendChild(block);
   ui.melody2Container.appendChild(wrapper);
   state.melody2Blocks.push(wrapper);
+  // ===== ADICIONAR CONTROLE DE VOLUME =====
+  const volumeControl = createVolumeControl();
+  block.appendChild(volumeControl);
+  // Armazena referência ao slider
+  grid._volumeSlider = volumeControl.querySelector('.volume-slider');
   return wrapper;
 }
-
 function addDrumBlock() {
   const blockIndex = state.drumBlocks.length;
   const block = document.createElement('div');
@@ -1154,19 +1165,45 @@ function addDrumBlock() {
   block.dataset.blockIndex = blockIndex;
   block.style.display = 'flex';
   block.style.alignItems = 'flex-start'; // Alinha ao topo
-  // Cria o wrapper principal da bateria (labels + grid)
+  // Cria o wrapper principal da bateria (labels + volume + grid)
   const drumWrapper = document.createElement('div');
   drumWrapper.className = 'drum-wrapper';
   drumWrapper.style.position = 'relative';
   // Cria a coluna de rótulos (labels)
   const labelsColumn = document.createElement('div');
   labelsColumn.className = 'drum-labels';
-  // Adiciona os rótulos
+  // Cria a coluna de controles de volume
+  const volumeColumn = document.createElement('div');
+  volumeColumn.className = 'drum-labels'; // Reutiliza a classe para estilo
+  volumeColumn.style.width = '80px'; // Define largura
+  // Adiciona os rótulos e sliders
   DRUM_SAMPLES.forEach(drum => {
+    // Rótulo
     const labelItem = document.createElement('div');
     labelItem.className = 'drum-label-item';
     labelItem.textContent = drum.label;
     labelsColumn.appendChild(labelItem);
+    // Slider de Volume
+    const volumeItem = document.createElement('div');
+    volumeItem.style.height = '45px';
+    volumeItem.style.display = 'flex';
+    volumeItem.style.alignItems = 'center';
+    volumeItem.style.padding = '0 5px';
+    volumeItem.style.boxSizing = 'border-box';
+    const volumeSlider = document.createElement('input');
+    volumeSlider.type = 'range';
+    volumeSlider.className = 'volume-slider drum-volume-slider';
+    volumeSlider.min = '0';
+    volumeSlider.max = '1';
+    volumeSlider.step = '0.01';
+    volumeSlider.value = '1.0'; // Valor padrão
+    volumeSlider.dataset.drumKey = drum.key; // Associa o slider à peça da bateria
+    volumeSlider.style.width = '100%';
+    // Armazena uma referência global para fácil acesso
+    if (!window.drumVolumeSliders) window.drumVolumeSliders = {};
+    window.drumVolumeSliders[drum.key] = volumeSlider;
+    volumeItem.appendChild(volumeSlider);
+    volumeColumn.appendChild(volumeItem);
   });
   // Cria a grade de colunas (sem os labels internos)
   const grid = document.createElement('div');
@@ -1174,27 +1211,24 @@ function addDrumBlock() {
   grid.dataset.type = 'drum';
   grid.dataset.blockIndex = blockIndex;
   // Para cada passo (coluna)
-  for (let step = 0; step < 4; step++) {
+  for (let step = 0; step < 8; step++) { // 8 colunas
     createDrumColumn(grid, step, blockIndex);
   }
- 
-  
   // Monta a estrutura
   drumWrapper.appendChild(labelsColumn);
+  drumWrapper.appendChild(volumeColumn); // Adiciona a coluna de volume
   drumWrapper.appendChild(grid);
   block.appendChild(drumWrapper);
   ui.drumContainer.appendChild(block);
   state.drumBlocks.push(block);
   return block;
 }
-
 function createDrumColumn(parentGrid, stepIndex, blockIndex) {
   const column = document.createElement('div');
   column.className = 'column';
   column.dataset.columnIndex = stepIndex;
   column.style.display = 'flex';
   column.style.flexDirection = 'column';
-
   DRUM_SAMPLES.forEach((drum, drumIndex) => {
     const cell = document.createElement('div');
     cell.className = 'drum-cell';
@@ -1203,7 +1237,6 @@ function createDrumColumn(parentGrid, stepIndex, blockIndex) {
     cell.dataset.block = blockIndex;
     cell.style.height = '45px';
     cell.style.fontSize = '0.7em';
-
     // --- ADICIONA O RÓTULO NUMÉRICO NA PRIMEIRA CÉLULA A CADA 4 COLUNAS ---
     if (drumIndex === 0 && (stepIndex + 1) % 4 === 0 && stepIndex > 0) {
       const label = document.createElement('div');
@@ -1211,12 +1244,10 @@ function createDrumColumn(parentGrid, stepIndex, blockIndex) {
       label.textContent = stepIndex + 1; // Exibe o número da coluna (1-indexed)
       cell.appendChild(label);
     }
-
     cell.addEventListener('click', function() {
       this.classList.toggle('active');
       loadSample('drum', drum.key, '');
     });
-
     // >>>>> MODIFICAÇÃO: Botão de delete só na primeira célula (Prato de Ataque) <<<<<
     if (drumIndex === 0) { // Só adiciona o botão na primeira célula (ataque)
       const deleteCellBtn = document.createElement('button');
@@ -1233,18 +1264,14 @@ function createDrumColumn(parentGrid, stepIndex, blockIndex) {
       });
       cell.appendChild(deleteCellBtn);
     }
-
     column.appendChild(cell);
   });
-
   parentGrid.appendChild(column);
-
   // >>>>> CORREÇÃO: Força o reflow do grid após adicionar a coluna <<<<<
   parentGrid.style.display = 'none';
   parentGrid.offsetHeight; // Trigger reflow
   parentGrid.style.display = 'flex';
 }
-
 function createMelodicGrid(type, blockIndex, numColumns) {
   const grid = document.createElement('div');
   grid.className = 'columns-grid';
@@ -1255,7 +1282,6 @@ function createMelodicGrid(type, blockIndex, numColumns) {
   }
   return grid;
 }
-
 function createMelodicColumn(parentGrid, type, columnIndex) {
   const column = document.createElement('div');
   column.className = 'column';
@@ -1263,7 +1289,6 @@ function createMelodicColumn(parentGrid, type, columnIndex) {
   const cell = document.createElement('div');
   cell.className = 'cell x';
   cell.textContent = 'X';
-
   // --- ADICIONA O RÓTULO NUMÉRICO A CADA 4 COLUNAS ---
   if ((columnIndex + 1) % 4 === 0 && columnIndex > 0) {
     const label = document.createElement('div');
@@ -1271,7 +1296,6 @@ function createMelodicColumn(parentGrid, type, columnIndex) {
     label.textContent = columnIndex + 1; // Exibe o número da coluna (1-indexed)
     cell.appendChild(label);
   }
-
   cell.addEventListener('click', function(e) {
     e.stopPropagation();
     const instrumentKey = this.closest('.instrument-block').parentElement.querySelector('.instrument-select').value;
@@ -1294,9 +1318,6 @@ function createMelodicColumn(parentGrid, type, columnIndex) {
   column.appendChild(cell);
   parentGrid.appendChild(column);
 }
-
-
-
 // ===== FUNÇÃO PARA EXCLUIR COLUNA =====
 function deleteColumn(columnIndex) {
   // Coleta todos os grids: bateria, harmonia e melodias
@@ -1311,7 +1332,6 @@ function deleteColumn(columnIndex) {
     ...state.melody2Blocks.map(m => m.querySelector('.columns-grid')),
     ...state.drumBlocks.map(d => d.querySelector('.columns-grid'))
   ].filter(Boolean); // remove nulos
-  
   // Remove a coluna correspondente em todos os grids
   allGrids.forEach(g => {
     const columns = g.querySelectorAll('.column');
@@ -1320,22 +1340,18 @@ function deleteColumn(columnIndex) {
     }
   });
   state.totalSteps -= 1;
-updateEditMap();
+  updateEditMap();
 }
-
 function addCompasso() {
   const newColumnIndex = state.totalSteps;
-  
   // Harmonia - para cada um dos 3 containers
   for (let containerIndex = 0; containerIndex < 3; containerIndex++) {
     state.harmonyBlocks[containerIndex].forEach(harmonyBlock => {
       const grid = harmonyBlock.grid;
       if (!grid) return;
       createHarmonyColumn(grid, newColumnIndex, harmonyBlock);
-      
     });
   }
-  
   // Baixo, Melodia 1, Melodia 2
   [state.bassBlocks, state.melody1Blocks, state.melody2Blocks].forEach(blocks => {
     blocks.forEach(wrapper => {
@@ -1343,23 +1359,17 @@ function addCompasso() {
       if (!grid) return;
       const type = grid.dataset.type;
       createMelodicColumn(grid, type, newColumnIndex);
-      
     });
   });
-  
   // BATERIA
   state.drumBlocks.forEach(block => {
     const grid = block.querySelector('.columns-grid');
     if (!grid) return;
     createDrumColumn(grid, newColumnIndex, block.dataset.blockIndex);
   });
-  
   state.totalSteps += 1;
   updateStatus(`Compasso adicionado. Total: ${state.totalSteps} passos.`, 'ready');
-
-  
-updateEditMap();
-
+  updateEditMap();
 }
 function duplicateComposition() {
   if (state.totalSteps === 0) {
@@ -1367,37 +1377,28 @@ function duplicateComposition() {
     return;
   }
   const originalTotalSteps = state.totalSteps;
-
   for (let i = 0; i < originalTotalSteps; i++) {
     const newColumnIndex = state.totalSteps; // Sempre adiciona no final
-
     // --- HARMONIA 1, 2 e 3 ---
     for (let containerIndex = 0; containerIndex < 3; containerIndex++) {
       state.harmonyBlocks[containerIndex].forEach(harmonyBlock => {
         const grid = harmonyBlock.grid;
         if (!grid) return;
-
         const instrument = harmonyBlock.instrumentSelect.value;
         const originalColumn = grid.querySelector(`.column:nth-child(${i + 1})`);
         // Se não existir a coluna original (defensivo), criamos uma coluna vazia
         const originalCell = originalColumn ? originalColumn.querySelector('.cell') : null;
-
         // usa a helper para obter o valor CANÔNICO (com 'S' para #), evitando rótulos numéricos
         const originalValue = originalCell ? getCellNoteValue(originalCell) : 'X';
         const displayText = (originalValue === 'X') ? 'X' : originalValue.replace(/S/g, '#');
         const isX = originalValue === 'X';
-
         createHarmonyColumn(grid, newColumnIndex, harmonyBlock);
-
         const newColumn = grid.querySelector(`.column:nth-child(${newColumnIndex + 1})`);
         const newCell = newColumn.querySelector('.cell');
-
         const deleteBtn = newCell.querySelector('.delete-cell-btn');
         if (deleteBtn) newCell.removeChild(deleteBtn);
-
         // mostra o texto com '#' na UI e armazena o valor canônico no dataset
         newCell.textContent = displayText;
-
         if (isX) {
           newCell.classList.add('x');
           newCell.removeAttribute('data-original-value');
@@ -1407,38 +1408,28 @@ function duplicateComposition() {
           // pré-carrega o sample do acorde duplicado
           loadSample('harmonic', instrument, originalValue);
         }
-
         if (deleteBtn) newCell.appendChild(deleteBtn);
       });
     }
-
     // --- BAIXO, MELODIA 1, MELODIA 2 ---
     [state.bassBlocks, state.melody1Blocks, state.melody2Blocks].forEach(blocks => {
       blocks.forEach(wrapper => {
         const grid = wrapper.querySelector('.columns-grid');
         if (!grid) return;
-
         const instrumentSelect = wrapper.querySelector('.instrument-select');
         const instrument = instrumentSelect ? instrumentSelect.value : 'piano';
-
         const originalColumn = grid.querySelector(`.column:nth-child(${i + 1})`);
         const originalCell = originalColumn ? originalColumn.querySelector('.cell') : null;
-
         // pega o valor canônico (ex: '10CS' ou '1E' ou 'X')
         const originalValue = originalCell ? getCellNoteValue(originalCell) : 'X';
         const displayText = (originalValue === 'X') ? 'X' : originalValue.replace(/S/g, '#');
         const isX = originalValue === 'X';
-
         createMelodicColumn(grid, grid.dataset.type, newColumnIndex);
-
         const newColumn = grid.querySelector(`.column:nth-child(${newColumnIndex + 1})`);
         const newCell = newColumn.querySelector('.cell');
-
         const deleteBtn = newCell.querySelector('.delete-cell-btn');
         if (deleteBtn) newCell.removeChild(deleteBtn);
-
         newCell.textContent = displayText;
-
         if (isX) {
           newCell.classList.add('x');
           newCell.removeAttribute('data-original-value');
@@ -1448,22 +1439,17 @@ function duplicateComposition() {
           // pré-carrega a nota duplicada
           loadSample('melodic', instrument, originalValue);
         }
-
         if (deleteBtn) newCell.appendChild(deleteBtn);
       });
     });
-
     // --- BATERIA (mantive igual) ---
     state.drumBlocks.forEach(block => {
       const drumWrapper = block.querySelector('.drum-wrapper');
       const grid = drumWrapper ? drumWrapper.querySelector('.columns-grid') : block.querySelector('.columns-grid');
       if (!grid) return;
-
       const originalColumn = grid.querySelector(`.column:nth-child(${i + 1})`);
       createDrumColumn(grid, newColumnIndex, block.dataset.blockIndex);
-
       const newColumn = grid.querySelector(`.column:nth-child(${newColumnIndex + 1})`);
-
       DRUM_SAMPLES.forEach(drum => {
         const originalCell = originalColumn ? originalColumn.querySelector(`.drum-cell[data-instr="${drum.key}"]`) : null;
         const newCell = newColumn.querySelector(`.drum-cell[data-instr="${drum.key}"]`);
@@ -1475,46 +1461,33 @@ function duplicateComposition() {
         }
       });
     });
-
     state.totalSteps += 1;
   }
-
   updateStatus(`Composição duplicada. Total: ${state.totalSteps} passos.`, 'ready');
   updateEditMap();
 }
-
-
 function updateEditMap() {
   const mapContent = document.getElementById('editMapContent');
   mapContent.innerHTML = '';
-
   if (state.totalSteps === 0) return;
-
-  const totalMeasures = Math.ceil(state.totalSteps / 4);
-
+  const totalMeasures = Math.ceil(state.totalSteps / 8); // 8 colcheias por compasso
   for (let measureIndex = 0; measureIndex < totalMeasures; measureIndex++) {
     const item = document.createElement('div');
     item.className = 'edit-map-item';
     item.dataset.measureIndex = measureIndex;
-
     const numberSpan = document.createElement('span');
     numberSpan.className = 'edit-map-number';
     numberSpan.textContent = measureIndex + 1;
-
     const cellsContainer = document.createElement('div');
     cellsContainer.className = 'edit-map-cells';
-
-    // Adiciona 4 células representando as 4 semicolcheias do compasso
-    for (let i = 0; i < 4; i++) {
-      const cellIndex = measureIndex * 4 + i;
+    // Adiciona 8 células representando as 8 colcheias do compasso
+    for (let i = 0; i < 8; i++) { // <-- MUDOU DE 4 PARA 8
+      const cellIndex = measureIndex * 8 + i; // <-- MUDOU DE 4 PARA 8
       if (cellIndex >= state.totalSteps) break;
-
       const cellSpan = document.createElement('span');
       cellSpan.className = 'edit-map-cell';
-
       // Verifica se há conteúdo em pelo menos um instrumento nesta coluna
       let hasContent = false;
-
       // Verifica Harmonia 1, 2, 3
       for (let containerIndex = 0; containerIndex < 3; containerIndex++) {
         state.harmonyBlocks[containerIndex].forEach(hb => {
@@ -1528,7 +1501,6 @@ function updateEditMap() {
           }
         });
       }
-
       // Verifica Baixo, Melodia 1, Melodia 2
       [state.bassBlocks, state.melody1Blocks, state.melody2Blocks].forEach(blocks => {
         blocks.forEach(wrapper => {
@@ -1542,7 +1514,6 @@ function updateEditMap() {
           }
         });
       });
-
       // Verifica Bateria
       state.drumBlocks.forEach(block => {
         const drumWrapper = block.querySelector('.drum-wrapper');
@@ -1559,30 +1530,24 @@ function updateEditMap() {
           }
         }
       });
-
       if (hasContent) {
         cellSpan.classList.add('filled');
       } else {
         cellSpan.classList.add('x');
       }
-
       cellsContainer.appendChild(cellSpan);
     }
-
     item.appendChild(numberSpan);
     item.appendChild(cellsContainer);
     mapContent.appendChild(item);
-
     // Adiciona evento de clique
     item.addEventListener('click', function() {
       const clickedMeasureIndex = parseInt(this.dataset.measureIndex);
-      const targetColumnIndex = clickedMeasureIndex * 4;
-
+      const targetColumnIndex = clickedMeasureIndex * 8; // <-- MUDOU DE 4 PARA 8
       // Remove classe 'active' de todos os itens
       document.querySelectorAll('.edit-map-item').forEach(el => el.classList.remove('active'));
       // Adiciona classe 'active' ao item clicado
       this.classList.add('active');
-
       // Rola todos os grids até a coluna de destino
       const allGrids = [
         ...state.harmonyBlocks[0].map(hb => hb.grid),
@@ -1596,7 +1561,6 @@ function updateEditMap() {
           return dw ? dw.querySelector('.columns-grid') : d.querySelector('.columns-grid');
         })
       ].filter(Boolean);
-
       allGrids.forEach(grid => {
         const targetColumn = grid.querySelector(`.column:nth-child(${targetColumnIndex + 1})`);
         if (targetColumn) {
@@ -1625,7 +1589,6 @@ function getCellNoteValue(cellElement) {
   }
   return 'X'; // valor padrão de fallback
 }
-
 // ===== PLAYBACK =====
 function buildPlaybackPlan() {
   const plan = {
@@ -1637,10 +1600,8 @@ function buildPlaybackPlan() {
     melody2: [],
     drums: {}
   };
-  
   // Inicializa os arrays de cada peça de bateria
   DRUM_SAMPLES.forEach(d => plan.drums[d.key] = []);
-  
   // --- HARMONIA 1 ---
   state.harmonyBlocks[0].forEach(harmonyBlock => {
     const grid = harmonyBlock.grid;
@@ -1656,7 +1617,6 @@ function buildPlaybackPlan() {
       }
     });
   });
-  
   // --- HARMONIA 2 ---
   state.harmonyBlocks[1].forEach(harmonyBlock => {
     const grid = harmonyBlock.grid;
@@ -1672,7 +1632,6 @@ function buildPlaybackPlan() {
       }
     });
   });
-  
   // --- HARMONIA 3 ---
   state.harmonyBlocks[2].forEach(harmonyBlock => {
     const grid = harmonyBlock.grid;
@@ -1688,7 +1647,6 @@ function buildPlaybackPlan() {
       }
     });
   });
-  
   // Coleta todas as colunas dos instrumentos melódicos (Baixo, Melodia 1, Melodia 2)
   [state.bassBlocks, state.melody1Blocks, state.melody2Blocks].forEach((blocks, idx) => {
     const type = ['bass', 'melody1', 'melody2'][idx];
@@ -1710,7 +1668,6 @@ function buildPlaybackPlan() {
       });
     });
   });
-  
   // Coleta as células da bateria
   state.drumBlocks.forEach(block => {
     // Navega até o .columns-grid dentro do .drum-wrapper, se existir
@@ -1727,19 +1684,16 @@ function buildPlaybackPlan() {
       });
     });
   });
-  
   // Armazena o plano de playback no estado global
   state.playbackPlan = plan;
   state.stepIndex = 0;
   state.lastNoteTime = 0;
   return plan;
 }
-
 function scheduleStep(time) {
   const idx = state.stepIndex;
   const plan = state.playbackPlan;
   if (!plan) return;
-  
   // HARMONIA 1
   if (idx < plan.harmony1.length && plan.harmony1[idx]) {
     const item = plan.harmony1[idx];
@@ -1751,7 +1705,6 @@ function scheduleStep(time) {
       state.currentlyPlaying.harmony1 = item.chord;
     }
   }
-  
   // HARMONIA 2
   if (idx < plan.harmony2.length && plan.harmony2[idx]) {
     const item = plan.harmony2[idx];
@@ -1763,7 +1716,6 @@ function scheduleStep(time) {
       state.currentlyPlaying.harmony2 = item.chord;
     }
   }
-  
   // HARMONIA 3
   if (idx < plan.harmony3.length && plan.harmony3[idx]) {
     const item = plan.harmony3[idx];
@@ -1775,7 +1727,6 @@ function scheduleStep(time) {
       state.currentlyPlaying.harmony3 = item.chord;
     }
   }
-  
   // BAIXO
   if (idx < plan.bass.length && plan.bass[idx]) {
     const item = plan.bass[idx];
@@ -1787,7 +1738,6 @@ function scheduleStep(time) {
       state.currentlyPlaying.bass = item.note;
     }
   }
-  
   // MELODIA 1
   if (idx < plan.melody1.length && plan.melody1[idx]) {
     const item = plan.melody1[idx];
@@ -1799,7 +1749,6 @@ function scheduleStep(time) {
       state.currentlyPlaying.melody1 = item.note;
     }
   }
-  
   // MELODIA 2
   if (idx < plan.melody2.length && plan.melody2[idx]) {
     const item = plan.melody2[idx];
@@ -1811,17 +1760,14 @@ function scheduleStep(time) {
       state.currentlyPlaying.melody2 = item.note;
     }
   }
-  
   // BATERIA: NÃO MUTA — PERMITE SOBREPOSIÇÃO NATURAL
   Object.keys(plan.drums).forEach(key => {
     if (idx < plan.drums[key].length && plan.drums[key][idx]) {
       playDrum(key, time, state.drumGain, 1.0); // ↑ Ganho aumentado
     }
   });
-  
   state.stepIndex = (state.stepIndex + 1) % state.totalSteps;
 }
-
 function playNote(instrumentKey, note, time, gainNode, volume = 1.0) {
   if (!state.audioCtx) return;
   const bufferKey = `melodic-${instrumentKey}-${note}`;
@@ -1832,11 +1778,18 @@ function playNote(instrumentKey, note, time, gainNode, volume = 1.0) {
   }
   const source = state.audioCtx.createBufferSource();
   source.buffer = buffer;
-  source.connect(gainNode);
+  // --- MODIFICAÇÃO: Aplica o volume do slider ---
+  const activeGrid = gainNode === state.bassGain ? document.querySelector('#bassContainer .columns-grid') :
+                     gainNode === state.melodyGain ? document.querySelector('#melody1Container .columns-grid') || document.querySelector('#melody2Container .columns-grid') : null;
+  const sliderVolume = activeGrid && activeGrid._volumeSlider ? parseFloat(activeGrid._volumeSlider.value) : 0.5;
+  // --- FIM DA MODIFICAÇÃO ---
+  const instrumentGain = state.audioCtx.createGain();
+  instrumentGain.gain.setValueAtTime(sliderVolume * volume, time);
+  source.connect(instrumentGain);
+  instrumentGain.connect(gainNode);
   source.start(time);
-  source.stop(time + 0.5); // Semicolcheia = 0.5s
+  source.stop(time + 0.25); // Colcheia = 0.25s (1/8 da semínima)
 }
-
 function playChord(instrumentKey, chord, time, gainNode, volume = 1.0) {
   if (!state.audioCtx) return;
   if (chord === 'X') return;
@@ -1855,11 +1808,19 @@ function playChord(instrumentKey, chord, time, gainNode, volume = 1.0) {
   }
   const source = state.audioCtx.createBufferSource();
   source.buffer = buffer;
-  source.connect(gainNode);
+  // --- MODIFICAÇÃO: Aplica o volume do slider ---
+  const activeGrid = document.querySelector('#harmonyContainer1 .columns-grid') ||
+                     document.querySelector('#harmonyContainer2 .columns-grid') ||
+                     document.querySelector('#harmonyContainer3 .columns-grid');
+  const sliderVolume = activeGrid && activeGrid._volumeSlider ? parseFloat(activeGrid._volumeSlider.value) : 0.5;
+  // --- FIM DA MODIFICAÇÃO ---
+  const instrumentGain = state.audioCtx.createGain();
+  instrumentGain.gain.setValueAtTime(sliderVolume * volume, time);
+  source.connect(instrumentGain);
+  instrumentGain.connect(gainNode);
   source.start(time);
-  source.stop(time + 1.0); // Semínima = 1.0s
+  source.stop(time + 0.5); // Semínima dividida por 2 = 0.5s (duração do acorde em colcheias)
 }
-
 function playDrum(drumKey, time, gainNode, volume = 1.0) {
   if (!state.audioCtx) return;
   const buffer = state.buffers.drums[drumKey];
@@ -1870,13 +1831,16 @@ function playDrum(drumKey, time, gainNode, volume = 1.0) {
   const source = state.audioCtx.createBufferSource();
   source.buffer = buffer;
   const gain = state.audioCtx.createGain();
-  gain.gain.setValueAtTime(volume, time);
+  // --- MODIFICAÇÃO: Aplica o volume individual da peça ---
+  const drumVolumeSlider = window.drumVolumeSliders && window.drumVolumeSliders[drumKey];
+  const sliderVolume = drumVolumeSlider ? parseFloat(drumVolumeSlider.value) : 1.0;
+  gain.gain.setValueAtTime(sliderVolume * volume, time);
+  // --- FIM DA MODIFICAÇÃO ---
   source.connect(gain);
   gain.connect(gainNode);
   source.start(time);
   // ❌ não corta em 0.2s, deixa o sample tocar até o fim
 }
-
 function startScheduler() {
   state.isPlaying = true;
   ui.btnPlay.textContent = '⏸ Pause';
@@ -1884,7 +1848,7 @@ function startScheduler() {
   function tick() {
     if (!state.isPlaying) return;
     const now = state.audioCtx.currentTime;
-    const stepDuration = 60 / state.bpm / 4; // semicolcheia
+    const stepDuration = 60 / state.bpm / 8; // colcheia (oitavo)
     const nextStep = state.lastNoteTime + stepDuration;
     if (now >= nextStep) {
       scheduleStep(nextStep);
@@ -1896,7 +1860,6 @@ function startScheduler() {
   state.lastNoteTime = state.audioCtx.currentTime;
   tick();
 }
-
 // ===== FUNÇÃO PARA ATUALIZAR PROGRESSO VISUAL =====
 function updatePlaybackProgress() {
   // Limpa destaque anterior
@@ -1912,7 +1875,6 @@ function updatePlaybackProgress() {
     cell.style.boxShadow = '0 0 5px 2px #5eead4';
   });
 }
-
 // ===== PLAY COM CONTAGEM REGRESSIVA DE 4 COMPASSOS =====
 function onPlay() {
   if (!state.audioCtx) {
@@ -1931,7 +1893,6 @@ function onPlay() {
     }
     buildPlaybackPlan();
     const samplesToLoad = new Set();
-    
     // Harmonia 1
     state.playbackPlan.harmony1.forEach(item => {
       if (item && item.chord !== 'X') {
@@ -1945,7 +1906,6 @@ function onPlay() {
         samplesToLoad.add(filePath);
       }
     });
-    
     // Harmonia 2
     state.playbackPlan.harmony2.forEach(item => {
       if (item && item.chord !== 'X') {
@@ -1959,7 +1919,6 @@ function onPlay() {
         samplesToLoad.add(filePath);
       }
     });
-    
     // Harmonia 3
     state.playbackPlan.harmony3.forEach(item => {
       if (item && item.chord !== 'X') {
@@ -1973,7 +1932,6 @@ function onPlay() {
         samplesToLoad.add(filePath);
       }
     });
-    
     // Melódicas
     ['bass', 'melody1', 'melody2'].forEach(type => {
       state.playbackPlan[type].forEach(item => {
@@ -1983,14 +1941,12 @@ function onPlay() {
         }
       });
     });
-    
     // Bateria — usa o key direto (ex: 'ataque'), sem prefixo
     Object.keys(state.playbackPlan.drums).forEach(key => {
       if (state.playbackPlan.drums[key].some(active => active)) {
         samplesToLoad.add(key);
       }
     });
-    
     updateStatus('Carregando amostras... Por favor, aguarde.', 'loading');
     ui.btnSaveWAV.disabled = true;
     ui.countdown.style.display = 'block';
@@ -2023,7 +1979,6 @@ function onPlay() {
         return loadSample('drum', bufferKey, '');
       }
     });
-    
      Promise.all(promises).then(() => {
       // >>>>> ADICIONE ESTA LINHA ABAIXO <<<<<
       ui.btnSaveWAV.disabled = false;
@@ -2037,13 +1992,12 @@ function onPlay() {
     updateStatus('Erro ao iniciar: ' + error.message, 'error');
   }
 }
-
 function startCountdown() {
   state.countdownActive = true;
   state.countdownValue = 4;
   ui.countdown.textContent = state.countdownValue;
-  const sixteenthDur = 60 / state.bpm / 4;
-  const beatDuration = sixteenthDur * 4;
+  const eighthDur = 60 / state.bpm / 8; // Duração da colcheia
+  const beatDuration = eighthDur * 8; // Duração de uma semínima (4 colcheias) para a contagem
   const interval = setInterval(() => {
     state.countdownValue--;
     ui.countdown.textContent = state.countdownValue;
@@ -2056,7 +2010,6 @@ function startCountdown() {
     }
   }, beatDuration * 1000);
 }
-
 function onStop() {
   state.isPlaying = false;
   state.stepIndex = 0;
@@ -2065,7 +2018,6 @@ function onStop() {
   ui.btnStop.disabled = true;
   updateStatus('Reprodução parada', 'ready');
 }
-
 // ===== GRAVAÇÃO WAV COM BARRA DE PROGRESSO =====
 async function renderAndDownloadWAV() {
   if (!state.playbackPlan) {
@@ -2078,10 +2030,10 @@ async function renderAndDownloadWAV() {
   ui.progressContainer.style.display = 'block';
   try {
     const sampleRate = 44100;
-    const sixteenthDur = 60 / state.bpm / 4;
+    const eighthDur = 60 / state.bpm / 8; // Duração da colcheia
     // --- CÁLCULO CORRIGIDO DA DURAÇÃO ---
-    // O último evento significativo termina 1 segundo após o último passo (duração do acorde).
-    const lastEventTime = (state.totalSteps - 1) * sixteenthDur + 1.0;
+    // O último evento significativo termina 0.5s após o último passo (duração do acorde).
+    const lastEventTime = (state.totalSteps - 1) * eighthDur + 0.5;
     // Adiciona 2 segundos de margem de segurança total.
     const safeDuration = lastEventTime + 2.0;
     const totalSamples = Math.ceil(safeDuration * sampleRate);
@@ -2102,6 +2054,19 @@ async function renderAndDownloadWAV() {
     bassGain.gain.value = 0.5;
     melodyGain.gain.value = 0.5;
     harmonicGain.gain.value = 0.5;
+    // ===== CRIA NÓS DE GANHO INDIVIDUAIS PARA RENDERIZAÇÃO =====
+    const bassInstrumentGain = offlineCtx.createGain();
+    const melodyInstrumentGain = offlineCtx.createGain();
+    const harmonyInstrumentGain = offlineCtx.createGain();
+    const drumInstrumentGains = {};
+    DRUM_SAMPLES.forEach(drum => {
+      drumInstrumentGains[drum.key] = offlineCtx.createGain();
+      drumInstrumentGains[drum.key].connect(drumGain);
+    });
+    bassInstrumentGain.connect(bassGain);
+    melodyInstrumentGain.connect(melodyGain);
+    harmonyInstrumentGain.connect(harmonicGain);
+    // ===== FIM DA CRIAÇÃO DOS NÓS =====
     const totalSteps = state.totalSteps;
     // Função para atualizar a barra de progresso
     const updateProgress = (currentStep) => {
@@ -2110,12 +2075,11 @@ async function renderAndDownloadWAV() {
       ui.progressText.textContent = `${percent}%`;
     };
     for (let step = 0; step < totalSteps; step++) {
-      const time = step * sixteenthDur;
+      const time = step * eighthDur;
       if (step % 10 === 0) {
         updateProgress(step);
       }
-      
-      // Harmonia 1 (dura 1.0s)
+      // Harmonia 1 (dura 0.5s)
       if (step < state.playbackPlan.harmony1.length && state.playbackPlan.harmony1[step]) {
         const item = state.playbackPlan.harmony1[step];
         if (item && item.chord !== 'X') {
@@ -2127,14 +2091,19 @@ async function renderAndDownloadWAV() {
           if (buffer) {
             const source = offlineCtx.createBufferSource();
             source.buffer = buffer;
-            source.connect(harmonicGain);
+            // --- MODIFICAÇÃO: Aplica o volume do slider ---
+            const harmonyContainer = document.querySelector('#harmonyContainer1');
+            const activeGrid = harmonyContainer ? harmonyContainer.querySelector('.columns-grid') : null;
+            const sliderVolume = activeGrid && activeGrid._volumeSlider ? parseFloat(activeGrid._volumeSlider.value) : 0.5;
+            harmonyInstrumentGain.gain.setValueAtTime(sliderVolume, time);
+            source.connect(harmonyInstrumentGain);
+            // --- FIM DA MODIFICAÇÃO ---
             source.start(time);
-            source.stop(time + 1.0); // Para no final da semínima
+            source.stop(time + 0.5); // Duração do acorde
           }
         }
       }
-      
-      // Harmonia 2 (dura 1.0s)
+      // Harmonia 2 (dura 0.5s)
       if (step < state.playbackPlan.harmony2.length && state.playbackPlan.harmony2[step]) {
         const item = state.playbackPlan.harmony2[step];
         if (item && item.chord !== 'X') {
@@ -2146,14 +2115,19 @@ async function renderAndDownloadWAV() {
           if (buffer) {
             const source = offlineCtx.createBufferSource();
             source.buffer = buffer;
-            source.connect(harmonicGain);
+            // --- MODIFICAÇÃO: Aplica o volume do slider ---
+            const harmonyContainer = document.querySelector('#harmonyContainer2');
+            const activeGrid = harmonyContainer ? harmonyContainer.querySelector('.columns-grid') : null;
+            const sliderVolume = activeGrid && activeGrid._volumeSlider ? parseFloat(activeGrid._volumeSlider.value) : 0.5;
+            harmonyInstrumentGain.gain.setValueAtTime(sliderVolume, time);
+            source.connect(harmonyInstrumentGain);
+            // --- FIM DA MODIFICAÇÃO ---
             source.start(time);
-            source.stop(time + 1.0); // Para no final da semínima
+            source.stop(time + 0.5); // Duração do acorde
           }
         }
       }
-      
-      // Harmonia 3 (dura 1.0s)
+      // Harmonia 3 (dura 0.5s)
       if (step < state.playbackPlan.harmony3.length && state.playbackPlan.harmony3[step]) {
         const item = state.playbackPlan.harmony3[step];
         if (item && item.chord !== 'X') {
@@ -2165,14 +2139,19 @@ async function renderAndDownloadWAV() {
           if (buffer) {
             const source = offlineCtx.createBufferSource();
             source.buffer = buffer;
-            source.connect(harmonicGain);
+            // --- MODIFICAÇÃO: Aplica o volume do slider ---
+            const harmonyContainer = document.querySelector('#harmonyContainer3');
+            const activeGrid = harmonyContainer ? harmonyContainer.querySelector('.columns-grid') : null;
+            const sliderVolume = activeGrid && activeGrid._volumeSlider ? parseFloat(activeGrid._volumeSlider.value) : 0.5;
+            harmonyInstrumentGain.gain.setValueAtTime(sliderVolume, time);
+            source.connect(harmonyInstrumentGain);
+            // --- FIM DA MODIFICAÇÃO ---
             source.start(time);
-            source.stop(time + 1.0); // Para no final da semínima
+            source.stop(time + 0.5); // Duração do acorde
           }
         }
       }
-      
-      // Baixo (dura 0.5s)
+      // Baixo (dura 0.25s)
       if (step < state.playbackPlan.bass.length && state.playbackPlan.bass[step]) {
         const item = state.playbackPlan.bass[step];
         if (item && item.note) {
@@ -2181,14 +2160,19 @@ async function renderAndDownloadWAV() {
           if (buffer) {
             const source = offlineCtx.createBufferSource();
             source.buffer = buffer;
-            source.connect(bassGain);
+            // --- MODIFICAÇÃO: Aplica o volume do slider ---
+            const bassContainer = document.querySelector('#bassContainer');
+            const activeGrid = bassContainer ? bassContainer.querySelector('.columns-grid') : null;
+            const sliderVolume = activeGrid && activeGrid._volumeSlider ? parseFloat(activeGrid._volumeSlider.value) : 0.5;
+            bassInstrumentGain.gain.setValueAtTime(sliderVolume, time);
+            source.connect(bassInstrumentGain);
+            // --- FIM DA MODIFICAÇÃO ---
             source.start(time);
-            source.stop(time + 0.5); // Para no final da semicolcheia
+            source.stop(time + 0.25); // Duração da nota
           }
         }
       }
-      
-      // Melodia 1 & 2 (duram 0.5s)
+      // Melodia 1 & 2 (duram 0.25s)
       [[state.playbackPlan.melody1, melodyGain], [state.playbackPlan.melody2, melodyGain]].forEach(([melody, gain]) => {
         if (step < melody.length && melody[step]) {
           const item = melody[step];
@@ -2198,14 +2182,19 @@ async function renderAndDownloadWAV() {
             if (buffer) {
               const source = offlineCtx.createBufferSource();
               source.buffer = buffer;
-              source.connect(gain);
+              // --- MODIFICAÇÃO: Aplica o volume do slider ---
+              const melodyContainer = gain === melodyGain ? (document.querySelector('#melody1Container') || document.querySelector('#melody2Container')) : null;
+              const activeGrid = melodyContainer ? melodyContainer.querySelector('.columns-grid') : null;
+              const sliderVolume = activeGrid && activeGrid._volumeSlider ? parseFloat(activeGrid._volumeSlider.value) : 0.5;
+              melodyInstrumentGain.gain.setValueAtTime(sliderVolume, time);
+              source.connect(melodyInstrumentGain);
+              // --- FIM DA MODIFICAÇÃO ---
               source.start(time);
-              source.stop(time + 0.5);
+              source.stop(time + 0.25); // Duração da nota
             }
           }
         }
       });
-      
       // Bateria (não para, deixa tocar até o fim)
       Object.keys(state.playbackPlan.drums).forEach(key => {
         if (step < state.playbackPlan.drums[key].length && state.playbackPlan.drums[key][step]) {
@@ -2213,7 +2202,12 @@ async function renderAndDownloadWAV() {
           if (buffer) {
             const source = offlineCtx.createBufferSource();
             source.buffer = buffer;
-            source.connect(drumGain);
+            // --- MODIFICAÇÃO: Aplica o volume individual da peça ---
+            const drumVolumeSlider = window.drumVolumeSliders && window.drumVolumeSliders[key];
+            const sliderVolume = drumVolumeSlider ? parseFloat(drumVolumeSlider.value) : 1.0;
+            drumInstrumentGains[key].gain.setValueAtTime(sliderVolume, time);
+            source.connect(drumInstrumentGains[key]);
+            // --- FIM DA MODIFICAÇÃO ---
             source.start(time);
             // Não chamamos source.stop() para permitir o sample tocar naturalmente.
           }
@@ -2235,7 +2229,6 @@ async function renderAndDownloadWAV() {
     ui.progressContainer.style.display = 'none';
   }
 }
-
 function audioBufferToWav(buffer) {
   const numOfChan = buffer.numberOfChannels;
   const length = buffer.length * numOfChan * 2 + 44;
@@ -2275,7 +2268,6 @@ function audioBufferToWav(buffer) {
   }
   return new Blob([view], { type: 'audio/wav' });
 }
-
 function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -2289,7 +2281,25 @@ function downloadBlob(blob, filename) {
     URL.revokeObjectURL(url);
   }, 100);
 }
-
+// ===== FUNÇÃO AUXILIAR: Cria o controle de volume =====
+function createVolumeControl() {
+  const volumeControl = document.createElement('div');
+  volumeControl.className = 'volume-control';
+  const volumeLabel = document.createElement('span');
+  volumeLabel.className = 'volume-label';
+  volumeLabel.textContent = 'Vol:';
+  const volumeSlider = document.createElement('input');
+  volumeSlider.type = 'range';
+  volumeSlider.className = 'volume-slider';
+  volumeSlider.min = '0';
+  volumeSlider.max = '1';
+  volumeSlider.step = '0.01';
+  volumeSlider.value = '0.5'; // Valor padrão
+  volumeSlider.style.width = '80px';
+  volumeControl.appendChild(volumeLabel);
+  volumeControl.appendChild(volumeSlider);
+  return volumeControl;
+}
 // ===== INICIALIZAR =====
 window.addEventListener('load', initializeApp);
 </script>
