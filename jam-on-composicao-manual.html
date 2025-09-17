@@ -1361,7 +1361,6 @@ function addCompasso() {
 updateEditMap();
 
 }
-
 function duplicateComposition() {
   if (state.totalSteps === 0) {
     alert('Nenhuma composição para duplicar.');
@@ -1380,9 +1379,13 @@ function duplicateComposition() {
 
         const instrument = harmonyBlock.instrumentSelect.value;
         const originalColumn = grid.querySelector(`.column:nth-child(${i + 1})`);
-        const originalCell = originalColumn.querySelector('.cell');
-        const originalText = originalCell.textContent;
-        const isX = originalCell.classList.contains('x');
+        // Se não existir a coluna original (defensivo), criamos uma coluna vazia
+        const originalCell = originalColumn ? originalColumn.querySelector('.cell') : null;
+
+        // usa a helper para obter o valor CANÔNICO (com 'S' para #), evitando rótulos numéricos
+        const originalValue = originalCell ? getCellNoteValue(originalCell) : 'X';
+        const displayText = (originalValue === 'X') ? 'X' : originalValue.replace(/S/g, '#');
+        const isX = originalValue === 'X';
 
         createHarmonyColumn(grid, newColumnIndex, harmonyBlock);
 
@@ -1392,15 +1395,17 @@ function duplicateComposition() {
         const deleteBtn = newCell.querySelector('.delete-cell-btn');
         if (deleteBtn) newCell.removeChild(deleteBtn);
 
-        newCell.textContent = originalText;
+        // mostra o texto com '#' na UI e armazena o valor canônico no dataset
+        newCell.textContent = displayText;
 
         if (isX) {
           newCell.classList.add('x');
+          newCell.removeAttribute('data-original-value');
         } else {
           newCell.classList.remove('x');
-          newCell.dataset.originalValue = originalText.replace(/#/g, 'S');
-          // 🔑 Carrega o acorde duplicado
-          loadSample('harmonic', instrument, newCell.dataset.originalValue);
+          newCell.dataset.originalValue = originalValue;
+          // pré-carrega o sample do acorde duplicado
+          loadSample('harmonic', instrument, originalValue);
         }
 
         if (deleteBtn) newCell.appendChild(deleteBtn);
@@ -1417,9 +1422,12 @@ function duplicateComposition() {
         const instrument = instrumentSelect ? instrumentSelect.value : 'piano';
 
         const originalColumn = grid.querySelector(`.column:nth-child(${i + 1})`);
-        const originalCell = originalColumn.querySelector('.cell');
-        const originalText = originalCell.textContent;
-        const isX = originalCell.classList.contains('x');
+        const originalCell = originalColumn ? originalColumn.querySelector('.cell') : null;
+
+        // pega o valor canônico (ex: '10CS' ou '1E' ou 'X')
+        const originalValue = originalCell ? getCellNoteValue(originalCell) : 'X';
+        const displayText = (originalValue === 'X') ? 'X' : originalValue.replace(/S/g, '#');
+        const isX = originalValue === 'X';
 
         createMelodicColumn(grid, grid.dataset.type, newColumnIndex);
 
@@ -1429,22 +1437,23 @@ function duplicateComposition() {
         const deleteBtn = newCell.querySelector('.delete-cell-btn');
         if (deleteBtn) newCell.removeChild(deleteBtn);
 
-        newCell.textContent = originalText;
+        newCell.textContent = displayText;
 
         if (isX) {
           newCell.classList.add('x');
+          newCell.removeAttribute('data-original-value');
         } else {
           newCell.classList.remove('x');
-          newCell.dataset.originalValue = originalText.replace(/#/g, 'S');
-          // 🔑 Carrega a nota duplicada
-          loadSample('melodic', instrument, newCell.dataset.originalValue);
+          newCell.dataset.originalValue = originalValue;
+          // pré-carrega a nota duplicada
+          loadSample('melodic', instrument, originalValue);
         }
 
         if (deleteBtn) newCell.appendChild(deleteBtn);
       });
     });
 
-    // --- BATERIA (já estava correto) ---
+    // --- BATERIA (mantive igual) ---
     state.drumBlocks.forEach(block => {
       const drumWrapper = block.querySelector('.drum-wrapper');
       const grid = drumWrapper ? drumWrapper.querySelector('.columns-grid') : block.querySelector('.columns-grid');
@@ -1456,9 +1465,9 @@ function duplicateComposition() {
       const newColumn = grid.querySelector(`.column:nth-child(${newColumnIndex + 1})`);
 
       DRUM_SAMPLES.forEach(drum => {
-        const originalCell = originalColumn.querySelector(`.drum-cell[data-instr="${drum.key}"]`);
+        const originalCell = originalColumn ? originalColumn.querySelector(`.drum-cell[data-instr="${drum.key}"]`) : null;
         const newCell = newColumn.querySelector(`.drum-cell[data-instr="${drum.key}"]`);
-        if (originalCell.classList.contains('active')) {
+        if (originalCell && originalCell.classList.contains('active')) {
           newCell.classList.add('active');
           loadSample('drum', drum.key, '');
         } else {
@@ -1473,6 +1482,7 @@ function duplicateComposition() {
   updateStatus(`Composição duplicada. Total: ${state.totalSteps} passos.`, 'ready');
   updateEditMap();
 }
+
 
 function updateEditMap() {
   const mapContent = document.getElementById('editMapContent');
