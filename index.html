@@ -826,13 +826,8 @@ function initializeStyleAndKeySelectors() {
       return out.slice(0, totalSteps);
     }
     // ===== FUNÇÕES PRINCIPAIS =====
- function getChordTypeByDegree(degree, quality) {
-  // --- NOVA LÓGICA: Se o estilo for Blues, força 7ª dominante ---
-  if (state.currentGroove && state.currentGroove.name.includes("Blues")) {
-    return '7'; // Todos os acordes viram dominantes no Blues
-  }
-  // --- FIM DA NOVA LÓGICA ---
-
+   // ==================== NOVA FUNÇÃO AUXILIAR ====================
+function getChordTypeByDegree(degree, quality) {
   if (quality === 'maj') {
     // Campo harmônico maior: I ii iii IV V vi vii°
     switch (degree) {
@@ -852,56 +847,7 @@ function initializeStyleAndKeySelectors() {
       case 7: return '';        // VII
     }
   }
-  return ''; // Retorna acorde maior caso o grau seja inválido ou não mapeado
-}
-
-// ===== FUNÇÃO getBassNotesFromScale (FALTANDO NO CÓDIGO) =====
-function getBassNotesFromScale(degree, scale, chordType) {
-  // Se a escala for "chromatic", retorna todas as 12 notas (ex: Jazz)
-  if (scale === "chromatic") {
-    return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-  }
-
-  // Mapeia o grau do acorde para sua tônica relativa dentro da escala maior/menor
-  // Isso define a "raiz" da escala a ser usada para o baixo neste acorde
-  let rootOffset = 0;
-  switch (degree) {
-    case 1: rootOffset = 0; break; // Tônica
-    case 2: rootOffset = 2; break; // Supertônica
-    case 3: rootOffset = 4; break; // Mediante
-    case 4: rootOffset = 5; break; // Subdominante
-    case 5: rootOffset = 7; break; // Dominante
-    case 6: rootOffset = 9; break; // Superdominante / Submediante
-    case 7: rootOffset = 11; break; // Sensível
-    default: rootOffset = 0;
-  }
-
-  // Ajusta a escala se o acorde for menor ou diminuto
-  // Isso é uma simplificação. Em uma implementação mais avançada, você poderia
-  // ter escalas específicas para acordes menores (ex: Dórico, Eólio) ou diminutos.
-  let adjustedScale = [...scale]; // Trabalha com uma cópia
-
-  if (chordType === 'm' || chordType === 'dim') {
-    // Para acordes menores, abaixa a 3ª (índice 1 na escala) em 1 semitom
-    // Isso simula a mudança de modo (ex: de maior para menor)
-    if (adjustedScale.length > 1 && adjustedScale[1] === 3) {
-      adjustedScale[1] = 2; // Transforma a terça maior em menor
-    }
-    // Para diminuto, também abaixa a 5ª (índice 2 na escala)
-    if (chordType === 'dim' && adjustedScale.length > 2 && adjustedScale[2] === 5) {
-      adjustedScale[2] = 4; // Transforma a quinta justa em diminuta
-    }
-  }
-
-  // Aplica o offset da raiz à escala
-  return adjustedScale.map(note => {
-    // Calcula a nota absoluta na escala cromática (1-12)
-    let absoluteNote = note + rootOffset;
-    // Garante que fique dentro do range 1-12
-    while (absoluteNote > 12) absoluteNote -= 12;
-    while (absoluteNote < 1) absoluteNote += 12;
-    return absoluteNote;
-  });
+  return '';
 }
 
 // ==================== FUNÇÃO CORRIGIDA COMPLETA ====================
@@ -958,17 +904,7 @@ async function buildBassAndChordPlan() {
   const totalBars = Math.min(state.chordProgression.length, 64);
   const totalSteps = sixteenthsPerBar * totalBars;
   const rhythm = expandRhythm(state.currentGroove.bassRhythm, totalSteps);
- let drumPatternText = state.currentGroove.drumPattern.join(' ');
-  const drumPattern = parsePattern(drumPatternText);
-  const drumSeqIntro = expandRhythm(drumPattern.intro, sixteenthsPerBar * drumPattern.intro.length);
-  const drumSeqLoop = expandRhythm(drumPattern.loop, sixteenthsPerBar * drumPattern.loop.length);
-  state.drumSeq = [...drumSeqIntro, ...drumSeqLoop];
-  if (state.drumSeq.length < totalSteps) {
-    const missing = totalSteps - state.drumSeq.length;
-    for (let i = 0; i < missing; i++) {
-      state.drumSeq.push(state.drumSeq[i % state.drumSeq.length]);
-    }
-  }
+
   const bassPlan = [];
   const chordPlan = [];
 
