@@ -751,7 +751,7 @@ function initializeStyleAndKeySelectors() {
       ui.volDistLabel.textContent = Math.round(ui.volDist.value * 100) + '%';
       ui.volMelodyLabel.textContent = Math.round(ui.volMelody.value * 100) + '%';
     }
-   async function initAudio() {
+  async function initAudio() {
   if (audio.ctx) return;
   if (initPromise) return initPromise;
   initPromise = (async () => {
@@ -767,13 +767,9 @@ function initializeStyleAndKeySelectors() {
       audio.melodyGain = audio.ctx.createGain();
 
       // ===== VALORES INICIAIS MODIFICADOS =====
-      audio.master.gain.value = 0.9; // Master continua o mesmo
-
-      // Baixo e Bateria: VOLUME ALTO
+      audio.master.gain.value = 0.9;
       audio.bassGain.gain.value = 0.70;
       audio.drumGain.gain.value = 0.70;
-
-      // Instrumentos Harmônicos: VOLUME ZERADO
       audio.cleanGain.gain.value = 0.00;
       audio.distGain.gain.value = 0.00;
       audio.pianoStringGain.gain.value = 0.00;
@@ -787,19 +783,23 @@ function initializeStyleAndKeySelectors() {
       audio.cleanGain.connect(audio.master);
       audio.distGain.connect(audio.master);
       audio.pianoStringGain.connect(audio.master);
-      audio.melodyGain.connect(audio.master); // Conecta a melodia ao master
+      audio.melodyGain.connect(audio.master);
 
       if (!state.buffers.melody) state.buffers.melody = {};
       await ensureBasicSamples();
 
-      // ... resto da função (event listeners, etc) ...
+      // Adiciona os event listeners
       ui.volBass.addEventListener('input', updateVolume);
       ui.volDrums.addEventListener('input', updateVolume);
       ui.volClean.addEventListener('input', updateVolume);
       ui.volDist.addEventListener('input', updateVolume);
       ui.volPianoString.addEventListener('input', updateVolume);
       ui.volMelody.addEventListener('input', updateVolume);
-      updateVolume(); // Esta função sincronizará os labels e os nós de ganho com os sliders
+
+      // --- LINHA ADICIONADA: SINCRONIZA OS NÓS DE GANHO COM OS SLIDERS ---
+      updateVolume();
+      // --- FIM ---
+
     } catch (error) {
       console.error('Erro ao inicializar áudio:', error);
     }
