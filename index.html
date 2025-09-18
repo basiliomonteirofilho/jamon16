@@ -958,7 +958,17 @@ async function buildBassAndChordPlan() {
   const totalBars = Math.min(state.chordProgression.length, 64);
   const totalSteps = sixteenthsPerBar * totalBars;
   const rhythm = expandRhythm(state.currentGroove.bassRhythm, totalSteps);
-
+ let drumPatternText = state.currentGroove.drumPattern.join(' ');
+  const drumPattern = parsePattern(drumPatternText);
+  const drumSeqIntro = expandRhythm(drumPattern.intro, sixteenthsPerBar * drumPattern.intro.length);
+  const drumSeqLoop = expandRhythm(drumPattern.loop, sixteenthsPerBar * drumPattern.loop.length);
+  state.drumSeq = [...drumSeqIntro, ...drumSeqLoop];
+  if (state.drumSeq.length < totalSteps) {
+    const missing = totalSteps - state.drumSeq.length;
+    for (let i = 0; i < missing; i++) {
+      state.drumSeq.push(state.drumSeq[i % state.drumSeq.length]);
+    }
+  }
   const bassPlan = [];
   const chordPlan = [];
 
