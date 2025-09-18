@@ -2100,42 +2100,58 @@ if (!mute.pianoString && chord && isNewBar) {
       await renderAndDownloadWAV(duration);
     });
     // ===== INICIALIZAÇÃO =====
-    function initializeApp() {
-      // Event listeners
-      ui.play.addEventListener('click', onPlay);
-      ui.pause.addEventListener('click', onPause);
-      ui.stop.addEventListener('click', onStop);
-      ui.previous.addEventListener('click', onPrevious); // Novo listener
-      ui.muteBass.addEventListener('click', () => toggleMute('bass', ui.muteBass));
-      ui.muteDrums.addEventListener('click', () => toggleMute('drums', ui.muteDrums));
-      ui.muteClean.addEventListener('click', () => toggleMute('clean', ui.muteClean));
-      ui.muteDist.addEventListener('click', () => toggleMute('dist', ui.muteDist));
-      // --- NOVO EVENT LISTENER (com verificação de segurança) ---
-      if (ui.mutePianoString) {
-        ui.mutePianoString.addEventListener('click', () => toggleMute('pianoString', ui.mutePianoString));
-      } else {
-        console.error('Elemento #mutePianoString não encontrado no DOM!');
-      }
-      // --- FIM ---
-      ui.btnMelodyAdd.addEventListener('click', addMelodyBlock);
-      ui.btnMelodyClear.addEventListener('click', clearMelodyBlocks);
-      // Novo botão para abrir a composição manual
-      if (ui.btnOpenManual) {
-        ui.btnOpenManual.addEventListener('click', () => {
-          window.open('jam-on-composicao-manual.html', '_blank');
-        });
-      }
-      // Inicializa o number picker para mobile
-      if (isMobileDevice()) {
-        initializeNumberPicker();
-      }
-      // Habilita todos os botões após o carregamento
-      const buttons = document.querySelectorAll('button');
-      buttons.forEach(btn => {
-        btn.disabled = false;
-        btn.style.opacity = '1';
-      });
-    }
+   // ===== INICIALIZAÇÃO =====
+function initializeApp() {
+  // Event listeners
+  ui.play.addEventListener('click', onPlay);
+  ui.pause.addEventListener('click', onPause);
+  ui.stop.addEventListener('click', onStop);
+  ui.previous.addEventListener('click', onPrevious); // Novo listener
+  ui.muteBass.addEventListener('click', () => toggleMute('bass', ui.muteBass));
+  ui.muteDrums.addEventListener('click', () => toggleMute('drums', ui.muteDrums));
+  ui.muteClean.addEventListener('click', () => toggleMute('clean', ui.muteClean));
+  ui.muteDist.addEventListener('click', () => toggleMute('dist', ui.muteDist));
+  // --- NOVO EVENT LISTENER (com verificação de segurança) ---
+  if (ui.mutePianoString) {
+    ui.mutePianoString.addEventListener('click', () => toggleMute('pianoString', ui.mutePianoString));
+  } else {
+    console.error('Elemento #mutePianoString não encontrado no DOM!');
+  }
+  // --- FIM ---
+
+  // ** --- NOVO BLOCO: Sincroniza o estado visual dos botões de mudo na inicialização --- **
+  // Garante que Baixo e Bateria comecem DESMUTADOS (volume total)
+  toggleMute('bass', ui.muteBass);
+  toggleMute('drums', ui.muteDrums);
+  // Garante que os outros instrumentos comecem MUTADOS (volume zero)
+  toggleMute('clean', ui.muteClean);
+  toggleMute('dist', ui.muteDist);
+  if (ui.mutePianoString) toggleMute('pianoString', ui.mutePianoString);
+  toggleMute('melody', { // Cria um objeto temporário para representar o botão de melodia
+    textContent: '',
+    classList: { toggle: () => {} }
+  });
+  // ** --- FIM DO NOVO BLOCO --- **
+
+  ui.btnMelodyAdd.addEventListener('click', addMelodyBlock);
+  ui.btnMelodyClear.addEventListener('click', clearMelodyBlocks);
+  // Novo botão para abrir a composição manual
+  if (ui.btnOpenManual) {
+    ui.btnOpenManual.addEventListener('click', () => {
+      window.open('jam-on-composicao-manual.html', '_blank');
+    });
+  }
+  // Inicializa o number picker para mobile
+  if (isMobileDevice()) {
+    initializeNumberPicker();
+  }
+  // Habilita todos os botões após o carregamento
+  const buttons = document.querySelectorAll('button');
+  buttons.forEach(btn => {
+    btn.disabled = false;
+    btn.style.opacity = '1';
+  });
+}
     // Inicializa a aplicação quando a página carrega
     window.addEventListener('load', initializeApp);
   </script>
