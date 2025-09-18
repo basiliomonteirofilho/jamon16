@@ -826,119 +826,37 @@ function initializeStyleAndKeySelectors() {
       return out.slice(0, totalSteps);
     }
     // ===== FUNÇÕES PRINCIPAIS =====
- function getChordTypeByDegree(degree, quality) {
-  // --- NOVA LÓGICA: Se o estilo for Blues, força 7ª dominante ---
-  if (state.currentGroove && state.currentGroove.name.includes("Blues")) {
-    return '7'; // Todos os acordes viram dominantes no Blues
-  }
-  // --- FIM DA NOVA LÓGICA ---
-
-  if (quality === 'maj') {
-    // Campo harmônico maior: I ii iii IV V vi vii°
-    switch (degree) {
-      case 1: case 4: case 5: return '';       // maior
-      case 2: case 3: case 6: return 'm';      // menor
-      case 7: return 'dim';                    // diminuto
-    }
-  } else {
-    // Campo harmônico menor natural: i ii° III iv v VI VII
-    switch (degree) {
-      case 1: return 'm';       // i
-      case 2: return 'dim';     // ii°
-      case 3: return '';        // III
-      case 4: return 'm';       // iv
-      case 5: return 'm';       // v
-      case 6: return '';        // VI
-      case 7: return '';        // VII
-    }
-  }
-  return ''; // Retorna acorde maior caso o grau seja inválido ou não mapeado
-}
-
-// ===== FUNÇÃO getBassNotesFromScale (FALTANDO NO CÓDIGO) =====
-function getBassNotesFromScale(degree, scale, chordType) {
-  // Se a escala for "chromatic", retorna todas as 12 notas (ex: Jazz)
-  if (scale === "chromatic") {
-    return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-  }
-
-  // Mapeia o grau do acorde para sua tônica relativa dentro da escala maior/menor
-  // Isso define a "raiz" da escala a ser usada para o baixo neste acorde
-  let rootOffset = 0;
-  switch (degree) {
-    case 1: rootOffset = 0; break; // Tônica
-    case 2: rootOffset = 2; break; // Supertônica
-    case 3: rootOffset = 4; break; // Mediante
-    case 4: rootOffset = 5; break; // Subdominante
-    case 5: rootOffset = 7; break; // Dominante
-    case 6: rootOffset = 9; break; // Superdominante / Submediante
-    case 7: rootOffset = 11; break; // Sensível
-    default: rootOffset = 0;
-  }
-
-  // Ajusta a escala se o acorde for menor ou diminuto
-  // Isso é uma simplificação. Em uma implementação mais avançada, você poderia
-  // ter escalas específicas para acordes menores (ex: Dórico, Eólio) ou diminutos.
-  let adjustedScale = [...scale]; // Trabalha com uma cópia
-
-  if (chordType === 'm' || chordType === 'dim') {
-    // Para acordes menores, abaixa a 3ª (índice 1 na escala) em 1 semitom
-    // Isso simula a mudança de modo (ex: de maior para menor)
-    if (adjustedScale.length > 1 && adjustedScale[1] === 3) {
-      adjustedScale[1] = 2; // Transforma a terça maior em menor
-    }
-    // Para diminuto, também abaixa a 5ª (índice 2 na escala)
-    if (chordType === 'dim' && adjustedScale.length > 2 && adjustedScale[2] === 5) {
-      adjustedScale[2] = 4; // Transforma a quinta justa em diminuta
-    }
-  }
-
-  // Aplica o offset da raiz à escala
-  return adjustedScale.map(note => {
-    // Calcula a nota absoluta na escala cromática (1-12)
-    let absoluteNote = note + rootOffset;
-    // Garante que fique dentro do range 1-12
-    while (absoluteNote > 12) absoluteNote -= 12;
-    while (absoluteNote < 1) absoluteNote += 12;
-    return absoluteNote;
-  });
-}
-
-// ==================== FUNÇÃO CORRIGIDA COMPLETA ====================
-async function buildBassAndChordPlan() {
+    async function buildBassAndChordPlan() {
   // Escolhe o groove baseado na seleção do usuário ou aleatoriamente
   if (!ui.styleSelect || ui.styleSelect.value === 'auto') {
     state.currentGroove = ALL_GROOVES[Math.floor(Math.random() * ALL_GROOVES.length)];
   } else {
+    // Filtra os grooves que correspondem ao estilo selecionado
     const matchingGrooves = ALL_GROOVES.filter(g => g.name === ui.styleSelect.value);
     state.currentGroove = matchingGrooves[Math.floor(Math.random() * matchingGrooves.length)] || ALL_GROOVES[0];
   }
-
   state.signatureTag = state.currentGroove.name;
   state.meter = ui.meter.value === 'auto' ? state.currentGroove.meter : ui.meter.value;
-
   if (state.currentGroove.name === "Samba") {
     ui.bpm.value = 70;
     state.bpm = 70;
   } else {
     state.bpm = Number(ui.bpm.value) || 100;
   }
-
   const beats = meterToBeats(state.meter);
   const sixteenthsPerBar = beats * 4;
-
-  // Escolhe a tonalidade e qualidade
+  // Escolhe a tonalidade e qualidade baseadas na seleção do usuário ou aleatoriamente
   if (!ui.keySelect || ui.keySelect.value === 'auto') {
     state.keyIdx = Math.floor(Math.random() * PITCHES.length);
     state.key = PITCHES[state.keyIdx];
+    // Se for aleatório, define qualidade aleatória
     state.quality = Math.random() > 0.5 ? 'maj' : 'min';
   } else {
-    state.key = ui.keySelect.value;
+    state.key = ui.keySelect.value; // Recebe 'CS', 'DS', etc.
     state.keyIdx = PITCHES.indexOf(state.key);
-    state.quality = ui.qualitySelect.value;
+    // Define a qualidade baseada na nova seleção do usuário
+    state.quality = ui.qualitySelect.value; // 'maj' ou 'min'
   }
-
-  // Escolhe estilo
   const grooveName = state.currentGroove.name;
   let styleKey = "Rock";
   if (grooveName.includes("Samba")) styleKey = "Samba";
@@ -946,92 +864,171 @@ async function buildBassAndChordPlan() {
   else if (grooveName.includes("Forró")) styleKey = "Forró";
   else if (grooveName.includes("Metal")) styleKey = "Metal";
   else if (grooveName.includes("Blues")) styleKey = "Blues";
-
   const progressions = STYLE_PROGRESSIONS[styleKey] || STYLE_PROGRESSIONS.Rock;
-
-  // Remove progressões com grau 7 (se quiser evitar diminuto)
+  // 🔹 Aqui removemos todas as progressões que contenham o grau 7 (diminuto)
   let availableProgressions = progressions.filter(prog => !prog.includes(7));
-  if (availableProgressions.length === 0) availableProgressions = progressions;
-
+  if (availableProgressions.length === 0) {
+    availableProgressions = progressions; // fallback
+  }
   state.chordProgression = availableProgressions[Math.floor(Math.random() * availableProgressions.length)];
-
   const totalBars = Math.min(state.chordProgression.length, 64);
   const totalSteps = sixteenthsPerBar * totalBars;
   const rhythm = expandRhythm(state.currentGroove.bassRhythm, totalSteps);
-
   const bassPlan = [];
   const chordPlan = [];
+function getBassNotesFromScale(degree, scale, chordType) {
+  // Determina se o acorde DEVE ser menor com base na qualidade da tonalidade
+  // Para os graus I, IV e V, a qualidade da tonalidade define se o acorde é maior ou menor.
+  // Para os demais graus (II, III, VI), a lógica anterior se mantém.
+  let isMinor = false;
 
-  for (let bar = 0; bar < totalBars; bar++) {
-    const degree = state.chordProgression[bar];
+  if ([1, 4, 5].includes(degree)) {
+    // Graus I, IV e V seguem a qualidade da tonalidade
+    isMinor = (state.quality === 'min');
+  } else {
+    // Graus II, III, VI, VII usam a lógica baseada no chordType
+    isMinor = (
+      chordType.startsWith('m') ||
+      chordType.includes('dim') ||
+      ['5+', '75+', '95+'].includes(chordType)
+    );
+  }
+
+  if (scale === "chromatic") {
     const rootIdx = (state.keyIdx + DEGREE_TO_ROOT[degree]) % 12;
     const rootNote = PITCHES[rootIdx];
-
-    // Agora segue corretamente o campo harmônico
-    const chordType = getChordTypeByDegree(degree, state.quality);
-
-    const chordDisplay = CHORD_NAMES[rootIdx] + chordType;
-    const displayedNote = transposeDown3Semitones(CHORD_NAMES[rootIdx]);
-    const displayedChord = displayedNote + chordType;
-
-    chordPlan.push({ note: rootNote, type: chordType, display: chordDisplay, displayed: displayedChord });
-
-    const bassNotes = getBassNotesFromScale(degree, state.currentGroove.bassScale, chordType);
-    const stepsInBar = sixteenthsPerBar;
-    const notesPerBar = Math.ceil(stepsInBar / bassNotes.length);
-    const fullBassNotes = Array(stepsInBar).fill().map((_, i) => bassNotes[Math.floor(i / notesPerBar)] || bassNotes[0]);
-
-    for (let stepInBar = 0; stepInBar < stepsInBar; stepInBar++) {
-      const step = bar * stepsInBar + stepInBar;
-      const sym = rhythm[step] || '-';
-      let bassNote = null;
-      if (sym === 'x') bassNote = 'x';
-      else if (sym === '-' || sym === 'sm') bassNote = '-';
-      else bassNote = fullBassNotes[stepInBar];
-      bassPlan.push(bassNote);
-    }
+    const octave = 8;
+    return Array(8).fill().map((_, i) => {
+      const noteIdx = (rootIdx - i + 12) % 12;
+      const p = PITCHES[noteIdx];
+      return p.endsWith('S') ? `${p.replace('S', '')}${octave}S` : `${p}${octave}`;
+    });
   }
-
-  state.bassPlan = bassPlan;
-  state.chordPlan = chordPlan;
-  state.currentChordIndex = 0;
-  state.barsInChord = 0;
-  state.chordDurations = Array(state.chordPlan.length).fill(1);
-
-  // Atualiza exibição
-  const progEl = document.getElementById('chordProgression');
-  if (progEl && state.chordPlan.length > 0) {
-    const chordLabels = state.chordPlan.map(ch => ch.displayed);
-    progEl.innerHTML = chordLabels
-      .map((label, i) => `<span class="chord-item" data-index="${i}">${label}</span>`)
-      .join(' ');
+  if (Array.isArray(scale)) {
+    const rootIdx = (state.keyIdx + DEGREE_TO_ROOT[degree]) % 12;
+    return scale.map(interval => {
+      let intervalOffset;
+      if (isMinor) {
+        const minorIntervals = { 1: 0, 2: 2, 3: 3, 4: 5, 5: 7, 6: 8, 7: 10, 8: 12 };
+        intervalOffset = minorIntervals[interval] || 0;
+      } else {
+        const majorIntervals = { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11, 8: 12 };
+        intervalOffset = majorIntervals[interval] || 0;
+      }
+      const noteIdx = (rootIdx + intervalOffset) % 12;
+      const octave = interval === 1 ? '' : '8';
+      const noteName = PITCHES[noteIdx];
+      if (interval === 1) {
+        return noteName;
+      } else {
+        return noteName.endsWith('S') ? `${noteName.replace('S', '')}${octave}S` : `${noteName}${octave}`;
+      }
+    });
   }
-
-  // Pré-carrega os samples
-  const guitarUrls = new Set();
-  for (const ch of state.chordPlan) {
-    let fullChordName = ch.note;
-    if (ch.type) fullChordName += ch.type;
-    guitarUrls.add(`guitarraDistorcao/${ch.note}/${fullChordName}.mp3`);
-    guitarUrls.add(`guitarraDistorcao/abafadas/${ch.note}/${fullChordName}.mp3`);
-    guitarUrls.add(`guitarraDistorcao/dedilhada/${ch.note}/${fullChordName}.mp3`);
-    guitarUrls.add(`guitarraLimpa/${ch.note}/${fullChordName}.mp3`);
-    guitarUrls.add(`assets/PianoStringChord/${ch.note}/${fullChordName}.mp3`);
-  }
-
-  const preloadPromises = [];
-  guitarUrls.forEach(url => {
-    if (!state.buffers.guitar) state.buffers.guitar = {};
-    if (!state.buffers.guitar[url]) {
-      const p = loadBuffer(url).then(buf => { if (buf) state.buffers.guitar[url] = buf; });
-      preloadPromises.push(p);
-    }
-  });
-  await Promise.all(preloadPromises);
-
-  setStatePanel();
+  return [PITCHES[(state.keyIdx + DEGREE_TO_ROOT[degree]) % 12]];
 }
-
+      let globalChordVariation = '';
+      if (styleKey === "Blues") {
+        globalChordVariation = '7';
+      } else {
+        const allVariations = ['', '11', '13', '4', '5', '6', '7', '9', 'm', 'm4', 'm5', 'm6', 'm7', 'm79', 'm9'];
+        globalChordVariation = allVariations[Math.floor(Math.random() * allVariations.length)];
+      }
+      for (let bar = 0; bar < totalBars; bar++) {
+        const degree = state.chordProgression[bar];
+        const rootOffset = DEGREE_TO_ROOT[degree] || 0;
+        const rootIdx = (state.keyIdx + rootOffset) % 12;
+        const rootNote = PITCHES[rootIdx];
+        let chordType = '';
+        if (styleKey === "Blues") {
+          chordType = globalChordVariation;
+        } else {
+          switch(degree) {
+            case 1:
+            case 4:
+            case 5:
+              if (globalChordVariation === '' || globalChordVariation.startsWith('m') === false) {
+                chordType = globalChordVariation;
+              } else {
+                chordType = '';
+              }
+              break;
+            case 2:
+            case 3:
+            case 6:
+              if (globalChordVariation.startsWith('m') || globalChordVariation === 'dim') {
+                chordType = globalChordVariation;
+              } else {
+                chordType = 'm';
+              }
+              break;
+            case 7:
+              chordType = 'dim';
+              break;
+            default:
+              chordType = '';
+          }
+        }
+        const chordDisplay = CHORD_NAMES[rootIdx] + chordType;
+        const displayedNote = transposeDown3Semitones(CHORD_NAMES[rootIdx]);
+        const displayedChord = displayedNote + chordType;
+        chordPlan.push({ note: rootNote, type: chordType, display: chordDisplay, displayed: displayedChord });
+        const bassNotes = getBassNotesFromScale(degree, state.currentGroove.bassScale, chordType);
+        const stepsInBar = sixteenthsPerBar;
+        const notesPerBar = Math.ceil(stepsInBar / bassNotes.length);
+        const fullBassNotes = Array(stepsInBar).fill().map((_, i) => bassNotes[Math.floor(i / notesPerBar)] || bassNotes[0]);
+        for (let stepInBar = 0; stepInBar < stepsInBar; stepInBar++) {
+          const step = bar * stepsInBar + stepInBar;
+          const sym = rhythm[step] || '-';
+          let bassNote = null;
+          if (sym === 'x') bassNote = 'x';
+          else if (sym === '-' || sym === 'sm') bassNote = '-';
+          else bassNote = fullBassNotes[stepInBar];
+          bassPlan.push(bassNote);
+        }
+      }
+      state.bassPlan = bassPlan;
+      state.chordPlan = chordPlan;
+      state.currentChordIndex = 0;
+      state.barsInChord = 0;
+      state.chordDurations = Array(state.chordPlan.length).fill(1);
+      const progEl = document.getElementById('chordProgression');
+      if (progEl && state.chordPlan.length > 0) {
+        const chordLabels = state.chordPlan.map(ch => ch.displayed);
+        progEl.innerHTML = chordLabels.map((label, i) => `<span class="chord-item" data-index="${i}">${label}</span>`).join(' ');
+      }
+      const drumParsed = parsePattern(state.currentGroove.drumPattern.join(' '));
+      const drumSeq = [...drumParsed.intro, ...drumParsed.loop];
+      const drumExpanded = [];
+      while (drumExpanded.length < state.bassPlan.length) {
+        for (const t of drumSeq) {
+          if (drumExpanded.length >= state.bassPlan.length) break;
+          drumExpanded.push(t);
+        }
+      }
+      state.drumSeq = drumExpanded.slice(0, state.bassPlan.length);
+      setStatePanel();
+      const guitarUrls = new Set();
+      for (const ch of state.chordPlan) {
+  let fullChordName = ch.note;
+  if (ch.type) fullChordName += ch.type;
+  guitarUrls.add(`guitarraDistorcao/${ch.note}/${fullChordName}.mp3`);
+  guitarUrls.add(`guitarraDistorcao/abafadas/${ch.note}/${fullChordName}.mp3`);
+  guitarUrls.add(`guitarraDistorcao/dedilhada/${ch.note}/${fullChordName}.mp3`);
+  // A linha abaixo estava com um comentário incorreto interrompendo o código.
+  guitarUrls.add(`guitarraLimpa/${ch.note}/${fullChordName}.mp3`);
+  guitarUrls.add(`assets/PianoStringChord/${ch.note}/${fullChordName}.mp3`);
+}
+      const preloadPromises = [];
+      guitarUrls.forEach(url => {
+        if (!state.buffers.guitar) state.buffers.guitar = {};
+        if (!state.buffers.guitar[url]) {
+          const p = loadBuffer(url).then(buf => { if (buf) state.buffers.guitar[url] = buf; });
+          preloadPromises.push(p);
+        }
+      });
+      await Promise.all(preloadPromises);
+    }
     function parsePattern(patternText) {
       const result = { intro: [], loop: [] };
       const introMatch = patternText.match(/\[(.*?)\]/);
