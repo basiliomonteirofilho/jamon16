@@ -439,47 +439,37 @@
 </div>
 <!-- ... resto dos controles ... -->
       <h3 style="color: #5eead4; margin: 15px 0 5px;">Controle de Volume</h3>
-     <!-- Baixo - Mantém alto -->
-<div class="slider-row">
-  <label>Baixo</label>
-  <input type="range" id="volBass" min="0" max="1" step="0.01" value="0.70"> <!-- Aumentado para 70% -->
-  <span class="slider-value" id="volBassLabel">70%</span>
-</div>
-
-<!-- Bateria - Mantém alto -->
-<div class="slider-row">
-  <label>Bateria</label>
-  <input type="range" id="volDrums" min="0" max="1" step="0.01" value="0.70"> <!-- Aumentado para 70% -->
-  <span class="slider-value" id="volDrumsLabel">70%</span>
-</div>
-
-<!-- Guitarra Limpa - ZERADO -->
-<div class="slider-row">
-  <label>Limpa</label>
-  <input type="range" id="volClean" min="0" max="1" step="0.01" value="0.00">
-  <span class="slider-value" id="volCleanLabel">0%</span>
-</div>
-
-<!-- Guitarra Distorcida - ZERADO -->
-<div class="slider-row">
-  <label>Distorcida</label>
-  <input type="range" id="volDist" min="0" max="1" step="0.01" value="0.00">
-  <span class="slider-value" id="volDistLabel">0%</span>
-</div>
-
-<!-- Piano - ZERADO -->
-<div class="slider-row">
+      <div class="slider-row">
+        <label>Baixo</label>
+        <input type="range" id="volBass" min="0" max="1" step="0.01" value="0.45">
+        <span class="slider-value" id="volBassLabel">45%</span>
+      </div>
+      <div class="slider-row">
+        <label>Bateria</label>
+        <input type="range" id="volDrums" min="0" max="1" step="0.01" value="0.6">
+        <span class="slider-value" id="volDrumsLabel">60%</span>
+      </div>
+      <div class="slider-row">
+        <label>Limpa</label>
+        <input type="range" id="volClean" min="0" max="1" step="0.01" value="0.45">
+        <span class="slider-value" id="volCleanLabel">45%</span>
+      </div>
+      <div class="slider-row">
+        <label>Distorcida</label>
+        <input type="range" id="volDist" min="0" max="1" step="0.01" value="0.35">
+        <span class="slider-value" id="volDistLabel">35%</span>
+      </div>
+      <div class="slider-row">
   <label>Piano</label>
-  <input type="range" id="volPianoString" min="0" max="1" step="0.01" value="0.00">
-  <span class="slider-value" id="volPianoStringLabel">0%</span>
+  <input type="range" id="volPianoString" min="0" max="1" step="0.01" value="0.50">
+  <span class="slider-value" id="volPianoStringLabel">50%</span>
 </div>
-
-<!-- Melodia - ZERADO (opcional, mas recomendado para foco no groove) -->
-<div class="slider-row">
-  <label>Melodia</label>
-  <input type="range" id="volMelody" min="0" max="1" step="0.01" value="0.00">
-  <span class="slider-value" id="volMelodyLabel">0%</span>
-</div>
+      <div class="slider-row">
+        <label>Melodia</label>
+        <input type="range" id="volMelody" min="0" max="1" step="0.01" value="0.50">
+        <span class="slider-value" id="volMelodyLabel">50%</span>
+      </div>
+    </div>
     <div class="panel">
       <h3>Estado Atual</h3>
       <div class="mono" id="state">Parado</div>
@@ -751,62 +741,50 @@ function initializeStyleAndKeySelectors() {
       ui.volDistLabel.textContent = Math.round(ui.volDist.value * 100) + '%';
       ui.volMelodyLabel.textContent = Math.round(ui.volMelody.value * 100) + '%';
     }
-  async function initAudio() {
-  if (audio.ctx) return;
-  if (initPromise) return initPromise;
-  initPromise = (async () => {
-    try {
-      audio.ctx = new (window.AudioContext || window.webkitAudioContext)();
-      audio.master = audio.ctx.createGain();
-      audio.mix = audio.ctx.createGain();
-      audio.drumGain = audio.ctx.createGain();
-      audio.bassGain = audio.ctx.createGain();
-      audio.cleanGain = audio.ctx.createGain();
-      audio.distGain = audio.ctx.createGain();
-      audio.pianoStringGain = audio.ctx.createGain();
-      audio.melodyGain = audio.ctx.createGain();
-
-      // ===== VALORES INICIAIS MODIFICADOS =====
-      audio.master.gain.value = 0.9;
-      audio.bassGain.gain.value = 0.70;
-      audio.drumGain.gain.value = 0.70;
-      audio.cleanGain.gain.value = 0.00;
-      audio.distGain.gain.value = 0.00;
-      audio.pianoStringGain.gain.value = 0.00;
-      audio.melodyGain.gain.value = 0.00;
-      // ===== FIM DOS VALORES MODIFICADOS =====
-
-      audio.master.connect(audio.mix);
-      audio.mix.connect(audio.ctx.destination);
-      audio.drumGain.connect(audio.master);
-      audio.bassGain.connect(audio.master);
-      audio.cleanGain.connect(audio.master);
-      audio.distGain.connect(audio.master);
-      audio.pianoStringGain.connect(audio.master);
-      audio.melodyGain.connect(audio.master);
-
-      if (!state.buffers.melody) state.buffers.melody = {};
-      await ensureBasicSamples();
-
-      // Adiciona os event listeners
-      ui.volBass.addEventListener('input', updateVolume);
-      ui.volDrums.addEventListener('input', updateVolume);
-      ui.volClean.addEventListener('input', updateVolume);
-      ui.volDist.addEventListener('input', updateVolume);
-      ui.volPianoString.addEventListener('input', updateVolume);
-      ui.volMelody.addEventListener('input', updateVolume);
-
-      // --- LINHA ADICIONADA: SINCRONIZA OS NÓS DE GANHO COM OS SLIDERS ---
-      updateVolume();
-      // --- FIM ---
-
-    } catch (error) {
-      console.error('Erro ao inicializar áudio:', error);
+    async function initAudio() {
+      if (audio.ctx) return;
+      if (initPromise) return initPromise;
+      initPromise = (async () => {
+        try {
+          audio.ctx = new (window.AudioContext || window.webkitAudioContext)();
+          audio.master = audio.ctx.createGain();
+          audio.mix = audio.ctx.createGain();
+          audio.drumGain = audio.ctx.createGain();
+          audio.bassGain = audio.ctx.createGain();
+          audio.cleanGain = audio.ctx.createGain();
+          audio.distGain = audio.ctx.createGain();
+          audio.pianoStringGain = audio.ctx.createGain();
+          audio.pianoStringGain.gain.value = 0.50;
+          audio.melodyGain = audio.ctx.createGain();
+          audio.melodyGain.gain.value = 0.50;
+          audio.melodyGain.connect(audio.master);
+          audio.master.gain.value = 0.9;
+          audio.drumGain.gain.value = 0.6;
+          audio.bassGain.gain.value = 0.45;
+          audio.cleanGain.gain.value = 0.45;
+          audio.distGain.gain.value = 0.35;
+          audio.master.connect(audio.mix);
+          audio.mix.connect(audio.ctx.destination);
+          audio.drumGain.connect(audio.master);
+          audio.bassGain.connect(audio.master);
+          audio.cleanGain.connect(audio.master);
+          audio.distGain.connect(audio.master);
+          audio.pianoStringGain.connect(audio.master);
+          if (!state.buffers.melody) state.buffers.melody = {};
+          await ensureBasicSamples();
+          ui.volBass.addEventListener('input', updateVolume);
+          ui.volDrums.addEventListener('input', updateVolume);
+          ui.volClean.addEventListener('input', updateVolume);
+          ui.volDist.addEventListener('input', updateVolume);
+          ui.volPianoString.addEventListener('input', updateVolume);
+          ui.volMelody.addEventListener('input', updateVolume);
+          updateVolume();
+        } catch (error) {
+          console.error('Erro ao inicializar áudio:', error);
+        }
+      })();
+      return initPromise;
     }
-  })();
-  return initPromise;
-}
-
     async function loadBuffer(url) {
       try {
         const res = await fetch(url);
@@ -2100,8 +2078,7 @@ if (!mute.pianoString && chord && isNewBar) {
       await renderAndDownloadWAV(duration);
     });
     // ===== INICIALIZAÇÃO =====
-   // ===== INICIALIZAÇÃO =====
-function initializeApp() {
+   function initializeApp() {
   // Event listeners
   ui.play.addEventListener('click', onPlay);
   ui.pause.addEventListener('click', onPause);
@@ -2119,19 +2096,11 @@ function initializeApp() {
   }
   // --- FIM ---
 
-  // ** --- NOVO BLOCO: Sincroniza o estado visual dos botões de mudo na inicialização --- **
-  // Garante que Baixo e Bateria comecem DESMUTADOS (volume total)
-  toggleMute('bass', ui.muteBass);
-  toggleMute('drums', ui.muteDrums);
-  // Garante que os outros instrumentos comecem MUTADOS (volume zero)
+  // --- ADICIONE ESTAS TRÊS LINHAS ABAIXO ---
   toggleMute('clean', ui.muteClean);
   toggleMute('dist', ui.muteDist);
-  if (ui.mutePianoString) toggleMute('pianoString', ui.mutePianoString);
-  toggleMute('melody', { // Cria um objeto temporário para representar o botão de melodia
-    textContent: '',
-    classList: { toggle: () => {} }
-  });
-  // ** --- FIM DO NOVO BLOCO --- **
+  toggleMute('pianoString', ui.mutePianoString);
+  // --- FIM DAS ADIÇÕES ---
 
   ui.btnMelodyAdd.addEventListener('click', addMelodyBlock);
   ui.btnMelodyClear.addEventListener('click', clearMelodyBlocks);
