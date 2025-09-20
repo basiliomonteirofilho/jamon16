@@ -1250,11 +1250,11 @@ async function onPlay() {
     buildMelodyPlanFromBlocks();
     await ensureMelodySamplesNeeded();
   } catch (e) {
-    console.error('Erro na melodia:', e);
+  console.error(\'Erro na melodia:\', e);
   }
-  state.running = false;
   state.stepIndex = 0;
   state.nextNoteTime = audio.ctx.currentTime + 0.05;
+  await ensureMelodySamplesNeeded();
   const beats = meterToBeats(state.meter);
   const quarterDur = 60 / state.bpm;
   const startTime = audio.ctx.currentTime + 0.05;
@@ -1263,21 +1263,9 @@ async function onPlay() {
     const isStrong = (i % beats) === 0;
     playClickAtTime(t, isStrong);
   }
-  const schedulerStartTime = startTime + beats * quarterDur;
-  setTimeout(() => {
-    state.running = true;
-    state.nextNoteTime = schedulerStartTime;
-    startScheduler();
-  }, Math.max(0, (schedulerStartTime - audio.ctx.currentTime) * 1000 + 10));
-}
-function onPause() {
-  if (state.running && !state.paused) {
-    state.paused = true;
-    state.pauseTime = audio.ctx.currentTime;
-  }
-}
-  function onPrevious() {
-  if (!state.previousPlaybacks || state.previousPlaybacks.length === 0) {
+  state.nextNoteTime = startTime + beats * quarterDur;
+  state.running = true;
+  startScheduler();!state.previousPlaybacks || state.previousPlaybacks.length === 0) {
     alert('Nenhum playback anterior disponível.');
     return;
   }
@@ -1349,8 +1337,8 @@ function scheduleStep() {
   const sixteenthsPerBar = beats * 4;
   const isNewBar = (stepIdx % sixteenthsPerBar) === 0;
 
-  // ===== BATERIA ===== (CORRIGIDO PARA LOOP)
-  const drumToken = state.drumSeq[stepIdx % state.drumSeq.length]; // <-- MOD
+  // ===== BATERIA =====
+  const drumToken = state.drumSeq[stepIdx % state.drumSeq.length];
   if (drumToken && drumToken !== '-' && !mute.drums) {
     const buf = state.buffers.drums[drumToken];
     if (buf) {
@@ -1361,8 +1349,8 @@ function scheduleStep() {
     }
   }
 
-  // ===== BAIXO ===== (CORRIGIDO PARA LOOP)
-  const bassNote = state.bassPlan[stepIdx % state.bassPlan.length]; // <-- MOD
+  // ===== BAIXO =====
+  const bassNote = state.bassPlan[stepIdx % state.bassPlan.length];
   if (bassNote && bassNote !== '-' && !mute.bass) {
     const buf = state.buffers.bass[bassNote];
     if (buf) {
@@ -1552,7 +1540,7 @@ function scheduleStep() {
       }
     }
     function onStop() {
-      state.running = false;
+    
       state.paused = false;
       ui.currentChord.textContent = '—';
       ui.chordTimer.textContent = '—';
