@@ -1342,17 +1342,15 @@ function onPause() {
       // Garante que o scheduler continue mesmo se o navegador reduzir FPS
       state.schedulerTimer = setInterval(scheduler, 50);
     }
- function scheduleStep() {
+function scheduleStep() {
   const time = state.nextNoteTime;
   const stepIdx = state.stepIndex;
   const beats = meterToBeats(state.meter);
   const sixteenthsPerBar = beats * 4;
   const isNewBar = (stepIdx % sixteenthsPerBar) === 0;
 
-  // ===== BATERIA =====
-  // REMOVIDO O BLOCO "else if (mute.drums && state.lastDrumSource)" pois não usamos lastDrumSource.
-  // Samples de bateria são curtos e não precisam ser interrompidos manualmente.
-  const drumToken = state.drumSeq[stepIdx];
+  // ===== BATERIA ===== (CORRIGIDO PARA LOOP)
+  const drumToken = state.drumSeq[stepIdx % state.drumSeq.length]; // <-- MOD
   if (drumToken && drumToken !== '-' && !mute.drums) {
     const buf = state.buffers.drums[drumToken];
     if (buf) {
@@ -1360,12 +1358,11 @@ function onPause() {
       src.buffer = buf;
       src.connect(audio.drumGain);
       src.start(time);
-      // Não armazenamos lastDrumSource, pois não é necessário.
     }
   }
 
-  // ===== BAIXO =====
-  const bassNote = state.bassPlan[stepIdx];
+  // ===== BAIXO ===== (CORRIGIDO PARA LOOP)
+  const bassNote = state.bassPlan[stepIdx % state.bassPlan.length]; // <-- MOD
   if (bassNote && bassNote !== '-' && !mute.bass) {
     const buf = state.buffers.bass[bassNote];
     if (buf) {
@@ -1449,8 +1446,8 @@ function onPause() {
     }
   }
 
-  // ===== MELODIA =====
-  const melodyEvent = state.melodyPlan[stepIdx]; // <-- Aqui: é um evento, não uma string
+  // ===== MELODIA ===== (CORRIGIDA E COMPLETA)
+  const melodyEvent = state.melodyPlan[stepIdx % state.melodyPlan.length]; // <-- MOD para loop
   if (melodyEvent && melodyEvent.type === 'start' && !mute.melody) {
     // Extrai o número original
     let number = melodyEvent.originalNumber;
@@ -1850,7 +1847,7 @@ function onPause() {
   await Promise.all(promises);
 }
 
- function playMelodyNumber(time, number, instrumentType) {
+function playMelodyNumber(time, number, instrumentType) {
   const folder = MELODY_INSTRUMENTS[instrumentType];
   if (!folder) {
     console.warn(`[Melodia] Instrumento desconhecido: ${instrumentType}`);
