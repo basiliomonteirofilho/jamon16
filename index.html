@@ -842,7 +842,7 @@ function initializeStyleAndKeySelectors() {
       ui.volGuitarraLimpaDedilhadaLabel.textContent = Math.round(ui.volGuitarraLimpaDedilhada.value * 100) + '%';
       ui.volOrgaoLabel.textContent = Math.round(ui.volOrgao.value * 100) + '%';
     }
-   async function initAudio() {
+  async function initAudio() {
   if (audio.ctx) return;
   if (initPromise) return initPromise;
   initPromise = (async () => {
@@ -885,8 +885,8 @@ function initializeStyleAndKeySelectors() {
       audio.distGain.gain.value = mute.dist ? 0 : 0.35;               // dist mutada
       audio.pianoStringGain.gain.value = mute.pianoString ? 0 : 0.5;  // piano mutado
       audio.melodyGain.gain.value = mute.melody ? 0 : 0.5;            // melodia mutada
-      audio.guitarraEchoGain.gain.value = mute.guitarraEcho ? 0 : 0.5; 
-      audio.guitarraLimpaDedilhadaGain.gain.value = mute.guitarraLimpaDedilhada ? 0 : 0.5; 
+      audio.guitarraEchoGain.gain.value = mute.guitarraEcho ? 0 : 0.5;
+      audio.guitarraLimpaDedilhadaGain.gain.value = mute.guitarraLimpaDedilhada ? 0 : 0.5;
       audio.orgaoGain.gain.value = mute.orgao ? 0 : 0.5;
 
       // ===== Buffers e samples =====
@@ -911,6 +911,20 @@ function initializeStyleAndKeySelectors() {
   })();
   return initPromise;
 }
+
+// ===== Função para carregar samples individuais =====
+async function loadBuffer(url) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const arrayBuffer = await res.arrayBuffer();
+    return await audio.ctx.decodeAudioData(arrayBuffer);
+  } catch (e) {
+    console.warn(`Erro ao carregar: ${url}`);
+    return null;
+  }
+}
+
 
     async function ensureBasicSamples() {
       const promises = [];
@@ -2257,4 +2271,5 @@ ui.muteOrgao.addEventListener("click", () => toggleMute(ui.muteOrgao, "orgao", "
   </script>
 </body>
 </html>
+
 
