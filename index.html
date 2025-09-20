@@ -833,12 +833,16 @@ function initializeStyleAndKeySelectors() {
       ui.volGuitarraLimpaDedilhadaLabel.textContent = Math.round(ui.volGuitarraLimpaDedilhada.value * 100) + '%';
       ui.volOrgaoLabel.textContent = Math.round(ui.volOrgao.value * 100) + '%';
     }
-  async function initAudio() {
+ async function initAudio() {
   if (audio.ctx) return;
   if (initPromise) return initPromise;
+  
   initPromise = (async () => {
     try {
+      console.log('Criando contexto de áudio...');
       audio.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      console.log('Contexto de áudio criado:', audio.ctx.state);
+
       // ===== Ganhos (canais individuais) =====
       audio.master = audio.ctx.createGain();
       audio.mix = audio.ctx.createGain();
@@ -851,6 +855,7 @@ function initializeStyleAndKeySelectors() {
       audio.guitarraEchoGain = audio.ctx.createGain();
       audio.guitarraLimpaDedilhadaGain = audio.ctx.createGain();
       audio.orgaoGain = audio.ctx.createGain();
+
       // ===== Conexões =====
       audio.master.connect(audio.mix);
       audio.mix.connect(audio.ctx.destination);
@@ -863,21 +868,25 @@ function initializeStyleAndKeySelectors() {
       audio.guitarraEchoGain.connect(audio.master);
       audio.guitarraLimpaDedilhadaGain.connect(audio.master);
       audio.orgaoGain.connect(audio.master);
+
       // ===== Volume master =====
       audio.master.gain.value = 0.9;
+
       // ===== Volumes iniciais respeitando mute =====
-      audio.drumGain.gain.value = mute.drums ? 0 : 0.6;               // bateria ligada
-      audio.bassGain.gain.value = mute.bass ? 0 : 0.45;               // baixo ligado
-      audio.cleanGain.gain.value = mute.clean ? 0 : 0.45;             // limpa começa mutada
-      audio.distGain.gain.value = mute.dist ? 0 : 0.35;               // dist mutada
-      audio.pianoStringGain.gain.value = mute.pianoString ? 0 : 0.5;  // piano mutado
-      audio.melodyGain.gain.value = mute.melody ? 0 : 0.5;            // melodia mutada
+      audio.drumGain.gain.value = mute.drums ? 0 : 0.6;
+      audio.bassGain.gain.value = mute.bass ? 0 : 0.45;
+      audio.cleanGain.gain.value = mute.clean ? 0 : 0.45;
+      audio.distGain.gain.value = mute.dist ? 0 : 0.35;
+      audio.pianoStringGain.gain.value = mute.pianoString ? 0 : 0.5;
+      audio.melodyGain.gain.value = mute.melody ? 0 : 0.5;
       audio.guitarraEchoGain.gain.value = mute.guitarraEcho ? 0 : 0.5;
       audio.guitarraLimpaDedilhadaGain.gain.value = mute.guitarraLimpaDedilhada ? 0 : 0.5;
       audio.orgaoGain.gain.value = mute.orgao ? 0 : 0.5;
+
       // ===== Buffers e samples =====
       if (!state.buffers.melody) state.buffers.melody = {};
       await ensureBasicSamples();
+
       // ===== Sliders de volume =====
       ui.volBass.addEventListener('input', updateVolume);
       ui.volDrums.addEventListener('input', updateVolume);
@@ -888,40 +897,67 @@ function initializeStyleAndKeySelectors() {
       ui.volGuitarraEcho.addEventListener('input', updateVolume);
       ui.volGuitarraLimpaDedilhada.addEventListener('input', updateVolume);
       ui.volOrgao.addEventListener('input', updateVolume);
+      
       updateVolume();
+      
+      console.log('Áudio inicializado com sucesso');
+
     } catch (error) {
       console.error('Erro ao inicializar áudio:', error);
+      throw error;
     }
   })();
+  
   return initPromise;
 }
 // ===== Função para carregar samples individuais =====
 async function loadBuffer(url) {
   try {
+    console.log('Tentando carregar:', url);
     const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) {
+      console.warn(`Falha HTTP ${res.status} para: ${url}`);
+      return null;
+    }
     const arrayBuffer = await res.arrayBuffer();
-    return await audio.ctx.decodeAudioData(arrayBuffer);
+    const buffer = await audio.ctx.decodeAudioData(arrayBuffer);
+    console.log('Carregado com sucesso:', url);
+    return buffer;
   } catch (e) {
-    console.warn(`Erro ao carregar: ${url}`);
+    console.warn(`Erro ao carregar: ${url}`, e);
     return null;
   }
 }
-    async function ensureBasicSamples() {
-      const promises = [];
-      for (const [key, name] of Object.entries(DRUMS)) {
-        const url = `assets/${name}.mp3`;
-        if (!state.buffers.drums[key]) {
-          promises.push(loadBuffer(url).then(buf => { if (buf) state.buffers.drums[key] = buf; }));
+   async function ensureBasicSamples() {
+  console.log('Carregando samples básicos...');
+  const promises = [];
+  
+  for (const [key, name] of Object.entries(DRUMS)) {
+    const url = `assets/${name}.mp3`;
+    if (!state.buffers.drums[key]) {
+      promises.push(loadBuffer(url).then(buf => { 
+        if (buf) {
+          state.buffers.drums[key] = buf;
+          console.log('Sample de bateria carregado:', key);
         }
-      }
-      for (const [key, url] of Object.entries(BASS_SAMPLES)) {
-        if (!state.buffers.bass[key]) {
-          promises.push(loadBuffer(url).then(buf => { if (buf) state.buffers.bass[key] = buf; }));
-        }
-      }
-      await Promise.all(promises);
+      }));
     }
+  }
+  
+  for (const [key, url] of Object.entries(BASS_SAMPLES)) {
+    if (!state.buffers.bass[key]) {
+      promises.push(loadBuffer(url).then(buf => { 
+        if (buf) {
+          state.buffers.bass[key] = buf;
+          console.log('Sample de baixo carregado:', key);
+        }
+      }));
+    }
+  }
+  
+  await Promise.all(promises);
+  console.log('Samples básicos carregados');
+}
     function expandRhythm(patternArray, totalSteps) {
       const joined = patternArray.join(' ').replace(/\s+/g, ' ').trim();
       const tokens = joined.split(/\s+/).filter(t => t);
@@ -1174,6 +1210,7 @@ function getBassNotesFromScale(degree, scale, chordType) {
     }
 async function onPlay() {
   if (state.running && !state.paused) return;
+  
   try {
     if (!audio.ctx) {
       await initAudio();
@@ -1186,6 +1223,7 @@ async function onPlay() {
     alert('Erro ao iniciar o sistema de áudio. Recarregue a página e clique em Play.');
     return;
   }
+
   // Se estiver pausado, retoma de onde parou
   if (state.paused) {
     state.paused = false;
@@ -1193,8 +1231,12 @@ async function onPlay() {
     const currentTime = audio.ctx.currentTime;
     const timeSincePause = currentTime - state.pauseTime;
     state.nextNoteTime = state.nextNoteTime + timeSincePause;
+    
+    // LINHA ADICIONADA: Iniciar scheduler ao retomar
+    startScheduler();
     return;
   }
+
   // Salva o playback atual ANTES de gerar um novo
   if (state.bassPlan.length > 0 && state.chordPlan.length > 0) {
     if (!state.previousPlaybacks) state.previousPlaybacks = [];
@@ -1213,9 +1255,11 @@ async function onPlay() {
       chordProgression: [...state.chordProgression]
     });
   }
+
   // Agora inicia um novo playback
   state.bpm = Number(ui.bpm.value) || 100;
   state.sixteenthDur = 60 / state.bpm / 4;
+  
   try {
     await buildBassAndChordPlan();
   } catch (e) {
@@ -1223,18 +1267,24 @@ async function onPlay() {
     alert('Erro ao gerar a progressão musical. Tente novamente.');
     return;
   }
+  
   try {
     buildMelodyPlanFromBlocks();
-    await ensureMelodySamplesNeeded(); // <-- Agora com a versão corrigida
+    await ensureMelodySamplesNeeded();
   } catch (e) {
     console.error('Erro na melodia:', e);
   }
-  // --- REINICIA O ESTADO PARA UM NOVO LOOP ---
-  state.running = false; // Será definido como true após o contador
-  state.stepIndex = 0; // Começa do passo zero
-  state.nextNoteTime = audio.ctx.currentTime + 0.05; // Define o tempo de início
-  // ... resto da função (contador e startScheduler) ...
-  // A função `scheduleStep` usa `stepIdx % array.length`, garantindo o loop.
+
+  // REINICIA O ESTADO PARA UM NOVO LOOP
+  state.running = true; // ← CORREÇÃO: Definir como true
+  state.paused = false;
+  state.stepIndex = 0;
+  state.nextNoteTime = audio.ctx.currentTime + 0.05;
+  
+  // LINHA ADICIONADA: Iniciar o scheduler
+  startScheduler();
+  
+  console.log('Playback iniciado. BPM:', state.bpm, 'Metro:', state.meter);
 }
 function onPause() {
   if (state.running && !state.paused) {
@@ -1292,22 +1342,32 @@ function onPause() {
   onPlay();
 }
     function scheduler() {
-      if (!state.running || state.paused) return;
-      const lookahead = 0.20;
-      const currentTime = audio.ctx.currentTime;
-      while (state.nextNoteTime < currentTime + lookahead) {
-        scheduleStep();
-      }
-    }
-    function startScheduler() {
-      function tick() {
-        if (state.running && !state.paused) scheduler();
-        requestAnimationFrame(tick);
-      }
-      tick();
-      // Garante que o scheduler continue mesmo se o navegador reduzir FPS
-      state.schedulerTimer = setInterval(scheduler, 50);
-    }
+  if (!state.running || state.paused) return;
+  
+  const lookahead = 0.20;
+  const currentTime = audio.ctx.currentTime;
+  
+  while (state.nextNoteTime < currentTime + lookahead) {
+    scheduleStep();
+  }
+}
+function startScheduler() {
+  if (state.schedulerTimer) {
+    clearInterval(state.schedulerTimer);
+    state.schedulerTimer = null;
+  }
+  
+  function tick() {
+    if (state.running && !state.paused) scheduler();
+    requestAnimationFrame(tick);
+  }
+  
+  tick();
+  
+  // Garante que o scheduler continue mesmo se o navegador reduzir FPS
+  state.schedulerTimer = setInterval(scheduler, 50);
+  console.log('Scheduler iniciado');
+}
 function scheduleStep() {
   const time = state.nextNoteTime;
   const stepIdx = state.stepIndex;
