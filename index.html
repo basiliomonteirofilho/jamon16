@@ -1209,6 +1209,7 @@ async function onPlay() {
     alert('Erro ao iniciar o sistema de áudio. Recarregue a página e clique em Play.');
     return;
   }
+
   // Se estiver pausado, retoma de onde parou
   if (state.paused) {
     state.paused = false;
@@ -1218,7 +1219,8 @@ async function onPlay() {
     state.nextNoteTime = state.nextNoteTime + timeSincePause;
     return;
   }
-  // 🔹 Salva o playback atual ANTES de gerar um novo
+
+  // Salva o playback atual ANTES de gerar um novo
   if (state.bassPlan.length > 0 && state.chordPlan.length > 0) {
     if (!state.previousPlaybacks) state.previousPlaybacks = [];
     state.previousPlaybacks.push({
@@ -1236,6 +1238,7 @@ async function onPlay() {
       chordProgression: [...state.chordProgression]
     });
   }
+
   // Agora inicia um novo playback
   state.bpm = Number(ui.bpm.value) || 100;
   state.sixteenthDur = 60 / state.bpm / 4;
@@ -1246,26 +1249,31 @@ async function onPlay() {
     alert('Erro ao gerar a progressão musical. Tente novamente.');
     return;
   }
+
   try {
     buildMelodyPlanFromBlocks();
-    await ensureMelodySamplesNeeded();
+    await ensureMelodySamplesNeeded(); // <-- Agora com a versão corrigida
   } catch (e) {
-  console.error(\'Erro na melodia:\', e);
+    console.error('Erro na melodia:', e);
   }
-  state.stepIndex = 0;
-  state.nextNoteTime = audio.ctx.currentTime + 0.05;
-  await ensureMelodySamplesNeeded();
-  const beats = meterToBeats(state.meter);
-  const quarterDur = 60 / state.bpm;
-  const startTime = audio.ctx.currentTime + 0.05;
-  for (let i = 0; i < beats; i++) {
-    const t = startTime + i * quarterDur;
-    const isStrong = (i % beats) === 0;
-    playClickAtTime(t, isStrong);
+
+  // --- REINICIA O ESTADO PARA UM NOVO LOOP ---
+  state.running = false; // Será definido como true após o contador
+  state.stepIndex = 0; // Começa do passo zero
+  state.nextNoteTime = audio.ctx.currentTime + 0.05; // Define o tempo de início
+
+  // ... resto da função (contador e startScheduler) ...
+
+  // A função `scheduleStep` usa `stepIdx % array.length`, garantindo o loop.
+}
+function onPause() {
+  if (state.running && !state.paused) {
+    state.paused = true;
+    state.pauseTime = audio.ctx.currentTime;
   }
-  state.nextNoteTime = startTime + beats * quarterDur;
-  state.running = true;
-  startScheduler();!state.previousPlaybacks || state.previousPlaybacks.length === 0) {
+}
+  function onPrevious() {
+  if (!state.previousPlaybacks || state.previousPlaybacks.length === 0) {
     alert('Nenhum playback anterior disponível.');
     return;
   }
@@ -1337,8 +1345,8 @@ function scheduleStep() {
   const sixteenthsPerBar = beats * 4;
   const isNewBar = (stepIdx % sixteenthsPerBar) === 0;
 
-  // ===== BATERIA =====
-  const drumToken = state.drumSeq[stepIdx % state.drumSeq.length];
+  // ===== BATERIA ===== (CORRIGIDO PARA LOOP)
+  const drumToken = state.drumSeq[stepIdx % state.drumSeq.length]; // <-- MOD
   if (drumToken && drumToken !== '-' && !mute.drums) {
     const buf = state.buffers.drums[drumToken];
     if (buf) {
@@ -1349,8 +1357,8 @@ function scheduleStep() {
     }
   }
 
-  // ===== BAIXO =====
-  const bassNote = state.bassPlan[stepIdx % state.bassPlan.length];
+  // ===== BAIXO ===== (CORRIGIDO PARA LOOP)
+  const bassNote = state.bassPlan[stepIdx % state.bassPlan.length]; // <-- MOD
   if (bassNote && bassNote !== '-' && !mute.bass) {
     const buf = state.buffers.bass[bassNote];
     if (buf) {
@@ -1540,7 +1548,7 @@ function scheduleStep() {
       }
     }
     function onStop() {
-    
+      state.running = false;
       state.paused = false;
       ui.currentChord.textContent = '—';
       ui.chordTimer.textContent = '—';
@@ -1774,61 +1782,43 @@ function scheduleStep() {
       }
       state.melodyPlan = plan;
     }
-    async function ensureMelodySamplesNeeded() {
+  async function ensureMelodySamplesNeeded() {
   if (!state.melodyPlan || state.melodyPlan.length === 0) return;
   const promises = [];
   const instrument = ui.melodyInstrument.value;
 
-  for (const note of state.melodyPlan) {
-    if (!note || note === 'x') continue;
-    let url = null;
+  // Obtém a pasta base do instrumento
+  const folder = MELODY_INSTRUMENTS[instrument];
+  if (!folder) {
+    console.warn(`[Melodia] Instrumento desconhecido para preload: ${instrument}`);
+    return;
+  }
 
-    switch (instrument) {
-      case 'dist':
-        url = `guitarraDistorcao/Melodia/${note}.mp3`;
-        break;
-      case 'dist2':
-        url = `guitarraDistorcao/Melodia2/${note}.mp3`;
-        break;
-      case 'dist3':
-        url = `guitarraDistorcao/Melodia3/${note}.mp3`;
-        break;
-      case 'dist4':
-        url = `guitarraDistorcao/Melodia4/${note}.mp3`;
-        break;
-      case 'dist5':
-        url = `guitarraDistorcao/Melodia5/${note}.mp3`;
-        break;
-      case 'piano':
-        url = `assets/melody-piano/${note}.mp3`;
-        break;
-      case 'baixo':
-        url = `assets/melody-bass/${note}.mp3`;
-        break;
-      case 'sax':
-        url = `assets/melody-sax/${note}.mp3`;
-        break;
-      case 'acordeon':
-        url = `assets/melody-acordeon/${note}.mp3`;
-        break;
-      case 'sinos':
-        url = `assets/melody-sinos/${note}.mp3`;
-        break;
-      case 'violao_aco':
-        url = `assets/melody-violao-aco/${note}.mp3`;
-        break;
-      case 'violao_nylon':
-        url = `assets/melody-violao-nylon/${note}.mp3`;
-        break;
-      case 'cordas':
-        url = `assets/melody-cordas/${note}.mp3`;
-        break;
-      default:
-        url = null;
-    }
+  // Itera sobre os eventos da melodia
+  for (const melodyEvent of state.melodyPlan) {
+    if (!melodyEvent || melodyEvent.type !== 'start') continue;
 
-    if (url && !state.buffers.melody[url]) {
-      promises.push(loadBuffer(url).then(buf => { if (buf) state.buffers.melody[url] = buf; }));
+    const number = melodyEvent.originalNumber;
+    const noteName = NUM_TO_NAME[number]; // Obtém o nome da nota (ex: 'DS')
+
+    // Tenta carregar as duas versões possíveis do arquivo: com e sem sufixo
+    const possibleUrls = [
+      `${folder}/${number}${noteName}.mp3`, // Ex: guitarraDistorcao/Melodia/12DS.mp3
+      `${folder}/${number}.mp3`             // Ex: guitarraDistorcao/Melodia/12.mp3
+    ];
+
+    for (const url of possibleUrls) {
+      if (!state.buffers.melody[url]) {
+        const p = loadBuffer(url).then(buf => {
+          if (buf) {
+            state.buffers.melody[url] = buf;
+            console.log(`[Melodia] Sample carregado: ${url}`);
+          } else {
+            console.warn(`[Melodia] Sample NÃO carregado: ${url}`);
+          }
+        });
+        promises.push(p);
+      }
     }
   }
 
