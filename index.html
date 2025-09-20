@@ -461,10 +461,10 @@
   <label>Melodia</label>
   <select id="melodyInstrument">
     <option value="dist">Guitarra Distorcida</option>
-    <option value="dist2">Guitarra 2</option>
-    <option value="dist3">Guitarra 3</option>
-    <option value="dist4">Guitarra 4</option>
-    <option value="dist5">Guitarra 5</option>
+    <option value="dist2">Guitarra Distorcida 2</option>
+    <option value="dist3">Guitarra Distorcida 3</option>
+    <option value="dist4">Guitarra Distorcida 4</option>
+    <option value="dist5">Guitarra Distorcida 5</option>
     <option value="piano">Piano/String</option>
     <option value="baixo">Baixo</option>
     <option value="sax">Sax</option>
@@ -475,6 +475,7 @@
     <option value="cordas">Cordas</option>
   </select>
 </div>
+
 <!-- ... resto dos controles ... -->
       <h3 style="color: #5eead4; margin: 15px 0 5px;">Controle de Volume</h3>
       <div class="slider-row">
@@ -528,14 +529,11 @@
     <div class="panel">
       <h3>🎸 Efeitos de Guitarra e Órgão</h3>
       <div class="guitar-buttons">
-        <button id="guitar1" class="guitar-button" data-instrument="dist">🎸 Guitarra 1</button>
-        <button id="guitar2" class="guitar-button" data-instrument="dist2">🎸 Guitarra 2</button>
-        <button id="guitar3" class="guitar-button" data-instrument="dist3">🎸 Guitarra 3</button>
-        <button id="guitar4" class="guitar-button" data-instrument="dist4">🎸 Guitarra 4</button>
-        <button id="guitar5" class="guitar-button" data-instrument="dist5">🎸 Guitarra 5</button>
+        
         <button id="guitarEcho" class="guitar-button" data-instrument="guitarEcho">🎸 Guitarra Echo</button>
         <button id="guitarLimpaDedilhada" class="guitar-button" data-instrument="guitarLimpaDedilhada">🎸 Guitarra Dedilhada</button>
         <button id="organ" class="guitar-button" data-instrument="organ">🎹 Órgão</button>
+      
       </div>
     </div>
     
@@ -803,15 +801,16 @@ function initializeStyleAndKeySelectors() {
   nextPlaybacks: []
 };
     const mute = { 
-      bass: false, 
-      drums: false, 
-      clean: false, 
-      dist: false, 
-      pianoString: false,
-      guitarraEcho: false,
-      guitarraLimpaDedilhada: false,
-      orgao: false
-    };
+  bass: false, 
+  drums: false, 
+  clean: false, 
+  dist: false, 
+  pianoString: false,
+  guitarraEcho: true,   // já inicia no mudo
+  guitarraLimpaDedilhada: true, // já inicia no mudo
+  orgao: true           // já inicia no mudo
+};
+
     // ===== FUNÇÕES UTILITÁRIAS =====
     function log(msg) {
       console.log(`[LOG] ${msg}`);
@@ -1916,21 +1915,66 @@ if (!mute.pianoString && chord && isNewBar) {
       state.melodyPlan = plan;
     }
     async function ensureMelodySamplesNeeded() {
-      const instrument = ui.melodyInstrument.value;
-      const folder = MELODY_INSTRUMENTS[instrument];
-      if (!folder) return;
-      const promises = [];
-      for (let i = 1; i <= 49; i++) {
-        const noteName = NUM_TO_NAME[i];
-        const url = `${folder}/${i}${noteName}.mp3`;
-        if (!state.buffers.melody[url]) {
-          promises.push(
-            loadBuffer(url).then(buf => { if (buf) state.buffers.melody[url] = buf; })
-          );
-        }
-      }
-      await Promise.all(promises);
+  if (!state.melodyPlan || state.melodyPlan.length === 0) return;
+  const promises = [];
+  const instrument = ui.melodyInstrument.value;
+
+  for (const note of state.melodyPlan) {
+    if (!note || note === 'x') continue;
+    let url = null;
+
+    switch (instrument) {
+      case 'dist':
+        url = `guitarraDistorcao/Melodia/${note}.mp3`;
+        break;
+      case 'dist2':
+        url = `guitarraDistorcao/Melodia2/${note}.mp3`;
+        break;
+      case 'dist3':
+        url = `guitarraDistorcao/Melodia3/${note}.mp3`;
+        break;
+      case 'dist4':
+        url = `guitarraDistorcao/Melodia4/${note}.mp3`;
+        break;
+      case 'dist5':
+        url = `guitarraDistorcao/Melodia5/${note}.mp3`;
+        break;
+      case 'piano':
+        url = `assets/melody-piano/${note}.mp3`;
+        break;
+      case 'baixo':
+        url = `assets/melody-bass/${note}.mp3`;
+        break;
+      case 'sax':
+        url = `assets/melody-sax/${note}.mp3`;
+        break;
+      case 'acordeon':
+        url = `assets/melody-acordeon/${note}.mp3`;
+        break;
+      case 'sinos':
+        url = `assets/melody-sinos/${note}.mp3`;
+        break;
+      case 'violao_aco':
+        url = `assets/melody-violao-aco/${note}.mp3`;
+        break;
+      case 'violao_nylon':
+        url = `assets/melody-violao-nylon/${note}.mp3`;
+        break;
+      case 'cordas':
+        url = `assets/melody-cordas/${note}.mp3`;
+        break;
+      default:
+        url = null;
     }
+
+    if (url && !state.buffers.melody[url]) {
+      promises.push(loadBuffer(url).then(buf => { if (buf) state.buffers.melody[url] = buf; }));
+    }
+  }
+
+  await Promise.all(promises);
+}
+
     function playMelodyNumber(time, number, instrumentType) {
       const folder = MELODY_INSTRUMENTS[instrumentType];
       if (!folder) {
