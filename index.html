@@ -349,6 +349,37 @@
       50% { opacity: 0.4; }
       100% { opacity: 1; }
     }
+    /* Estilos para os botões de guitarra */
+    .guitar-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 20px 0;
+    }
+    .guitar-button {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 8px;
+      background: #333;
+      color: #e0e0e0;
+      cursor: pointer;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .guitar-button:hover {
+      background: #444;
+    }
+    .guitar-button.active {
+      background: #5eead4;
+      color: #121212;
+    }
+    .guitar-icon {
+      font-size: 1.2em;
+    }
   </style>
 </head>
 <body>
@@ -470,10 +501,21 @@
         <span class="slider-value" id="volMelodyLabel">50%</span>
       </div>
     </div>
+    
+    <!-- REMOVIDO O PAINEL "Estado Atual" -->
+    <!-- NOVO PAINEL DE BOTÕES DE GUITARRA -->
     <div class="panel">
-      <h3>Estado Atual</h3>
-      <div class="mono" id="state">Parado</div>
+      <h3>🎸 Efeitos de Guitarra</h3>
+      <div class="guitar-buttons">
+        <button id="guitar1" class="guitar-button" data-instrument="dist">🎸 Guitarra 1</button>
+        <button id="guitar2" class="guitar-button" data-instrument="dist2">🎸 Guitarra 2</button>
+        <button id="guitar3" class="guitar-button" data-instrument="dist3">🎸 Guitarra 3</button>
+        <button id="guitar4" class="guitar-button" data-instrument="dist4">🎸 Guitarra 4</button>
+        <button id="guitar5" class="guitar-button" data-instrument="dist5">🎸 Guitarra 5</button>
+        <button id="organ" class="guitar-button" data-instrument="organ">🎹 Órgão</button>
+      </div>
     </div>
+    
     <div class="panel melody-panel">
       <h3>🎸 Melodia Adaptativa</h3>
       <div class="melody-toolbar">
@@ -519,7 +561,7 @@ const ui = {
   keySelect: document.getElementById('keySelect'),
   qualitySelect: document.getElementById('qualitySelect'), // <-- Nova linha
   // --- FIM DOS NOVOS ELEMENTOS ---
-  state: document.getElementById('state'),
+  // Removido state: document.getElementById('state'),
   currentChord: document.getElementById('currentChord'),
   chordTimer: document.getElementById('chordTimer'),
   volPianoString: document.getElementById('volPianoString'),
@@ -542,7 +584,14 @@ const ui = {
   numberGrid: document.getElementById('numberGrid'),
   btnSaveWAV: document.getElementById('btnSaveWAV'),
   chordProgression: document.getElementById('chordProgression'),
-  btnOpenManual: document.getElementById('btnOpenManual')
+  btnOpenManual: document.getElementById('btnOpenManual'),
+  // Novos botões de guitarra
+  guitar1: document.getElementById('guitar1'),
+  guitar2: document.getElementById('guitar2'),
+  guitar3: document.getElementById('guitar3'),
+  guitar4: document.getElementById('guitar4'),
+  guitar5: document.getElementById('guitar5'),
+  organ: document.getElementById('organ')
 };
 // Função para inicializar os selects de Estilo e Tonalidade
 function initializeStyleAndKeySelectors() {
@@ -725,7 +774,12 @@ function initializeStyleAndKeySelectors() {
       return Number(meter.split('/')[0]) || 4;
     }
     function setStatePanel() {
-      ui.state.innerHTML = `<div>Levada: ${state.signatureTag || '—'}</div><div>Key: ${state.key?.replace('S', '#') || '—'} ${state.quality === 'maj' ? 'Maior' : 'Menor'}</div>`;
+      // Atualiza a interface com a tonalidade e qualidade
+      ui.currentChord.textContent = state.chordPlan.length > 0 ? state.chordPlan[state.currentChordIndex].displayed : '—';
+      // Destaca o acorde atual na progressão
+      document.querySelectorAll('.chord-item').forEach((el, i) => {
+        el.classList.toggle('current', i === state.currentChordIndex);
+      });
     }
     let initPromise = null;
     function updateVolume() {
@@ -881,7 +935,6 @@ function getBassNotesFromScale(degree, scale, chordType) {
   // Para os graus I, IV e V, a qualidade da tonalidade define se o acorde é maior ou menor.
   // Para os demais graus (II, III, VI), a lógica anterior se mantém.
   let isMinor = false;
-
   if ([1, 4, 5].includes(degree)) {
     // Graus I, IV e V seguem a qualidade da tonalidade
     isMinor = (state.quality === 'min');
@@ -893,7 +946,6 @@ function getBassNotesFromScale(degree, scale, chordType) {
       ['5+', '75+', '95+'].includes(chordType)
     );
   }
-
   if (scale === "chromatic") {
     const rootIdx = (state.keyIdx + DEGREE_TO_ROOT[degree]) % 12;
     const rootNote = PITCHES[rootIdx];
@@ -967,6 +1019,13 @@ function getBassNotesFromScale(degree, scale, chordType) {
               break;
             default:
               chordType = '';
+          }
+        }
+        // 🔹 CORREÇÃO IMPORTANTE: Se a tonalidade for menor, os acordes I, IV e V devem ser menores
+        if (state.quality === 'min' && [1, 4, 5].includes(degree)) {
+          // Se já for menor, mantém. Se for maior, transforma em menor.
+          if (!chordType.startsWith('m') && chordType !== 'dim') {
+            chordType = 'm' + chordType;
           }
         }
         const chordDisplay = CHORD_NAMES[rootIdx] + chordType;
@@ -1131,7 +1190,7 @@ function onPause() {
   if (state.running && !state.paused) {
     state.paused = true;
     state.pauseTime = audio.ctx.currentTime;
-    ui.state.textContent = "Pausado";
+    ui.currentChord.textContent = "Pausado";
   }
 }
   function onPrevious() {
@@ -1481,7 +1540,6 @@ if (!mute.pianoString && chord && isNewBar) {
       state.paused = false;
       ui.currentChord.textContent = '—';
       ui.chordTimer.textContent = '—';
-      ui.state.textContent = "Parado";
       if (state.lastBassSource) state.lastBassSource.stop(0);
       if (state.lastDistSource) state.lastDistSource.stop(0);
       if (state.lastMelodySource) state.lastMelodySource.stop(0);
@@ -1661,6 +1719,11 @@ if (!mute.pianoString && chord && isNewBar) {
     }
     const MELODY_INSTRUMENTS = {
       dist: "guitarraDistorcao/Melodia",
+      dist2: "guitarraDistorcao/Melodia2",
+      dist3: "guitarraDistorcao/Melodia3",
+      dist4: "guitarraDistorcao/Melodia4",
+      dist5: "guitarraDistorcao/Melodia5",
+      organ: "assets/OrgaoMelodia",
       piano: "assets/PianoString",
       baixo: "assets/BaixoMelodia",
       sax: "assets/SaxMelodia",
@@ -2100,6 +2163,33 @@ if (!mute.pianoString && chord && isNewBar) {
           window.open('jam-on-composicao-manual.html', '_blank');
         });
       }
+      // Inicializa os botões de guitarra
+      const guitarButtons = [
+        ui.guitar1, ui.guitar2, ui.guitar3, ui.guitar4, ui.guitar5, ui.organ
+      ];
+      guitarButtons.forEach(btn => {
+        if (btn) {
+          btn.addEventListener('click', function() {
+            const instrument = this.dataset.instrument;
+            // Desativa todos os botões
+            guitarButtons.forEach(b => {
+              if (b) b.classList.remove('active');
+            });
+            // Ativa o botão clicado
+            this.classList.add('active');
+            // Atualiza o select de instrumento
+            ui.melodyInstrument.value = instrument;
+            // Atualiza o estado da melodia
+            state.melodyPlan.forEach(event => {
+              if (event && event.type === 'start') {
+                event.instrument = instrument;
+              }
+            });
+            // Carrega os samples necessários
+            ensureMelodySamplesNeeded();
+          });
+        }
+      });
       // Inicializa o number picker para mobile
       if (isMobileDevice()) {
         initializeNumberPicker();
