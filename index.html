@@ -414,7 +414,6 @@
   <button id="muteGuitarraLimpaDedilhada" data-mute="on" class="muted">🔇 Dedilhada</button>
   <button id="muteOrgao" data-mute="on" class="muted">🔇 Órgão</button>
 </div>
-
       <!-- ... outros controles ... -->
 <div class="row">
   <label>Assinatura</label>
@@ -476,7 +475,6 @@
     <option value="cordas">Cordas</option>
   </select>
 </div>
-
 <!-- ... resto dos controles ... -->
       <h3 style="color: #5eead4; margin: 15px 0 5px;">Controle de Volume</h3>
       <div class="slider-row">
@@ -525,19 +523,15 @@
         <span class="slider-value" id="volMelodyLabel">50%</span>
       </div>
     </div>
-    
     <!-- NOVO PAINEL DE BOTÕES DE GUITARRA E ÓRGÃO -->
     <div class="panel">
       <h3>🎸 Efeitos de Guitarra e Órgão</h3>
       <div class="guitar-buttons">
-        
         <button id="guitarEcho" class="guitar-button" data-instrument="guitarEcho">🎸 Guitarra Echo</button>
         <button id="guitarLimpaDedilhada" class="guitar-button" data-instrument="guitarLimpaDedilhada">🎸 Guitarra Dedilhada</button>
         <button id="organ" class="guitar-button" data-instrument="organ">🎹 Órgão</button>
-      
       </div>
     </div>
-    
     <div class="panel melody-panel">
       <h3>🎸 Melodia Adaptativa</h3>
       <div class="melody-toolbar">
@@ -811,8 +805,6 @@ function initializeStyleAndKeySelectors() {
   guitarraLimpaDedilhada: true, // dedilhada no mudo
   orgao: true           // órgão no mudo
 };
-
-
     // ===== FUNÇÕES UTILITÁRIAS =====
     function log(msg) {
       console.log(`[LOG] ${msg}`);
@@ -831,7 +823,6 @@ function initializeStyleAndKeySelectors() {
       if (audio.guitarraEchoGain) audio.guitarraEchoGain.gain.value = parseFloat(ui.volGuitarraEcho.value);
       if (audio.guitarraLimpaDedilhadaGain) audio.guitarraLimpaDedilhadaGain.gain.value = parseFloat(ui.volGuitarraLimpaDedilhada.value);
       if (audio.orgaoGain) audio.orgaoGain.gain.value = parseFloat(ui.volOrgao.value);
-      
       ui.volBassLabel.textContent = Math.round(ui.volBass.value * 100) + '%';
       ui.volDrumsLabel.textContent = Math.round(ui.volDrums.value * 100) + '%';
       ui.volCleanLabel.textContent = Math.round(ui.volClean.value * 100) + '%';
@@ -848,7 +839,6 @@ function initializeStyleAndKeySelectors() {
   initPromise = (async () => {
     try {
       audio.ctx = new (window.AudioContext || window.webkitAudioContext)();
-
       // ===== Ganhos (canais individuais) =====
       audio.master = audio.ctx.createGain();
       audio.mix = audio.ctx.createGain();
@@ -861,7 +851,6 @@ function initializeStyleAndKeySelectors() {
       audio.guitarraEchoGain = audio.ctx.createGain();
       audio.guitarraLimpaDedilhadaGain = audio.ctx.createGain();
       audio.orgaoGain = audio.ctx.createGain();
-
       // ===== Conexões =====
       audio.master.connect(audio.mix);
       audio.mix.connect(audio.ctx.destination);
@@ -874,10 +863,8 @@ function initializeStyleAndKeySelectors() {
       audio.guitarraEchoGain.connect(audio.master);
       audio.guitarraLimpaDedilhadaGain.connect(audio.master);
       audio.orgaoGain.connect(audio.master);
-
       // ===== Volume master =====
       audio.master.gain.value = 0.9;
-
       // ===== Volumes iniciais respeitando mute =====
       audio.drumGain.gain.value = mute.drums ? 0 : 0.6;               // bateria ligada
       audio.bassGain.gain.value = mute.bass ? 0 : 0.45;               // baixo ligado
@@ -888,11 +875,9 @@ function initializeStyleAndKeySelectors() {
       audio.guitarraEchoGain.gain.value = mute.guitarraEcho ? 0 : 0.5;
       audio.guitarraLimpaDedilhadaGain.gain.value = mute.guitarraLimpaDedilhada ? 0 : 0.5;
       audio.orgaoGain.gain.value = mute.orgao ? 0 : 0.5;
-
       // ===== Buffers e samples =====
       if (!state.buffers.melody) state.buffers.melody = {};
       await ensureBasicSamples();
-
       // ===== Sliders de volume =====
       ui.volBass.addEventListener('input', updateVolume);
       ui.volDrums.addEventListener('input', updateVolume);
@@ -903,7 +888,6 @@ function initializeStyleAndKeySelectors() {
       ui.volGuitarraEcho.addEventListener('input', updateVolume);
       ui.volGuitarraLimpaDedilhada.addEventListener('input', updateVolume);
       ui.volOrgao.addEventListener('input', updateVolume);
-
       updateVolume();
     } catch (error) {
       console.error('Erro ao inicializar áudio:', error);
@@ -911,7 +895,6 @@ function initializeStyleAndKeySelectors() {
   })();
   return initPromise;
 }
-
 // ===== Função para carregar samples individuais =====
 async function loadBuffer(url) {
   try {
@@ -924,8 +907,6 @@ async function loadBuffer(url) {
     return null;
   }
 }
-
-
     async function ensureBasicSamples() {
       const promises = [];
       for (const [key, name] of Object.entries(DRUMS)) {
@@ -1142,26 +1123,22 @@ function getBassNotesFromScale(degree, scale, chordType) {
         }
       }
       state.drumSeq = drumExpanded.slice(0, state.bassPlan.length);
-      
       // Preload dos novos efeitos harmônicos
       const guitarUrls = new Set();
       for (const ch of state.chordPlan) {
         let fullChordName = ch.note;
         if (ch.type) fullChordName += ch.type;
-        
         // Guitarra Distorcida (já existente)
         guitarUrls.add(`guitarraDistorcao/${ch.note}/${fullChordName}.mp3`);
         guitarUrls.add(`guitarraDistorcao/abafadas/${ch.note}/${fullChordName}.mp3`);
         guitarUrls.add(`guitarraDistorcao/dedilhada/${ch.note}/${fullChordName}.mp3`);
         guitarUrls.add(`guitarraLimpa/${ch.note}/${fullChordName}.mp3`);
         guitarUrls.add(`assets/PianoStringChord/${ch.note}/${fullChordName}.mp3`);
-        
         // Novos efeitos harmônicos
         guitarUrls.add(`GuitarraEcho/${ch.note}/${fullChordName}.mp3`);
         guitarUrls.add(`GuitarraLimpaDedilhada/${ch.note}/${fullChordName}.mp3`);
         guitarUrls.add(`Orgao/${ch.note}/${fullChordName}.mp3`);
       }
-      
       const preloadPromises = [];
       guitarUrls.forEach(url => {
         if (!state.buffers.guitar) state.buffers.guitar = {};
@@ -1209,7 +1186,6 @@ async function onPlay() {
     alert('Erro ao iniciar o sistema de áudio. Recarregue a página e clique em Play.');
     return;
   }
-
   // Se estiver pausado, retoma de onde parou
   if (state.paused) {
     state.paused = false;
@@ -1219,7 +1195,6 @@ async function onPlay() {
     state.nextNoteTime = state.nextNoteTime + timeSincePause;
     return;
   }
-
   // Salva o playback atual ANTES de gerar um novo
   if (state.bassPlan.length > 0 && state.chordPlan.length > 0) {
     if (!state.previousPlaybacks) state.previousPlaybacks = [];
@@ -1238,7 +1213,6 @@ async function onPlay() {
       chordProgression: [...state.chordProgression]
     });
   }
-
   // Agora inicia um novo playback
   state.bpm = Number(ui.bpm.value) || 100;
   state.sixteenthDur = 60 / state.bpm / 4;
@@ -1249,21 +1223,17 @@ async function onPlay() {
     alert('Erro ao gerar a progressão musical. Tente novamente.');
     return;
   }
-
   try {
     buildMelodyPlanFromBlocks();
     await ensureMelodySamplesNeeded(); // <-- Agora com a versão corrigida
   } catch (e) {
     console.error('Erro na melodia:', e);
   }
-
   // --- REINICIA O ESTADO PARA UM NOVO LOOP ---
   state.running = false; // Será definido como true após o contador
   state.stepIndex = 0; // Começa do passo zero
   state.nextNoteTime = audio.ctx.currentTime + 0.05; // Define o tempo de início
-
   // ... resto da função (contador e startScheduler) ...
-
   // A função `scheduleStep` usa `stepIdx % array.length`, garantindo o loop.
 }
 function onPause() {
@@ -1344,7 +1314,6 @@ function scheduleStep() {
   const beats = meterToBeats(state.meter);
   const sixteenthsPerBar = beats * 4;
   const isNewBar = (stepIdx % sixteenthsPerBar) === 0;
-
   // ===== BATERIA ===== (CORRIGIDO PARA LOOP)
   const drumToken = state.drumSeq[stepIdx % state.drumSeq.length]; // <-- MOD
   if (drumToken && drumToken !== '-' && !mute.drums) {
@@ -1356,7 +1325,6 @@ function scheduleStep() {
       src.start(time);
     }
   }
-
   // ===== BAIXO ===== (CORRIGIDO PARA LOOP)
   const bassNote = state.bassPlan[stepIdx % state.bassPlan.length]; // <-- MOD
   if (bassNote && bassNote !== '-' && !mute.bass) {
@@ -1381,14 +1349,12 @@ function scheduleStep() {
     state.lastBassSource.stop(time);
     state.lastBassSource = null;
   }
-
   // ===== ACORDES / HARMONIA =====
   if (isNewBar && state.chordPlan.length > 0) {
     const chordIdx = Math.floor(stepIdx / sixteenthsPerBar) % state.chordPlan.length;
     const chord = state.chordPlan[chordIdx];
     const fullChordName = chord.note + (chord.type || '');
     const chordUrlList = [];
-
     // Limpa
     if (!mute.clean) {
       chordUrlList.push({ url: `guitarraLimpa/${chord.note}/${fullChordName}.mp3`, gain: audio.cleanGain, lastKey: 'lastCleanSource' });
@@ -1413,7 +1379,6 @@ function scheduleStep() {
     if (!mute.orgao) {
       chordUrlList.push({ url: `Orgao/${chord.note}/${fullChordName}.mp3`, gain: audio.orgaoGain, lastKey: 'lastOrgaoSource' });
     }
-
     chordUrlList.forEach(item => {
       const buf = state.buffers.guitar[item.url];
       if (buf) {
@@ -1432,7 +1397,6 @@ function scheduleStep() {
         state[item.lastKey] = src; // Atualiza a referência
       }
     });
-
     // Atualiza o acorde atual na tela
     if (ui.currentChord) {
       ui.currentChord.textContent = chord.displayed;
@@ -1441,14 +1405,16 @@ function scheduleStep() {
       if (currentEl) currentEl.classList.add('current');
     }
   }
-
   // ===== MELODIA ===== (CORRIGIDA E COMPLETA)
   const melodyEvent = state.melodyPlan[stepIdx % state.melodyPlan.length]; // <-- MOD para loop
   if (melodyEvent && melodyEvent.type === 'start' && !mute.melody) {
     // Extrai o número original
     let number = melodyEvent.originalNumber;
-    const instrument = melodyEvent.instrument || ui.melodyInstrument.value;
-
+    // Garante que o instrumento do evento esteja atualizado na primeira vez
+    if (!melodyEvent.instrument) {
+      melodyEvent.instrument = ui.melodyInstrument.value;
+    }
+    const instrument = melodyEvent.instrument;
     // Se ainda não foi adaptado, faz a adaptação agora
     if (melodyEvent.adaptedNumber === null && state.chordPlan.length > 0) {
       const currentChordIndex = Math.floor(stepIdx / sixteenthsPerBar) % state.chordPlan.length;
@@ -1464,27 +1430,22 @@ function scheduleStep() {
     } else if (melodyEvent.adaptedNumber !== null) {
       number = melodyEvent.adaptedNumber;
     }
-
     // Obtém o nome da nota baseado no número
     const noteName = NUM_TO_NAME[number];
-
     // Monta as URLs possíveis
     const folder = MELODY_INSTRUMENTS[instrument];
     if (!folder) {
       console.warn(`[Melodia] Instrumento desconhecido: ${instrument}`);
       return;
     }
-
     // Tenta primeiro com o sufixo da nota (ex: 12DS.mp3)
     let url = `${folder}/${number}${noteName}.mp3`;
     let buf = state.buffers.melody[url];
-
     // Se não encontrar, tenta sem o sufixo (ex: 12.mp3)
     if (!buf) {
       url = `${folder}/${number}.mp3`;
       buf = state.buffers.melody[url];
     }
-
     if (buf) {
       // Para a nota de melodia anterior
       if (state.lastMelodySource) {
@@ -1513,12 +1474,10 @@ function scheduleStep() {
       state.lastMelodySource = null;
     }
   }
-
   // ===== Avança pro próximo step =====
   state.stepIndex++;
   state.nextNoteTime += state.sixteenthDur;
 }
-
     function updateCurrentChordDisplay() {
       if (state.chordPlan.length > 0) {
         const chord = state.chordPlan[state.currentChordIndex];
@@ -1560,7 +1519,6 @@ function scheduleStep() {
       if (state.lastGuitarraEchoSource) state.lastGuitarraEchoSource.stop(0);
       if (state.lastGuitarraLimpaDedilhadaSource) state.lastGuitarraLimpaDedilhadaSource.stop(0);
       if (state.lastOrgaoSource) state.lastOrgaoSource.stop(0);
-      
       state.lastBassSource = null;
       state.lastDistSource = null;
       state.lastMelodySource = null;
@@ -1571,7 +1529,6 @@ function scheduleStep() {
       state.lastGuitarraEchoSource = null;
       state.lastGuitarraLimpaDedilhadaSource = null;
       state.lastOrgaoSource = null;
-      
       if (state.schedulerTimer) {
         clearInterval(state.schedulerTimer);
         state.schedulerTimer = null;
@@ -1584,7 +1541,6 @@ function scheduleStep() {
   mute[instrument] = !isMuted;
   button.setAttribute('data-mute', isMuted ? 'off' : 'on');
   button.classList.toggle('muted', !isMuted);
-
   if (isMuted) {
     // ligado → volta ícone normal
     button.textContent = `${icon} ${label}`;
@@ -1593,7 +1549,6 @@ function scheduleStep() {
     button.textContent = `🔇 ${label}`;
   }
 }
-
     // ===== MELODIA ADAPTATIVA =====
     const ORDER_E_UP = ['E','F','FS','G','GS','A','AS','B','C','CS','D','DS'];
     const NUM_TO_NAME = (() => {
@@ -1786,27 +1741,22 @@ function scheduleStep() {
   if (!state.melodyPlan || state.melodyPlan.length === 0) return;
   const promises = [];
   const instrument = ui.melodyInstrument.value;
-
   // Obtém a pasta base do instrumento
   const folder = MELODY_INSTRUMENTS[instrument];
   if (!folder) {
     console.warn(`[Melodia] Instrumento desconhecido para preload: ${instrument}`);
     return;
   }
-
   // Itera sobre os eventos da melodia
   for (const melodyEvent of state.melodyPlan) {
     if (!melodyEvent || melodyEvent.type !== 'start') continue;
-
     const number = melodyEvent.originalNumber;
     const noteName = NUM_TO_NAME[number]; // Obtém o nome da nota (ex: 'DS')
-
     // Tenta carregar as duas versões possíveis do arquivo: com e sem sufixo
     const possibleUrls = [
       `${folder}/${number}${noteName}.mp3`, // Ex: guitarraDistorcao/Melodia/12DS.mp3
       `${folder}/${number}.mp3`             // Ex: guitarraDistorcao/Melodia/12.mp3
     ];
-
     for (const url of possibleUrls) {
       if (!state.buffers.melody[url]) {
         const p = loadBuffer(url).then(buf => {
@@ -1821,61 +1771,49 @@ function scheduleStep() {
       }
     }
   }
-
   await Promise.all(promises);
 }
-
 function playMelodyNumber(time, number, instrumentType) {
   const folder = MELODY_INSTRUMENTS[instrumentType];
   if (!folder) {
     console.warn(`[Melodia] Instrumento desconhecido: ${instrumentType}`);
     return;
   }
-
   const noteName = NUM_TO_NAME[number];
   let url = `${folder}/${number}${noteName}.mp3`; // Primeira tentativa: com sufixo
   let buf = state.buffers.melody[url];
-
   // Segunda tentativa: sem sufixo
   if (!buf) {
     url = `${folder}/${number}.mp3`;
     buf = state.buffers.melody[url];
   }
-
   if (!buf) {
     console.warn(`[Melodia] Arquivo não carregado para nota ${number} (${noteName}) com instrumento ${instrumentType}`);
     return;
   }
-
   if (state.lastMelodySource && !state.lastMelodySource.finished) {
     state.lastMelodySource.stop(time);
   }
-
   const src = audio.ctx.createBufferSource();
   const g = audio.ctx.createGain();
   src.buffer = buf;
   src.connect(g);
-
   if (!audio.melodyGain) {
     audio.melodyGain = audio.ctx.createGain();
     audio.melodyGain.gain.value = 0.50;
     audio.melodyGain.connect(audio.master);
   }
-
   g.connect(audio.melodyGain);
   g.gain.setValueAtTime(0.0, time);
   g.gain.linearRampToValueAtTime(1.0, time + 0.01);
-
   const maxDur = state.sixteenthDur * 16;
   src.start(time);
   src.stop(time + Math.min(buf.duration, maxDur));
-
   state.lastMelodySource = src;
   state.lastMelodyGain = g;
   src.finished = false;
   src.onended = () => { src.finished = true; };
 }
-
     function stopMelodyAt(time) {
       if (state.lastMelodySource && !state.lastMelodySource.finished) {
         state.lastMelodySource.stop(time);
@@ -1997,7 +1935,6 @@ function playMelodyNumber(time, number, instrumentType) {
     const guitarraEchoGain = offlineCtx.createGain();
     const guitarraLimpaDedilhadaGain = offlineCtx.createGain();
     const orgaoGain = offlineCtx.createGain();
-    
     // --- APLICA OS VOLUMES ATUAIS DA INTERFACE ---
     master.gain.value = 0.9;
     drumGain.gain.value = parseFloat(ui.volDrums.value);
@@ -2009,7 +1946,6 @@ function playMelodyNumber(time, number, instrumentType) {
     guitarraEchoGain.gain.value = parseFloat(ui.volGuitarraEcho.value);
     guitarraLimpaDedilhadaGain.gain.value = parseFloat(ui.volGuitarraLimpaDedilhada.value);
     orgaoGain.gain.value = parseFloat(ui.volOrgao.value);
-    
     // Reconecta a árvore de áudio no contexto offline
     master.connect(mix);
     mix.connect(offlineCtx.destination);
@@ -2022,7 +1958,6 @@ function playMelodyNumber(time, number, instrumentType) {
     guitarraEchoGain.connect(master);
     guitarraLimpaDedilhadaGain.connect(master);
     orgaoGain.connect(master);
-    
     const sixteenthDur = 60 / state.bpm / 4;
     const beatsPerBar = meterToBeats(state.meter);
     const stepsPerBar = beatsPerBar * 4;
@@ -2181,7 +2116,7 @@ function playMelodyNumber(time, number, instrumentType) {
         const melodyEvent = state.melodyPlan[stepIdx % state.melodyPlan.length];
         if (melodyEvent && melodyEvent.type === 'start') {
           let adaptedNumber = melodyEvent.adaptedNumber;
-          if (adaptedNumber === null) {
+          if (adaptedNumber === null && state.chordPlan.length > 0) {
             adaptedNumber = adaptNumberToChord(
               melodyEvent.originalNumber,
               chord.note,
@@ -2193,10 +2128,18 @@ function playMelodyNumber(time, number, instrumentType) {
           const folder = MELODY_INSTRUMENTS[instrument];
           if (folder) {
             const noteName = NUM_TO_NAME[adaptedNumber];
-            const url = `${folder}/${adaptedNumber}${noteName}.mp3`;
-            const buf = state.buffers.melody[url];
+            // Tenta com sufixo
+            let url = `${folder}/${adaptedNumber}${noteName}.mp3`;
+            let buf = state.buffers.melody[url];
+            // Tenta sem sufixo
+            if (!buf) {
+              url = `${folder}/${adaptedNumber}.mp3`;
+              buf = state.buffers.melody[url];
+            }
             if (buf) {
               scheduleSample(buf, currentTime, melodyGain, 'melody');
+            } else {
+              console.warn(`[WAV Render] Sample não encontrado: ${url}`);
             }
           }
         } else if (melodyEvent && melodyEvent.type === 'mute') {
@@ -2251,7 +2194,6 @@ function playMelodyNumber(time, number, instrumentType) {
       ui.pause.addEventListener('click', onPause);
       ui.stop.addEventListener('click', onStop);
       ui.previous.addEventListener('click', onPrevious); // Novo listener
-      
       // Conectar botões de mute aos instrumentos
 ui.muteBass.addEventListener("click", () => toggleMute(ui.muteBass, "bass", "Baixo", "🎸"));
 ui.muteDrums.addEventListener("click", () => toggleMute(ui.muteDrums, "drums", "Bateria", "🥁"));
@@ -2261,23 +2203,19 @@ ui.mutePianoString.addEventListener("click", () => toggleMute(ui.mutePianoString
 ui.muteGuitarraEcho.addEventListener("click", () => toggleMute(ui.muteGuitarraEcho, "guitarraEcho", "Echo", "🎸"));
 ui.muteGuitarraLimpaDedilhada.addEventListener("click", () => toggleMute(ui.muteGuitarraLimpaDedilhada, "guitarraLimpaDedilhada", "Dedilhada", "🎸"));
 ui.muteOrgao.addEventListener("click", () => toggleMute(ui.muteOrgao, "orgao", "Órgão", "🎹"));
-
       ui.btnMelodyAdd.addEventListener('click', addMelodyBlock);
       ui.btnMelodyClear.addEventListener('click', clearMelodyBlocks);
-      
       // Novo botão para abrir a composição manual
       if (ui.btnOpenManual) {
         ui.btnOpenManual.addEventListener('click', () => {
           window.open('jam-on-composicao-manual.html', '_blank');
         });
       }
-      
       // Inicializa os botões de guitarra e órgão
       const guitarButtons = [
         ui.guitar1, ui.guitar2, ui.guitar3, ui.guitar4, ui.guitar5, 
         ui.guitarEcho, ui.guitarLimpaDedilhada, ui.organ
       ];
-      
       guitarButtons.forEach(btn => {
         if (btn) {
           btn.addEventListener('click', function() {
@@ -2301,12 +2239,10 @@ ui.muteOrgao.addEventListener("click", () => toggleMute(ui.muteOrgao, "orgao", "
           });
         }
       });
-      
       // Inicializa o number picker para mobile
       if (isMobileDevice()) {
         initializeNumberPicker();
       }
-      
       // Habilita todos os botões após o carregamento
       const buttons = document.querySelectorAll('button');
       buttons.forEach(btn => {
