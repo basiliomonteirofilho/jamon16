@@ -1519,9 +1519,10 @@ function scheduleStep() {
     }
     const instrument = melodyEvent.instrument;
     
-    // Determina se é uma nota isolada com base no tempo desde a última nota
-    const timeSinceLastNote = time - lastMelodyTime;
-    const isIsolatedNote = timeSinceLastNote > melodyTimingThreshold;
+    // Determina se é uma nota isolada (última nota da melodia)
+    const nextStepIdx = (stepIdx + 1) % state.melodyPlan.length;
+    const nextMelodyEvent = state.melodyPlan[nextStepIdx];
+    const isLastNote = !nextMelodyEvent || nextMelodyEvent.type !== 'start';
     
     // Atualiza o tempo da última nota
     lastMelodyTime = time;
@@ -1531,12 +1532,13 @@ function scheduleStep() {
       const currentChordIndex = Math.floor(stepIdx / sixteenthsPerBar) % state.chordPlan.length;
       const currentChord = state.chordPlan[currentChordIndex];
       
+      // Adapta a nota ao acorde atual, especialmente se for uma nota isolada
       melodyEvent.adaptedNumber = adaptNumberToChord(
         number,
         currentChord.note,
         currentChord.type,
         state.lastMelodyNote,
-        isIsolatedNote  // Novo parâmetro
+        isLastNote  // Novo parâmetro - trata como nota isolada se for a última
       );
       
       number = melodyEvent.adaptedNumber;
