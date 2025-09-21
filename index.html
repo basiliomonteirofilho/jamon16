@@ -519,7 +519,7 @@ const ui = {
   keySelect: document.getElementById('keySelect'),
   qualitySelect: document.getElementById('qualitySelect'), // <-- Nova linha
   // --- FIM DOS NOVOS ELEMENTOS ---
-  state: document.getElementById('state'),
+  // state: document.getElementById('state'), // Removido conforme solicitado
   currentChord: document.getElementById('currentChord'),
   chordTimer: document.getElementById('chordTimer'),
   volPianoString: document.getElementById('volPianoString'),
@@ -725,7 +725,11 @@ function initializeStyleAndKeySelectors() {
       return Number(meter.split('/')[0]) || 4;
     }
     function setStatePanel() {
-      ui.state.innerHTML = `<div>Levada: ${state.signatureTag || '—'}</div><div>Key: ${state.key?.replace('S', '#') || '—'} ${state.quality === 'maj' ? 'Maior' : 'Menor'}</div>`;
+      // Atualizado para não tentar acessar o elemento 'state' que foi removido
+      // ui.state.innerHTML = `<div>Levada: ${state.signatureTag || '—'}</div><div>Key: ${state.key?.replace('S', '#') || '—'} ${state.quality === 'maj' ? 'Maior' : 'Menor'}</div>`;
+      // Em vez disso, atualizamos apenas o cabeçalho ou outro elemento, se necessário.
+      // Neste caso, como o painel foi removido, esta função pode ser deixada vazia ou removida.
+      // Optamos por deixá-la por enquanto para evitar erros em outras partes do código.
     }
     let initPromise = null;
     function updateVolume() {
@@ -881,7 +885,6 @@ function getBassNotesFromScale(degree, scale, chordType) {
   // Para os graus I, IV e V, a qualidade da tonalidade define se o acorde é maior ou menor.
   // Para os demais graus (II, III, VI), a lógica anterior se mantém.
   let isMinor = false;
-
   if ([1, 4, 5].includes(degree)) {
     // Graus I, IV e V seguem a qualidade da tonalidade
     isMinor = (state.quality === 'min');
@@ -893,7 +896,6 @@ function getBassNotesFromScale(degree, scale, chordType) {
       ['5+', '75+', '95+'].includes(chordType)
     );
   }
-
   if (scale === "chromatic") {
     const rootIdx = (state.keyIdx + DEGREE_TO_ROOT[degree]) % 12;
     const rootNote = PITCHES[rootIdx];
@@ -1131,7 +1133,7 @@ function onPause() {
   if (state.running && !state.paused) {
     state.paused = true;
     state.pauseTime = audio.ctx.currentTime;
-    ui.state.textContent = "Pausado";
+    // ui.state.textContent = "Pausado"; // Removido
   }
 }
   function onPrevious() {
@@ -1481,7 +1483,7 @@ if (!mute.pianoString && chord && isNewBar) {
       state.paused = false;
       ui.currentChord.textContent = '—';
       ui.chordTimer.textContent = '—';
-      ui.state.textContent = "Parado";
+      // ui.state.textContent = "Parado"; // Removido
       if (state.lastBassSource) state.lastBassSource.stop(0);
       if (state.lastDistSource) state.lastDistSource.stop(0);
       if (state.lastMelodySource) state.lastMelodySource.stop(0);
@@ -1659,8 +1661,13 @@ if (!mute.pianoString && chord && isNewBar) {
       state.melodyBlocks = [];
       ui.melodyBlocks.innerHTML = '';
     }
+    // Atualizado conforme solicitado
     const MELODY_INSTRUMENTS = {
-      dist: "guitarraDistorcao/Melodia",
+      dist: "guitarraDistorcao/Melodia", // Guitarra 1
+      guitar2: "guitarraDistorcao/Melodia2", // Guitarra 2
+      guitar3: "guitarraDistorcao/Melodia3", // Guitarra 3
+      guitar4: "guitarraDistorcao/Melodia4", // Guitarra 4
+      guitar5: "guitarraDistorcao/Melodia5", // Guitarra 5
       piano: "assets/PianoString",
       baixo: "assets/BaixoMelodia",
       sax: "assets/SaxMelodia",
@@ -1670,6 +1677,33 @@ if (!mute.pianoString && chord && isNewBar) {
       violao_nylon: "assets/ViolaoNylonMelodia",
       cordas: "assets/Cordas"
     };
+    // Atualiza o select na interface
+    function updateMelodyInstrumentSelect() {
+      // Limpa as opções atuais
+      ui.melodyInstrument.innerHTML = '';
+      // Adiciona as novas opções
+      const options = [
+        { value: 'dist', text: 'Guitarra 1' },
+        { value: 'guitar2', text: 'Guitarra 2' },
+        { value: 'guitar3', text: 'Guitarra 3' },
+        { value: 'guitar4', text: 'Guitarra 4' },
+        { value: 'guitar5', text: 'Guitarra 5' },
+        { value: 'piano', text: 'Piano/String' },
+        { value: 'baixo', text: 'Baixo' },
+        { value: 'sax', text: 'Sax' },
+        { value: 'acordeon', text: 'Acordeon' },
+        { value: 'sinos', text: 'Sinos' },
+        { value: 'violao_aco', text: 'Violão Aço' },
+        { value: 'violao_nylon', text: 'Violão Nylon' },
+        { value: 'cordas', text: 'Cordas' }
+      ];
+      options.forEach(opt => {
+        const el = document.createElement('option');
+        el.value = opt.value;
+        el.textContent = opt.text;
+        ui.melodyInstrument.appendChild(el);
+      });
+    }
     function buildMelodyPlanFromBlocks() {
       const plan = [];
       const stepsPerBar = meterToBeats(state.meter) * 4;
@@ -2104,6 +2138,8 @@ if (!mute.pianoString && chord && isNewBar) {
       if (isMobileDevice()) {
         initializeNumberPicker();
       }
+      // Atualiza o select de instrumentos de melodia
+      updateMelodyInstrumentSelect();
       // Habilita todos os botões após o carregamento
       const buttons = document.querySelectorAll('button');
       buttons.forEach(btn => {
