@@ -1421,34 +1421,37 @@ function degreeToChord(keyIdx, quality, degree) {
 function scheduleStep(stepIdx, time) {
   const chord = state.chordPlan[stepIdx % state.chordPlan.length];
   // ===== Baixo =====
-  if (!mute.bass && state.bassPlan[stepIdx]) {
-    const note = state.bassPlan[stepIdx];
-    const url = `baixo/${note}.mp3`;
-    const buf = state.buffers.bass?.[url];
-    if (buf) {
-      const src = audio.ctx.createBufferSource();
-      src.buffer = buf;
-      src.connect(audio.bassGain);
-      src.start(time);
-    }
+  // ===== Baixo =====
+if (!mute.bass && state.bassPlan[stepIdx]) {
+  const note = state.bassPlan[stepIdx];
+  // CORREÇÃO: Acessa o buffer diretamente pela chave 'note', não por uma URL montada
+  const buf = state.buffers.bass?.[note];
+  if (buf) {
+    const src = audio.ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(audio.bassGain);
+    src.start(time);
   }
-  // ===== Bateria =====
-  if (!mute.drums && state.drumSeq[stepIdx]) {
-    const drum = state.drumSeq[stepIdx];
-    const url = `drums/${drum}.mp3`;
-    const buf = state.buffers.drums?.[url];
-    if (buf) {
-      const src = audio.ctx.createBufferSource();
-      src.buffer = buf;
-      src.connect(audio.drumGain);
-      src.start(time);
-    }
+}
+
+// ===== Bateria =====
+if (!mute.drums && state.drumSeq[stepIdx]) {
+  const drum = state.drumSeq[stepIdx];
+  // CORREÇÃO: Acessa o buffer diretamente pela chave 'drum', não por uma URL montada
+  const buf = state.buffers.drums?.[drum];
+  if (buf) {
+    const src = audio.ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(audio.drumGain);
+    src.start(time);
   }
-  // ===== Harmonia =====
-  if (chord) {
-    // guitarra limpa
-    if (!mute.clean) {
-      const url = `guitarraLimpa/${chord.note}/${chord.note}${chord.type || ""}.mp3`;
+}
+
+// ===== Harmonia =====
+if (chord) {
+  // guitarra limpa
+  if (!mute.clean) {
+    const url = `guitarraLimpa/${chord.note}/${chord.note}${chord.type || ""}.mp3`;
       const buf = state.buffers.guitar?.[url];
       if (buf) {
         const src = audio.ctx.createBufferSource();
