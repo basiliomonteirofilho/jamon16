@@ -1860,32 +1860,101 @@ function scheduleStep() {
       guitarLimpaDedilhada: "assets/GuitarraLimpaDedilhadaMelodia",
       organ: "assets/OrgaoMelodia"
     };
-    function buildMelodyPlanFromBlocks() {
-      const plan = [];
-      const stepsPerBar = meterToBeats(state.meter) * 4;
-      for (const block of state.melodyBlocks) {
-        const inputs = block.querySelectorAll('input');
-        inputs.forEach((input, step) => {
-          const value = input.value.trim();
-          if (value === '') {
-            plan.push(null);
-          } else if (value.toLowerCase() === 'x') {
-            plan.push({ type: 'mute' });
-          } else {
-            const num = parseInt(value, 10);
-            if (!isNaN(num) && num >= 1 && num <= 49) {
-              plan.push({
-                type: 'start',
-                originalNumber: num,
-                adaptedNumber: null,
-                instrument: ui.melodyInstrument.value
-              });
-            }
-          }
-        });
-      }
-      state.melodyPlan = plan;
+
+function getChordNotes(chord) {
+  const rootIdx = PITCHES.indexOf(chord.note);
+  if (rootIdx === -1) return [chord.note];
+
+  let intervals;
+  if (chord.type.startsWith('m')) {
+    intervals = [0, 3, 7]; // tríade menor
+  } else if (chord.type.includes('dim')) {
+    intervals = [0, 3, 6]; // tríade diminuta
+  } else {
+    intervals = [0, 4, 7]; // tríade maior
+  }
+
+  return intervals.map(semi => PITCHES[(rootIdx + semi) % 12]);
+}
+
+function adaptNoteToChord(note, chord) {
+  if (!note || note === "x" || !chord) return note;
+
+  const chordNotes = getChordNotes(chord);
+
+  // pega só a nota sem oitava
+  const base = note.replace(/[0-9]/g, "");
+  if (chordNotes.includes(base)) {
+    return note; // já pertence ao acorde
+  }
+
+  // ajusta para a nota mais próxima do acorde
+  let idx = PITCHES.indexOf(base);
+  if (idx === -1) return chordNotes[0];
+
+  let best = chordNotes[0];
+  let bestDist = 12;
+  for (const cn of chordNotes) {
+    let dist = Math.abs(PITCHES.indexOf(cn) - idx);
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = cn;
     }
+  }
+  return best;
+}
+
+   function buildMelodyPlanFromBlocks() {
+  state.melodyPlan = [];
+  const blocks = state.melodyBlocks;
+
+  let stepIndex = 0;
+  for (let b = 0; b < blocks.length; b++) {
+    const block = blocks[b];
+    const rows = block.querySelectorAll("tr");
+    let blockNotes = [];
+
+    rows.forEach((row, rowIdx) => {
+      const cells = row.querySelectorAll("input");
+      cells.forEach((cell, colIdx) => {
+        let val = cell.value.trim();
+        if (val === "") {
+          blockNotes.push(state.lastMelodyNote || "x");
+          return;
+        }
+        if (val.toLowerCase() === "x") {
+          blockNotes.push("x");
+          state.lastMelodyNote = null;
+          return;
+        }
+
+        // converte número para nota
+        let noteNum = parseInt(val);
+        let noteName = numberToPitch(noteNum);
+
+        // pega acorde atual
+        const chord = state.chordPlan[Math.floor(stepIndex / (state.bassPlan.length / state.chordPlan.length))];
+
+        // adapta a nota para o acorde
+        let finalNote = adaptNoteToChord(noteName, chord);
+
+        blockNotes.push(finalNote);
+        state.lastMelodyNote = finalNote;
+
+        stepIndex++;
+      });
+    });
+
+    // 🔹 força a última nota do bloco a estar no acorde
+    if (blockNotes.length > 0) {
+      let lastIdx = blockNotes.length - 1;
+      let chord = state.chordPlan[Math.floor(stepIndex / (state.bassPlan.length / state.chordPlan.length))];
+      blockNotes[lastIdx] = adaptNoteToChord(blockNotes[lastIdx], chord);
+    }
+
+    state.melodyPlan.push(...blockNotes);
+  }
+}
   async function ensureMelodySamplesNeeded() {
   if (!state.melodyPlan || state.melodyPlan.length === 0) return;
   const promises = [];
