@@ -1178,172 +1178,89 @@ async function loadBuffer(url) {
       osc.start(time);
       osc.stop(time + 0.07);
     }
-
-async function onPlay() {
-  if (state.running && !state.paused) return;
-  try {
-    if (!audio.ctx) {
-      await initAudio();
-    }
-    if (audio.ctx.state === "suspended") {
-      await audio.ctx.resume();
-    }
-  } catch (e) {
-    console.error('Falha ao inicializar áudio:', e);
-    alert('Erro ao iniciar o sistema de áudio. Recarregue a página e clique em Play.');
-    return;
-  }
-
-  // >>>>> CORREÇÃO ADICIONADA AQUI <<<<<
-  // Força a atualização de TODOS os ganhos no início do playback
-  Object.keys(mute).forEach(instrument => {
-    let gainNode = null;
-    switch(instrument) {
-      case 'bass': gainNode = audio.bassGain; break;
-      case 'drums': gainNode = audio.drumGain; break;
-      case 'clean': gainNode = audio.cleanGain; break;
-      case 'dist': gainNode = audio.distGain; break;
-      case 'pianoString': gainNode = audio.pianoStringGain; break;
-      case 'guitarraEcho': gainNode = audio.guitarraEchoGain; break;
-      case 'guitarraLimpaDedilhada': gainNode = audio.guitarraLimpaDedilhadaGain; break;
-      case 'orgao': gainNode = audio.orgaoGain; break;
-      case 'melody': gainNode = audio.melodyGain; break;
-    }
-    if (gainNode && audio.ctx) {
-      if (mute[instrument]) {
-        gainNode.gain.setValueAtTime(0, audio.ctx.currentTime);
-      } else {
-        // Restaura o volume do slider correspondente
-        const sliderId = `vol${instrument.charAt(0).toUpperCase() + instrument.slice(1)}`;
-        const slider = document.getElementById(sliderId);
-        if (slider) {
-          const sliderValue = parseFloat(slider.value);
-          gainNode.gain.setValueAtTime(sliderValue, audio.ctx.currentTime);
-        }
-      }
-    }
-  });
-  // >>>>> FIM DA CORREÇÃO <<<<<
-
-  // Se estiver pausado, retoma de onde parou
-  if (state.paused) {
-    state.paused = false;
-    state.running = true;
-    const currentTime = audio.ctx.currentTime;
-    const timeSincePause = currentTime - state.pauseTime;
-    state.nextNoteTime = state.nextNoteTime + timeSincePause;
-    startScheduler();
-    return;
-  }
-
-  // Salva o playback atual ANTES de gerar um novo
-  if (state.bassPlan.length > 0 && state.chordPlan.length > 0) {
-    if (!state.previousPlaybacks) state.previousPlaybacks = [];
-    state.previousPlaybacks.push({
-      bassPlan: [...state.bassPlan],
-      chordPlan: [...state.chordPlan],
-      drumSeq: [...state.drumSeq],
-      melodyPlan: [...state.melodyPlan],
-      currentGroove: {...state.currentGroove},
-      meter: state.meter,
-      bpm: state.bpm,
-      key: state.key,
-      keyIdx: state.keyIdx,
-      quality: state.quality,
-      signatureTag: state.signatureTag,
-      chordProgression: [...state.chordProgression]
-    });
-  }
-
-  // Agora inicia um novo playback
-  state.bpm = Number(ui.bpm.value) || 100;
-  state.sixteenthDur = 60 / state.bpm / 4;
-  try {
-    await buildBassAndChordPlan();
-  } catch (e) {
-    console.error('Erro ao gerar plano de baixo/acordes:', e);
-    alert('Erro ao gerar a progressão musical. Tente novamente.');
-    return;
-  }
-  try {
-    buildMelodyPlanFromBlocks();
-    await ensureMelodySamplesNeeded();
-  } catch (e) {
-    console.error('Erro na melodia:', e);
-  }
-
-  state.running = true;
-  state.paused = false;
-  state.stepIndex = 0;
-  state.nextNoteTime = audio.ctx.currentTime + 0.05;
-  startScheduler();
-  console.log('Playback iniciado. BPM:', state.bpm, 'Metro:', state.meter);
-}
+async function onPlay()
 function onPause() {
   if (state.running && !state.paused) {
     state.paused = true;
     state.pauseTime = audio.ctx.currentTime;
   }
 }
-  function onPrevious() {
+function onPrevious() {
   if (!state.previousPlaybacks || state.previousPlaybacks.length === 0) {
     alert('Nenhum playback anterior disponível.');
     return;
   }
+  
   // Recupera o último playback salvo
   const prev = state.previousPlaybacks.pop();
-  // Salva o atual antes de trocar (para permitir "Avançar" futuramente se quiser)
+  
+  // Salva o atual antes de trocar
   if (!state.nextPlaybacks) state.nextPlaybacks = [];
-state.nextPlaybacks.push({
-  bassPlan: Array.isArray(state.bassPlan) ? [...state.bassPlan] : state.bassPlan,
-  chordPlan: Array.isArray(state.chordPlan) ? [...state.chordPlan] : state.chordPlan,
-  drumSeq: Array.isArray(state.drumSeq) ? [...state.drumSeq] : state.drumSeq,
-  melodyPlan: Array.isArray(state.melodyPlan) ? [...state.melodyPlan] : state.melodyPlan,
-  currentGroove: state.currentGroove ? { ...state.currentGroove } : null,
-  meter: state.meter,
-  bpm: state.bpm,
-  key: state.key,
-  keyIdx: state.keyIdx,
-  quality: state.quality,
-  signatureTag: state.signatureTag,
-  chordProgression: Array.isArray(state.chordProgression) ? [...state.chordProgression] : state.chordProgression
-});
-// ao restaurar (use prev, não .prev)
-state.bassPlan = Array.isArray(prev.bassPlan) ? [...prev.bassPlan] : prev.bassPlan;
-state.chordPlan = Array.isArray(prev.chordPlan) ? [...prev.chordPlan] : prev.chordPlan;
-state.drumSeq = Array.isArray(prev.drumSeq) ? [...prev.drumSeq] : prev.drumSeq;
-state.melodyPlan = Array.isArray(prev.melodyPlan) ? [...prev.melodyPlan] : prev.melodyPlan;
-state.currentGroove = prev.currentGroove ? { ...prev.currentGroove } : null;
-state.meter = prev.meter;
-state.bpm = prev.bpm;
+  state.nextPlaybacks.push({
+    bassPlan: Array.isArray(state.bassPlan) ? [...state.bassPlan] : state.bassPlan,
+    chordPlan: Array.isArray(state.chordPlan) ? [...state.chordPlan] : state.chordPlan,
+    drumSeq: Array.isArray(state.drumSeq) ? [...state.drumSeq] : state.drumSeq,
+    melodyPlan: Array.isArray(state.melodyPlan) ? [...state.melodyPlan] : state.melodyPlan,
+    currentGroove: state.currentGroove ? { ...state.currentGroove } : null,
+    meter: state.meter,
+    bpm: state.bpm,
+    key: state.key,
+    keyIdx: state.keyIdx,
+    quality: state.quality,
+    signatureTag: state.signatureTag,
+    chordProgression: Array.isArray(state.chordProgression) ? [...state.chordProgression] : state.chordProgression
+  });
+  
+  // Restaura o playback anterior
+  state.bassPlan = Array.isArray(prev.bassPlan) ? [...prev.bassPlan] : prev.bassPlan;
+  state.chordPlan = Array.isArray(prev.chordPlan) ? [...prev.chordPlan] : prev.chordPlan;
+  state.drumSeq = Array.isArray(prev.drumSeq) ? [...prev.drumSeq] : prev.drumSeq;
+  state.melodyPlan = Array.isArray(prev.melodyPlan) ? [...prev.melodyPlan] : prev.melodyPlan;
+  state.currentGroove = prev.currentGroove ? { ...prev.currentGroove } : null;
+  state.meter = prev.meter;
+  state.bpm = prev.bpm;
   state.key = prev.key;
   state.keyIdx = prev.keyIdx;
   state.quality = prev.quality;
   state.signatureTag = prev.signatureTag;
-  state.chordProgression = [...prev.chordProgression];
+  state.chordProgression = Array.isArray(prev.chordProgression) ? [...prev.chordProgression] : prev.chordProgression;
+  
   // Atualiza a interface
   ui.bpm.value = state.bpm;
   ui.meter.value = state.meter;
+  
   const progEl = document.getElementById('chordProgression');
-  if (progEl && state.chordPlan.length > 0) {
+  if (progEl && state.chordPlan && state.chordPlan.length > 0) {
     const chordLabels = state.chordPlan.map(ch => ch.displayed);
     progEl.innerHTML = chordLabels
       .map((label, i) => `<span class="chord-item" data-index="${i}">${label}</span>`)
       .join(' ');
   }
+  
   // Inicia o playback restaurado
   onPlay();
 }
-    function scheduler() {
+
+ function scheduler() {
   if (!state.running || state.paused) return;
+  
   const lookahead = 0.20;
   const currentTime = audio.ctx.currentTime;
+  
   while (state.nextNoteTime < currentTime + lookahead) {
     const stepIdx = state.stepIndex;
     const time = state.nextNoteTime;
-    scheduleStep(stepIdx, time); // Passar os parâmetros corretos
+    
+    // Chama scheduleStep com os parâmetros corretos
+    scheduleStep(stepIdx, time);
+    
     state.stepIndex++;
     state.nextNoteTime += state.sixteenthDur;
+    
+    // Verifica se chegou ao final da progressão
+    if (state.stepIndex >= state.bassPlan.length) {
+      state.stepIndex = 0; // Reinicia do início
+    }
   }
 }
 function startScheduler() {
@@ -2437,14 +2354,14 @@ function stopMelodyAt(time) {
       await renderAndDownloadWAV(duration);
     });
     // ===== INICIALIZAÇÃO =====
-   function initializeApp() {
+  function initializeApp() {
   // Event listeners
   ui.play.addEventListener('click', onPlay);
   ui.pause.addEventListener('click', onPause);
   ui.stop.addEventListener('click', onStop);
   ui.previous.addEventListener('click', onPrevious);
 
-  // CORREÇÃO: Conectar botões de mute corretamente
+  // Conectar botões de mute corretamente
   ui.muteBass.addEventListener("click", () => toggleMute(ui.muteBass, "bass"));
   ui.muteDrums.addEventListener("click", () => toggleMute(ui.muteDrums, "drums"));
   ui.muteClean.addEventListener("click", () => toggleMute(ui.muteClean, "clean"));
@@ -2454,12 +2371,13 @@ function stopMelodyAt(time) {
   ui.muteGuitarraLimpaDedilhada.addEventListener("click", () => toggleMute(ui.muteGuitarraLimpaDedilhada, "guitarraLimpaDedilhada"));
   ui.muteOrgao.addEventListener("click", () => toggleMute(ui.muteOrgao, "orgao"));
 
-  // CORREÇÃO: Atualizar estado visual inicial dos botões de mute
+  // Atualizar estado visual inicial dos botões de mute
   Object.keys(mute).forEach(instrument => {
     const button = document.getElementById(`mute${instrument.charAt(0).toUpperCase() + instrument.slice(1)}`);
     if (button) {
-      button.setAttribute('data-mute', mute[instrument] ? 'on' : 'off'); // <-- LINHA CRUCIAL: DESCOMENTADA
+      button.setAttribute('data-mute', mute[instrument] ? 'on' : 'off');
       button.classList.toggle('muted', mute[instrument]);
+      
       // Atualizar ícone inicial
       const label = button.textContent.replace(/[🔇🎸🥁🔥🎹]/g, '').trim();
       if (mute[instrument]) {
@@ -2474,38 +2392,10 @@ function stopMelodyAt(time) {
     }
   });
 
-  // ===== CORREÇÃO FINAL: Força a atualização de TODOS os ganhos após a inicialização da UI =====
-  Object.keys(mute).forEach(instrument => {
-    let gainNode = null;
-    switch(instrument) {
-      case 'bass': gainNode = audio.bassGain; break;
-      case 'drums': gainNode = audio.drumGain; break;
-      case 'clean': gainNode = audio.cleanGain; break;
-      case 'dist': gainNode = audio.distGain; break;
-      case 'pianoString': gainNode = audio.pianoStringGain; break;
-      case 'guitarraEcho': gainNode = audio.guitarraEchoGain; break;
-      case 'guitarraLimpaDedilhada': gainNode = audio.guitarraLimpaDedilhadaGain; break;
-      case 'orgao': gainNode = audio.orgaoGain; break;
-      case 'melody': gainNode = audio.melodyGain; break;
-    }
-    if (gainNode && audio.ctx) {
-      if (mute[instrument]) {
-        gainNode.gain.setValueAtTime(0, audio.ctx.currentTime);
-      } else {
-        // Restaura o volume do slider correspondente
-        const sliderId = `vol${instrument.charAt(0).toUpperCase() + instrument.slice(1)}`;
-        const slider = document.getElementById(sliderId);
-        if (slider) {
-          const sliderValue = parseFloat(slider.value);
-          gainNode.gain.setValueAtTime(sliderValue, audio.ctx.currentTime);
-        }
-      }
-    }
-  });
-
   // Continuação da inicialização
   ui.btnMelodyAdd.addEventListener('click', addMelodyBlock);
   ui.btnMelodyClear.addEventListener('click', clearMelodyBlocks);
+  
   if (ui.btnOpenManual) {
     ui.btnOpenManual.addEventListener('click', () => {
       window.open('jam-on-composicao-manual.html', '_blank');
@@ -2514,31 +2404,31 @@ function stopMelodyAt(time) {
 
   // Inicializa os botões de guitarra e órgão
   const guitarButtons = [
-    ui.guitar1, ui.guitar2, ui.guitar3, ui.guitar4, ui.guitar5, 
     ui.guitarEcho, ui.guitarLimpaDedilhada, ui.organ
-  ];
+  ].filter(btn => btn !== null); // Filtra elementos nulos
+  
   guitarButtons.forEach(btn => {
-    if (btn) {
-      btn.addEventListener('click', function() {
-        const instrument = this.dataset.instrument;
-        // Desativa todos os botões
-        guitarButtons.forEach(b => {
-          if (b) b.classList.remove('active');
-        });
-        // Ativa o botão clicado
-        this.classList.add('active');
-        // Atualiza o select de instrumento
-        ui.melodyInstrument.value = instrument;
-        // Atualiza o estado da melodia
+    btn.addEventListener('click', function() {
+      const instrument = this.dataset.instrument;
+      // Desativa todos os botões
+      guitarButtons.forEach(b => {
+        b.classList.remove('active');
+      });
+      // Ativa o botão clicado
+      this.classList.add('active');
+      // Atualiza o select de instrumento
+      ui.melodyInstrument.value = instrument;
+      // Atualiza o estado da melodia
+      if (state.melodyPlan) {
         state.melodyPlan.forEach(event => {
           if (event && event.type === 'start') {
             event.instrument = instrument;
           }
         });
-        // Carrega os samples necessários
-        ensureMelodySamplesNeeded();
-      });
-    }
+      }
+      // Carrega os samples necessários
+      ensureMelodySamplesNeeded();
+    });
   });
 
   // Inicializa o number picker para mobile
@@ -2554,55 +2444,56 @@ function stopMelodyAt(time) {
   });
 }
 
-    function getBassNotesFromScale(degree, scale, chordType) {
-      // Determina se o acorde DEVE ser menor com base na qualidade da tonalidade
-      // Para os graus I, IV e V, a qualidade da tonalidade define se o acorde é maior ou menor.
-      // Para os demais graus (II, III, VI), a lógica anterior se mantém.
-      let isMinor = false;
-      if ([1, 4, 5].includes(degree)) {
-        // Graus I, IV e V seguem a qualidade da tonalidade
-        isMinor = (state.quality === 'min');
+   function getBassNotesFromScale(degree, scale, chordType) {
+  // Determina se o acorde DEVE ser menor com base na qualidade da tonalidade
+  let isMinor = false;
+  if ([1, 4, 5].includes(degree)) {
+    // Graus I, IV e V seguem a qualidade da tonalidade
+    isMinor = (state.quality === 'min');
+  } else {
+    // Graus II, III, VI, VII usam a lógica baseada no chordType
+    isMinor = (
+      chordType.startsWith('m') ||
+      chordType.includes('dim') ||
+      ['5+', '75+', '95+'].includes(chordType)
+    );
+  }
+  
+  if (scale === "chromatic") {
+    const rootIdx = (state.keyIdx + DEGREE_TO_ROOT[degree]) % 12;
+    const rootNote = PITCHES[rootIdx];
+    const octave = 8;
+    return Array(8).fill().map((_, i) => {
+      const noteIdx = (rootIdx - i + 12) % 12;
+      const p = PITCHES[noteIdx];
+      return p.endsWith('S') ? `${p.replace('S', '')}${octave}S` : `${p}${octave}`;
+    });
+  }
+  
+  if (Array.isArray(scale)) {
+    const rootIdx = (state.keyIdx + DEGREE_TO_ROOT[degree]) % 12;
+    return scale.map(interval => {
+      let intervalOffset;
+      if (isMinor) {
+        const minorIntervals = { 1: 0, 2: 2, 3: 3, 4: 5, 5: 7, 6: 8, 7: 10, 8: 12 };
+        intervalOffset = minorIntervals[interval] || 0;
       } else {
-        // Graus II, III, VI, VII usam a lógica baseada no chordType
-        isMinor = (
-          chordType.startsWith('m') ||
-          chordType.includes('dim') ||
-          ['5+', '75+', '95+'].includes(chordType)
-        );
+        const majorIntervals = { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11, 8: 12 };
+        intervalOffset = majorIntervals[interval] || 0;
       }
-      if (scale === "chromatic") {
-        const rootIdx = (state.keyIdx + DEGREE_TO_ROOT[degree]) % 12;
-        const rootNote = PITCHES[rootIdx];
-        const octave = 8;
-        return Array(8).fill().map((_, i) => {
-          const noteIdx = (rootIdx - i + 12) % 12;
-          const p = PITCHES[noteIdx];
-          return p.endsWith('S') ? `${p.replace('S', '')}${octave}S` : `${p}${octave}`;
-        });
+      const noteIdx = (rootIdx + intervalOffset) % 12;
+      const octave = interval === 1 ? '' : '8';
+      const noteName = PITCHES[noteIdx];
+      if (interval === 1) {
+        return noteName;
+      } else {
+        return noteName.endsWith('S') ? `${noteName.replace('S', '')}${octave}S` : `${noteName}${octave}`;
       }
-      if (Array.isArray(scale)) {
-        const rootIdx = (state.keyIdx + DEGREE_TO_ROOT[degree]) % 12;
-        return scale.map(interval => {
-          let intervalOffset;
-          if (isMinor) {
-            const minorIntervals = { 1: 0, 2: 2, 3: 3, 4: 5, 5: 7, 6: 8, 7: 10, 8: 12 };
-            intervalOffset = minorIntervals[interval] || 0;
-          } else {
-            const majorIntervals = { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11, 8: 12 };
-            intervalOffset = majorIntervals[interval] || 0;
-          }
-          const noteIdx = (rootIdx + intervalOffset) % 12;
-          const octave = interval === 1 ? '' : '8';
-          const noteName = PITCHES[noteIdx];
-          if (interval === 1) {
-            return noteName;
-          } else {
-            return noteName.endsWith('S') ? `${noteName.replace('S', '')}${octave}S` : `${noteName}${octave}`;
-          }
-        });
-      }
-      return [PITCHES[(state.keyIdx + DEGREE_TO_ROOT[degree]) % 12]];
-    }
+    });
+  }
+  
+  return [PITCHES[(state.keyIdx + DEGREE_TO_ROOT[degree]) % 12]];
+}
 
   </script>
 </body>
