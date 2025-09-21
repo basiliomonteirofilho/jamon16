@@ -2320,6 +2320,7 @@ function stopMelodyAt(time) {
         }
       }
       // ===== MELODIA =====
+           // ===== MELODIA =====
       if (state.melodyPlan.length > 0) {
         const melodyEvent = state.melodyPlan[stepIdx % state.melodyPlan.length];
         if (melodyEvent && melodyEvent.type === 'start') {
@@ -2345,16 +2346,20 @@ function stopMelodyAt(time) {
               buf = state.buffers.melody[url];
             }
             if (buf) {
+              // CORREÇÃO: Usa a função scheduleSample para garantir que o sample anterior seja mutado
               scheduleSample(buf, currentTime, melodyGain, 'melody');
             } else {
               console.warn(`[WAV Render] Sample não encontrado: ${url}`);
             }
           }
         } else if (melodyEvent && melodyEvent.type === 'mute') {
+          // CORREÇÃO: Para o sample de melodia atual ao encontrar um evento de mute
           if (lastSources.melody) {
             try {
               lastSources.melody.stop(currentTime);
-            } catch (e) {}
+            } catch (e) {
+              console.warn('Erro ao parar melodia no mute:', e);
+            }
             lastSources.melody = null;
           }
         }
@@ -2412,24 +2417,25 @@ function stopMelodyAt(time) {
       ui.muteGuitarraLimpaDedilhada.addEventListener("click", () => toggleMute(ui.muteGuitarraLimpaDedilhada, "guitarraLimpaDedilhada"));
       ui.muteOrgao.addEventListener("click", () => toggleMute(ui.muteOrgao, "orgao"));
       // CORREÇÃO: Atualizar estado visual inicial dos botões de mute
-      Object.keys(mute).forEach(instrument => {
-        const button = document.getElementById(`mute${instrument.charAt(0).toUpperCase() + instrument.slice(1)}`);
-        if (button) {
-          button.setAttribute('data-mute', mute[instrument] ? 'on' : 'off');
-          button.classList.toggle('muted', mute[instrument]);
-          // Atualizar ícone inicial
-          const label = button.textContent.replace(/[🔇🎸🥁🔥🎹]/g, '').trim();
-          if (mute[instrument]) {
-            button.textContent = `🔇 ${label}`;
-          } else {
-            let icon = "🎸";
-            if (instrument === 'drums') icon = "🥁";
-            if (instrument === 'dist') icon = "🔥";
-            if (instrument === 'pianoString' || instrument === 'orgao') icon = "🎹";
-            button.textContent = `${icon} ${label}`;
-          }
-        }
-      });
+     // CORREÇÃO: Atualizar estado visual inicial dos botões de mute
+Object.keys(mute).forEach(instrument => {
+  const button = document.getElementById(`mute${instrument.charAt(0).toUpperCase() + instrument.slice(1)}`);
+  if (button) {
+    button.setAttribute('data-mute', mute[instrument] ? 'on' : 'off'); // <-- LINHA CRUCIAL: DESCOMENTADA
+    button.classList.toggle('muted', mute[instrument]);
+    // Atualizar ícone inicial
+    const label = button.textContent.replace(/[🔇🎸🥁🔥🎹]/g, '').trim();
+    if (mute[instrument]) {
+      button.textContent = `🔇 ${label}`;
+    } else {
+      let icon = "🎸";
+      if (instrument === 'drums') icon = "🥁";
+      if (instrument === 'dist') icon = "🔥";
+      if (instrument === 'pianoString' || instrument === 'orgao') icon = "🎹";
+      button.textContent = `${icon} ${label}`;
+    }
+  }
+});
       ui.btnMelodyAdd.addEventListener('click', addMelodyBlock);
       ui.btnMelodyClear.addEventListener('click', clearMelodyBlocks);
       if (ui.btnOpenManual) {
