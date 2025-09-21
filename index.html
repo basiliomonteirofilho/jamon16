@@ -864,71 +864,71 @@ function initializeStyleAndKeySelectors() {
       ui.volOrgaoLabel.textContent = Math.round(ui.volOrgao.value * 100) + '%';
     }
  async function initAudio() {
-      if (audio.ctx) return;
-      if (initPromise) return initPromise;
-      initPromise = (async () => {
-        try {
-          console.log('Criando contexto de áudio...');
-          audio.ctx = new (window.AudioContext || window.webkitAudioContext)();
-          console.log('Contexto de áudio criado:', audio.ctx.state);
-          // ===== Ganhos (canais individuais) =====
-          audio.master = audio.ctx.createGain();
-          audio.mix = audio.ctx.createGain();
-          audio.drumGain = audio.ctx.createGain();
-          audio.bassGain = audio.ctx.createGain();
-          audio.cleanGain = audio.ctx.createGain();
-          audio.distGain = audio.ctx.createGain();
-          audio.pianoStringGain = audio.ctx.createGain();
-          audio.melodyGain = audio.ctx.createGain();
-          audio.guitarraEchoGain = audio.ctx.createGain();
-          audio.guitarraLimpaDedilhadaGain = audio.ctx.createGain();
-          audio.orgaoGain = audio.ctx.createGain();
-          // ===== Conexões =====
-          audio.master.connect(audio.mix);
-          audio.mix.connect(audio.ctx.destination);
-          audio.drumGain.connect(audio.master);
-          audio.bassGain.connect(audio.master);
-          audio.cleanGain.connect(audio.master);
-          audio.distGain.connect(audio.master);
-          audio.pianoStringGain.connect(audio.master);
-          audio.melodyGain.connect(audio.master);
-          audio.guitarraEchoGain.connect(audio.master);
-          audio.guitarraLimpaDedilhadaGain.connect(audio.master);
-          audio.orgaoGain.connect(audio.master);
-          // ===== Volume master =====
-          audio.master.gain.value = 0.9;
-          // CORREÇÃO: Volumes iniciais respeitando o estado de mute
-          audio.drumGain.gain.value = mute.drums ? 0 : parseFloat(ui.volDrums.value);
-          audio.bassGain.gain.value = mute.bass ? 0 : parseFloat(ui.volBass.value);
-          audio.cleanGain.gain.value = mute.clean ? 0 : parseFloat(ui.volClean.value);
-          audio.distGain.gain.value = mute.dist ? 0 : parseFloat(ui.volDist.value);
-          audio.pianoStringGain.gain.value = mute.pianoString ? 0 : parseFloat(ui.volPianoString.value);
-          audio.melodyGain.gain.value = mute.melody ? 0 : parseFloat(ui.volMelody.value);
-          audio.guitarraEchoGain.gain.value = mute.guitarraEcho ? 0 : parseFloat(ui.volGuitarraEcho.value);
-          audio.guitarraLimpaDedilhadaGain.gain.value = mute.guitarraLimpaDedilhada ? 0 : parseFloat(ui.volGuitarraLimpaDedilhada.value);
-          audio.orgaoGain.gain.value = mute.orgao ? 0 : parseFloat(ui.volOrgao.value);
-          // ===== Buffers e samples =====
-          if (!state.buffers.melody) state.buffers.melody = {};
-          await ensureBasicSamples();
-          // ===== Sliders de volume =====
-          ui.volBass.addEventListener('input', updateVolume);
-          ui.volDrums.addEventListener('input', updateVolume);
-          ui.volClean.addEventListener('input', updateVolume);
-          ui.volDist.addEventListener('input', updateVolume);
-          ui.volPianoString.addEventListener('input', updateVolume);
-          ui.volMelody.addEventListener('input', updateVolume);
-          ui.volGuitarraEcho.addEventListener('input', updateVolume);
-          ui.volGuitarraLimpaDedilhada.addEventListener('input', updateVolume);
-          ui.volOrgao.addEventListener('input', updateVolume);
-          updateVolume();
-          console.log('Áudio inicializado com sucesso');
-        } catch (error) {
-          console.error('Erro ao inicializar áudio:', error);
-          throw error;
-        }
-      })();
-      return initPromise;
+  if (audio.ctx) return;
+  if (initPromise) return initPromise;
+  initPromise = (async () => {
+    try {
+      console.log('Criando contexto de áudio...');
+      audio.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      console.log('Contexto de áudio criado:', audio.ctx.state);
+      // ===== Ganhos (canais individuais) =====
+      audio.master = audio.ctx.createGain();
+      audio.mix = audio.ctx.createGain();
+      audio.drumGain = audio.ctx.createGain();
+      audio.bassGain = audio.ctx.createGain();
+      audio.cleanGain = audio.ctx.createGain();
+      audio.distGain = audio.ctx.createGain();
+      audio.pianoStringGain = audio.ctx.createGain();
+      audio.melodyGain = audio.ctx.createGain(); // <-- LINHA ADICIONADA
+      audio.guitarraEchoGain = audio.ctx.createGain();
+      audio.guitarraLimpaDedilhadaGain = audio.ctx.createGain();
+      audio.orgaoGain = audio.ctx.createGain();
+      // ===== Conexões =====
+      audio.master.connect(audio.mix);
+      audio.mix.connect(audio.ctx.destination);
+      audio.drumGain.connect(audio.master);
+      audio.bassGain.connect(audio.master);
+      audio.cleanGain.connect(audio.master);
+      audio.distGain.connect(audio.master);
+      audio.pianoStringGain.connect(audio.master);
+      audio.melodyGain.connect(audio.master); // <-- LINHA ADICIONADA
+      audio.guitarraEchoGain.connect(audio.master);
+      audio.guitarraLimpaDedilhadaGain.connect(audio.master);
+      audio.orgaoGain.connect(audio.master);
+      // ===== Volume master =====
+      audio.master.gain.value = 0.9;
+      // CORREÇÃO: Volumes iniciais respeitando o estado de mute
+      audio.drumGain.gain.value = mute.drums ? 0 : parseFloat(ui.volDrums.value);
+      audio.bassGain.gain.value = mute.bass ? 0 : parseFloat(ui.volBass.value);
+      audio.cleanGain.gain.value = mute.clean ? 0 : parseFloat(ui.volClean.value);
+      audio.distGain.gain.value = mute.dist ? 0 : parseFloat(ui.volDist.value);
+      audio.pianoStringGain.gain.value = mute.pianoString ? 0 : parseFloat(ui.volPianoString.value);
+      audio.melodyGain.gain.value = mute.melody ? 0 : parseFloat(ui.volMelody.value); // <-- LINHA MODIFICADA (agora seguro)
+      audio.guitarraEchoGain.gain.value = mute.guitarraEcho ? 0 : parseFloat(ui.volGuitarraEcho.value);
+      audio.guitarraLimpaDedilhadaGain.gain.value = mute.guitarraLimpaDedilhada ? 0 : parseFloat(ui.volGuitarraLimpaDedilhada.value);
+      audio.orgaoGain.gain.value = mute.orgao ? 0 : parseFloat(ui.volOrgao.value);
+      // ===== Buffers e samples =====
+      if (!state.buffers.melody) state.buffers.melody = {};
+      await ensureBasicSamples();
+      // ===== Sliders de volume =====
+      ui.volBass.addEventListener('input', updateVolume);
+      ui.volDrums.addEventListener('input', updateVolume);
+      ui.volClean.addEventListener('input', updateVolume);
+      ui.volDist.addEventListener('input', updateVolume);
+      ui.volPianoString.addEventListener('input', updateVolume);
+      ui.volMelody.addEventListener('input', updateVolume);
+      ui.volGuitarraEcho.addEventListener('input', updateVolume);
+      ui.volGuitarraLimpaDedilhada.addEventListener('input', updateVolume);
+      ui.volOrgao.addEventListener('input', updateVolume);
+      updateVolume();
+      console.log('Áudio inicializado com sucesso');
+    } catch (error) {
+      console.error('Erro ao inicializar áudio:', error);
+      throw error;
     }
+  })();
+  return initPromise;
+}
 // ===== Função para carregar samples individuais =====
 async function loadBuffer(url) {
   try {
