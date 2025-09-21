@@ -349,6 +349,37 @@
       50% { opacity: 0.4; }
       100% { opacity: 1; }
     }
+    /* Estilos para os botões de guitarra */
+    .guitar-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 20px 0;
+    }
+    .guitar-button {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 8px;
+      background: #333;
+      color: #e0e0e0;
+      cursor: pointer;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .guitar-button:hover {
+      background: #444;
+    }
+    .guitar-button.active {
+      background: #5eead4;
+      color: #121212;
+    }
+    .guitar-icon {
+      font-size: 1.2em;
+    }
   </style>
 </head>
 <body>
@@ -374,12 +405,15 @@
       </button>
       </div>
       <div class="mute-buttons">
-        <button id="muteBass" data-mute="off">🎸 Baixo</button>
-        <button id="muteDrums" data-mute="off">🥁 Bateria</button>
-        <button id="muteClean" data-mute="off">🎸 Limpa</button>
-        <button id="muteDist" data-mute="off">🔥 Distorção</button>
-        <button id="mutePianoString" data-mute="off">🎹 Piano</button>
-      </div>
+  <button id="muteBass" data-mute="off">🎸 Baixo</button>
+  <button id="muteDrums" data-mute="off">🥁 Bateria</button>
+  <button id="muteClean" data-mute="on" class="muted">🔇 Guitarra Limpa</button>
+  <button id="muteDist" data-mute="on" class="muted">🔇 Guitarra Distorcida</button>
+  <button id="mutePianoString" data-mute="on" class="muted">🔇 Piano</button>
+  <button id="muteGuitarraEcho" data-mute="on" class="muted">🔇 Echo</button>
+  <button id="muteGuitarraLimpaDedilhada" data-mute="on" class="muted">🔇 Dedilhada</button>
+  <button id="muteOrgao" data-mute="on" class="muted">🔇 Órgão</button>
+</div>
       <!-- ... outros controles ... -->
 <div class="row">
   <label>Assinatura</label>
@@ -414,11 +448,23 @@
     <!-- As opções serão preenchidas dinamicamente pelo JavaScript -->
   </select>
 </div>
+<!-- ADICIONA O NOVO CONTROLE DE QUALIDADE -->
+<div class="row">
+  <label>Qualidade</label>
+  <select id="qualitySelect">
+    <option value="maj" selected>Maior</option>
+    <option value="min">Menor</option>
+  </select>
+</div>
 <!-- FIM DOS NOVOS CONTROLES -->
 <div class="row">
   <label>Melodia</label>
   <select id="melodyInstrument">
     <option value="dist">Guitarra Distorcida</option>
+    <option value="dist2">Guitarra Distorcida 2</option>
+    <option value="dist3">Guitarra Distorcida 3</option>
+    <option value="dist4">Guitarra Distorcida 4</option>
+    <option value="dist5">Guitarra Distorcida 5</option>
     <option value="piano">Piano/String</option>
     <option value="baixo">Baixo</option>
     <option value="sax">Sax</option>
@@ -452,19 +498,39 @@
         <span class="slider-value" id="volDistLabel">35%</span>
       </div>
       <div class="slider-row">
-  <label>Piano</label>
-  <input type="range" id="volPianoString" min="0" max="1" step="0.01" value="0.50">
-  <span class="slider-value" id="volPianoStringLabel">50%</span>
-</div>
+        <label>Piano</label>
+        <input type="range" id="volPianoString" min="0" max="1" step="0.01" value="0.50">
+        <span class="slider-value" id="volPianoStringLabel">50%</span>
+      </div>
+      <div class="slider-row">
+        <label>Guitarra Echo</label>
+        <input type="range" id="volGuitarraEcho" min="0" max="1" step="0.01" value="0.50">
+        <span class="slider-value" id="volGuitarraEchoLabel">50%</span>
+      </div>
+      <div class="slider-row">
+        <label>Guitarra Dedilhada</label>
+        <input type="range" id="volGuitarraLimpaDedilhada" min="0" max="1" step="0.01" value="0.50">
+        <span class="slider-value" id="volGuitarraLimpaDedilhadaLabel">50%</span>
+      </div>
+      <div class="slider-row">
+        <label>Órgão</label>
+        <input type="range" id="volOrgao" min="0" max="1" step="0.01" value="0.50">
+        <span class="slider-value" id="volOrgaoLabel">50%</span>
+      </div>
       <div class="slider-row">
         <label>Melodia</label>
         <input type="range" id="volMelody" min="0" max="1" step="0.01" value="0.50">
         <span class="slider-value" id="volMelodyLabel">50%</span>
       </div>
     </div>
+    <!-- NOVO PAINEL DE BOTÕES DE GUITARRA E ÓRGÃO -->
     <div class="panel">
-      <h3>Estado Atual</h3>
-      <div class="mono" id="state">Parado</div>
+      <h3>🎸 Efeitos de Guitarra e Órgão</h3>
+      <div class="guitar-buttons">
+        <button id="guitarEcho" class="guitar-button" data-instrument="guitarEcho">🎸 Guitarra Echo</button>
+        <button id="guitarLimpaDedilhada" class="guitar-button" data-instrument="guitarLimpaDedilhada">🎸 Guitarra Dedilhada</button>
+        <button id="organ" class="guitar-button" data-instrument="organ">🎹 Órgão</button>
+      </div>
     </div>
     <div class="panel melody-panel">
       <h3>🎸 Melodia Adaptativa</h3>
@@ -767,7 +833,7 @@ function initializeStyleAndKeySelectors() {
       guitarraEcho: true,   // echo no mudo
       guitarraLimpaDedilhada: true, // dedilhada no mudo
       orgao: true,           // órgão no mudo
-      melody: false // <-- ALTERADO DE true PARA false PARA DESMUTAR A MELODIA
+      melody: false
     };
     // ===== FUNÇÕES UTILITÁRIAS =====
     function log(msg) {
@@ -2588,6 +2654,7 @@ document.addEventListener('DOMContentLoaded', function() {
   initializeApp();
   console.log('Jam On inicializado');
 });
+
   </script>
 </body>
 </html>
