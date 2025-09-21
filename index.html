@@ -1490,7 +1490,13 @@ state.bpm = prev.bpm;
   const currentTime = audio.ctx.currentTime;
   
   while (state.nextNoteTime < currentTime + lookahead) {
-    scheduleStep();
+    const stepIdx = state.stepIndex;
+    const time = state.nextNoteTime;
+    
+    scheduleStep(stepIdx, time); // Passar os parâmetros corretos
+    
+    state.stepIndex++;
+    state.nextNoteTime += state.sixteenthDur;
   }
 }
 function startScheduler() {
@@ -1510,6 +1516,23 @@ function startScheduler() {
   state.schedulerTimer = setInterval(scheduler, 50);
   console.log('Scheduler iniciado');
 }
+function degreeToChord(keyIdx, quality, degree) {
+  const rootOffset = DEGREE_TO_ROOT[degree] || 0;
+  const rootIdx = (keyIdx + rootOffset) % 12;
+  const rootNote = PITCHES[rootIdx];
+  
+  // Lógica para determinar o tipo de acorde baseado na qualidade e grau
+  let chordType = '';
+  // ... implementar a lógica completa
+  
+  return {
+    note: rootNote,
+    type: chordType,
+    display: CHORD_NAMES[rootIdx] + chordType,
+    displayed: transposeDown3Semitones(CHORD_NAMES[rootIdx]) + chordType
+  };
+}
+
 function scheduleStep(stepIdx, time) {
   const chord = state.chordPlan[stepIdx % state.chordPlan.length];
 
