@@ -833,7 +833,7 @@ function initializeStyleAndKeySelectors() {
       guitarraEcho: true,   // echo no mudo
       guitarraLimpaDedilhada: true, // dedilhada no mudo
       orgao: true,           // órgão no mudo
-      melody: false
+      melody: false // <-- ALTERADO DE true PARA false. A melodia agora começa DESMUTADA.
     };
     // ===== FUNÇÕES UTILITÁRIAS =====
     function log(msg) {
@@ -2654,7 +2654,6 @@ document.addEventListener('DOMContentLoaded', function() {
   initializeApp();
   console.log('Jam On inicializado');
 });
-
   </script>
 </body>
 </html>
