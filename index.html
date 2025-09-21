@@ -838,7 +838,8 @@ function initializeStyleAndKeySelectors() {
       pianoString: true,    // piano no mudo
       guitarraEcho: true,   // echo no mudo
       guitarraLimpaDedilhada: true, // dedilhada no mudo
-      orgao: true           // órgão no mudo
+      orgao: true,           // órgão no mudo
+      melody: false
     };
     // ===== FUNÇÕES UTILITÁRIAS =====
     function log(msg) {
@@ -1009,37 +1010,41 @@ async function loadBuffer(url) {
       return out.slice(0, totalSteps);
     }
     // ===== FUNÇÕES PRINCIPAIS =====
-    async function buildBassAndChordPlan() {
-  // Escolhe o groove baseado na seleção do usuário ou aleatoriamente
+   async function buildBassAndChordPlan() {
+  // === Escolhe groove ===
   if (!ui.styleSelect || ui.styleSelect.value === 'auto') {
     state.currentGroove = ALL_GROOVES[Math.floor(Math.random() * ALL_GROOVES.length)];
   } else {
-    // Filtra os grooves que correspondem ao estilo selecionado
     const matchingGrooves = ALL_GROOVES.filter(g => g.name === ui.styleSelect.value);
     state.currentGroove = matchingGrooves[Math.floor(Math.random() * matchingGrooves.length)] || ALL_GROOVES[0];
   }
+
   state.signatureTag = state.currentGroove.name;
   state.meter = ui.meter.value === 'auto' ? state.currentGroove.meter : ui.meter.value;
+
+  // === Ajusta BPM para samba ===
   if (state.currentGroove.name === "Samba") {
     ui.bpm.value = 70;
     state.bpm = 70;
   } else {
     state.bpm = Number(ui.bpm.value) || 100;
   }
+
   const beats = meterToBeats(state.meter);
   const sixteenthsPerBar = beats * 4;
-  // Escolhe a tonalidade e qualidade baseadas na seleção do usuário ou aleatoriamente
+
+  // === Define tonalidade e qualidade ===
   if (!ui.keySelect || ui.keySelect.value === 'auto') {
     state.keyIdx = Math.floor(Math.random() * PITCHES.length);
     state.key = PITCHES[state.keyIdx];
-    // Se for aleatório, define qualidade aleatória
     state.quality = Math.random() > 0.5 ? 'maj' : 'min';
   } else {
-    state.key = ui.keySelect.value; // Recebe 'CS', 'DS', etc.
+    state.key = ui.keySelect.value;
     state.keyIdx = PITCHES.indexOf(state.key);
-    // Define a qualidade baseada na nova seleção do usuário
-    state.quality = ui.qualitySelect.value; // 'maj' ou 'min'
+    state.quality = ui.qualitySelect.value;
   }
+
+  // === Seleciona progressão pelo estilo ===
   const grooveName = state.currentGroove.name;
   let styleKey = "Rock";
   if (grooveName.includes("Samba")) styleKey = "Samba";
@@ -1047,18 +1052,118 @@ async function loadBuffer(url) {
   else if (grooveName.includes("Forró")) styleKey = "Forró";
   else if (grooveName.includes("Metal")) styleKey = "Metal";
   else if (grooveName.includes("Blues")) styleKey = "Blues";
+
   const progressions = STYLE_PROGRESSIONS[styleKey] || STYLE_PROGRESSIONS.Rock;
-  // 🔹 Aqui removemos todas as progressões que contenham o grau 7 (diminuto)
+
+  // 🔹 remove progressões com grau 7 (diminuto)
   let availableProgressions = progressions.filter(prog => !prog.includes(7));
   if (availableProgressions.length === 0) {
-    availableProgressions = progressions; // fallback
+    availableProgressions = progressions;
   }
+
   state.chordProgression = availableProgressions[Math.floor(Math.random() * availableProgressions.length)];
+
   const totalBars = Math.min(state.chordProgression.length, 64);
   const totalSteps = sixteenthsPerBar * totalBars;
   const rhythm = expandRhythm(state.currentGroove.bassRhythm, totalSteps);
+
   const bassPlan = [];
   const chordPlan = [];
+
+  // === Constroi planos de baixo e acordes ===
+  for (let bar = 0; bar < totalBars; bar++) {
+    const degree = state.chordProgression[bar];
+    const chord = degreeToChord(state.keyIdx, state.quality, degree);
+    chordPlan.push(chord);
+
+    for (let step = 0; step < sixteenthsPerBar; step++) {
+      const rhythmStep = rhythm[bar * sixteenthsPerBar + step];
+      if (rhythmStep === 1) {
+        bassPlan.push({ note: chord.bass, time: step + bar * sixteenthsPerBar });
+      } else {
+        bassPlan.push(null);
+      }
+    }
+  }
+
+  state.bassPlan = bassPlan;
+  state.chordPlan = chordPlan;
+
+  // === PRELOAD dos samples harmônicos ===
+  const promises = [];
+  for (const chord of chordPlan) {
+    if (!chord) continue;
+
+    // guitarra limpa
+    const urlClean = `guitarraLimpa/${chord.note}/${chord.note}${chord.type || ""}.mp3`;
+    if (!state.buffers.guitar?.[urlClean]) {
+      promises.push(loadBuffer(urlClean).then(buf => {
+        if (buf) {
+          if (!state.buffers.guitar) state.buffers.guitar = {};
+          state.buffers.guitar[urlClean] = buf;
+        }
+      }));
+    }
+
+    // guitarra distorcida
+    const urlDist = `guitarraDistorcao/${chord.note}/${chord.note}${chord.type || ""}.mp3`;
+    if (!state.buffers.dist?.[urlDist]) {
+      promises.push(loadBuffer(urlDist).then(buf => {
+        if (buf) {
+          if (!state.buffers.dist) state.buffers.dist = {};
+          state.buffers.dist[urlDist] = buf;
+        }
+      }));
+    }
+
+    // piano string
+    const urlPiano = `assets/PianoStringChord/${chord.note}/${chord.note}${chord.type || ""}.mp3`;
+    if (!state.buffers.pianoString?.[urlPiano]) {
+      promises.push(loadBuffer(urlPiano).then(buf => {
+        if (buf) {
+          if (!state.buffers.pianoString) state.buffers.pianoString = {};
+          state.buffers.pianoString[urlPiano] = buf;
+        }
+      }));
+    }
+
+    // guitarra echo
+    const urlEcho = `GuitarraEcho/${chord.note}/${chord.note}${chord.type || ""}.mp3`;
+    if (!state.buffers.guitarraEcho?.[urlEcho]) {
+      promises.push(loadBuffer(urlEcho).then(buf => {
+        if (buf) {
+          if (!state.buffers.guitarraEcho) state.buffers.guitarraEcho = {};
+          state.buffers.guitarraEcho[urlEcho] = buf;
+        }
+      }));
+    }
+
+    // guitarra limpa dedilhada
+    const urlDed = `GuitarraLimpaDedilhada/${chord.note}/${chord.note}${chord.type || ""}.mp3`;
+    if (!state.buffers.guitarraLimpaDedilhada?.[urlDed]) {
+      promises.push(loadBuffer(urlDed).then(buf => {
+        if (buf) {
+          if (!state.buffers.guitarraLimpaDedilhada) state.buffers.guitarraLimpaDedilhada = {};
+          state.buffers.guitarraLimpaDedilhada[urlDed] = buf;
+        }
+      }));
+    }
+
+    // órgão
+    const urlOrgao = `Orgao/${chord.note}/${chord.note}${chord.type || ""}.mp3`;
+    if (!state.buffers.orgao?.[urlOrgao]) {
+      promises.push(loadBuffer(urlOrgao).then(buf => {
+        if (buf) {
+          if (!state.buffers.orgao) state.buffers.orgao = {};
+          state.buffers.orgao[urlOrgao] = buf;
+        }
+      }));
+    }
+  }
+
+  await Promise.all(promises);
+}
+
 function getBassNotesFromScale(degree, scale, chordType) {
   // Determina se o acorde DEVE ser menor com base na qualidade da tonalidade
   // Para os graus I, IV e V, a qualidade da tonalidade define se o acorde é maior ou menor.
@@ -1898,58 +2003,31 @@ function adaptNoteToChord(note, chord) {
   }
   return best;
 }
+
 function buildMelodyPlanFromBlocks() {
   const plan = [];
-  const beats = meterToBeats(state.meter || '4/4');
+  const beats = meterToBeats(state.meter || "4/4");
   const stepsPerBar = beats * 4;
   let stepIndex = 0;
 
   for (let b = 0; b < (state.melodyBlocks || []).length; b++) {
     const block = state.melodyBlocks[b];
-    const inputs = Array.from(block.querySelectorAll('input'));
-    const rawVals = inputs.map(inp => (inp.value || '').toString().trim());
-    
-    // Identifica grupos de notas consecutivas e notas isoladas
-    const noteGroups = [];
-    let currentGroup = [];
-    
-    for (let i = 0; i < rawVals.length; i++) {
-      const val = rawVals[i];
-      
-      if (val === '' || val.toLowerCase() === 'x') {
-        if (currentGroup.length > 0) {
-          noteGroups.push([...currentGroup, i - 1]); // Guarda o índice final do grupo
-          currentGroup = [];
-        }
-        continue;
-      }
-      
-      const num = parseInt(val, 10);
-      if (!isNaN(num) && num >= 1 && num <= 49) {
-        currentGroup.push({index: i, number: num});
-      } else if (currentGroup.length > 0) {
-        noteGroups.push([...currentGroup, i - 1]);
-        currentGroup = [];
-      }
-    }
-    
-    // Adiciona o último grupo se existir
-    if (currentGroup.length > 0) {
-      noteGroups.push([...currentGroup, rawVals.length - 1]);
-    }
+    const inputs = Array.from(block.querySelectorAll("input"));
+    const blockStartIndex = stepIndex;
 
-    // Processa cada valor do bloco
+    const rawVals = inputs.map(inp => (inp.value || "").toString().trim());
+
     for (let i = 0; i < rawVals.length; i++) {
       const val = rawVals[i];
-      
-      if (val === '') {
-        plan.push({ type: 'rest' });
+
+      if (val === "") {
+        plan.push({ type: "rest" });
         stepIndex++;
         continue;
       }
 
-      if (val.toLowerCase() === 'x') {
-        plan.push({ type: 'mute' });
+      if (val.toLowerCase() === "x") {
+        plan.push({ type: "mute" });
         state.lastMelodyNote = null;
         stepIndex++;
         continue;
@@ -1957,54 +2035,33 @@ function buildMelodyPlanFromBlocks() {
 
       const num = parseInt(val, 10);
       if (isNaN(num) || num < 1 || num > 49) {
-        plan.push({ type: 'rest' });
+        plan.push({ type: "rest" });
         stepIndex++;
         continue;
       }
 
-      // Verifica se é a última nota de um grupo ou uma nota isolada
-      let isEndOfGroup = false;
-      let isIsolatedNote = false;
-      
-      for (const group of noteGroups) {
-        const lastNoteInGroup = group[group.length - 1];
-        if (typeof lastNoteInGroup === 'object' && lastNoteInGroup.index === i) {
-          isEndOfGroup = true;
-          isIsolatedNote = (group.length === 1); // Grupo com apenas uma nota = nota isolada
-          break;
-        }
-      }
+      // determina se é isolada ou última do bloco
+      const nextVal = (i + 1 < rawVals.length) ? rawVals[i + 1] : null;
+      const nextIsStart = nextVal !== null && /^\d+$/.test(nextVal);
+      const isIsolated = !nextIsStart;
+      const isLastOfBlock = (i === rawVals.length - 1);
 
-      // Determina o acorde atual
+      // adapta nota para acorde atual
       let adapted = num;
       if (state.chordPlan && state.chordPlan.length > 0) {
         const chordIdx = Math.floor(stepIndex / stepsPerBar) % state.chordPlan.length;
         const chord = state.chordPlan[chordIdx];
-        
-        // Aplica adaptação especial para notas finais de grupos e notas isoladas
-        if (isEndOfGroup || isIsolatedNote) {
-          adapted = adaptNumberToChord(num, chord.note, chord.type, state.lastMelodyNote, true);
-        } else {
-          // Para notas no meio de sequências, usa a escala da tonalidade principal
-          const scaleNotes = getScaleNotes(state.key, state.quality);
-          const baseName = NUM_TO_NAME[num];
-          
-          if (!scaleNotes.includes(baseName)) {
-            // Encontra a nota mais próxima na escala
-            const noteDistances = scaleNotes.map(note => ({
-              note,
-              distance: distanceBetweenNotes(baseName, note)
-            }));
-            noteDistances.sort((a, b) => a.distance - b.distance);
-            adapted = findClosestNumber(num, noteDistances[0].note);
-          } else {
-            adapted = num; // Mantém se já está na escala
-          }
-        }
+        adapted = adaptNumberToChord(
+          num,
+          chord.note,
+          chord.type,
+          state.lastMelodyNote || null,
+          (isIsolated || isLastOfBlock)
+        );
       }
 
       const ev = {
-        type: 'start',
+        type: "start",
         originalNumber: num,
         adaptedNumber: adapted,
         instrument: ui.melodyInstrument.value
@@ -2013,6 +2070,28 @@ function buildMelodyPlanFromBlocks() {
       plan.push(ev);
       state.lastMelodyNote = adapted;
       stepIndex++;
+    }
+
+    // força última nota do bloco a se adaptar ao acorde
+    for (let j = stepIndex - 1; j >= blockStartIndex; j--) {
+      const e = plan[j];
+      if (e && e.type === "start") {
+        if (state.chordPlan && state.chordPlan.length > 0) {
+          const chordIdx = Math.floor(j / stepsPerBar) % state.chordPlan.length;
+          const chord = state.chordPlan[chordIdx];
+          e.adaptedNumber = adaptNumberToChord(
+            e.originalNumber,
+            chord.note,
+            chord.type,
+            (j > 0 && plan[j - 1] && plan[j - 1].type === "start")
+              ? plan[j - 1].adaptedNumber
+              : null,
+            true
+          );
+          state.lastMelodyNote = e.adaptedNumber;
+        }
+        break;
+      }
     }
   }
 
