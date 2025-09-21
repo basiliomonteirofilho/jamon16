@@ -1568,30 +1568,44 @@ function scheduleStep(stepIdx, time) {
       state.guitarPlan = null;
       document.querySelectorAll('.chord-item.current').forEach(el => el.classList.remove('current'));
     }
-   function toggleMute(button, instrument, label, icon) {
+ function toggleMute(button, instrument, label, icon) {
   const isMuted = button.getAttribute('data-mute') === 'on';
   mute[instrument] = !isMuted;
   button.setAttribute('data-mute', isMuted ? 'off' : 'on');
   button.classList.toggle('muted', !isMuted);
+  
+  // Atualiza o ganho do instrumento correspondente
+  if (audio.ctx) {
+    let gainNode = null;
+    switch(instrument) {
+      case 'bass': gainNode = audio.bassGain; break;
+      case 'drums': gainNode = audio.drumGain; break;
+      case 'clean': gainNode = audio.cleanGain; break;
+      case 'dist': gainNode = audio.distGain; break;
+      case 'pianoString': gainNode = audio.pianoStringGain; break;
+      case 'guitarraEcho': gainNode = audio.guitarraEchoGain; break;
+      case 'guitarraLimpaDedilhada': gainNode = audio.guitarraLimpaDedilhadaGain; break;
+      case 'orgao': gainNode = audio.orgaoGain; break;
+    }
+    
+    if (gainNode) {
+      if (mute[instrument]) {
+        gainNode.gain.setValueAtTime(0, audio.ctx.currentTime);
+      } else {
+        // Restaura o volume do slider correspondente
+        const sliderValue = parseFloat(document.getElementById(`vol${instrument.charAt(0).toUpperCase() + instrument.slice(1)}`).value);
+        gainNode.gain.setValueAtTime(sliderValue, audio.ctx.currentTime);
+      }
+    }
+  }
+  
   if (isMuted) {
-    // ligado → volta ícone normal
     button.textContent = `${icon} ${label}`;
   } else {
-    // mutado → mostra 🔇
     button.textContent = `🔇 ${label}`;
   }
 }
-    // ===== MELODIA ADAPTATIVA =====
-    const ORDER_E_UP = ['E','F','FS','G','GS','A','AS','B','C','CS','D','DS'];
-    const NUM_TO_NAME = (() => {
-      const map = {};
-      let n = 1, i = 0;
-      while (n <= 49) {
-        map[n] = ORDER_E_UP[i % ORDER_E_UP.length];
-        n++; i++;
-      }
-      return map;
-    })();
+
     function chordTriad(rootPitchName, quality) {
       const rootIdx = PITCHES.indexOf(rootPitchName);
       if (rootIdx === -1) return [rootPitchName];
@@ -1642,10 +1656,13 @@ function scheduleStep(stepIdx, time) {
       return chordNotes;
     }
     function distanceBetweenNotes(n1, n2) {
-      const i1 = ORDER_E_UP.indexOf(n1);
-      const i2 = ORDER_E_UP.indexOf(n2);
-      return i1 === -1 || i2 === -1 ? 100 : Math.abs(i1 - i2);
-    }
+  const i1 = ORDER_E_UP.indexOf(n1);
+  const i2 = ORDER_E_UP.indexOf(n2);
+  return i1 === -1 || i2 === -1 ? 100 : Math.abs(i1 - i2);
+}
+
+
+
    function adaptNumberToChord(number, root, type, lastPlayedNote = null, isIsolatedNote = false) {
   const baseName = NUM_TO_NAME[number];
   const chordNotes = chordTriad(root, type);
@@ -1691,20 +1708,20 @@ function scheduleStep(stepIdx, time) {
   }
 }
     function findClosestNumber(targetNumber, targetNote) {
-      let bestNum = targetNumber;
-      let bestDist = 100;
-      for (let n = 1; n <= 49; n++) {
-        const name = NUM_TO_NAME[n];
-        if (name === targetNote) {
-          const dist = Math.abs(n - targetNumber);
-          if (dist < bestDist) {
-            bestDist = dist;
-            bestNum = n;
-          }
-        }
+  let bestNum = targetNumber;
+  let bestDist = 100;
+  for (let n = 1; n <= 49; n++) {
+    const name = NUM_TO_NAME[n];
+    if (name === targetNote) {
+      const dist = Math.abs(n - targetNumber);
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestNum = n;
       }
-      return bestNum;
     }
+  }
+  return bestNum;
+}
     function addMelodyBlock() {
       const beats = meterToBeats(state.meter || '4/4');
       const cols = beats * 4;
@@ -1811,26 +1828,50 @@ function adaptNoteToChord(note, chord) {
   }
   return best;
 }
-// Substitua por esta versão consolidada de buildMelodyPlanFromBlocks
 function buildMelodyPlanFromBlocks() {
-  // cria um plano uniforme: array de objetos { type:'start'|'mute'|'rest', originalNumber, adaptedNumber, instrument }
   const plan = [];
   const beats = meterToBeats(state.meter || '4/4');
   const stepsPerBar = beats * 4;
   let stepIndex = 0;
 
-  // itera blocos (cada bloco é uma div com inputs)
   for (let b = 0; b < (state.melodyBlocks || []).length; b++) {
     const block = state.melodyBlocks[b];
     const inputs = Array.from(block.querySelectorAll('input'));
-    const blockStartIndex = stepIndex;
-
-    // coleta valores brutos do bloco para decidir isolamento / última nota
     const rawVals = inputs.map(inp => (inp.value || '').toString().trim());
-
+    
+    // Identifica grupos de notas consecutivas e notas isoladas
+    const noteGroups = [];
+    let currentGroup = [];
+    
     for (let i = 0; i < rawVals.length; i++) {
       const val = rawVals[i];
+      
+      if (val === '' || val.toLowerCase() === 'x') {
+        if (currentGroup.length > 0) {
+          noteGroups.push([...currentGroup, i - 1]); // Guarda o índice final do grupo
+          currentGroup = [];
+        }
+        continue;
+      }
+      
+      const num = parseInt(val, 10);
+      if (!isNaN(num) && num >= 1 && num <= 49) {
+        currentGroup.push({index: i, number: num});
+      } else if (currentGroup.length > 0) {
+        noteGroups.push([...currentGroup, i - 1]);
+        currentGroup = [];
+      }
+    }
+    
+    // Adiciona o último grupo se existir
+    if (currentGroup.length > 0) {
+      noteGroups.push([...currentGroup, rawVals.length - 1]);
+    }
 
+    // Processa cada valor do bloco
+    for (let i = 0; i < rawVals.length; i++) {
+      const val = rawVals[i];
+      
       if (val === '') {
         plan.push({ type: 'rest' });
         stepIndex++;
@@ -1851,18 +1892,45 @@ function buildMelodyPlanFromBlocks() {
         continue;
       }
 
-      // determina se é isolada (próxima posição não é 'start') e se é última do bloco
-      const nextVal = (i + 1 < rawVals.length) ? rawVals[i + 1] : null;
-      const nextIsStart = nextVal !== null && /^\d+$/.test(nextVal);
-      const isIsolated = !nextIsStart;
-      const isLastOfBlock = (i === rawVals.length - 1);
+      // Verifica se é a última nota de um grupo ou uma nota isolada
+      let isEndOfGroup = false;
+      let isIsolatedNote = false;
+      
+      for (const group of noteGroups) {
+        const lastNoteInGroup = group[group.length - 1];
+        if (typeof lastNoteInGroup === 'object' && lastNoteInGroup.index === i) {
+          isEndOfGroup = true;
+          isIsolatedNote = (group.length === 1); // Grupo com apenas uma nota = nota isolada
+          break;
+        }
+      }
 
-      // descobre acorde atual (se houver)
+      // Determina o acorde atual
       let adapted = num;
       if (state.chordPlan && state.chordPlan.length > 0) {
         const chordIdx = Math.floor(stepIndex / stepsPerBar) % state.chordPlan.length;
         const chord = state.chordPlan[chordIdx];
-        adapted = adaptNumberToChord(num, chord.note, chord.type, state.lastMelodyNote || null, (isIsolated || isLastOfBlock));
+        
+        // Aplica adaptação especial para notas finais de grupos e notas isoladas
+        if (isEndOfGroup || isIsolatedNote) {
+          adapted = adaptNumberToChord(num, chord.note, chord.type, state.lastMelodyNote, true);
+        } else {
+          // Para notas no meio de sequências, usa a escala da tonalidade principal
+          const scaleNotes = getScaleNotes(state.key, state.quality);
+          const baseName = NUM_TO_NAME[num];
+          
+          if (!scaleNotes.includes(baseName)) {
+            // Encontra a nota mais próxima na escala
+            const noteDistances = scaleNotes.map(note => ({
+              note,
+              distance: distanceBetweenNotes(baseName, note)
+            }));
+            noteDistances.sort((a, b) => a.distance - b.distance);
+            adapted = findClosestNumber(num, noteDistances[0].note);
+          } else {
+            adapted = num; // Mantém se já está na escala
+          }
+        }
       }
 
       const ev = {
@@ -1875,20 +1943,6 @@ function buildMelodyPlanFromBlocks() {
       plan.push(ev);
       state.lastMelodyNote = adapted;
       stepIndex++;
-    }
-
-    // Garantia extra: força a ÚLTIMA nota do bloco a pertencer ao acorde (se houver algum 'start' no bloco)
-    for (let j = stepIndex - 1; j >= blockStartIndex; j--) {
-      const e = plan[j];
-      if (e && e.type === 'start') {
-        if (state.chordPlan && state.chordPlan.length > 0) {
-          const chordIdx = Math.floor(j / stepsPerBar) % state.chordPlan.length;
-          const chord = state.chordPlan[chordIdx];
-          e.adaptedNumber = adaptNumberToChord(e.originalNumber, chord.note, chord.type, (j > 0 && plan[j-1] && plan[j-1].type === 'start') ? plan[j-1].adaptedNumber : null, true);
-          state.lastMelodyNote = e.adaptedNumber;
-        }
-        break;
-      }
     }
   }
 
