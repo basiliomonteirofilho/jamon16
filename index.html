@@ -898,8 +898,8 @@ function initializeStyleAndKeySelectors() {
           // ===== Volume master =====
           audio.master.gain.value = 0.9;
           // CORREÇÃO: Volumes iniciais respeitando o estado de mute
-          audio.drumGain.gain.value = mute.drums ? 0 : parseFloat(ui.volDrums.value);
-          audio.bassGain.gain.value = mute.bass ? 0 : parseFloat(ui.volBass.value);
+          audio.drumGain.gain.value = mute.drums ? 70 : parseFloat(ui.volDrums.value);
+          audio.bassGain.gain.value = mute.bass ? 70 : parseFloat(ui.volBass.value);
           audio.cleanGain.gain.value = mute.clean ? 0 : parseFloat(ui.volClean.value);
           audio.distGain.gain.value = mute.dist ? 0 : parseFloat(ui.volDist.value);
           audio.pianoStringGain.gain.value = mute.pianoString ? 0 : parseFloat(ui.volPianoString.value);
@@ -2402,99 +2402,121 @@ function stopMelodyAt(time) {
     });
     // ===== INICIALIZAÇÃO =====
    function initializeApp() {
-      // Event listeners
-      ui.play.addEventListener('click', onPlay);
-      ui.pause.addEventListener('click', onPause);
-      ui.stop.addEventListener('click', onStop);
-      ui.previous.addEventListener('click', onPrevious);
-      // CORREÇÃO: Conectar botões de mute corretamente
-      ui.muteBass.addEventListener("click", () => toggleMute(ui.muteBass, "bass"));
-      ui.muteDrums.addEventListener("click", () => toggleMute(ui.muteDrums, "drums"));
-      ui.muteClean.addEventListener("click", () => toggleMute(ui.muteClean, "clean"));
-      ui.muteDist.addEventListener("click", () => toggleMute(ui.muteDist, "dist"));
-      ui.mutePianoString.addEventListener("click", () => toggleMute(ui.mutePianoString, "pianoString"));
-      ui.muteGuitarraEcho.addEventListener("click", () => toggleMute(ui.muteGuitarraEcho, "guitarraEcho"));
-      ui.muteGuitarraLimpaDedilhada.addEventListener("click", () => toggleMute(ui.muteGuitarraLimpaDedilhada, "guitarraLimpaDedilhada"));
-      ui.muteOrgao.addEventListener("click", () => toggleMute(ui.muteOrgao, "orgao"));
-      // CORREÇÃO: Atualizar estado visual inicial dos botões de mute
-     // CORREÇÃO: Atualizar estado visual inicial dos botões de mute
-Object.keys(mute).forEach(instrument => {
-  const button = document.getElementById(`mute${instrument.charAt(0).toUpperCase() + instrument.slice(1)}`);
-  if (button) {
-    button.setAttribute('data-mute', mute[instrument] ? 'on' : 'off'); // <-- LINHA CRUCIAL: DESCOMENTADA
-    button.classList.toggle('muted', mute[instrument]);
-    // Atualizar ícone inicial
-    const label = button.textContent.replace(/[🔇🎸🥁🔥🎹]/g, '').trim();
-    if (mute[instrument]) {
-      button.textContent = `🔇 ${label}`;
-    } else {
-      let icon = "🎸";
-      if (instrument === 'drums') icon = "🥁";
-      if (instrument === 'dist') icon = "🔥";
-      if (instrument === 'pianoString' || instrument === 'orgao') icon = "🎹";
-      button.textContent = `${icon} ${label}`;
-    }
-  }
-});
-      ui.btnMelodyAdd.addEventListener('click', addMelodyBlock);
-      ui.btnMelodyClear.addEventListener('click', clearMelodyBlocks);
-      if (ui.btnOpenManual) {
-        ui.btnOpenManual.addEventListener('click', () => {
-          window.open('jam-on-composicao-manual.html', '_blank');
-        });
-      }
-      // Inicializa os botões de guitarra e órgão
-      const guitarButtons = [
-        ui.guitar1, ui.guitar2, ui.guitar3, ui.guitar4, ui.guitar5, 
-        ui.guitarEcho, ui.guitarLimpaDedilhada, ui.organ
-      ];
-      guitarButtons.forEach(btn => {
-        if (btn) {
-          btn.addEventListener('click', function() {
-            const instrument = this.dataset.instrument;
-            // Desativa todos os botões
-            guitarButtons.forEach(b => {
-              if (b) b.classList.remove('active');
-            });
-            // Ativa o botão clicado
-            this.classList.add('active');
-            // Atualiza o select de instrumento
-            ui.melodyInstrument.value = instrument;
-            // Atualiza o estado da melodia
-            state.melodyPlan.forEach(event => {
-              if (event && event.type === 'start') {
-                event.instrument = instrument;
-              }
-            });
-            // Carrega os samples necessários
-            ensureMelodySamplesNeeded();
-          });
-        }
-      });
-      // Inicializa o number picker para mobile
-      if (isMobileDevice()) {
-        initializeNumberPicker();
-      }
-      // Habilita todos os botões após o carregamento
-      const buttons = document.querySelectorAll('button');
-      buttons.forEach(btn => {
-        btn.disabled = false;
-        btn.style.opacity = '1';
-      });
-    }
-    // Inicializa a aplicação quando a página carrega
-    window.addEventListener('load', initializeApp);
+  // Event listeners
+  ui.play.addEventListener('click', onPlay);
+  ui.pause.addEventListener('click', onPause);
+  ui.stop.addEventListener('click', onStop);
+  ui.previous.addEventListener('click', onPrevious);
 
-    // Constantes adicionais necessárias
-    const ORDER_E_UP = ['E', 'F', 'FS', 'G', 'GS', 'A', 'AS', 'B', 'C', 'CS', 'D', 'DS'];
-    const NUM_TO_NAME = {
-      1: 'E', 2: 'F', 3: 'FS', 4: 'G', 5: 'GS', 6: 'A', 7: 'AS', 8: 'B', 9: 'C', 10: 'CS',
-      11: 'D', 12: 'DS', 13: 'E', 14: 'F', 15: 'FS', 16: 'G', 17: 'GS', 18: 'A', 19: 'AS',
-      20: 'B', 21: 'C', 22: 'CS', 23: 'D', 24: 'DS', 25: 'E', 26: 'F', 27: 'FS', 28: 'G',
-      29: 'GS', 30: 'A', 31: 'AS', 32: 'B', 33: 'C', 34: 'CS', 35: 'D', 36: 'DS', 37: 'E',
-      38: 'F', 39: 'FS', 40: 'G', 41: 'GS', 42: 'A', 43: 'AS', 44: 'B', 45: 'C', 46: 'CS',
-      47: 'D', 48: 'DS', 49: 'E'
-    };
+  // CORREÇÃO: Conectar botões de mute corretamente
+  ui.muteBass.addEventListener("click", () => toggleMute(ui.muteBass, "bass"));
+  ui.muteDrums.addEventListener("click", () => toggleMute(ui.muteDrums, "drums"));
+  ui.muteClean.addEventListener("click", () => toggleMute(ui.muteClean, "clean"));
+  ui.muteDist.addEventListener("click", () => toggleMute(ui.muteDist, "dist"));
+  ui.mutePianoString.addEventListener("click", () => toggleMute(ui.mutePianoString, "pianoString"));
+  ui.muteGuitarraEcho.addEventListener("click", () => toggleMute(ui.muteGuitarraEcho, "guitarraEcho"));
+  ui.muteGuitarraLimpaDedilhada.addEventListener("click", () => toggleMute(ui.muteGuitarraLimpaDedilhada, "guitarraLimpaDedilhada"));
+  ui.muteOrgao.addEventListener("click", () => toggleMute(ui.muteOrgao, "orgao"));
+
+  // CORREÇÃO: Atualizar estado visual inicial dos botões de mute
+  Object.keys(mute).forEach(instrument => {
+    const button = document.getElementById(`mute${instrument.charAt(0).toUpperCase() + instrument.slice(1)}`);
+    if (button) {
+      button.setAttribute('data-mute', mute[instrument] ? 'on' : 'off'); // <-- LINHA CRUCIAL: DESCOMENTADA
+      button.classList.toggle('muted', mute[instrument]);
+      // Atualizar ícone inicial
+      const label = button.textContent.replace(/[🔇🎸🥁🔥🎹]/g, '').trim();
+      if (mute[instrument]) {
+        button.textContent = `🔇 ${label}`;
+      } else {
+        let icon = "🎸";
+        if (instrument === 'drums') icon = "🥁";
+        if (instrument === 'dist') icon = "🔥";
+        if (instrument === 'pianoString' || instrument === 'orgao') icon = "🎹";
+        button.textContent = `${icon} ${label}`;
+      }
+    }
+  });
+
+  // ===== CORREÇÃO FINAL: Força a atualização de TODOS os ganhos após a inicialização da UI =====
+  Object.keys(mute).forEach(instrument => {
+    let gainNode = null;
+    switch(instrument) {
+      case 'bass': gainNode = audio.bassGain; break;
+      case 'drums': gainNode = audio.drumGain; break;
+      case 'clean': gainNode = audio.cleanGain; break;
+      case 'dist': gainNode = audio.distGain; break;
+      case 'pianoString': gainNode = audio.pianoStringGain; break;
+      case 'guitarraEcho': gainNode = audio.guitarraEchoGain; break;
+      case 'guitarraLimpaDedilhada': gainNode = audio.guitarraLimpaDedilhadaGain; break;
+      case 'orgao': gainNode = audio.orgaoGain; break;
+      case 'melody': gainNode = audio.melodyGain; break;
+    }
+    if (gainNode && audio.ctx) {
+      if (mute[instrument]) {
+        gainNode.gain.setValueAtTime(0, audio.ctx.currentTime);
+      } else {
+        // Restaura o volume do slider correspondente
+        const sliderId = `vol${instrument.charAt(0).toUpperCase() + instrument.slice(1)}`;
+        const slider = document.getElementById(sliderId);
+        if (slider) {
+          const sliderValue = parseFloat(slider.value);
+          gainNode.gain.setValueAtTime(sliderValue, audio.ctx.currentTime);
+        }
+      }
+    }
+  });
+
+  // Continuação da inicialização
+  ui.btnMelodyAdd.addEventListener('click', addMelodyBlock);
+  ui.btnMelodyClear.addEventListener('click', clearMelodyBlocks);
+  if (ui.btnOpenManual) {
+    ui.btnOpenManual.addEventListener('click', () => {
+      window.open('jam-on-composicao-manual.html', '_blank');
+    });
+  }
+
+  // Inicializa os botões de guitarra e órgão
+  const guitarButtons = [
+    ui.guitar1, ui.guitar2, ui.guitar3, ui.guitar4, ui.guitar5, 
+    ui.guitarEcho, ui.guitarLimpaDedilhada, ui.organ
+  ];
+  guitarButtons.forEach(btn => {
+    if (btn) {
+      btn.addEventListener('click', function() {
+        const instrument = this.dataset.instrument;
+        // Desativa todos os botões
+        guitarButtons.forEach(b => {
+          if (b) b.classList.remove('active');
+        });
+        // Ativa o botão clicado
+        this.classList.add('active');
+        // Atualiza o select de instrumento
+        ui.melodyInstrument.value = instrument;
+        // Atualiza o estado da melodia
+        state.melodyPlan.forEach(event => {
+          if (event && event.type === 'start') {
+            event.instrument = instrument;
+          }
+        });
+        // Carrega os samples necessários
+        ensureMelodySamplesNeeded();
+      });
+    }
+  });
+
+  // Inicializa o number picker para mobile
+  if (isMobileDevice()) {
+    initializeNumberPicker();
+  }
+
+  // Habilita todos os botões após o carregamento
+  const buttons = document.querySelectorAll('button');
+  buttons.forEach(btn => {
+    btn.disabled = false;
+    btn.style.opacity = '1';
+  });
+}
 
     function getBassNotesFromScale(degree, scale, chordType) {
       // Determina se o acorde DEVE ser menor com base na qualidade da tonalidade
