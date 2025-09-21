@@ -1405,24 +1405,23 @@ function startScheduler() {
   state.schedulerTimer = setInterval(scheduler, 50);
   console.log('Scheduler iniciado');
 }
-// Substitua todas as definições antigas por esta
 function scheduleStep(stepIdx, time) {
   try {
-    // fallback: quando chamado sem args (scheduler chama assim), usa estado atual
-    if (typeof stepIdx === 'undefined' || typeof time === 'undefined') {
+    // fallback: se for chamada sem argumentos pelo scheduler
+    if (typeof stepIdx === "undefined" || typeof time === "undefined") {
       time = state.nextNoteTime || audio.ctx.currentTime;
       stepIdx = state.stepIndex || 0;
     }
 
-    const beats = meterToBeats(state.meter || '4/4');
+    const beats = meterToBeats(state.meter || "4/4");
     const stepsPerBar = beats * 4;
     const isNewBar = (stepIdx % stepsPerBar) === 0;
 
     // ===== BATERIA =====
     if (state.drumSeq && state.drumSeq.length) {
       const drumToken = state.drumSeq[stepIdx % state.drumSeq.length];
-      if (drumToken && drumToken !== '-' && !mute.drums) {
-        const buf = (state.buffers && state.buffers.drums) ? state.buffers.drums[drumToken] : null;
+      if (drumToken && drumToken !== "-" && !mute.drums) {
+        const buf = state.buffers.drums?.[drumToken];
         if (buf) {
           const src = audio.ctx.createBufferSource();
           src.buffer = buf;
@@ -1435,10 +1434,9 @@ function scheduleStep(stepIdx, time) {
     // ===== BAIXO =====
     if (state.bassPlan && state.bassPlan.length) {
       const bassNote = state.bassPlan[stepIdx % state.bassPlan.length];
-      if (bassNote && bassNote !== '-' && bassNote !== 'x' && !mute.bass) {
-        const buf = (state.buffers && state.buffers.bass) ? state.buffers.bass[bassNote] : null;
+      if (bassNote && bassNote !== "-" && bassNote !== "x" && !mute.bass) {
+        const buf = state.buffers.bass?.[bassNote];
         if (buf) {
-          // para nota anterior do baixo (se houver) e agenda nova
           if (state.lastBassSource) {
             try { state.lastBassSource.stop(time); } catch (e) {}
             state.lastBassSource = null;
@@ -1457,59 +1455,113 @@ function scheduleStep(stepIdx, time) {
 
     // ===== HARMONIA / ACORDES =====
     if (isNewBar && state.chordPlan && state.chordPlan.length) {
-      // atualiza índice de acorde corrente
       state.currentChordIndex = Math.floor(stepIdx / stepsPerBar) % state.chordPlan.length;
       const chord = state.chordPlan[state.currentChordIndex];
+
       if (chord) {
-        // exemplos de reprodução de samples de acorde (checa buffers)
+        // Guitarra limpa
         if (!mute.clean) {
-          const url = `guitarraLimpa/${chord.note}/${chord.note}${chord.type || ''}.mp3`;
+          const url = `guitarraLimpa/${chord.note}/${chord.note}${chord.type || ""}.mp3`;
           const buf = state.buffers.guitar?.[url];
           if (buf) {
             const src = audio.ctx.createBufferSource();
             src.buffer = buf;
             src.connect(audio.cleanGain);
             src.start(time);
-            state.lastCleanSource = src;
           }
         }
-        // (outros instrumentos de acorde seguem a mesma lógica)
+
+        // Guitarra distorcida
+        if (!mute.dist) {
+          const url = `guitarraDistorcao/${chord.note}/${chord.note}${chord.type || ""}.mp3`;
+          const buf = state.buffers.dist?.[url];
+          if (buf) {
+            const src = audio.ctx.createBufferSource();
+            src.buffer = buf;
+            src.connect(audio.distGain);
+            src.start(time);
+          }
+        }
+
+        // Piano String
+        if (!mute.pianoString) {
+          const url = `assets/PianoStringChord/${chord.note}/${chord.note}${chord.type || ""}.mp3`;
+          const buf = state.buffers.pianoString?.[url];
+          if (buf) {
+            const src = audio.ctx.createBufferSource();
+            src.buffer = buf;
+            src.connect(audio.pianoStringGain);
+            src.start(time);
+          }
+        }
+
+        // Guitarra Echo
+        if (!mute.guitarraEcho) {
+          const url = `GuitarraEcho/${chord.note}/${chord.note}${chord.type || ""}.mp3`;
+          const buf = state.buffers.guitarraEcho?.[url];
+          if (buf) {
+            const src = audio.ctx.createBufferSource();
+            src.buffer = buf;
+            src.connect(audio.guitarraEchoGain);
+            src.start(time);
+          }
+        }
+
+        // Guitarra Limpa Dedilhada
+        if (!mute.guitarraLimpaDedilhada) {
+          const url = `GuitarraLimpaDedilhada/${chord.note}/${chord.note}${chord.type || ""}.mp3`;
+          const buf = state.buffers.guitarraLimpaDedilhada?.[url];
+          if (buf) {
+            const src = audio.ctx.createBufferSource();
+            src.buffer = buf;
+            src.connect(audio.guitarraLimpaDedilhadaGain);
+            src.start(time);
+          }
+        }
+
+        // Órgão
+        if (!mute.orgao) {
+          const url = `Orgao/${chord.note}/${chord.note}${chord.type || ""}.mp3`;
+          const buf = state.buffers.orgao?.[url];
+          if (buf) {
+            const src = audio.ctx.createBufferSource();
+            src.buffer = buf;
+            src.connect(audio.orgaoGain);
+            src.start(time);
+          }
+        }
       }
     }
 
     // ===== MELODIA =====
     if (state.melodyPlan && state.melodyPlan.length > 0) {
       const melodyEvent = state.melodyPlan[stepIdx % state.melodyPlan.length];
-      if (melodyEvent && melodyEvent.type === 'start' && !mute.melody) {
-        // prioriza adaptedNumber se existir
-        const numberToPlay = (melodyEvent.adaptedNumber != null) ? melodyEvent.adaptedNumber : melodyEvent.originalNumber;
+      if (melodyEvent && melodyEvent.type === "start" && !mute.melody) {
+        const numberToPlay = (melodyEvent.adaptedNumber != null)
+          ? melodyEvent.adaptedNumber
+          : melodyEvent.originalNumber;
         const instrument = melodyEvent.instrument || ui.melodyInstrument.value;
 
-        // atualiza estado
         state.lastMelodyNote = numberToPlay;
         lastMelodyTime = time;
 
-        // função centralizada para tocar (ver abaixo)
         playMelodyNumber(time, numberToPlay, instrument);
-      } else if ((melodyEvent && melodyEvent.type === 'mute') || mute.melody) {
-        // para a melodia (se houver)
+      } else if ((melodyEvent && melodyEvent.type === "mute") || mute.melody) {
         stopMelodyAt(time);
         lastMelodyTime = time;
       }
     }
-
   } catch (err) {
-    console.error('[scheduleStep] erro ao agendar step:', err);
+    console.error("[scheduleStep] erro:", err);
   } finally {
-    // Importante: sempre avança o ponteiro do scheduler para evitar loop infinito
-    // se algo der errado dentro da função, ainda assim evitamos que o while do scheduler trave.
-    state.stepIndex = (typeof state.stepIndex === 'number') ? state.stepIndex + 1 : 1;
-    // Garante sixteenthDur coerente
+    // garante avanço do scheduler
+    state.stepIndex = (typeof state.stepIndex === "number") ? state.stepIndex + 1 : 1;
     state.sixteenthDur = state.sixteenthDur || (60 / (state.bpm || 100) / 4);
-    state.nextNoteTime = (typeof state.nextNoteTime === 'number') ? state.nextNoteTime + state.sixteenthDur : (audio.ctx.currentTime + state.sixteenthDur);
+    state.nextNoteTime = (typeof state.nextNoteTime === "number")
+      ? state.nextNoteTime + state.sixteenthDur
+      : (audio.ctx.currentTime + state.sixteenthDur);
   }
 }
-
 
     function updateCurrentChordDisplay() {
       if (state.chordPlan.length > 0) {
@@ -1967,8 +2019,67 @@ function buildMelodyPlanFromBlocks() {
   state.melodyPlan = plan;
 }
 
+async function ensureHarmonicSamplesNeeded() {
+  if (!state.chordPlan || state.chordPlan.length === 0) return;
 
+  const toLoad = [];
 
+  for (const chord of state.chordPlan) {
+    if (!chord) continue;
+
+    // Guitarra limpa
+    if (!mute.clean) {
+      const url = `guitarraLimpa/${chord.note}/${chord.note}${chord.type || ""}.mp3`;
+      if (!state.buffers.guitar?.[url]) toLoad.push({ url, bucket: "guitar" });
+    }
+
+    // Guitarra distorcida
+    if (!mute.dist) {
+      const url = `guitarraDistorcao/${chord.note}/${chord.note}${chord.type || ""}.mp3`;
+      if (!state.buffers.dist?.[url]) toLoad.push({ url, bucket: "dist" });
+    }
+
+    // Piano String
+    if (!mute.pianoString) {
+      const url = `assets/PianoStringChord/${chord.note}/${chord.note}${chord.type || ""}.mp3`;
+      if (!state.buffers.pianoString?.[url]) toLoad.push({ url, bucket: "pianoString" });
+    }
+
+    // Guitarra Echo
+    if (!mute.guitarraEcho) {
+      const url = `GuitarraEcho/${chord.note}/${chord.note}${chord.type || ""}.mp3`;
+      if (!state.buffers.guitarraEcho?.[url]) toLoad.push({ url, bucket: "guitarraEcho" });
+    }
+
+    // Guitarra Limpa Dedilhada
+    if (!mute.guitarraLimpaDedilhada) {
+      const url = `GuitarraLimpaDedilhada/${chord.note}/${chord.note}${chord.type || ""}.mp3`;
+      if (!state.buffers.guitarraLimpaDedilhada?.[url]) toLoad.push({ url, bucket: "guitarraLimpaDedilhada" });
+    }
+
+    // Órgão
+    if (!mute.orgao) {
+      const url = `Orgao/${chord.note}/${chord.note}${chord.type || ""}.mp3`;
+      if (!state.buffers.orgao?.[url]) toLoad.push({ url, bucket: "orgao" });
+    }
+  }
+
+  const promises = toLoad.map(item =>
+    loadBuffer(item.url).then(buf => {
+      if (buf) {
+        if (!state.buffers[item.bucket]) state.buffers[item.bucket] = {};
+        state.buffers[item.bucket][item.url] = buf;
+        console.log(`[Harmonia] Carregado: ${item.url}`);
+      } else {
+        console.warn(`[Harmonia] Falhou: ${item.url}`);
+      }
+    }).catch(err => {
+      console.warn(`[Harmonia] Erro em ${item.url}:`, err);
+    })
+  );
+
+  await Promise.all(promises);
+}
  async function ensureMelodySamplesNeeded() {
   if (!state.melodyPlan || state.melodyPlan.length === 0) return;
   const instrument = ui.melodyInstrument.value;
@@ -2012,26 +2123,27 @@ function buildMelodyPlanFromBlocks() {
 
   await Promise.all(promises);
 }
-
 function playMelodyNumber(time, number, instrumentType) {
   const folder = MELODY_INSTRUMENTS[instrumentType];
   if (!folder) {
-    console.warn(`[Melodia] Instrumento desconhecido: ${instrumentType}`);
+    console.warn(`[Melodia] Instrumento inválido: ${instrumentType}`);
     return;
   }
+
   const noteName = NUM_TO_NAME[number];
-  let url = `${folder}/${number}${noteName}.mp3`; // primeira tentativa: com sufixo
+  let url = `${folder}/${number}${noteName}.mp3`;
   let buf = state.buffers.melody?.[url];
+
   if (!buf) {
     url = `${folder}/${number}.mp3`;
     buf = state.buffers.melody?.[url];
   }
+
   if (!buf) {
-    console.warn(`[Melodia] Sample não carregado para nota ${number} (${noteName}) - ${instrumentType}`);
+    console.warn(`[Melodia] Sample ausente: ${number} (${noteName}) em ${instrumentType}`);
     return;
   }
 
-  // para última fonte se estiver tocando
   if (state.lastMelodySource && !state.lastMelodySource.finished) {
     try { state.lastMelodySource.stop(time); } catch (e) {}
   }
@@ -2043,7 +2155,7 @@ function playMelodyNumber(time, number, instrumentType) {
 
   if (!audio.melodyGain) {
     audio.melodyGain = audio.ctx.createGain();
-    audio.melodyGain.gain.value = 0.50;
+    audio.melodyGain.gain.value = 0.5;
     audio.melodyGain.connect(audio.master);
   }
   g.connect(audio.melodyGain);
@@ -2076,6 +2188,7 @@ function stopMelodyAt(time) {
     } catch (e) {}
   }
 }
+
 
     // ===== NUMBER PICKER PARA MOBILE =====
     function initializeNumberPicker() {
