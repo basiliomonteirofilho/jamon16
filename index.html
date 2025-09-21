@@ -1178,7 +1178,68 @@ async function loadBuffer(url) {
       osc.start(time);
       osc.stop(time + 0.07);
     }
-async function onPlay()
+
+    const ORDER_E_UP = ['E', 'F', 'FS', 'G', 'GS', 'A', 'AS', 'B', 'C', 'CS', 'D', 'DS'];
+const NUM_TO_NAME = {
+  1: 'E', 2: 'F', 3: 'FS', 4: 'G', 5: 'GS', 6: 'A', 7: 'AS', 
+  8: 'B', 9: 'C', 10: 'CS', 11: 'D', 12: 'DS', 13: 'E', 14: 'F', 
+  15: 'FS', 16: 'G', 17: 'GS', 18: 'A', 19: 'AS', 20: 'B', 21: 'C', 
+  22: 'CS', 23: 'D', 24: 'DS', 25: 'E', 26: 'F', 27: 'FS', 28: 'G', 
+  29: 'GS', 30: 'A', 31: 'AS', 32: 'B', 33: 'C', 34: 'CS', 35: 'D', 
+  36: 'DS', 37: 'E', 38: 'F', 39: 'FS', 40: 'G', 41: 'GS', 42: 'A', 
+  43: 'AS', 44: 'B', 45: 'C', 46: 'CS', 47: 'D', 48: 'DS', 49: 'E'
+};
+
+async function onPlay() {
+  try {
+    if (!audio.ctx) {
+      await initAudio();
+    }
+    
+    if (audio.ctx.state === 'suspended') {
+      await audio.ctx.resume();
+    }
+    
+    if (state.paused) {
+      // Retomar da pausa
+      state.paused = false;
+      state.nextNoteTime = audio.ctx.currentTime;
+    } else {
+      // Novo playback
+      onStop();
+      await buildBassAndChordPlan();
+      buildMelodyPlanFromBlocks();
+      
+      // Salvar estado atual para possível "voltar"
+      if (!state.previousPlaybacks) state.previousPlaybacks = [];
+      state.previousPlaybacks.push({
+        bassPlan: [...state.bassPlan],
+        chordPlan: [...state.chordPlan],
+        drumSeq: [...state.drumSeq],
+        melodyPlan: [...state.melodyPlan],
+        currentGroove: {...state.currentGroove},
+        meter: state.meter,
+        bpm: state.bpm,
+        key: state.key,
+        keyIdx: state.keyIdx,
+        quality: state.quality,
+        signatureTag: state.signatureTag,
+        chordProgression: [...state.chordProgression]
+      });
+      
+      state.running = true;
+      state.stepIndex = 0;
+      state.sixteenthDur = 60 / state.bpm / 4;
+      state.nextNoteTime = audio.ctx.currentTime;
+      startScheduler();
+    }
+    
+    updateCurrentChordDisplay();
+  } catch (error) {
+    console.error('Erro ao iniciar playback:', error);
+    alert('Erro ao iniciar: ' + error.message);
+  }
+}
 function onPause() {
   if (state.running && !state.paused) {
     state.paused = true;
@@ -1337,17 +1398,18 @@ function degreeToChord(keyIdx, quality, degree) {
 }
 function scheduleStep(stepIdx, time) {
   const chord = state.chordPlan[stepIdx % state.chordPlan.length];
-  // ===== Baixo =====
+ 
   // ===== Baixo =====
 if (!mute.bass && state.bassPlan[stepIdx]) {
   const note = state.bassPlan[stepIdx];
-  // CORREÇÃO: Acessa o buffer diretamente pela chave 'note', não por uma URL montada
-  const buf = state.buffers.bass?.[note];
-  if (buf) {
-    const src = audio.ctx.createBufferSource();
-    src.buffer = buf;
-    src.connect(audio.bassGain);
-    src.start(time);
+  if (note !== '-' && note !== 'x') {
+    const buf = state.buffers.bass[note];
+    if (buf) {
+      const src = audio.ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(audio.bassGain);
+      src.start(time);
+    }
   }
 }
 
@@ -2494,6 +2556,18 @@ function stopMelodyAt(time) {
   
   return [PITCHES[(state.keyIdx + DEGREE_TO_ROOT[degree]) % 12]];
 }
+
+function debugBuffers() {
+  console.log('Buffers carregados:');
+  console.log('- Drums:', Object.keys(state.buffers.drums || {}));
+  console.log('- Bass:', Object.keys(state.buffers.bass || {}));
+  console.log('- Guitar:', Object.keys(state.buffers.guitar || {}));
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  initializeApp();
+  console.log('Jam On inicializado');
+});
 
   </script>
 </body>
