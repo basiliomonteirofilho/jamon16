@@ -1666,53 +1666,59 @@ function scheduleStep(stepIdx, time) {
       document.querySelectorAll('.chord-item.current').forEach(el => el.classList.remove('current'));
     }
 function toggleMute(button, instrument) {
-      const isCurrentlyMuted = mute[instrument];
-      // Alterna o estado
-      mute[instrument] = !isCurrentlyMuted;
-      // Atualiza a interface
-      button.setAttribute('data-mute', mute[instrument] ? 'on' : 'off');
-      button.classList.toggle('muted', mute[instrument]);
-      // Atualiza o ícone
-      const label = button.textContent.replace(/[🔇🎸🥁🔥🎹]/g, '').trim();
-      if (mute[instrument]) {
+    const isCurrentlyMuted = mute[instrument];
+    // Alterna o estado
+    mute[instrument] = !isCurrentlyMuted;
+    // Atualiza a interface
+    button.setAttribute('data-mute', mute[instrument] ? 'on' : 'off');
+    button.classList.toggle('muted', mute[instrument]);
+    // Atualiza o ícone
+    const label = button.textContent.replace(/[🔇🎸🥁🔥🎹]/g, '').trim();
+    if (mute[instrument]) {
         button.textContent = `🔇 ${label}`;
-      } else {
+    } else {
         // Restaura o ícone original baseado no instrumento
         let icon = "🎸"; // padrão
         if (instrument === 'drums') icon = "🥁";
         if (instrument === 'dist') icon = "🔥";
         if (instrument === 'pianoString' || instrument === 'orgao') icon = "🎹";
         button.textContent = `${icon} ${label}`;
-      }
-      // Atualiza o ganho do áudio se o contexto estiver inicializado
-      if (audio.ctx) {
+    }
+    // Atualiza o ganho do áudio se o contexto estiver inicializado
+    if (audio.ctx) {
         let gainNode = null;
         switch(instrument) {
-          case 'bass': gainNode = audio.bassGain; break;
-          case 'drums': gainNode = audio.drumGain; break;
-          case 'clean': gainNode = audio.cleanGain; break;
-          case 'dist': gainNode = audio.distGain; break;
-          case 'pianoString': gainNode = audio.pianoStringGain; break;
-          case 'guitarraEcho': gainNode = audio.guitarraEchoGain; break;
-          case 'guitarraLimpaDedilhada': gainNode = audio.guitarraLimpaDedilhadaGain; break;
-          case 'orgao': gainNode = audio.orgaoGain; break;
+            case 'bass': gainNode = audio.bassGain; break;
+            case 'drums': gainNode = audio.drumGain; break;
+            case 'clean': gainNode = audio.cleanGain; break;
+            case 'dist': gainNode = audio.distGain; break;
+            case 'pianoString': gainNode = audio.pianoStringGain; break;
+            case 'guitarraEcho': gainNode = audio.guitarraEchoGain; break;
+            case 'guitarraLimpaDedilhada': gainNode = audio.guitarraLimpaDedilhadaGain; break;
+            case 'orgao': gainNode = audio.orgaoGain; break;
         }
         if (gainNode) {
-          if (mute[instrument]) {
-            gainNode.gain.setValueAtTime(0, audio.ctx.currentTime);
-          } else {
-            // Restaura o volume do slider correspondente
-            const sliderId = `vol${instrument.charAt(0).toUpperCase() + instrument.slice(1)}`;
-            const slider = document.getElementById(sliderId);
-            if (slider) {
-              const sliderValue = parseFloat(slider.value);
-              gainNode.gain.setValueAtTime(sliderValue, audio.ctx.currentTime);
+            const currentTime = audio.ctx.currentTime;
+            if (mute[instrument]) {
+                // Aplica uma rampa suave para mutar
+                gainNode.gain.cancelScheduledValues(currentTime);
+                gainNode.gain.setValueAtTime(gainNode.gain.value, currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.0, currentTime + 0.05);
+            } else {
+                // Restaura o volume do slider correspondente com rampa suave
+                const sliderId = `vol${instrument.charAt(0).toUpperCase() + instrument.slice(1)}`;
+                const slider = document.getElementById(sliderId);
+                if (slider) {
+                    const sliderValue = parseFloat(slider.value);
+                    gainNode.gain.cancelScheduledValues(currentTime);
+                    gainNode.gain.setValueAtTime(gainNode.gain.value, currentTime);
+                    gainNode.gain.linearRampToValueAtTime(sliderValue, currentTime + 0.05);
+                }
             }
-          }
         }
-      }
-      console.log(`${instrument} ${mute[instrument] ? 'mutado' : 'desmutado'}`);
     }
+    console.log(`${instrument} ${mute[instrument] ? 'mutado' : 'desmutado'}`);
+}
     function chordTriad(rootPitchName, quality) {
       const rootIdx = PITCHES.indexOf(rootPitchName);
       if (rootIdx === -1) return [rootPitchName];
