@@ -1824,20 +1824,19 @@ function adaptNoteToChord(note, chord) {
   return best;
 }
 
-  // Substitua por esta versão consolidada de buildMelodyPlanFromBlocks
-function buildMelodyPlanFromBlocks() {
+  function buildMelodyPlanFromBlocks() {
   // cria um plano uniforme: array de objetos { type:'start'|'mute'|'rest', originalNumber, adaptedNumber, instrument }
   const plan = [];
   const beats = meterToBeats(state.meter || '4/4');
   const stepsPerBar = beats * 4;
   let stepIndex = 0;
 
-  // itera blocos (cada bloco é uma div com inputs)
   for (let b = 0; b < state.melodyBlocks.length; b++) {
     const block = state.melodyBlocks[b];
     const inputs = Array.from(block.querySelectorAll('input'));
     const blockStartIndex = stepIndex;
-    // primeiro coleta valores brutos do bloco para decidir isolamento / última nota
+
+    // pega valores brutos do bloco
     const rawVals = inputs.map(inp => (inp.value || '').toString().trim());
 
     for (let i = 0; i < rawVals.length; i++) {
@@ -1857,51 +1856,59 @@ function buildMelodyPlanFromBlocks() {
 
       const num = parseInt(val, 10);
       if (isNaN(num) || num < 1 || num > 49) {
-        // inválido -> trata como rest (não trava a execução)
         plan.push({ type: 'rest' });
         stepIndex++;
         continue;
       }
 
-      // determina se esta nota é "isolated" (próxima posição não é start) ou se é a ÚLTIMA do bloco
+      // verifica se é nota isolada ou última do bloco
       const nextVal = (i + 1 < rawVals.length) ? rawVals[i + 1] : null;
       const nextIsStart = nextVal !== null && /^\d+$/.test(nextVal);
       const isIsolated = !nextIsStart;
       const isLastOfBlock = (i === rawVals.length - 1);
 
-      // descobre acorde atual (se houver)
+      // adapta para acorde atual
       let adapted = null;
       if (state.chordPlan && state.chordPlan.length > 0) {
         const chordIdx = Math.floor(stepIndex / stepsPerBar) % state.chordPlan.length;
         const chord = state.chordPlan[chordIdx];
-        // usa adaptNumberToChord (preserva comportamento: se isIsolated -> força acorde)
-        adapted = adaptNumberToChord(num, chord.note, chord.type, state.lastMelodyNote || null, (isIsolated || isLastOfBlock));
+        adapted = adaptNumberToChord(
+          num,
+          chord.note,
+          chord.type,
+          state.lastMelodyNote || null,
+          (isIsolated || isLastOfBlock)
+        );
       } else {
-        // sem progressão de acordes definida, mantém número
         adapted = num;
       }
 
       const ev = {
         type: 'start',
         originalNumber: num,
-        adaptedNumber: adapted, // já definido aqui para evitar surpresa de sample não carregado
+        adaptedNumber: adapted,
         instrument: ui.melodyInstrument.value
       };
 
       plan.push(ev);
-      state.lastMelodyNote = adapted; // guarda a última nota tocada (como número)
+      state.lastMelodyNote = adapted;
       stepIndex++;
     }
 
-    // Garantia extra: força a ÚLTIMA nota do bloco a pertencer ao acorde (se houver algum 'start' no bloco)
-    // encontra último evento do bloco que seja 'start' e força adaptNumberToChord com isIsolated=true
+    // força a última nota do bloco a estar no acorde
     for (let j = stepIndex - 1; j >= blockStartIndex; j--) {
       const e = plan[j];
       if (e && e.type === 'start') {
         if (state.chordPlan && state.chordPlan.length > 0) {
           const chordIdx = Math.floor(j / stepsPerBar) % state.chordPlan.length;
           const chord = state.chordPlan[chordIdx];
-          e.adaptedNumber = adaptNumberToChord(e.originalNumber, chord.note, chord.type, (j > 0 && plan[j-1] && plan[j-1].type === 'start') ? plan[j-1].adaptedNumber : null, true);
+          e.adaptedNumber = adaptNumberToChord(
+            e.originalNumber,
+            chord.note,
+            chord.type,
+            (j > 0 && plan[j-1] && plan[j-1].type === 'start') ? plan[j-1].adaptedNumber : null,
+            true
+          );
           state.lastMelodyNote = e.adaptedNumber;
         }
         break;
@@ -1911,6 +1918,7 @@ function buildMelodyPlanFromBlocks() {
 
   state.melodyPlan = plan;
 }
+
 
  // Substitua por esta versão
 async function ensureMelodySamplesNeeded() {
