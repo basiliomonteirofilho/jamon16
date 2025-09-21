@@ -898,8 +898,8 @@ function initializeStyleAndKeySelectors() {
           // ===== Volume master =====
           audio.master.gain.value = 0.9;
           // CORREÇÃO: Volumes iniciais respeitando o estado de mute
-          audio.drumGain.gain.value = mute.drums ? 70 : parseFloat(ui.volDrums.value);
-          audio.bassGain.gain.value = mute.bass ? 70 : parseFloat(ui.volBass.value);
+          audio.drumGain.gain.value = mute.drums ? 0 : parseFloat(ui.volDrums.value);
+          audio.bassGain.gain.value = mute.bass ? 0 : parseFloat(ui.volBass.value);
           audio.cleanGain.gain.value = mute.clean ? 0 : parseFloat(ui.volClean.value);
           audio.distGain.gain.value = mute.dist ? 0 : parseFloat(ui.volDist.value);
           audio.pianoStringGain.gain.value = mute.pianoString ? 0 : parseFloat(ui.volPianoString.value);
@@ -1178,6 +1178,7 @@ async function loadBuffer(url) {
       osc.start(time);
       osc.stop(time + 0.07);
     }
+
 async function onPlay() {
   if (state.running && !state.paused) return;
   try {
@@ -1192,6 +1193,38 @@ async function onPlay() {
     alert('Erro ao iniciar o sistema de áudio. Recarregue a página e clique em Play.');
     return;
   }
+
+  // >>>>> CORREÇÃO ADICIONADA AQUI <<<<<
+  // Força a atualização de TODOS os ganhos no início do playback
+  Object.keys(mute).forEach(instrument => {
+    let gainNode = null;
+    switch(instrument) {
+      case 'bass': gainNode = audio.bassGain; break;
+      case 'drums': gainNode = audio.drumGain; break;
+      case 'clean': gainNode = audio.cleanGain; break;
+      case 'dist': gainNode = audio.distGain; break;
+      case 'pianoString': gainNode = audio.pianoStringGain; break;
+      case 'guitarraEcho': gainNode = audio.guitarraEchoGain; break;
+      case 'guitarraLimpaDedilhada': gainNode = audio.guitarraLimpaDedilhadaGain; break;
+      case 'orgao': gainNode = audio.orgaoGain; break;
+      case 'melody': gainNode = audio.melodyGain; break;
+    }
+    if (gainNode && audio.ctx) {
+      if (mute[instrument]) {
+        gainNode.gain.setValueAtTime(0, audio.ctx.currentTime);
+      } else {
+        // Restaura o volume do slider correspondente
+        const sliderId = `vol${instrument.charAt(0).toUpperCase() + instrument.slice(1)}`;
+        const slider = document.getElementById(sliderId);
+        if (slider) {
+          const sliderValue = parseFloat(slider.value);
+          gainNode.gain.setValueAtTime(sliderValue, audio.ctx.currentTime);
+        }
+      }
+    }
+  });
+  // >>>>> FIM DA CORREÇÃO <<<<<
+
   // Se estiver pausado, retoma de onde parou
   if (state.paused) {
     state.paused = false;
@@ -1199,10 +1232,10 @@ async function onPlay() {
     const currentTime = audio.ctx.currentTime;
     const timeSincePause = currentTime - state.pauseTime;
     state.nextNoteTime = state.nextNoteTime + timeSincePause;
-    // LINHA ADICIONADA: Iniciar scheduler ao retomar
     startScheduler();
     return;
   }
+
   // Salva o playback atual ANTES de gerar um novo
   if (state.bassPlan.length > 0 && state.chordPlan.length > 0) {
     if (!state.previousPlaybacks) state.previousPlaybacks = [];
@@ -1221,6 +1254,7 @@ async function onPlay() {
       chordProgression: [...state.chordProgression]
     });
   }
+
   // Agora inicia um novo playback
   state.bpm = Number(ui.bpm.value) || 100;
   state.sixteenthDur = 60 / state.bpm / 4;
@@ -1237,12 +1271,11 @@ async function onPlay() {
   } catch (e) {
     console.error('Erro na melodia:', e);
   }
-  // REINICIA O ESTADO PARA UM NOVO LOOP
-  state.running = true; // ← CORREÇÃO: Definir como true
+
+  state.running = true;
   state.paused = false;
   state.stepIndex = 0;
   state.nextNoteTime = audio.ctx.currentTime + 0.05;
-  // LINHA ADICIONADA: Iniciar o scheduler
   startScheduler();
   console.log('Playback iniciado. BPM:', state.bpm, 'Metro:', state.meter);
 }
