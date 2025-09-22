@@ -521,7 +521,7 @@ const ui = {
   muteEcho: document.getElementById('muteEcho'),
   muteCleanPicked: document.getElementById('muteCleanPicked'),
   muteOrgan: document.getElementById('muteOrgan'),
-  // --- FIM DOS NOVOS ELEMENTOS ---
+  // --- FIM ---
   bpm: document.getElementById('bpm'),
   meter: document.getElementById('meter'),
   styleSelect: document.getElementById('styleSelect'),
@@ -758,11 +758,7 @@ function initializeStyleAndKeySelectors() {
       return Number(meter.split('/')[0]) || 4;
     }
     function setStatePanel() {
-      // Atualizado para não tentar acessar o elemento 'state' que foi removido
-      // ui.state.innerHTML = `<div>Levada: ${state.signatureTag || '—'}</div><div>Key: ${state.key?.replace('S', '#') || '—'} ${state.quality === 'maj' ? 'Maior' : 'Menor'}</div>`;
-      // Em vez disso, atualizamos apenas o cabeçalho ou outro elemento, se necessário.
-      // Neste caso, como o painel foi removido, esta função pode ser deixada vazia ou removida.
-      // Optamos por deixá-la por enquanto para evitar erros em outras partes do código.
+      // Painel de estado removido conforme solicitado
     }
     let initPromise = null;
    function updateVolume() {
@@ -1202,7 +1198,6 @@ function onPause() {
   if (state.running && !state.paused) {
     state.paused = true;
     state.pauseTime = audio.ctx.currentTime;
-    // ui.state.textContent = "Pausado"; // Removido
   }
 }
   function onPrevious() {
@@ -2112,242 +2107,6 @@ function toggleMute(type, button) {
       src.connect(g);
       g.connect(gainNode);
       g.gain.setValueAtTime(0.0, time);
-      g.gain.linearRampToValueAtTime(gainValue, time + 0.01);
-      src.start(time);
-      // Define um tempo máximo de duração para evitar sobreposição
-      const stopTime = Math.min(time + buffer.duration, time + 2.0, durationInSeconds);
-      src.stop(stopTime);
-      lastSources[instrumentKey] = src;
-    }
-    // Calcula quantos steps (16ªs) cabem na duração desejada
-    const totalSteps = Math.floor(durationInSeconds / sixteenthDur);
-    // Agenda cada step exatamente como no playback em tempo real
-    for (let stepIdx = 0; stepIdx < totalSteps; stepIdx++) {
-      const currentTime = stepIdx * sixteenthDur;
-      const isNewBar = (stepIdx % stepsPerBar) === 0;
-      const currentChordIndex = Math.floor(stepIdx / stepsPerBar) % state.chordPlan.length;
-      const chord = state.chordPlan[currentChordIndex];
-      // ===== BATERIA =====
-      if (!mute.drums) {
-        const drumToken = state.drumSeq[stepIdx % state.drumSeq.length];
-        let drumKey = null;
-        if (['bu', 'bumbo'].includes(drumToken)) drumKey = 'bu';
-        else if (['ca', 'caixa'].includes(drumToken)) drumKey = 'ca';
-        else if (['ch', 'chimbal'].includes(drumToken)) drumKey = 'ch';
-        else if (['ba', 'bumbo-ataque'].includes(drumToken)) drumKey = 'ba';
-        else if (['cch', 'caixa-chimbal'].includes(drumToken)) drumKey = 'cch';
-        else if (['bco', 'bumbo-conducao'].includes(drumToken)) drumKey = 'bco';
-        else if (['co', 'conducao'].includes(drumToken)) drumKey = 'co';
-        else if (['cco', 'caixa-conducao'].includes(drumToken)) drumKey = 'cco';
-        else if (['to1', 'tom-1'].includes(drumToken)) drumKey = 'to1';
-        else if (['to2', 'tom-2'].includes(drumToken)) drumKey = 'to2';
-        else if (['su', 'surdo'].includes(drumToken)) drumKey = 'su';
-        else if (['bch', 'bumbo-chimbal'].includes(drumToken)) drumKey = 'bch';
-        if (drumKey && state.buffers.drums[drumKey]) {
-          const src = offlineCtx.createBufferSource();
-          const g = offlineCtx.createGain();
-          src.buffer = state.buffers.drums[drumKey];
-          src.connect(g);
-          g.connect(drumGain);
-          g.gain.setValueAtTime(0.0, currentTime);
-          g.gain.linearRampToValueAtTime(1.0, currentTime + 0.005);
-          src.start(currentTime);
-        }
-      }
-      // ===== BAIXO =====
-      if (!mute.bass) {
-        const bassCommand = state.bassPlan[stepIdx % state.bassPlan.length];
-        if (bassCommand !== '-' && bassCommand !== 'x' && state.buffers.bass[bassCommand]) {
-          scheduleSample(state.buffers.bass[bassCommand], currentTime, bassGain, 'bass');
-        }
-      }
-      // ===== GUITARRA LIMPA ===== (uma vez por compasso)
-      if (!mute.clean && chord && isNewBar) {
-        let fullChordName = chord.note + (chord.type || '');
-        const url = `guitarraLimpa/${chord.note}/${fullChordName}.mp3`;
-        const buf = state.buffers.guitar?.[url];
-        if (buf) {
-          scheduleSample(buf, currentTime, cleanGain, 'clean');
-        }
-      }
-      // ===== PIANO STRING ===== (uma vez por compasso)
-      if (!mute.pianoString && chord && isNewBar) {
-        let fullChordName = chord.note + (chord.type || '');
-        const url = `assets/PianoStringChord/${chord.note}/${fullChordName}.mp3`;
-        const buf = state.buffers.guitar?.[url];
-        if (buf) {
-          scheduleSample(buf, currentTime, pianoStringGain, 'pianoString');
-        }
-      }
-      // ===== GUITARRA DISTORCIDA =====
-      if (!mute.dist) {
-        if (state.currentGroove && state.currentGroove.guitarRhythm) {
-          if (!state.guitarPlan) {
-            state.guitarPlan = expandRhythm(state.currentGroove.guitarRhythm, state.bassPlan.length);
-          }
-          const guitarCommand = state.guitarPlan[stepIdx % state.guitarPlan.length];
-          if (guitarCommand && guitarCommand !== '-' && chord) {
-            let baseFolder = 'guitarraDistorcao';
-            if (guitarCommand === 'ab') baseFolder = 'guitarraDistorcao/abafadas';
-            else if (guitarCommand === 'de') baseFolder = 'guitarraDistorcao/dedilhada';
-            else if (guitarCommand === 'so') baseFolder = 'guitarraDistorcao';
-            let fullChordName = chord.note + (chord.type || '');
-            const url = `${baseFolder}/${chord.note}/${fullChordName}.mp3`;
-            const buf = state.buffers.guitar?.[url];
-            if (buf) {
-              scheduleSample(buf, currentTime, distGain, 'dist');
-            }
-          }
-        } else if (chord && isNewBar) {
-          let fullChordName = chord.note + (chord.type || '');
-          const url = `guitarraDistorcao/${chord.note}/${fullChordName}.mp3`;
-          const buf = state.buffers.guitar?.[url];
-          if (buf) {
-            scheduleSample(buf, currentTime, distGain, 'dist');
-          }
-        }
-      }
-      // ===== GUITARRA ECHO ===== (uma vez por compasso)
-      if (!mute.echo && chord && isNewBar) {
-        let fullChordName = chord.note + (chord.type || '');
-        const url = `GuitarraEcho/${chord.note}/${fullChordName}.mp3`;
-        const buf = state.buffers.guitar?.[url];
-        if (buf) {
-          scheduleSample(buf, currentTime, echoGain, 'echo');
-        }
-      }
-      // ===== GUITARRA LIMPA DEDILHADA ===== (uma vez por compasso)
-      if (!mute.cleanPicked && chord && isNewBar) {
-        let fullChordName = chord.note + (chord.type || '');
-        const url = `GuitarraLimpaDedilhada/${chord.note}/${fullChordName}.mp3`;
-        const buf = state.buffers.guitar?.[url];
-        if (buf) {
-          scheduleSample(buf, currentTime, cleanPickedGain, 'cleanPicked');
-        }
-      }
-      // ===== ORGÃO ===== (uma vez por compasso)
-      if (!mute.organ && chord && isNewBar) {
-        let fullChordName = chord.note + (chord.type || '');
-        const url = `Orgao/${chord.note}/${fullChordName}.mp3`;
-        const buf = state.buffers.guitar?.[url];
-        if (buf) {
-          scheduleSample(buf, currentTime, organGain, 'organ');
-        }
-      }
-      // ===== MELODIA =====
-      if (state.melodyPlan.length > 0) {
-        const melodyEvent = state.melodyPlan[stepIdx % state.melodyPlan.length];
-        if (melodyEvent && melodyEvent.type === 'start') {
-          let adaptedNumber = melodyEvent.adaptedNumber;
-          if (adaptedNumber === null) {
-            adaptedNumber = adaptNumberToChord(
-              melodyEvent.originalNumber,
-              chord.note,
-              chord.type,
-              state.lastMelodyNote
-            );
-          }
-          const instrument = melodyEvent.instrument || ui.melodyInstrument.value;
-          const folder = MELODY_INSTRUMENTS[instrument];
-          if (folder) {
-            const noteName = NUM_TO_NAME[adaptedNumber];
-            const url = `${folder}/${adaptedNumber}${noteName}.mp3`;
-            const buf = state.buffers.melody[url];
-            if (buf) {
-              scheduleSample(buf, currentTime, melodyGain, 'melody');
-            }
-          }
-        } else if (melodyEvent && melodyEvent.type === 'mute') {
-          if (lastSources.melody) {
-            try {
-              lastSources.melody.stop(currentTime);
-            } catch (e) {}
-            lastSources.melody = null;
-          }
-        }
-      }
-    }
-    // Inicia a renderização offline
-    ui.btnSaveWAV.innerHTML = '⏳ Renderizando...';
-    ui.btnSaveWAV.disabled = true;
-    const renderedBuffer = await offlineCtx.startRendering();
-    // Converte e faz download
-    const wavBlob = audioBufferToWav(renderedBuffer);
-    const fileName = `jam-on-${Math.floor(durationInSeconds)}s-${new Date().toISOString().slice(11,19).replace(/:/g,'-')}.wav`;
-    downloadBlob(wavBlob, fileName);
-    ui.btnSaveWAV.innerHTML = '💾 Salvar como WAV';
-    ui.btnSaveWAV.disabled = false;
-  } catch (error) {
-    console.error('Erro ao renderizar WAV:', error);
-    alert('Erro ao gerar o arquivo de áudio. Verifique o console para mais detalhes.');
-    ui.btnSaveWAV.innerHTML = '💾 Salvar como WAV';
-    ui.btnSaveWAV.disabled = false;
-  }
-}
-    // Modifica o listener do botão para usar a nova função
-    ui.btnSaveWAV.addEventListener('click', async () => {
-      if (!state.running) {
-        alert('Por favor, inicie a reprodução primeiro para poder gravar.');
-        return;
-      }
-      const input = prompt('Digite a duração desejada para o arquivo WAV (em segundos):', '30');
-      const duration = parseFloat(input);
-      if (isNaN(duration) || duration <= 0) {
-        alert('Por favor, insira um número válido maior que zero.');
-        return;
-      }
-      if (duration > 300) { // Limite de 5 minutos para evitar travamentos
-        alert('Por favor, escolha uma duração de até 300 segundos (5 minutos).');
-        return;
-      }
-      await renderAndDownloadWAV(duration);
-    });
-    // ===== INICIALIZAÇÃO =====
-    function initializeApp() {
-  // Event listeners
-  ui.play.addEventListener('click', onPlay);
-  ui.pause.addEventListener('click', onPause);
-  ui.stop.addEventListener('click', onStop);
-  ui.previous.addEventListener('click', onPrevious);
-  ui.muteBass.addEventListener('click', () => toggleMute('bass', ui.muteBass));
-  ui.muteDrums.addEventListener('click', () => toggleMute('drums', ui.muteDrums));
-  ui.muteClean.addEventListener('click', () => toggleMute('clean', ui.muteClean));
-  ui.muteDist.addEventListener('click', () => toggleMute('dist', ui.muteDist));
-  ui.mutePianoString.addEventListener('click', () => toggleMute('pianoString', ui.mutePianoString));
-  // --- NOVOS EVENT LISTENERS ---
-  ui.muteEcho.addEventListener('click', () => toggleMute('echo', ui.muteEcho));
-  ui.muteCleanPicked.addEventListener('click', () => toggleMute('cleanPicked', ui.muteCleanPicked));
-  ui.muteOrgan.addEventListener('click', () => toggleMute('organ', ui.muteOrgan));
-  // --- FIM ---
-  ui.btnMelodyAdd.addEventListener('click', addMelodyBlock);
-  ui.btnMelodyClear.addEventListener('click', clearMelodyBlocks);
-  if (ui.btnOpenManual) {
-    ui.btnOpenManual.addEventListener('click', () => {
-      window.open('jam-on-composicao-manual.html', '_blank');
-    });
-  }
-  // Inicializa o number picker para mobile
-  if (isMobileDevice()) {
-    initializeNumberPicker();
-  }
-  // Atualiza o select de instrumentos de melodia
-  updateMelodyInstrumentSelect();
-  // Habilita todos os botões após o carregamento
-  const buttons = document.querySelectorAll('button');
-  buttons.forEach(btn => {
-    btn.disabled = false;
-    btn.style.opacity = '1';
-  });
-  // Configura estado inicial dos botões de mute
-  toggleMute('clean', ui.muteClean); // Para atualizar o ícone/texto
-  toggleMute('dist', ui.muteDist);
-  toggleMute('pianoString', ui.mutePianoString);
-  toggleMute('echo', ui.muteEcho);
-  toggleMute('cleanPicked', ui.muteCleanPicked);
-  toggleMute('organ', ui.muteOrgan);
-}
-// Inicializa a aplicação quando a página carrega
-window.addEventListener('load', initializeApp);
-  </script>
+      g.gain.linearRampToValueAtTime(gainVa
 </body>
 </html>
