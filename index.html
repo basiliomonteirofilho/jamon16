@@ -495,7 +495,7 @@
     <h3>Selecione uma nota</h3>
     <div id="numberGrid"></div>
   </div>
-  <script>
+ <script>
     // ===== FUNÇÕES PRINCIPAIS =====
      function transposeDown3Semitones(note) {
       const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
@@ -787,7 +787,6 @@ function initializeStyleAndKeySelectors() {
   if (ui.volCleanPickedLabel) ui.volCleanPickedLabel.textContent = Math.round(ui.volCleanPicked.value * 100) + '%';
   if (ui.volOrganLabel) ui.volOrganLabel.textContent = Math.round(ui.volOrgan.value * 100) + '%';
   } // <-- FECHAMENTO ADICIONADO AQUI
-
     async function initAudio() {
   if (audio.ctx) return;
   if (initPromise) return initPromise;
