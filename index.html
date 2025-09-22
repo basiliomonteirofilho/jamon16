@@ -376,9 +376,13 @@
       <div class="mute-buttons">
         <button id="muteBass" data-mute="off">🎸 Baixo</button>
         <button id="muteDrums" data-mute="off">🥁 Bateria</button>
-        <button id="muteClean" data-mute="off">🎸 Limpa</button>
-        <button id="muteDist" data-mute="off">🔥 Distorção</button>
-        <button id="mutePianoString" data-mute="off">🎹 Piano</button>
+        <button id="muteClean" data-mute="off">🔇 Limpa</button>
+        <button id="muteDist" data-mute="off">🔇 Distorção</button>
+        <button id="mutePianoString" data-mute="off">🔇 Piano</button>
+        <!-- NOVOS BOTÕES PARA OS NOVOS INSTRUMENTOS -->
+        <button id="muteEcho" data-mute="off">🔇 Guitarra Echo</button>
+        <button id="muteCleanPicked" data-mute="off">🔇 Guitarra Dedilhada</button>
+        <button id="muteOrgan" data-mute="off">🔇 Órgão</button>
       </div>
       <!-- ... outros controles ... -->
 <div class="row">
@@ -493,7 +497,7 @@
   </div>
   <script>
     // ===== FUNÇÕES PRINCIPAIS =====
-    function transposeDown3Semitones(note) {
+     function transposeDown3Semitones(note) {
       const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
       const index = notes.indexOf(note);
       if (index === -1) return note;
@@ -503,27 +507,39 @@
       return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     }
 // ===== ELEMENTOS DA INTERFACE =====
+
 const ui = {
   play: document.getElementById('btnPlay'),
   pause: document.getElementById('btnPause'),
   stop: document.getElementById('btnStop'),
-  previous: document.getElementById('btnPrevious'), // Novo botão
+  previous: document.getElementById('btnPrevious'),
   muteBass: document.getElementById('muteBass'),
   muteDrums: document.getElementById('muteDrums'),
   muteClean: document.getElementById('muteClean'),
   muteDist: document.getElementById('muteDist'),
+  mutePianoString: document.getElementById('mutePianoString'),
+  // --- NOVOS ELEMENTOS ---
+  muteEcho: document.getElementById('muteEcho'),
+  muteCleanPicked: document.getElementById('muteCleanPicked'),
+  muteOrgan: document.getElementById('muteOrgan'),
+  // --- FIM DOS NOVOS ELEMENTOS ---
   bpm: document.getElementById('bpm'),
   meter: document.getElementById('meter'),
-  // --- NOVOS ELEMENTOS ---
   styleSelect: document.getElementById('styleSelect'),
   keySelect: document.getElementById('keySelect'),
-  qualitySelect: document.getElementById('qualitySelect'), // <-- Nova linha
-  // --- FIM DOS NOVOS ELEMENTOS ---
-  // state: document.getElementById('state'), // Removido conforme solicitado
+  qualitySelect: document.getElementById('qualitySelect'),
   currentChord: document.getElementById('currentChord'),
   chordTimer: document.getElementById('chordTimer'),
   volPianoString: document.getElementById('volPianoString'),
   volPianoStringLabel: document.getElementById('volPianoStringLabel'),
+  // --- NOVOS CONTROLES DE VOLUME ---
+  volEcho: document.getElementById('volEcho'),
+  volEchoLabel: document.getElementById('volEchoLabel'),
+  volCleanPicked: document.getElementById('volCleanPicked'),
+  volCleanPickedLabel: document.getElementById('volCleanPickedLabel'),
+  volOrgan: document.getElementById('volOrgan'),
+  volOrganLabel: document.getElementById('volOrganLabel'),
+  // --- FIM ---
   volBass: document.getElementById('volBass'),
   volDrums: document.getElementById('volDrums'),
   volClean: document.getElementById('volClean'),
@@ -566,19 +582,21 @@ function initializeStyleAndKeySelectors() {
 }
     // ===== SISTEMA DE ÁUDIO =====
     const audio = {
-      ctx: null,
-      master: null,
-      mix: null,
-      drumGain: null,
-      bassGain: null,
-      cleanGain: null,
-      distGain: null,
-      melodyGain: null,
-      pianoStringGain: null,
-      echoGain: null,
-      cleanPickedGain: null,
-      organGain: null
-    };
+  ctx: null,
+  master: null,
+  mix: null,
+  drumGain: null,
+  bassGain: null,
+  cleanGain: null,
+  distGain: null,
+  melodyGain: null,
+  pianoStringGain: null,
+  // --- NOVOS GANHOS ---
+  echoGain: null,
+  cleanPickedGain: null,
+  organGain: null
+  // --- FIM ---
+};
     // ===== CONSTANTES MUSICAIS =====
     const PITCHES = ['A','AS','B','C','CS','D','DS','E','F','FS','G','GS'];
     const DEGREE_TO_ROOT = { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11 };
@@ -702,8 +720,11 @@ function initializeStyleAndKeySelectors() {
   lastDistSource: null,
   lastMelodySource: null,
   lastMelodyGain: null,
-  // --- NOVA PROPRIEDADE ---
   lastPianoStringSource: null,
+  // --- NOVAS PROPRIEDADES ---
+  lastEchoSource: null,
+  lastCleanPickedSource: null,
+  lastOrganSource: null,
   // --- FIM ---
   melodyBlocks: [],
   melodyPlan: [],
@@ -714,17 +735,23 @@ function initializeStyleAndKeySelectors() {
   isRecording: false,
   mediaRecorder: null,
   recordedChunks: [],
-  // --- NOVOS ESTADOS PARA PAUSE E RETORNO ---
   pauseTime: 0,
   previousPlayback: null,
-  currentPlayback: null,
-  // --- NOVOS ESTADOS PARA NOVOS INSTRUMENTOS ---
-  lastEchoSource: null,
-  lastCleanPickedSource: null,
-  lastOrganSource: null
+  currentPlayback: null
 };
-    const mute = { bass: false, drums: false, clean: false, dist: false, pianoString: false, echo: true, cleanPicked: true, organ: true };
-    // ===== FUNÇÕES UTILITÁRIAS =====
+   const mute = { 
+  bass: false, 
+  drums: false, 
+  clean: true, 
+  dist: true, 
+  pianoString: true, 
+  melody: false,
+  // --- NOVOS INSTRUMENTOS MUTADOS POR PADRÃO ---
+  echo: true,
+  cleanPicked: true,
+  organ: true
+  // --- FIM ---
+};// ===== FUNÇÕES UTILITÁRIAS =====
     function log(msg) {
       console.log(`[LOG] ${msg}`);
     }
@@ -739,81 +766,103 @@ function initializeStyleAndKeySelectors() {
       // Optamos por deixá-la por enquanto para evitar erros em outras partes do código.
     }
     let initPromise = null;
-    function updateVolume() {
-      if (audio.bassGain) audio.bassGain.gain.value = parseFloat(ui.volBass.value);
-      if (audio.drumGain) audio.drumGain.gain.value = parseFloat(ui.volDrums.value);
-      if (audio.cleanGain) audio.cleanGain.gain.value = parseFloat(ui.volClean.value);
-      if (audio.distGain) audio.distGain.gain.value = parseFloat(ui.volDist.value);
-      if (audio.pianoStringGain) audio.pianoStringGain.gain.value = parseFloat(ui.volPianoString.value);
-      if (audio.melodyGain) audio.melodyGain.gain.value = parseFloat(ui.volMelody.value);
-      if (audio.echoGain) audio.echoGain.gain.value = parseFloat(ui.volEcho.value);
-      if (audio.cleanPickedGain) audio.cleanPickedGain.gain.value = parseFloat(ui.volCleanPicked.value);
-      if (audio.organGain) audio.organGain.gain.value = parseFloat(ui.volOrgan.value);
-      ui.volBassLabel.textContent = Math.round(ui.volBass.value * 100) + '%';
-      ui.volDrumsLabel.textContent = Math.round(ui.volDrums.value * 100) + '%';
-      ui.volCleanLabel.textContent = Math.round(ui.volClean.value * 100) + '%';
-      ui.volDistLabel.textContent = Math.round(ui.volDist.value * 100) + '%';
-      ui.volMelodyLabel.textContent = Math.round(ui.volMelody.value * 100) + '%';
-      if (ui.volEchoLabel) ui.volEchoLabel.textContent = Math.round(ui.volEcho.value * 100) + '%';
-      if (ui.volCleanPickedLabel) ui.volCleanPickedLabel.textContent = Math.round(ui.volCleanPicked.value * 100) + '%';
-      if (ui.volOrganLabel) ui.volOrganLabel.textContent = Math.round(ui.volOrgan.value * 100) + '%';
-    }
+   function updateVolume() {
+  if (audio.bassGain) audio.bassGain.gain.value = parseFloat(ui.volBass.value);
+  if (audio.drumGain) audio.drumGain.gain.value = parseFloat(ui.volDrums.value);
+  if (audio.cleanGain) audio.cleanGain.gain.value = parseFloat(ui.volClean.value);
+  if (audio.distGain) audio.distGain.gain.value = parseFloat(ui.volDist.value);
+  if (audio.pianoStringGain) audio.pianoStringGain.gain.value = parseFloat(ui.volPianoString.value);
+  if (audio.melodyGain) audio.melodyGain.gain.value = parseFloat(ui.volMelody.value);
+  // --- NOVOS VOLUMES ---
+  if (audio.echoGain) audio.echoGain.gain.value = parseFloat(ui.volEcho.value);
+  if (audio.cleanPickedGain) audio.cleanPickedGain.gain.value = parseFloat(ui.volCleanPicked.value);
+  if (audio.organGain) audio.organGain.gain.value = parseFloat(ui.volOrgan.value);
+  // --- FIM ---
+  
+  ui.volBassLabel.textContent = Math.round(ui.volBass.value * 100) + '%';
+  ui.volDrumsLabel.textContent = Math.round(ui.volDrums.value * 100) + '%';
+  ui.volCleanLabel.textContent = Math.round(ui.volClean.value * 100) + '%';
+  ui.volDistLabel.textContent = Math.round(ui.volDist.value * 100) + '%';
+  ui.volMelodyLabel.textContent = Math.round(ui.volMelody.value * 100) + '%';
+  // --- NOVOS LABELS ---
+  if (ui.volEchoLabel) ui.volEchoLabel.textContent = Math.round(ui.volEcho.value * 100) + '%';
+  if (ui.volCleanPickedLabel) ui.volCleanPickedLabel.textContent = Math.round(ui.volCleanPicked.value * 100) + '%';
+  if (ui.volOrganLabel) ui.volOrganLabel.textContent = Math.round(ui.volOrgan.value * 100) + '%';
+
     async function initAudio() {
-      if (audio.ctx) return;
-      if (initPromise) return initPromise;
-      initPromise = (async () => {
-        try {
-          audio.ctx = new (window.AudioContext || window.webkitAudioContext)();
-          audio.master = audio.ctx.createGain();
-          audio.mix = audio.ctx.createGain();
-          audio.drumGain = audio.ctx.createGain();
-          audio.bassGain = audio.ctx.createGain();
-          audio.cleanGain = audio.ctx.createGain();
-          audio.distGain = audio.ctx.createGain();
-          audio.pianoStringGain = audio.ctx.createGain();
-          audio.melodyGain = audio.ctx.createGain();
-          audio.echoGain = audio.ctx.createGain();
-          audio.cleanPickedGain = audio.ctx.createGain();
-          audio.organGain = audio.ctx.createGain();
-          audio.pianoStringGain.gain.value = 0.50;
-          audio.melodyGain.gain.value = 0.50;
-          audio.echoGain.gain.value = 0.50;
-          audio.cleanPickedGain.gain.value = 0.50;
-          audio.organGain.gain.value = 0.50;
-          audio.melodyGain.connect(audio.master);
-          audio.echoGain.connect(audio.master);
-          audio.cleanPickedGain.connect(audio.master);
-          audio.organGain.connect(audio.master);
-          audio.master.gain.value = 0.9;
-          audio.drumGain.gain.value = 0.6;
-          audio.bassGain.gain.value = 0.45;
-          audio.cleanGain.gain.value = 0.45;
-          audio.distGain.gain.value = 0.35;
-          audio.master.connect(audio.mix);
-          audio.mix.connect(audio.ctx.destination);
-          audio.drumGain.connect(audio.master);
-          audio.bassGain.connect(audio.master);
-          audio.cleanGain.connect(audio.master);
-          audio.distGain.connect(audio.master);
-          audio.pianoStringGain.connect(audio.master);
-          if (!state.buffers.melody) state.buffers.melody = {};
-          await ensureBasicSamples();
-          ui.volBass.addEventListener('input', updateVolume);
-          ui.volDrums.addEventListener('input', updateVolume);
-          ui.volClean.addEventListener('input', updateVolume);
-          ui.volDist.addEventListener('input', updateVolume);
-          ui.volPianoString.addEventListener('input', updateVolume);
-          ui.volMelody.addEventListener('input', updateVolume);
-          if (ui.volEcho) ui.volEcho.addEventListener('input', updateVolume);
-          if (ui.volCleanPicked) ui.volCleanPicked.addEventListener('input', updateVolume);
-          if (ui.volOrgan) ui.volOrgan.addEventListener('input', updateVolume);
-          updateVolume();
-        } catch (error) {
-          console.error('Erro ao inicializar áudio:', error);
-        }
-      })();
-      return initPromise;
+  if (audio.ctx) return;
+  if (initPromise) return initPromise;
+  initPromise = (async () => {
+    try {
+      audio.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      audio.master = audio.ctx.createGain();
+      audio.mix = audio.ctx.createGain();
+      audio.drumGain = audio.ctx.createGain();
+      audio.bassGain = audio.ctx.createGain();
+      audio.cleanGain = audio.ctx.createGain();
+      audio.distGain = audio.ctx.createGain();
+      audio.pianoStringGain = audio.ctx.createGain();
+      audio.melodyGain = audio.ctx.createGain();
+      // --- NOVOS GANHOS ---
+      audio.echoGain = audio.ctx.createGain();
+      audio.cleanPickedGain = audio.ctx.createGain();
+      audio.organGain = audio.ctx.createGain();
+      // --- FIM ---
+      
+      // Configura volumes iniciais
+      audio.pianoStringGain.gain.value = 0.50;
+      audio.melodyGain.gain.value = 0.50;
+      // --- NOVOS VOLUMES INICIAIS ---
+      audio.echoGain.gain.value = 0.50;
+      audio.cleanPickedGain.gain.value = 0.50;
+      audio.organGain.gain.value = 0.50;
+      // --- FIM ---
+      
+      audio.master.gain.value = 0.9;
+      audio.drumGain.gain.value = 0.6;
+      audio.bassGain.gain.value = 0.45;
+      audio.cleanGain.gain.value = 0.45;
+      audio.distGain.gain.value = 0.35;
+      
+      // Conexões
+      audio.master.connect(audio.mix);
+      audio.mix.connect(audio.ctx.destination);
+      audio.drumGain.connect(audio.master);
+      audio.bassGain.connect(audio.master);
+      audio.cleanGain.connect(audio.master);
+      audio.distGain.connect(audio.master);
+      audio.pianoStringGain.connect(audio.master);
+      audio.melodyGain.connect(audio.master);
+      // --- NOVAS CONEXÕES ---
+      audio.echoGain.connect(audio.master);
+      audio.cleanPickedGain.connect(audio.master);
+      audio.organGain.connect(audio.master);
+      // --- FIM ---
+      
+      if (!state.buffers.melody) state.buffers.melody = {};
+      
+      await ensureBasicSamples();
+      
+      // Event listeners para controles de volume
+      ui.volBass.addEventListener('input', updateVolume);
+      ui.volDrums.addEventListener('input', updateVolume);
+      ui.volClean.addEventListener('input', updateVolume);
+      ui.volDist.addEventListener('input', updateVolume);
+      ui.volPianoString.addEventListener('input', updateVolume);
+      ui.volMelody.addEventListener('input', updateVolume);
+      // --- NOVOS EVENT LISTENERS ---
+      if (ui.volEcho) ui.volEcho.addEventListener('input', updateVolume);
+      if (ui.volCleanPicked) ui.volCleanPicked.addEventListener('input', updateVolume);
+      if (ui.volOrgan) ui.volOrgan.addEventListener('input', updateVolume);
+      // --- FIM ---
+      
+      updateVolume();
+    } catch (error) {
+      console.error('Erro ao inicializar áudio:', error);
     }
+  })();
+  return initPromise;
+}
     async function loadBuffer(url) {
       try {
         const res = await fetch(url);
@@ -1035,30 +1084,31 @@ function getBassNotesFromScale(degree, scale, chordType) {
       }
       state.drumSeq = drumExpanded.slice(0, state.bassPlan.length);
       setStatePanel();
-      const guitarUrls = new Set();
-      for (const ch of state.chordPlan) {
-  let fullChordName = ch.note;
-  if (ch.type) fullChordName += ch.type;
-  guitarUrls.add(`guitarraDistorcao/${ch.note}/${fullChordName}.mp3`);
-  guitarUrls.add(`guitarraDistorcao/abafadas/${ch.note}/${fullChordName}.mp3`);
-  guitarUrls.add(`guitarraDistorcao/dedilhada/${ch.note}/${fullChordName}.mp3`);
-  // A linha abaixo estava com um comentário incorreto interrompendo o código.
-  guitarUrls.add(`guitarraLimpa/${ch.note}/${fullChordName}.mp3`);
-  guitarUrls.add(`assets/PianoStringChord/${ch.note}/${fullChordName}.mp3`);
-  guitarUrls.add(`GuitarraEcho/${ch.note}/${fullChordName}.mp3`);
-  guitarUrls.add(`GuitarraLimpaDedilhada/${ch.note}/${fullChordName}.mp3`);
-  guitarUrls.add(`Orgao/${ch.note}/${fullChordName}.mp3`);
-}
+     const guitarUrls = new Set();
+  for (const ch of state.chordPlan) {
+    let fullChordName = ch.note;
+    if (ch.type) fullChordName += ch.type;
+    guitarUrls.add(`guitarraDistorcao/${ch.note}/${fullChordName}.mp3`);
+    guitarUrls.add(`guitarraDistorcao/abafadas/${ch.note}/${fullChordName}.mp3`);
+    guitarUrls.add(`guitarraDistorcao/dedilhada/${ch.note}/${fullChordName}.mp3`);
+    guitarUrls.add(`guitarraLimpa/${ch.note}/${fullChordName}.mp3`);
+    guitarUrls.add(`assets/PianoStringChord/${ch.note}/${fullChordName}.mp3`);
+    // --- NOVOS URLS ---
+    guitarUrls.add(`GuitarraEcho/${ch.note}/${fullChordName}.mp3`);
+    guitarUrls.add(`GuitarraLimpaDedilhada/${ch.note}/${fullChordName}.mp3`);
+    guitarUrls.add(`Orgao/${ch.note}/${fullChordName}.mp3`);
+    // --- FIM ---
+  }
       const preloadPromises = [];
-      guitarUrls.forEach(url => {
-        if (!state.buffers.guitar) state.buffers.guitar = {};
-        if (!state.buffers.guitar[url]) {
-          const p = loadBuffer(url).then(buf => { if (buf) state.buffers.guitar[url] = buf; });
-          preloadPromises.push(p);
-        }
-      });
-      await Promise.all(preloadPromises);
+  guitarUrls.forEach(url => {
+    if (!state.buffers.guitar) state.buffers.guitar = {};
+    if (!state.buffers.guitar[url]) {
+      const p = loadBuffer(url).then(buf => { if (buf) state.buffers.guitar[url] = buf; });
+      preloadPromises.push(p);
     }
+  });
+  await Promise.all(preloadPromises);
+}
     function parsePattern(patternText) {
       const result = { intro: [], loop: [] };
       const introMatch = patternText.match(/\[(.*?)\]/);
@@ -1442,6 +1492,7 @@ if (!mute.pianoString && chord && isNewBar) {
       state.lastCleanPickedSource = src;
     }
   }
+  
   // ===== ORGÃO ===== (uma vez por compasso)
   if (!mute.organ && chord && isNewBar) {
     if (state.lastOrganSource) {
@@ -1575,42 +1626,50 @@ if (!mute.pianoString && chord && isNewBar) {
         state.lastCleanSource = src;
       }
     }
-    function onStop() {
-      state.running = false;
-      state.paused = false;
-      ui.currentChord.textContent = '—';
-      ui.chordTimer.textContent = '—';
-      // ui.state.textContent = "Parado"; // Removido
-      if (state.lastBassSource) state.lastBassSource.stop(0);
-      if (state.lastDistSource) state.lastDistSource.stop(0);
-      if (state.lastMelodySource) state.lastMelodySource.stop(0);
-      if (state.lastCleanSource) state.lastCleanSource.stop(0);
-      if (state.lastEchoSource) state.lastEchoSource.stop(0);
-      if (state.lastCleanPickedSource) state.lastCleanPickedSource.stop(0);
-      if (state.lastOrganSource) state.lastOrganSource.stop(0);
-      state.lastBassSource = null;
-      state.lastDistSource = null;
-      state.lastMelodySource = null;
-      state.lastCleanSource = null;
-      state.lastEchoSource = null;
-      state.lastCleanPickedSource = null;
-      state.lastOrganSource = null;
-      state.lastMelodyGain = null;
-      state.lastMelodyNote = null;
-      if (state.schedulerTimer) {
-        clearInterval(state.schedulerTimer);
-        state.schedulerTimer = null;
-      }
-      state.guitarPlan = null;
-      document.querySelectorAll('.chord-item.current').forEach(el => el.classList.remove('current'));
-    }
-    function toggleMute(type, button) {
+   function onStop() {
+  state.running = false;
+  state.paused = false;
+  ui.currentChord.textContent = '—';
+  ui.chordTimer.textContent = '—';
+  
+  // Para todos os sources
+  if (state.lastBassSource) state.lastBassSource.stop(0);
+  if (state.lastDistSource) state.lastDistSource.stop(0);
+  if (state.lastMelodySource) state.lastMelodySource.stop(0);
+  if (state.lastCleanSource) state.lastCleanSource.stop(0);
+  // --- NOVOS SOURCES ---
+  if (state.lastEchoSource) state.lastEchoSource.stop(0);
+  if (state.lastCleanPickedSource) state.lastCleanPickedSource.stop(0);
+  if (state.lastOrganSource) state.lastOrganSource.stop(0);
+  // --- FIM ---
+  
+  state.lastBassSource = null;
+  state.lastDistSource = null;
+  state.lastMelodySource = null;
+  state.lastCleanSource = null;
+  // --- NOVOS SOURCES ---
+  state.lastEchoSource = null;
+  state.lastCleanPickedSource = null;
+  state.lastOrganSource = null;
+  // --- FIM ---
+  state.lastMelodyGain = null;
+  state.lastMelodyNote = null;
+  
+  if (state.schedulerTimer) {
+    clearInterval(state.schedulerTimer);
+    state.schedulerTimer = null;
+  }
+  state.guitarPlan = null;
+  document.querySelectorAll('.chord-item.current').forEach(el => el.classList.remove('current'));
+}
+
+function toggleMute(type, button) {
   mute[type] = !mute[type];
   let icon, label;
-  // --- ADICIONA O CASO PARA PIANOSTRING ---
+  
   if (type === 'pianoString') {
     icon = mute[type] ? '🔇' : '🎹';
-    label = 'PianoString';
+    label = 'Piano';
   } else if (type === 'echo') {
     icon = mute[type] ? '🔇' : '🎸';
     label = 'Guitarra Echo';
@@ -1625,7 +1684,7 @@ if (!mute.pianoString && chord && isNewBar) {
     const labelMap = { bass: 'Baixo', drums: 'Bateria', clean: 'Limpa', dist: 'Distorção' };
     label = labelMap[type];
   }
-  // --- FIM ---
+  
   button.textContent = `${icon} ${label}`;
   button.classList.toggle('muted', mute[type]);
 }
@@ -2261,45 +2320,57 @@ if (!mute.pianoString && chord && isNewBar) {
     });
     // ===== INICIALIZAÇÃO =====
     function initializeApp() {
-      // Event listeners
-      ui.play.addEventListener('click', onPlay);
-      ui.pause.addEventListener('click', onPause);
-      ui.stop.addEventListener('click', onStop);
-      ui.previous.addEventListener('click', onPrevious); // Novo listener
-      ui.muteBass.addEventListener('click', () => toggleMute('bass', ui.muteBass));
-      ui.muteDrums.addEventListener('click', () => toggleMute('drums', ui.muteDrums));
-      ui.muteClean.addEventListener('click', () => toggleMute('clean', ui.muteClean));
-      ui.muteDist.addEventListener('click', () => toggleMute('dist', ui.muteDist));
-      // --- NOVO EVENT LISTENER (com verificação de segurança) ---
-      if (ui.mutePianoString) {
-        ui.mutePianoString.addEventListener('click', () => toggleMute('pianoString', ui.mutePianoString));
-      } else {
-        console.error('Elemento #mutePianoString não encontrado no DOM!');
-      }
-      // --- FIM ---
-      ui.btnMelodyAdd.addEventListener('click', addMelodyBlock);
-      ui.btnMelodyClear.addEventListener('click', clearMelodyBlocks);
-      // Novo botão para abrir a composição manual
-      if (ui.btnOpenManual) {
-        ui.btnOpenManual.addEventListener('click', () => {
-          window.open('jam-on-composicao-manual.html', '_blank');
-        });
-      }
-      // Inicializa o number picker para mobile
-      if (isMobileDevice()) {
-        initializeNumberPicker();
-      }
-      // Atualiza o select de instrumentos de melodia
-      updateMelodyInstrumentSelect();
-      // Habilita todos os botões após o carregamento
-      const buttons = document.querySelectorAll('button');
-      buttons.forEach(btn => {
-        btn.disabled = false;
-        btn.style.opacity = '1';
-      });
-    }
-    // Inicializa a aplicação quando a página carrega
-    window.addEventListener('load', initializeApp);
+  // Event listeners
+  ui.play.addEventListener('click', onPlay);
+  ui.pause.addEventListener('click', onPause);
+  ui.stop.addEventListener('click', onStop);
+  ui.previous.addEventListener('click', onPrevious);
+  ui.muteBass.addEventListener('click', () => toggleMute('bass', ui.muteBass));
+  ui.muteDrums.addEventListener('click', () => toggleMute('drums', ui.muteDrums));
+  ui.muteClean.addEventListener('click', () => toggleMute('clean', ui.muteClean));
+  ui.muteDist.addEventListener('click', () => toggleMute('dist', ui.muteDist));
+  ui.mutePianoString.addEventListener('click', () => toggleMute('pianoString', ui.mutePianoString));
+  // --- NOVOS EVENT LISTENERS ---
+  ui.muteEcho.addEventListener('click', () => toggleMute('echo', ui.muteEcho));
+  ui.muteCleanPicked.addEventListener('click', () => toggleMute('cleanPicked', ui.muteCleanPicked));
+  ui.muteOrgan.addEventListener('click', () => toggleMute('organ', ui.muteOrgan));
+  // --- FIM ---
+  
+  ui.btnMelodyAdd.addEventListener('click', addMelodyBlock);
+  ui.btnMelodyClear.addEventListener('click', clearMelodyBlocks);
+  
+  if (ui.btnOpenManual) {
+    ui.btnOpenManual.addEventListener('click', () => {
+      window.open('jam-on-composicao-manual.html', '_blank');
+    });
+  }
+  
+  // Inicializa o number picker para mobile
+  if (isMobileDevice()) {
+    initializeNumberPicker();
+  }
+  
+  // Atualiza o select de instrumentos de melodia
+  updateMelodyInstrumentSelect();
+  
+  // Habilita todos os botões após o carregamento
+  const buttons = document.querySelectorAll('button');
+  buttons.forEach(btn => {
+    btn.disabled = false;
+    btn.style.opacity = '1';
+  });
+  
+  // Configura estado inicial dos botões de mute
+  toggleMute('clean', ui.muteClean); // Para atualizar o ícone/texto
+  toggleMute('dist', ui.muteDist);
+  toggleMute('pianoString', ui.mutePianoString);
+  toggleMute('echo', ui.muteEcho);
+  toggleMute('cleanPicked', ui.muteCleanPicked);
+  toggleMute('organ', ui.muteOrgan);
+}
+
+// Inicializa a aplicação quando a página carrega
+window.addEventListener('load', initializeApp);
   </script>
 </body>
 </html>
