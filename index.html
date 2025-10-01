@@ -512,6 +512,43 @@
     <h3>Selecione uma nota</h3>
     <div id="numberGrid"></div>
   </div>
+  <!-- Seção de Progressão Aleatória de Acordes -->
+<div class="panel" style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #333;">
+  <h3 style="color: #5eead4; margin-top: 0;">🎲 Gerador de Progressão Aleatória</h3>
+  <p style="color: #aaa; margin-bottom: 16px; font-size: 0.95em;">
+    Clique no botão abaixo para gerar uma progressão de acordes aleatória.
+  </p>
+  <div style="text-align: center; margin-bottom: 16px;">
+    <button id="btnGenerateChordProgression" class="primary" style="
+      padding: 10px 20px;
+      font-size: 1em;
+      border: none;
+      border-radius: 8px;
+      background: #5eead4;
+      color: #121212;
+      font-weight: bold;
+      cursor: pointer;
+    ">Gerar Progressão Aleatória</button>
+  </div>
+  <div id="generatedChordProgression" style="
+    text-align: center;
+    font-size: 1.3em;
+    font-weight: bold;
+    color: #5eead4;
+    min-height: 1.5em;
+    font-family: monospace;
+    background: #2a2a2a;
+    padding: 12px;
+    border-radius: 8px;
+  ">—</div>
+  <div id="generatedChordProgressionRoman" style="
+    text-align: center;
+    font-size: 0.85em;
+    color: #777;
+    margin-top: 6px;
+  "></div>
+</div>
+
  <script>
     // ===== FUNÇÕES PRINCIPAIS =====
     function transposeDown3Semitones(note) {
@@ -2456,7 +2493,153 @@ function updateMuteButtonUI(type, button) {
 
     // Inicializa a aplicação quando a página carrega
     window.addEventListener('load', initializeApp);
+
+    // Notas e mapeamento
+const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+const NOTE_TO_INDEX = {};
+NOTES.forEach((note, i) => NOTE_TO_INDEX[note] = i);
+
+// Lista de progressões (em notação romana)
+const PROGRESSIONS = [
+  "I – IV – V",
+  "I – V – vi – IV",
+  "I – vi – IV – V",
+  "I – V – IV – I",
+  "vi – IV – I – V",
+  "I – V – vi – iii – IV – I – IV – V",
+  "I – iii – IV – V",
+  "I – IV – I – V",
+  "I – V – vi – iii – IV – I – IV – V",
+  "I – V – IV – vi",
+  "ii – V – I",
+  "I – IV – V – I",
+  "I – V – I",
+  "IV – V – I",
+  "ii – V – I – vi",
+  "I – V – vi – IV – ii – V – I",
+  "V – vi – IV – I",
+  "I – V – IV – ii – V – I",
+  "vi – ii – V – I",
+  "I – IV – ii – V",
+  "I7 – IV7 – V7",
+  "I7 – IV7 – I7 – V7",
+  "I7 – I7 – IV7 – I7 – V7 – IV7 – I7 – V7",
+  "I7 – IV7 – V7 – IV7",
+  "I – bVII – IV – I",
+  "I – bVII – bIII – IV",
+  "I – IV – V – IV",
+  "I – V – IV – bVII",
+  "I – IV – vii° – iii – vi – ii – V – I",
+  "I – vi – ii – V",
+  "iii – vi – ii – V – I",
+  "vi – ii – V – I",
+  "I – V – ii – V – I",
+  "I – vi – IV – V",
+  "i – VII – VI – VII",
+  "i – VI – III – VII",
+  "i – v – VI – v",
+  "I – bVII – IV – I",
+  "I – bIII – bVII – IV",
+  "I – V – bVII – IV",
+  "I – bVII – bVI – V",
+  "I – ii – IV – V",
+  "I – IV – bVII – IV",
+  "ii – V – I – IV",
+  "I – vi – ii – V – I",
+  "Imaj7 – IVmaj7 – V7 – Imaj7",
+  "ii7 – V7 – Imaj7 – vi7",
+  "iii7 – vi7 – ii7 – V7",
+  "Imaj7 – vi7 – ii7 – V7",
+  "I – V/vi – vi – IV",
+  "Imaj7 – V7 – iii7 – vi7 – ii7 – V7 – Imaj7"
+];
+
+// Função para converter grau romano para acorde real
+function romanToChord(roman, rootNote, isMajor = true) {
+  // Remove sufixos primeiro
+  let base = roman.replace(/[^ivIVX°b\/]/g, '');
+  let suffix = roman.replace(base, '');
+
+  // Trata acordes emprestados (b)
+  let flat = false;
+  if (base.startsWith('b')) {
+    flat = true;
+    base = base.substring(1);
+  }
+
+  // Mapeia graus
+  const degreeMap = { 'I': 0, 'II': 2, 'III': 4, 'IV': 5, 'V': 7, 'VI': 9, 'VII': 11 };
+  const minorDegreeMap = { 'i': 0, 'ii': 2, 'iii': 3, 'iv': 5, 'v': 7, 'vi': 8, 'vii': 10 };
+
+  let rootIndex = NOTE_TO_INDEX[rootNote];
+  let interval;
+
+  if (base in degreeMap) {
+    interval = degreeMap[base];
+    // Se modo menor e grau maiúsculo → modo maior relativo
+    if (!isMajor && base === base.toUpperCase()) {
+      // Ex: em Am, "IV" = D (maior), não Dm
+    }
+  } else if (base.toLowerCase() in minorDegreeMap) {
+    interval = minorDegreeMap[base.toLowerCase()];
+    // Força modo menor se nota base for minúscula
+    if (base === base.toLowerCase()) isMajor = false;
+  } else if (base === 'vii°') {
+    interval = 10; // vii° = 10 semitons acima
+    suffix = '°';
+  } else {
+    return 'X'; // fallback
+  }
+
+  if (flat) interval -= 1;
+
+  let noteIndex = (rootIndex + interval) % 12;
+  let note = NOTES[noteIndex];
+
+  // Decide se é maior, menor ou outro
+  if (suffix.includes('°')) {
+    return note + '°';
+  } else if (roman.startsWith('i') && roman[1] !== 'I') {
+    // Graus menores (exceto I7, Imaj7 etc.)
+    if (!suffix || suffix === '7' || suffix === '9') {
+      return note + 'm' + suffix;
+    } else {
+      return note + suffix;
+    }
+  } else if (roman.startsWith('I') || roman.startsWith('V/') || roman.includes('maj')) {
+    return note + suffix;
+  } else if (roman.startsWith('ii') || roman.startsWith('iii') || roman.startsWith('vi') || roman.startsWith('vii')) {
+    if (!suffix || suffix === '7') {
+      return note + 'm' + suffix;
+    } else {
+      return note + suffix;
+    }
+  } else {
+    return note + suffix;
+  }
+}
+
+// Gera progressão
+function generateRandomProgression() {
+  const rootNote = NOTES[Math.floor(Math.random() * NOTES.length)];
+  const progressionRoman = PROGRESSIONS[Math.floor(Math.random() * PROGRESSIONS.length)];
+  const chords = progressionRoman.split(' – ').map(roman => romanToChord(roman, rootNote, true));
+  const progressionText = chords.join(' – ');
+
+  // ✅ IDs CORRETOS do novo layout embutido:
+  document.getElementById('generatedChordProgression').textContent = progressionText;
+  document.getElementById('generatedChordProgressionRoman').textContent = `(${progressionRoman})`;
+}
+// Adiciona listener ao botão embutido (evita erro se já existir)
+const genBtn = document.getElementById('btnGenerateChordProgression');
+if (genBtn && !genBtn.hasListener) {
+  genBtn.addEventListener('click', generateRandomProgression);
+  genBtn.hasListener = true;
+}
+
+
 </script>
 
 </body>
 </html>
+
