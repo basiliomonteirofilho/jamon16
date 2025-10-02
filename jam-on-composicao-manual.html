@@ -670,9 +670,10 @@ const MELODIC_INSTRUMENTS = {
 };
 // ===== CORREÇÃO AQUI: Caminhos dos Instrumentos Harmônicos =====
 const HARMONIC_INSTRUMENTS = {
-  'distorted-guitar': 'guitarraDistorcao/',    // guitarraDistorcao/Nota/acorde.mp3
-  'clean-guitar': 'guitarraLimpa/',            // guitarraLimpa/Nota/acorde.mp3
-  'piano-chord': 'assets/PianoStringChord/'    // assets/PianoStringChord/Nota/acorde.mp3
+  'distorted-guitar': 'guitarraDistorcao/',          // guitarraDistorcao/Nota/acorde.mp3
+  'clean-guitar': 'guitarraLimpa/',                  // guitarraLimpa/Nota/acorde.mp3
+  'piano-chord': 'assets/PianoStringChord/',         // assets/PianoStringChord/Nota/acorde.mp3
+  'muted-distorted-guitar': 'guitarraDistorcao/abafadas/' // guitarraDistorcao/abafadas/Nota/acorde.mp3
 };
 const DRUM_SAMPLES = [
   { key: 'ataque', label: 'Prato De Ataque', path: 'assets/ataque.mp3' },
@@ -968,14 +969,15 @@ function addHarmonyBlock(containerIndex) {
   wrapper.dataset.blockIndex = blockIndex;
   wrapper.dataset.containerIndex = containerIndex; // Identifica qual container pertence
   const instrumentSelect = document.createElement('select');
-  instrumentSelect.className = 'instrument-select';
-  instrumentSelect.style.width = '120px';
-  instrumentSelect.style.marginRight = '10px';
-  instrumentSelect.innerHTML = `
-    <option value="distorted-guitar">Guitarra Distorcida</option>
-    <option value="clean-guitar">Guitarra Limpa</option>
-    <option value="piano-chord">Piano</option>
-  `;
+instrumentSelect.className = 'instrument-select';
+instrumentSelect.style.width = '140px'; // aumentei um pouco para caber o texto
+instrumentSelect.style.marginRight = '10px';
+instrumentSelect.innerHTML = `
+  <option value="distorted-guitar">Guitarra Distorcida</option>
+  <option value="muted-distorted-guitar">Guitarra Abafada</option>
+  <option value="clean-guitar">Guitarra Limpa</option>
+  <option value="piano-chord">Piano</option>
+`;
   const block = document.createElement('div');
   block.className = 'instrument-block harmony-block';
   block.style.flex = '1';
@@ -2312,3 +2314,4 @@ window.addEventListener('load', initializeApp);
 </div>
 </body>
 </html>
+
