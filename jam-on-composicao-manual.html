@@ -89,7 +89,6 @@
       gap: 2px;
       margin: 10px 0;
       flex-wrap: nowrap;
-      overflow-x: auto;
       padding: 5px 0;
       position: relative;
     }
@@ -129,23 +128,24 @@
   transition: background 0.2s;
   position: relative; /* Para posicionar o botão de delete e o rótulo */
 }
-/* Estilo do rótulo numérico (aparece a cada 4 colunas) */
-.cell .column-number-label {
+/* Rótulo numérico ACIMA da coluna */
+.column-top-label {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.1); /* Cinza claro com baixa opacidade */
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 0.9em;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(94, 234, 212, 0.2);
+  color: #5eead4;
+  font-size: 0.8em;
   font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2;
-  pointer-events: none; /* Torna o rótulo não clicável */
+  padding: 2px 6px;
   border-radius: 4px;
+  z-index: 3;
+  white-space: nowrap;
+}
+.columns-grid {
+  position: relative;
+  padding-top: 25px; /* Espaço para o rótulo */
 }
     .cell:hover {
       background: #444;
@@ -485,6 +485,12 @@
 .edit-map-cell.x {
   background: #555;
 }
+#scrollSyncContainer {
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  margin: 0 -20px;
+  padding: 0 20px;
+}
 
     @media (max-width: 768px) {
       .cell, .drum-cell { 
@@ -506,6 +512,16 @@
         height: 14px;
         font-size: 0.5em;
       }
+      /* Linha divisória a cada 8 colunas */
+.measure-divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(94, 234, 212, 0.4);
+  z-index: 4;
+  pointer-events: none;
+}
     }
   </style>
 </head>
@@ -532,38 +548,46 @@
       <span style="color: #aaa; margin-left: 10px;">Adicionar compasso em todos os instrumentos</span>
     </div>
     <!-- HARMONIA (8 células por instrumento = 1 compasso) -->
-    <div class="section">
-      <h3>🎸 Harmonia 1</h3>
-      <div id="harmonyContainer1" class="instrument-container"></div>
-    </div>
-    <div class="section">
-      <h3>🎸 Harmonia 2</h3>
-      <div id="harmonyContainer2" class="instrument-container"></div>
-    </div>
-    <div class="section">
-      <h3>🎸 Harmonia 3</h3>
-      <div id="harmonyContainer3" class="instrument-container"></div>
-    </div>
-    <!-- BAIXO (8 células = 1 compasso) -->
-    <div class="section">
-      <h3>🎸 Baixo</h3>
-      <div id="bassContainer" class="instrument-container"></div>
-    </div>
-    <!-- MELODIA 1 (8 células = 1 compasso) -->
-    <div class="section">
-      <h3>🎹 Melodia 1</h3>
-      <div id="melody1Container" class="instrument-container"></div>
-    </div>
-    <!-- MELODIA 2 (8 células = 1 compasso) -->
-    <div class="section">
-      <h3>🎷 Melodia 2</h3>
-      <div id="melody2Container" class="instrument-container"></div>
-    </div>
-    <!-- BATERIA (8 células = 1 compasso) -->
-    <div class="section">
-      <h3>🥁 Bateria</h3>
-      <div id="drumContainer" class="instrument-container"></div>
-    </div>    
+    <div id="scrollSyncContainer" style="overflow-x: auto; padding: 5px 0;">
+  <!-- HARMONIA 1 -->
+  <div id="scrollSyncContainer" style="overflow-x: auto; padding: 5px 0;">
+  <!-- HARMONIA 1 -->
+  <div class="section">
+    <h3>🎸 Harmonia 1</h3>
+    <div id="harmonyContainer1" class="instrument-container"></div>
+  </div>
+  <!-- HARMONIA 2 -->
+  <div class="section">
+    <h3>🎸 Harmonia 2</h3>
+    <div id="harmonyContainer2" class="instrument-container"></div>
+  </div>
+  <!-- HARMONIA 3 -->
+  <div class="section">
+    <h3>🎸 Harmonia 3</h3>
+    <div id="harmonyContainer3" class="instrument-container"></div>
+  </div>
+  <!-- BAIXO -->
+  <div class="section">
+    <h3>🎸 Baixo</h3>
+    <div id="bassContainer" class="instrument-container"></div>
+  </div>
+  <!-- MELODIA 1 -->
+  <div class="section">
+    <h3>🎹 Melodia 1</h3>
+    <div id="melody1Container" class="instrument-container"></div>
+  </div>
+  <!-- MELODIA 2 -->
+  <div class="section">
+    <h3>🎷 Melodia 2</h3>
+    <div id="melody2Container" class="instrument-container"></div>
+  </div>
+  <!-- BATERIA -->
+  <div class="section">
+    <h3>🥁 Bateria</h3>
+    <div id="drumContainer" class="instrument-container"></div>
+  </div>
+</div>
+</div>    
     <div class="btn-row">
       <button id="btnPlay" class="primary" disabled>▶ Play</button>
       <button id="btnStop" class="danger" disabled>⏹ Stop</button>
@@ -754,7 +778,34 @@ const ui = {
   progressBar: document.getElementById('progressBar'),
   progressText: document.getElementById('progressText')
 };
-// ===== INICIALIZAÇÃO =====
+
+// Adicione esta função para sincronizar o scroll
+function setupScrollSync() {
+  const scrollContainer = document.getElementById('scrollSyncContainer');
+  const allGrids = [
+    ...state.harmonyBlocks[0].map(hb => hb.grid),
+    ...state.harmonyBlocks[1].map(hb => hb.grid),
+    ...state.harmonyBlocks[2].map(hb => hb.grid),
+    ...state.bassBlocks.map(b => b.querySelector('.columns-grid')),
+    ...state.melody1Blocks.map(m => m.querySelector('.columns-grid')),
+    ...state.melody2Blocks.map(m => m.querySelector('.columns-grid')),
+    ...state.drumBlocks.map(d => {
+      const dw = d.querySelector('.drum-wrapper');
+      return dw ? dw.querySelector('.columns-grid') : d.querySelector('.columns-grid');
+    })
+  ].filter(Boolean);
+
+  // Sincroniza o scroll horizontal de todos os grids
+  scrollContainer.addEventListener('scroll', function() {
+    const scrollLeft = this.scrollLeft;
+    allGrids.forEach(grid => {
+      if (grid.parentElement) {
+        grid.parentElement.scrollLeft = scrollLeft;
+      }
+    });
+  });
+}
+
 async function initializeApp() {
   updateStatus('Pronto para compor. Clique nas células para criar sua música.', 'ready');
   try {
@@ -775,6 +826,7 @@ async function initializeApp() {
     state.melodyGain.gain.value = 0.5;
     state.harmonicGain.gain.value = 0.5;
     setupEventListeners();
+    
     // --- CORREÇÃO DEFINITIVA: Garante 3 blocos independentes ---
     // Limpa os arrays de estado antes de adicionar os blocos
     state.harmonyBlocks = [[], [], []];
@@ -782,20 +834,28 @@ async function initializeApp() {
     state.melody1Blocks = [];
     state.melody2Blocks = [];
     state.drumBlocks = [];
+    
     // Adiciona 1 bloco em cada container de harmonia
     addHarmonyBlock(0); // Harmonia 1
     addHarmonyBlock(1); // Harmonia 2
     addHarmonyBlock(2); // Harmonia 3
+    
     // Adiciona 1 bloco de cada instrumento melódico e de bateria
     addBassBlock();
     addMelody1Block();
     addMelody2Block();
     addDrumBlock();
+    
     ui.btnPlay.disabled = false;
     ui.btnSaveWAV.disabled = true;
     ui.btnStop.disabled = true;
     updateStatus('Componha sua música. Clique em Play para iniciar com contagem de 4 compassos.', 'ready');
     updateEditMap();
+    updateMeasureDividers();
+    
+    // === ADICIONE ESTA LINHA AQUI ===
+    setupScrollSync(); // ← COLOCAR AQUI
+    
   } catch (error) {
     console.error('Erro ao inicializar:', error);
     updateStatus('Erro ao inicializar: ' + error.message, 'error');
@@ -1012,20 +1072,27 @@ instrumentSelect.innerHTML = `
   grid._volumeSlider = volumeControl.querySelector('.volume-slider');
   return wrapper;
 }
+
 function createHarmonyColumn(parentGrid, columnIndex, harmonyBlock) {
   const column = document.createElement('div');
   column.className = 'column';
   column.dataset.columnIndex = columnIndex;
+
+  // Remove rótulo anterior, se existir
+  const existingLabel = column.querySelector('.column-top-label');
+  if (existingLabel) existingLabel.remove();
+
+  // Adiciona rótulo numérico a cada 8 colunas
+  if ((columnIndex + 1) % 8 === 0) {
+    const label = document.createElement('div');
+    label.className = 'column-top-label';
+    label.textContent = columnIndex + 1;
+    column.appendChild(label);
+  }
+
   const cell = document.createElement('div');
   cell.className = 'cell x';
   cell.textContent = 'X';
-  // --- ADICIONA O RÓTULO NUMÉRICO A CADA 4 COLUNAS ---
-  if ((columnIndex + 1) % 4 === 0 && columnIndex > 0) {
-    const label = document.createElement('div');
-    label.className = 'column-number-label';
-    label.textContent = columnIndex + 1; // Exibe o número da coluna (1-indexed)
-    cell.appendChild(label);
-  }
   const deleteCellBtn = document.createElement('button');
   deleteCellBtn.className = 'delete-cell-btn';
   deleteCellBtn.textContent = '✖';
@@ -1231,6 +1298,18 @@ function createDrumColumn(parentGrid, stepIndex, blockIndex) {
   column.dataset.columnIndex = stepIndex;
   column.style.display = 'flex';
   column.style.flexDirection = 'column';
+
+  // Remove rótulo anterior, se existir
+  const existingLabel = column.querySelector('.column-top-label');
+  if (existingLabel) existingLabel.remove();
+
+  if ((stepIndex + 1) % 8 === 0) {
+    const label = document.createElement('div');
+    label.className = 'column-top-label';
+    label.textContent = stepIndex + 1;
+    column.appendChild(label);
+  }
+
   DRUM_SAMPLES.forEach((drum, drumIndex) => {
     const cell = document.createElement('div');
     cell.className = 'drum-cell';
@@ -1239,19 +1318,12 @@ function createDrumColumn(parentGrid, stepIndex, blockIndex) {
     cell.dataset.block = blockIndex;
     cell.style.height = '45px';
     cell.style.fontSize = '0.7em';
-    // --- ADICIONA O RÓTULO NUMÉRICO NA PRIMEIRA CÉLULA A CADA 4 COLUNAS ---
-    if (drumIndex === 0 && (stepIndex + 1) % 4 === 0 && stepIndex > 0) {
-      const label = document.createElement('div');
-      label.className = 'column-number-label';
-      label.textContent = stepIndex + 1; // Exibe o número da coluna (1-indexed)
-      cell.appendChild(label);
-    }
     cell.addEventListener('click', function() {
       this.classList.toggle('active');
       loadSample('drum', drum.key, '');
     });
-    // >>>>> MODIFICAÇÃO: Botão de delete só na primeira célula (Prato de Ataque) <<<<<
-    if (drumIndex === 0) { // Só adiciona o botão na primeira célula (ataque)
+
+    if (drumIndex === 0) {
       const deleteCellBtn = document.createElement('button');
       deleteCellBtn.className = 'delete-cell-btn';
       deleteCellBtn.textContent = '✖';
@@ -1259,9 +1331,6 @@ function createDrumColumn(parentGrid, stepIndex, blockIndex) {
         e.stopPropagation();
         if (confirm('Excluir toda a coluna vertical (inclusive bateria, harmonia e melodias)?')) {
           deleteColumn(stepIndex);
-        } else {
-          // Não precisa fazer nada, pois o botão só existe na célula de ataque
-          // e não afeta o estado 'active' das outras.
         }
       });
       cell.appendChild(deleteCellBtn);
@@ -1269,11 +1338,11 @@ function createDrumColumn(parentGrid, stepIndex, blockIndex) {
     column.appendChild(cell);
   });
   parentGrid.appendChild(column);
-  // >>>>> CORREÇÃO: Força o reflow do grid após adicionar a coluna <<<<<
   parentGrid.style.display = 'none';
-  parentGrid.offsetHeight; // Trigger reflow
+  parentGrid.offsetHeight;
   parentGrid.style.display = 'flex';
 }
+
 function createMelodicGrid(type, blockIndex, numColumns) {
   const grid = document.createElement('div');
   grid.className = 'columns-grid';
@@ -1288,16 +1357,21 @@ function createMelodicColumn(parentGrid, type, columnIndex) {
   const column = document.createElement('div');
   column.className = 'column';
   column.dataset.columnIndex = columnIndex;
+
+  // Remove rótulo anterior, se existir
+  const existingLabel = column.querySelector('.column-top-label');
+  if (existingLabel) existingLabel.remove();
+
+  if ((columnIndex + 1) % 8 === 0) {
+    const label = document.createElement('div');
+    label.className = 'column-top-label';
+    label.textContent = columnIndex + 1;
+    column.appendChild(label);
+  }
+
   const cell = document.createElement('div');
   cell.className = 'cell x';
   cell.textContent = 'X';
-  // --- ADICIONA O RÓTULO NUMÉRICO A CADA 4 COLUNAS ---
-  if ((columnIndex + 1) % 4 === 0 && columnIndex > 0) {
-    const label = document.createElement('div');
-    label.className = 'column-number-label';
-    label.textContent = columnIndex + 1; // Exibe o número da coluna (1-indexed)
-    cell.appendChild(label);
-  }
   cell.addEventListener('click', function(e) {
     e.stopPropagation();
     const instrumentKey = this.closest('.instrument-block').parentElement.querySelector('.instrument-select').value;
@@ -1319,6 +1393,40 @@ function createMelodicColumn(parentGrid, type, columnIndex) {
   cell.appendChild(deleteCellBtn);
   column.appendChild(cell);
   parentGrid.appendChild(column);
+}
+
+function updateMeasureDividers() {
+  // Remove divisórias antigas
+  document.querySelectorAll('.measure-divider').forEach(el => el.remove());
+
+  // Coleta todos os grids
+  const allGrids = [
+    ...state.harmonyBlocks[0].map(hb => hb.grid),
+    ...state.harmonyBlocks[1].map(hb => hb.grid),
+    ...state.harmonyBlocks[2].map(hb => hb.grid),
+    ...state.bassBlocks.map(b => b.querySelector('.columns-grid')),
+    ...state.melody1Blocks.map(m => m.querySelector('.columns-grid')),
+    ...state.melody2Blocks.map(m => m.querySelector('.columns-grid')),
+    ...state.drumBlocks.map(d => {
+      const dw = d.querySelector('.drum-wrapper');
+      return dw ? dw.querySelector('.columns-grid') : d.querySelector('.columns-grid');
+    })
+  ].filter(Boolean);
+
+  allGrids.forEach(grid => {
+    const columns = grid.querySelectorAll('.column');
+    for (let i = 7; i < columns.length; i += 8) { // 8ª coluna = índice 7
+      const column = columns[i];
+      const rect = column.getBoundingClientRect();
+      const gridRect = grid.getBoundingClientRect();
+      const leftPos = rect.right - gridRect.left;
+
+      const divider = document.createElement('div');
+      divider.className = 'measure-divider';
+      divider.style.left = `${leftPos}px`;
+      grid.appendChild(divider);
+    }
+  });
 }
 // ===== FUNÇÃO PARA EXCLUIR COLUNA =====
 function deleteColumn(columnIndex) {
@@ -1344,6 +1452,8 @@ function deleteColumn(columnIndex) {
   state.totalSteps -= 1;
   updateEditMap();
 }
+
+
 function addCompasso() {
   const newColumnIndex = state.totalSteps;
   // Harmonia - para cada um dos 3 containers
@@ -1372,47 +1482,52 @@ function addCompasso() {
   state.totalSteps += 1;
   updateStatus(`Compasso adicionado. Total: ${state.totalSteps} passos.`, 'ready');
   updateEditMap();
+  updateMeasureDividers();
 }
 function duplicateComposition() {
   if (state.totalSteps === 0) {
     alert('Nenhuma composição para duplicar.');
     return;
   }
+
   const originalTotalSteps = state.totalSteps;
+  const newTotalSteps = originalTotalSteps * 2;
+
+  // Primeiro, crie todas as novas colunas SEM alterar state.totalSteps ainda
   for (let i = 0; i < originalTotalSteps; i++) {
-    const newColumnIndex = state.totalSteps; // Sempre adiciona no final
+    const newColumnIndex = originalTotalSteps + i; // índice baseado no original
+
     // --- HARMONIA 1, 2 e 3 ---
-    for (let containerIndex = 0; containerIndex < 3; containerIndex++) {
-      state.harmonyBlocks[containerIndex].forEach(harmonyBlock => {
-        const grid = harmonyBlock.grid;
-        if (!grid) return;
-        const instrument = harmonyBlock.instrumentSelect.value;
-        const originalColumn = grid.querySelector(`.column:nth-child(${i + 1})`);
-        // Se não existir a coluna original (defensivo), criamos uma coluna vazia
-        const originalCell = originalColumn ? originalColumn.querySelector('.cell') : null;
-        // usa a helper para obter o valor CANÔNICO (com 'S' para #), evitando rótulos numéricos
-        const originalValue = originalCell ? getCellNoteValue(originalCell) : 'X';
-        const displayText = (originalValue === 'X') ? 'X' : originalValue.replace(/S/g, '#');
-        const isX = originalValue === 'X';
-        createHarmonyColumn(grid, newColumnIndex, harmonyBlock);
-        const newColumn = grid.querySelector(`.column:nth-child(${newColumnIndex + 1})`);
-        const newCell = newColumn.querySelector('.cell');
-        const deleteBtn = newCell.querySelector('.delete-cell-btn');
-        if (deleteBtn) newCell.removeChild(deleteBtn);
-        // mostra o texto com '#' na UI e armazena o valor canônico no dataset
-        newCell.textContent = displayText;
-        if (isX) {
-          newCell.classList.add('x');
-          newCell.removeAttribute('data-original-value');
-        } else {
-          newCell.classList.remove('x');
-          newCell.dataset.originalValue = originalValue;
-          // pré-carrega o sample do acorde duplicado
-          loadSample('harmonic', instrument, originalValue);
-        }
-        if (deleteBtn) newCell.appendChild(deleteBtn);
-      });
+for (let containerIndex = 0; containerIndex < 3; containerIndex++) {
+  state.harmonyBlocks[containerIndex].forEach(harmonyBlock => {
+    const grid = harmonyBlock.grid;
+    if (!grid) return;
+    const instrument = harmonyBlock.instrumentSelect.value;
+    const originalColumns = grid.querySelectorAll('.column');
+    const originalColumn = originalColumns[i];
+    const originalCell = originalColumn ? originalColumn.querySelector('.cell') : null;
+    const originalValue = originalCell ? getCellNoteValue(originalCell) : 'X';
+    const displayText = (originalValue === 'X') ? 'X' : originalValue.replace(/S/g, '#');
+    const isX = originalValue === 'X';
+    createHarmonyColumn(grid, newColumnIndex, harmonyBlock);
+    const newColumns = grid.querySelectorAll('.column');
+    const newColumn = newColumns[newColumnIndex];
+    const newCell = newColumn.querySelector('.cell');
+    const deleteBtn = newCell.querySelector('.delete-cell-btn');
+    if (deleteBtn) newCell.removeChild(deleteBtn);
+    newCell.textContent = displayText;
+    if (isX) {
+      newCell.classList.add('x');
+      newCell.removeAttribute('data-original-value');
+    } else {
+      newCell.classList.remove('x');
+      newCell.dataset.originalValue = originalValue;
+      loadSample('harmonic', instrument, originalValue);
     }
+    if (deleteBtn) newCell.appendChild(deleteBtn);
+  });
+}
+
     // --- BAIXO, MELODIA 1, MELODIA 2 ---
     [state.bassBlocks, state.melody1Blocks, state.melody2Blocks].forEach(blocks => {
       blocks.forEach(wrapper => {
@@ -1422,15 +1537,17 @@ function duplicateComposition() {
         const instrument = instrumentSelect ? instrumentSelect.value : 'piano';
         const originalColumn = grid.querySelector(`.column:nth-child(${i + 1})`);
         const originalCell = originalColumn ? originalColumn.querySelector('.cell') : null;
-        // pega o valor canônico (ex: '10CS' ou '1E' ou 'X')
         const originalValue = originalCell ? getCellNoteValue(originalCell) : 'X';
         const displayText = (originalValue === 'X') ? 'X' : originalValue.replace(/S/g, '#');
         const isX = originalValue === 'X';
+
         createMelodicColumn(grid, grid.dataset.type, newColumnIndex);
-        const newColumn = grid.querySelector(`.column:nth-child(${newColumnIndex + 1})`);
+        const columns = grid.querySelectorAll('.column');
+        const newColumn = columns[newColumnIndex];
         const newCell = newColumn.querySelector('.cell');
         const deleteBtn = newCell.querySelector('.delete-cell-btn');
         if (deleteBtn) newCell.removeChild(deleteBtn);
+
         newCell.textContent = displayText;
         if (isX) {
           newCell.classList.add('x');
@@ -1438,21 +1555,24 @@ function duplicateComposition() {
         } else {
           newCell.classList.remove('x');
           newCell.dataset.originalValue = originalValue;
-          // pré-carrega a nota duplicada
           loadSample('melodic', instrument, originalValue);
         }
         if (deleteBtn) newCell.appendChild(deleteBtn);
       });
     });
-    // --- BATERIA (mantive igual) ---
+
+    // --- BATERIA ---
     state.drumBlocks.forEach(block => {
       const drumWrapper = block.querySelector('.drum-wrapper');
       const grid = drumWrapper ? drumWrapper.querySelector('.columns-grid') : block.querySelector('.columns-grid');
       if (!grid) return;
+
       const originalColumn = grid.querySelector(`.column:nth-child(${i + 1})`);
       createDrumColumn(grid, newColumnIndex, block.dataset.blockIndex);
-      const newColumn = grid.querySelector(`.column:nth-child(${newColumnIndex + 1})`);
-      DRUM_SAMPLES.forEach(drum => {
+
+        const columns = grid.querySelectorAll('.column');
+        const newColumn = columns[newColumnIndex];
+        DRUM_SAMPLES.forEach(drum => {
         const originalCell = originalColumn ? originalColumn.querySelector(`.drum-cell[data-instr="${drum.key}"]`) : null;
         const newCell = newColumn.querySelector(`.drum-cell[data-instr="${drum.key}"]`);
         if (originalCell && originalCell.classList.contains('active')) {
@@ -1463,10 +1583,14 @@ function duplicateComposition() {
         }
       });
     });
-    state.totalSteps += 1;
   }
+
+  // Só agora atualize o totalSteps (depois de tudo criado)
+  state.totalSteps = newTotalSteps;
+
   updateStatus(`Composição duplicada. Total: ${state.totalSteps} passos.`, 'ready');
   updateEditMap();
+  updateMeasureDividers(); // ← Importante: atualiza divisórias após duplicação
 }
 function updateEditMap() {
   const mapContent = document.getElementById('editMapContent');
@@ -1577,19 +1701,22 @@ function updateEditMap() {
     });
   }
 }
-// ===== FUNÇÃO AUXILIAR: Obtém o valor da nota ou acorde da célula =====
 function getCellNoteValue(cellElement) {
+  // Remove temporariamente rótulos filhos (defesa contra versões antigas)
+  const labels = cellElement.querySelectorAll('.column-number-label');
+  labels.forEach(l => l.remove());
+
   // Usa o valor original armazenado no dataset, se disponível
   if (cellElement.dataset.originalValue) {
     return cellElement.dataset.originalValue;
   }
   // Lê o primeiro nó de texto da célula, ignorando o botão
   for (let node of cellElement.childNodes) {
-    if (node.nodeType === Node.TEXT_NODE) {
+    if (node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== '') {
       return node.textContent.trim();
     }
   }
-  return 'X'; // valor padrão de fallback
+  return 'X';
 }
 // ===== PLAYBACK =====
 function buildPlaybackPlan() {
@@ -1843,6 +1970,40 @@ function playDrum(drumKey, time, gainNode, volume = 1.0) {
   source.start(time);
   // ❌ não corta em 0.2s, deixa o sample tocar até o fim
 }
+// ===== FUNÇÃO PARA ATUALIZAR DIVISÓRIAS DE COMPASSO =====
+function updateMeasureDividers() {
+  // Remove divisórias antigas
+  document.querySelectorAll('.measure-divider').forEach(el => el.remove());
+
+  // Coleta todos os grids
+  const allGrids = [
+    ...state.harmonyBlocks[0].map(hb => hb.grid),
+    ...state.harmonyBlocks[1].map(hb => hb.grid),
+    ...state.harmonyBlocks[2].map(hb => hb.grid),
+    ...state.bassBlocks.map(b => b.querySelector('.columns-grid')),
+    ...state.melody1Blocks.map(m => m.querySelector('.columns-grid')),
+    ...state.melody2Blocks.map(m => m.querySelector('.columns-grid')),
+    ...state.drumBlocks.map(d => {
+      const dw = d.querySelector('.drum-wrapper');
+      return dw ? dw.querySelector('.columns-grid') : d.querySelector('.columns-grid');
+    })
+  ].filter(Boolean);
+
+  allGrids.forEach(grid => {
+    const columns = grid.querySelectorAll('.column');
+    for (let i = 7; i < columns.length; i += 8) { // 8ª coluna = índice 7
+      const column = columns[i];
+      const rect = column.getBoundingClientRect();
+      const gridRect = grid.getBoundingClientRect();
+      const leftPos = rect.right - gridRect.left;
+
+      const divider = document.createElement('div');
+      divider.className = 'measure-divider';
+      divider.style.left = `${leftPos}px`;
+      grid.appendChild(divider);
+    }
+  });
+}
 function startScheduler() {
   state.isPlaying = true;
   ui.btnPlay.textContent = '⏸ Pause';
@@ -1864,17 +2025,27 @@ function startScheduler() {
 }
 // ===== FUNÇÃO PARA ATUALIZAR PROGRESSO VISUAL =====
 function updatePlaybackProgress() {
-  // Limpa destaque anterior
+  // Limpa destaque anterior nos grids
   document.querySelectorAll('.cell, .drum-cell').forEach(cell => {
     cell.style.boxShadow = 'none';
   });
-  // Destaca a célula atual
+  // Destaca célula atual nos grids
   const currentStep = state.stepIndex;
   document.querySelectorAll(`.column:nth-child(${currentStep + 1}) .cell`).forEach(cell => {
     cell.style.boxShadow = '0 0 5px 2px #5eead4';
   });
   document.querySelectorAll(`.column:nth-child(${currentStep + 1}) .drum-cell`).forEach(cell => {
     cell.style.boxShadow = '0 0 5px 2px #5eead4';
+  });
+
+  // === DESTAQUE NO MAPA DE EDIÇÃO ===
+  const currentMeasure = Math.floor(currentStep / 8); // 8 colcheias = 1 compasso
+  document.querySelectorAll('.edit-map-item').forEach((item, idx) => {
+    if (idx === currentMeasure) {
+      item.classList.add('active');
+    } else {
+      item.classList.remove('active');
+    }
   });
 }
 // ===== PLAY COM CONTAGEM REGRESSIVA DE 4 COMPASSOS =====
@@ -2301,6 +2472,39 @@ function createVolumeControl() {
   volumeControl.appendChild(volumeLabel);
   volumeControl.appendChild(volumeSlider);
   return volumeControl;
+}
+function updateMeasureDividers() {
+  // Remove divisórias antigas
+  document.querySelectorAll('.measure-divider').forEach(el => el.remove());
+
+  // Coleta todos os grids
+  const allGrids = [
+    ...state.harmonyBlocks[0].map(hb => hb.grid),
+    ...state.harmonyBlocks[1].map(hb => hb.grid),
+    ...state.harmonyBlocks[2].map(hb => hb.grid),
+    ...state.bassBlocks.map(b => b.querySelector('.columns-grid')),
+    ...state.melody1Blocks.map(m => m.querySelector('.columns-grid')),
+    ...state.melody2Blocks.map(m => m.querySelector('.columns-grid')),
+    ...state.drumBlocks.map(d => {
+      const dw = d.querySelector('.drum-wrapper');
+      return dw ? dw.querySelector('.columns-grid') : d.querySelector('.columns-grid');
+    })
+  ].filter(Boolean);
+
+  allGrids.forEach(grid => {
+    const columns = grid.querySelectorAll('.column');
+    for (let i = 7; i < columns.length; i += 8) { // 8ª coluna = índice 7
+      const column = columns[i];
+      const rect = column.getBoundingClientRect();
+      const gridRect = grid.getBoundingClientRect();
+      const leftPos = rect.right - gridRect.left;
+
+      const divider = document.createElement('div');
+      divider.className = 'measure-divider';
+      divider.style.left = `${leftPos}px`;
+      grid.appendChild(divider);
+    }
+  });
 }
 // ===== INICIALIZAR =====
 window.addEventListener('load', initializeApp);
