@@ -2819,17 +2819,7 @@ function getCurrentChordLabelsForTraining() {
   };
 }
 
-  return {
-    bpm: state.bpm,
-    meter: state.meter,
-    key: state.key,
-    quality: state.quality,
-    style: state.signatureTag,
-    duration: totalSteps * sixteenthDur,
-    chords: labels
-  };
-}
-
+  
 async function scheduleFullPlaybackForOffline(ctx, gains, duration) {
   const sixteenthDur = 60 / state.bpm / 4;
   const beatsPerBar = meterToBeats(state.meter);
