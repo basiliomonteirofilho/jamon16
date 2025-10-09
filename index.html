@@ -2853,40 +2853,45 @@ async function scheduleFullPlaybackForOffline(ctx, gains, duration) {
       }
     }
 
-    // Instrumentos harmônicos (tocam no início do compasso)
-    if (chord && isNewBar) {
-      const fullChord = chord.note + (chord.type || '');
+    // ===== INSTRUMENTOS HARMÔNICOS (tocam no início do compasso) =====
+if (chord && isNewBar) {
+  const fullChordName = chord.note + (chord.type || '');
 
-      if (!mute.clean) {
-        const url = `guitarraLimpa/${chord.note}/${fullChord}.mp3`;
-        const buf = state.buffers.guitar?.[url];
-        if (buf) playBuffer(buf, gains.cleanGain, time);
-      }
+  // Guitarra Limpa
+  if (!mute.clean) {
+    const url = `guitarraLimpa/${chord.note}/${fullChordName}.mp3`;
+    const buf = state.buffers.guitar?.[url];
+    if (buf) playBuffer(buf, gains.cleanGain, time);
+  }
 
-      if (!mute.pianoString) {
-        const url = `assets/PianoStringChord/${chord.note}/${fullChord}.mp3`;
-        const buf = state.buffers.guitar?.[url];
-        if (buf) playBuffer(buf, gains.pianoStringGain, time);
-      }
+  // Piano/String
+  if (!mute.pianoString) {
+    const url = `assets/PianoStringChord/${chord.note}/${fullChordName}.mp3`;
+    const buf = state.buffers.guitar?.[url];
+    if (buf) playBuffer(buf, gains.pianoStringGain, time);
+  }
 
-      if (!mute.echo) {
-        const url = `GuitarraEcho/${chord.note}/${fullChord}.mp3`;
-        const buf = state.buffers.guitar?.[url];
-        if (buf) playBuffer(buf, gains.echoGain, time);
-      }
+  // Guitarra Echo
+  if (!mute.echo) {
+    const url = `GuitarraEcho/${chord.note}/${fullChordName}.mp3`;
+    const buf = state.buffers.guitar?.[url];
+    if (buf) playBuffer(buf, gains.echoGain, time);
+  }
 
-      if (!mute.cleanPicked) {
-        const url = `GuitarraLimpaDedilhada/${chord.note}/${fullChord}.mp3`;
-        const buf = state.buffers.guitar?.[url];
-        if (buf) playBuffer(buf, gains.cleanPickedGain, time);
-      }
+  // Guitarra Limpa Dedilhada
+  if (!mute.cleanPicked) {
+    const url = `GuitarraLimpaDedilhada/${chord.note}/${fullChordName}.mp3`;
+    const buf = state.buffers.guitar?.[url];
+    if (buf) playBuffer(buf, gains.cleanPickedGain, time);
+  }
 
-      if (!mute.organ) {
-        const url = `Orgao/${chord.note}/${fullChord}.mp3`;
-        const buf = state.buffers.guitar?.[url];
-        if (buf) playBuffer(buf, gains.organGain, time);
-      }
-    }
+  // Órgão
+  if (!mute.organ) {
+    const url = `Orgao/${chord.note}/${fullChordName}.mp3`;
+    const buf = state.buffers.guitar?.[url];
+    if (buf) playBuffer(buf, gains.organGain, time);
+  }
+}
 
     // Guitarra distorcida (pode tocar em ritmo)
     if (!mute.dist && chord) {
