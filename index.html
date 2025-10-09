@@ -2819,8 +2819,7 @@ function getCurrentChordLabelsForTraining() {
   };
 }
 
-  
-async function scheduleFullPlaybackForOffline(ctx, gains, duration) {
+  async function scheduleFullPlaybackForOffline(ctx, gains, duration) {
   const sixteenthDur = 60 / state.bpm / 4;
   const beatsPerBar = meterToBeats(state.meter);
   const stepsPerBar = beatsPerBar * 4;
