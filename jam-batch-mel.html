@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Jam Batch — FIXED (wav + json + mel)</title>
+<title>Jam Batch — FINAL (wav + json + mel)</title>
 <style>
   body{font-family:Arial,Helvetica,sans-serif;background:#071014;color:#e6f6f5;padding:20px}
   .card{max-width:980px;margin:0 auto;background:#071a1f;padding:18px;border-radius:10px}
@@ -14,12 +14,12 @@
   .controls{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
   .progress{height:14px;background:#022227;border-radius:8px;margin-top:12px;overflow:hidden}
   .bar{height:100%;background:#8ef0d4;width:0%}
-  pre{background:#021214;padding:10px;border-radius:6px;max-height:320px;overflow:auto}
+  pre{background:#021214;padding:10px;border-radius:6px;max-height:360px;overflow:auto}
 </style>
 </head>
 <body>
   <div class="card">
-    <h1>Jam Batch — FIXED (wav + json + mel)</h1>
+    <h1>Jam Batch — FINAL (wav + json + mel)</h1>
     <p>Use na pasta do seu projeto (mesmos assets). Teste com 5 faixas antes de rodar 1000.</p>
 
     <label>Quantidade</label>
@@ -46,29 +46,35 @@
   </div>
 
 <script>
-/* ======= CONFIG (ajuste se necessário) ======= */
+/* Jam Batch FINAL
+   - Normaliza tokens de bateria (aceita "caixa", "caixa-chimbal", "ca", etc.)
+   - Muting por peça: 'drum-bu', 'drum-ca', 'bass-F', 'chord-clean-C', ...
+   - Resolve arquivos de baixo tentando variantes (16S, S, sem S)
+   - Gera WAV, JSON e MEL-PNG
+*/
 
-/* drums: token -> path */
-const DRUMS = {
+/* ------------------ Config (ajuste caminhos se necessário) ------------------ */
+const DRUMS = { // tokens -> files (token keys are normalized short keys)
   bu: 'assets/bumbo.mp3',
   ca: 'assets/caixa.mp3',
   ch: 'assets/chimbal.mp3',
-  bch:'assets/bumbo-chimbal.mp3',
-  ba:'assets/bumbo-ataque.mp3',
-  su:'assets/surdo.mp3',
-  co:'assets/conducao.mp3',
-  cch:'assets/caixa-chimbal.mp3',
-  to1:'assets/tom-1.mp3',
-  to2:'assets/tom-2.mp3'
+  bch: 'assets/bumbo-chimbal.mp3',
+  ba: 'assets/bumbo-ataque.mp3',
+  su: 'assets/surdo.mp3',
+  co: 'assets/conducao.mp3',
+  cch: 'assets/caixa-chimbal.mp3',
+  bco: 'assets/bumbo-conducao.mp3',
+  cco: 'assets/caixa-conducao.mp3',
+  to1: 'assets/tom-1.mp3',
+  to2: 'assets/tom-2.mp3'
 };
 
-/* bass samples: assets/bass-C.mp3, assets/bass-CS.mp3, etc. */
+// bass sample pattern: assets/bass-<NAME>.mp3
 const PITCHES = ['A','AS','B','C','CS','D','DS','E','F','FS','G','GS'];
-const BASS_SAMPLES = {};
-for (const p of PITCHES) BASS_SAMPLES[p] = `assets/bass-${p}.mp3`;
+const BASS_SAMPLES = {}; for (const p of PITCHES) BASS_SAMPLES[p] = `assets/bass-${p}.mp3`;
 BASS_SAMPLES['x'] = 'assets/bass-muted.mp3';
 
-/* Grooves (expand conforme seu ALL_GROOVES real) */
+// sample grooves (extend if you have your ALL_GROOVES)
 const ALL_GROOVES = [
   { name:'Rock', meter:'4/4', drumPattern:['bu - ca - (ch ch cch ch)'], bassRhythm:['x - x - x - x -']},
   { name:'Blues', meter:'4/4', drumPattern:['bu - ca - (ch ch cch ch)'], bassRhythm:['x - x - -']},
@@ -77,55 +83,60 @@ const ALL_GROOVES = [
   { name:'Metal', meter:'4/4', drumPattern:['bch bch bch bch'], bassRhythm:['x x x x']}
 ];
 
-/* ======= UTILITIES: WAV, FFT, MEL (compact) ======= */
-function interleave(left,right){ const len = left.length + right.length; const out = new Float32Array(len); let i=0,j=0; while(i<left.length){ out[j++]=left[i]; out[j++]=right[i]; i++; } return out; }
-function writeWav(samples,sr){
-  const buffer=new ArrayBuffer(44+samples.length*2); const view=new DataView(buffer);
-  function wstr(off,str){ for(let i=0;i<str.length;i++) view.setUint8(off+i,str.charCodeAt(i)); }
-  wstr(0,'RIFF'); view.setUint32(4,36+samples.length*2,true); wstr(8,'WAVE'); wstr(12,'fmt ');
-  view.setUint32(16,16,true); view.setUint16(20,1,true); view.setUint16(22,2,true);
-  view.setUint32(24,sr,true); view.setUint32(28,sr*4,true); view.setUint16(32,4,true); view.setUint16(34,16,true);
-  wstr(36,'data'); view.setUint32(40,samples.length*2,true);
-  let off=44; for(let i=0;i<samples.length;i++,off+=2){ const s=Math.max(-1,Math.min(1,samples[i])); view.setInt16(off, s<0? s*0x8000 : s*0x7fff, true); }
-  return new Blob([view],{type:'audio/wav'});
+/* ------------------ Small DSP utils (WAV, STFT, mel) ------------------ */
+function interleave(L, R){ const out=new Float32Array(L.length+R.length); let i=0,j=0; while(i<L.length){ out[j++]=L[i]; out[j++]=R[i]; i++; } return out; }
+function writeWav(samples, sr){ const buffer=new ArrayBuffer(44 + samples.length*2); const view=new DataView(buffer);
+  function wstr(off, s){ for(let i=0;i<s.length;i++) view.setUint8(off+i,s.charCodeAt(i)); }
+  wstr(0,'RIFF'); view.setUint32(4,36 + samples.length*2,true); wstr(8,'WAVE'); wstr(12,'fmt ');
+  view.setUint32(16,16,true); view.setUint16(20,1,true); view.setUint16(22,2,true); view.setUint32(24,sr,true);
+  view.setUint32(28,sr*4,true); view.setUint16(32,4,true); view.setUint16(34,16,true); wstr(36,'data');
+  view.setUint32(40,samples.length*2,true);
+  let off=44;
+  for(let i=0;i<samples.length;i++,off+=2){ const s=Math.max(-1,Math.min(1,samples[i])); view.setInt16(off, s<0? s*0x8000 : s*0x7fff, true); }
+  return new Blob([view], {type:'audio/wav'}); 
 }
 
-/* minimal fft/stft/mel implementations (same as before) */
+/* FFT/STFT/Mel (compact but functional) */
 function hann(N){ const w=new Float32Array(N); for(let n=0;n<N;n++) w[n]=0.5*(1-Math.cos(2*Math.PI*n/(N-1))); return w; }
 function nextPow2(n){ let p=1; while(p<n) p<<=1; return p; }
-function fft(real, imag){
-  const n=real.length; if(n===0) return; const levels=Math.floor(Math.log2(n)); if((1<<levels)!==n) throw 'FFT size must be power of two';
+// iterative radix-2 FFT
+function fft(real, imag){ const n=real.length; if(n===0) return; const levels=Math.floor(Math.log2(n)); if((1<<levels)!==n) throw 'FFT size must be power of two';
   for(let i=0;i<n;i++){ let j=0,x=i; for(let k=0;k<levels;k++){ j=(j<<1)|(x&1); x>>=1; } if(j>i){ [real[i],real[j]]=[real[j],real[i]]; [imag[i],imag[j]]=[imag[j],imag[i]]; } }
-  for(let size=2; size<=n; size<<=1){ const half=size>>1; const tableStep=n/size;
-    for(let i=0;i<n;i+=size){ for(let j=0;j<half;j++){ const k=j*tableStep; const theta=-2*Math.PI*k/n; const wr=Math.cos(theta), wi=Math.sin(theta);
-      const idx1=i+j, idx2=i+j+half;
-      const tr = wr*real[idx2] - wi*imag[idx2]; const ti = wr*imag[idx2] + wi*real[idx2];
+  for(let size=2; size<=n; size<<=1){
+    const half=size>>1; const tableStep=n/size;
+    for(let i=0;i<n;i+=size){ for(let j=0;j<half;j++){
+      const k=j*tableStep; const theta=-2*Math.PI*k/n; const wr=Math.cos(theta), wi=Math.sin(theta);
+      const idx1=i+j, idx2=i+j+half; const tr = wr*real[idx2] - wi*imag[idx2]; const ti = wr*imag[idx2] + wi*real[idx2];
       real[idx2]=real[idx1]-tr; imag[idx2]=imag[idx1]-ti; real[idx1]+=tr; imag[idx1]+=ti;
     } }
   }
 }
 function stftMagnitude(signal, frameSize, hop){
   const w=hann(frameSize); const fftSize=nextPow2(frameSize); const half=fftSize/2;
-  const nFrames=Math.max(0, Math.floor((signal.length-frameSize)/hop)+1);
+  const nFrames=Math.max(0, Math.floor((signal.length-frameSize)/hop) + 1);
   const mags=[]; const re=new Float32Array(fftSize), im=new Float32Array(fftSize);
   for(let f=0; f<nFrames; f++){
     const off=f*hop; for(let i=0;i<frameSize;i++){ re[i]=(signal[off+i]||0)*w[i]; im[i]=0; } for(let i=frameSize;i<fftSize;i++){ re[i]=0; im[i]=0; }
-    fft(re,im); const mag=new Float32Array(half); for(let k=0;k<half;k++) mag[k]=Math.hypot(re[k],im[k]); mags.push(mag);
+    fft(re,im); const mag = new Float32Array(half); for(let k=0;k<half;k++) mag[k]=Math.hypot(re[k], im[k]); mags.push(mag);
   }
   return {mags, fftSize, half};
 }
 function hzToMel(h){ return 2595 * Math.log10(1 + h / 700); }
 function melToHz(m){ return 700 * (Math.pow(10, m / 2595) - 1); }
 function melFilterBank(nFilters, fftSize, sr, fmin=0, fmax=null){
-  fmax = fmax || sr/2; const melMin=hzToMel(fmin), melMax=hzToMel(fmax);
-  const melPoints=new Float32Array(nFilters+2); for(let i=0;i<melPoints.length;i++) melPoints[i]=melMin + (i/(nFilters+1))*(melMax-melMin);
-  const hzPoints=new Float32Array(melPoints.length); for(let i=0;i<hzPoints.length;i++) hzPoints[i]=melToHz(melPoints[i]);
-  const binPoints=new Int32Array(hzPoints.length); for(let i=0;i<hzPoints.length;i++) binPoints[i]=Math.floor((fftSize+1)*hzPoints[i]/sr);
-  const filters=[]; for(let m=1;m<=nFilters;m++){ const f_m_minus = binPoints[m-1], f_m = binPoints[m], f_m_plus = binPoints[m+1];
+  fmax = fmax || sr/2; const melMin = hzToMel(fmin), melMax = hzToMel(fmax);
+  const melPoints = new Float32Array(nFilters+2); for(let i=0;i<melPoints.length;i++) melPoints[i] = melMin + (i/(nFilters+1))*(melMax-melMin);
+  const hzPoints = new Float32Array(melPoints.length); for(let i=0;i<hzPoints.length;i++) hzPoints[i] = melToHz(melPoints[i]);
+  const binPoints = new Int32Array(hzPoints.length); for(let i=0;i<hzPoints.length;i++) binPoints[i] = Math.floor((fftSize+1) * hzPoints[i] / sr);
+  const filters = [];
+  for(let m=1;m<=nFilters;m++){
+    const f_m_minus = binPoints[m-1], f_m = binPoints[m], f_m_plus = binPoints[m+1];
     const filter = new Float32Array(fftSize/2);
     for(let k=0;k<filter.length;k++){
-      if(k < f_m_minus) filter[k]=0; else if(k<=f_m) filter[k]=(k-f_m_minus)/(f_m-f_m_minus||1);
-      else if(k<=f_m_plus) filter[k]=(f_m_plus-k)/(f_m_plus-f_m||1); else filter[k]=0;
+      if(k < f_m_minus) filter[k]=0;
+      else if(k <= f_m) filter[k] = (k - f_m_minus) / (f_m - f_m_minus || 1);
+      else if(k <= f_m_plus) filter[k] = (f_m_plus - k) / (f_m_plus - f_m || 1);
+      else filter[k] = 0;
     }
     filters.push(filter);
   }
@@ -135,51 +146,101 @@ function computeMelSpectrogram(signal, sr, frameSize, hop, nMels=128){
   const {mags, fftSize, half} = stftMagnitude(signal, frameSize, hop);
   const filters = melFilterBank(nMels, fftSize, sr, 0, sr/2);
   const T = mags.length, M = filters.length; const mel = new Array(T);
-  for(let t=0;t<T;t++){ const mag = mags[t]; const row = new Float32Array(M);
-    for(let m=0;m<M;m++){ let s=0; const f = filters[m]; for(let k=0;k<half;k++) s += mag[k]*f[k]; row[m]=s; } mel[t]=row;
-  }
-  // normalize to dB
-  let maxv=1e-12; for(let t=0;t<T;t++) for(let m=0;m<M;m++) if(mel[t][m]>maxv) maxv=mel[t][m];
-  for(let t=0;t<T;t++) for(let m=0;m<M;m++) mel[t][m] = 20*Math.log10((mel[t][m]/maxv)+1e-10);
-  return {mel, nMels:M, nFrames:T};
+  for(let t=0;t<T;t++){ const mag=mags[t]; const row=new Float32Array(M); for(let m=0;m<M;m++){ let s=0; const f=filters[m]; for(let k=0;k<half;k++) s += mag[k]*f[k]; row[m]=s; } mel[t]=row; }
+  let maxv=1e-12; for(let t=0;t<T;t++) for(let m=0;m<mel[t].length;m++) if(mel[t][m]>maxv) maxv = mel[t][m];
+  for(let t=0;t<T;t++) for(let m=0;m<mel[t].length;m++) mel[t][m] = 20 * Math.log10((mel[t][m]/maxv) + 1e-10);
+  return {mel, nMels: filters.length, nFrames: mel.length};
 }
 async function melToPngBlob(melObj){
-  const {mel, nMels, nFrames} = melObj; const canvas=document.createElement('canvas'); canvas.width=nFrames; canvas.height=nMels;
-  const ctx=canvas.getContext('2d'); const img=ctx.createImageData(canvas.width, canvas.height);
-  let min=Infinity, max=-Infinity; for(let t=0;t<nFrames;t++) for(let m=0;m<nMels;m++){ const v=mel[t][m]; if(v<min) min=v; if(v>max) max=v; }
-  if(!isFinite(min)){ min=-80; max=0; } const range=max-min||1;
-  for(let x=0;x<nFrames;x++){ for(let y=0;y<nMels;y++){ const v=mel[x][y]; const norm=Math.max(0, Math.min(255, Math.round(255*(v-min)/range)));
-      const idx = ((nMels-1-y)*nFrames + x)*4; img.data[idx]=norm; img.data[idx+1]=norm; img.data[idx+2]=norm; img.data[idx+3]=255;
-    }
+  const {mel, nMels, nFrames} = melObj;
+  const canvas=document.createElement('canvas'); canvas.width = nFrames; canvas.height = nMels;
+  const ctx = canvas.getContext('2d'); const img = ctx.createImageData(canvas.width, canvas.height);
+  let min=Infinity, max=-Infinity;
+  for(let t=0;t<nFrames;t++) for(let m=0;m<nMels;m++){ const v=mel[t][m]; if(v<min) min=v; if(v>max) max=v; }
+  if(!isFinite(min)){ min=-80; max=0; }
+  const range = max - min || 1;
+  for(let x=0;x<nFrames;x++) for(let y=0;y<nMels;y++){
+    const v = mel[x][y]; const norm = Math.max(0, Math.min(255, Math.round(255*(v-min)/range)));
+    const idx = ((nMels-1-y)*nFrames + x)*4;
+    img.data[idx]=norm; img.data[idx+1]=norm; img.data[idx+2]=norm; img.data[idx+3]=255;
   }
   ctx.putImageData(img,0,0);
-  return new Promise(res=>canvas.toBlob(b=>res(b),'image/png'));
+  return new Promise(res => canvas.toBlob(b => res(b), 'image/png'));
 }
 
-/* ======= Rhythm parsing utilities ======= */
+/* ------------------ Rhythm parse/expand ------------------ */
 function parsePattern(text){
-  const res={intro:[],loop:[]};
+  const r={intro:[],loop:[]};
   const im=text.match(/\[(.*?)\]/); const lm=text.match(/\((.*?)\)/);
-  if(im) res.intro=im[1].trim().split(/\s+/).filter(Boolean);
-  if(lm) res.loop=lm[1].trim().split(/\s+/).filter(Boolean);
-  if(!im && !lm) res.loop = text.trim().split(/\s+/).filter(Boolean);
-  if(!res.loop.length) res.loop=res.intro.slice();
-  return res;
+  if(im) r.intro = im[1].trim().split(/\s+/).filter(Boolean);
+  if(lm) r.loop = lm[1].trim().split(/\s+/).filter(Boolean);
+  if(!im && !lm) r.loop = text.trim().split(/\s+/).filter(Boolean);
+  if(!r.loop.length) r.loop = r.intro.slice();
+  return r;
 }
-function expandRhythm(arr,total){
+function expandRhythm(arr, total){
   const joined = arr.join(' ').replace(/\s+/g,' ').trim(); const tokens = joined.split(/\s+/).filter(Boolean);
-  const out=[]; let safety=0; while(out.length<total && safety<5000){ for(const t of tokens){ if(out.length>=total) break; out.push(t);} safety++; } return out.slice(0,total);
+  const out=[]; let safety=0;
+  while(out.length<total && safety<5000){ for(const t of tokens){ if(out.length>=total) break; out.push(t); } safety++; }
+  return out.slice(0, total);
 }
 
-/* ======= filename helpers (note->folder/file) ======= */
-/* note format: 'A' or 'A#' in chord data -> we map '#' to 'S' */
-function noteToFolder(note){
-  if(!note) return 'C';
-  return note.replace('#','S');
+/* ------------------ Helpers: normalize drum tokens & bass candidates ------------------ */
+/* Map tokens/labels to normalized short keys that match DRUMS mapping */
+function resolveDrumToken(token){
+  if(!token) return null;
+  const t = token.toString().toLowerCase();
+  // use includes checks to accept "caixa", "ca", "caixa-chimbal", "caixa_chimbal", etc.
+  if (['bu','bumbo'].some(x=>t.includes(x))) return 'bu';
+  if (['ca','caixa'].some(x=>t.includes(x))) {
+    // 'caixa-chimbal' should map to 'cch' rather than 'ca' if it contains both words
+    if (t.includes('caixa') && (t.includes('chimbal') || t.includes('cch'))) return 'cch';
+    return 'ca';
+  }
+  if (['ch','chimbal'].some(x=>t.includes(x))) return 'ch';
+  if (['ba','bumbo-ataque'].some(x=>t.includes(x))) return 'ba';
+  if (['cch','caixa-chimbal','caixa_chimbal'].some(x=>t.includes(x) || t===x)) return 'cch';
+  if (['bco','bumbo-conducao','bumbo_conducao'].some(x=>t.includes(x) || t===x)) return 'bco';
+  if (['co','conducao'].some(x=>t.includes(x))) return 'co';
+  if (['cco','caixa-conducao','caixa_conducao'].some(x=>t.includes(x) || t===x)) return 'cco';
+  if (['to1','tom-1'].some(x=>t.includes(x))) return 'to1';
+  if (['to2','tom-2'].some(x=>t.includes(x))) return 'to2';
+  if (['su','surdo'].some(x=>t.includes(x))) return 'su';
+  if (['bch','bumbo-chimbal'].some(x=>t.includes(x) || t===x)) return 'bch';
+  // fallback: return token shortened (first 3 letters) if matches key
+  const short = token.slice(0,3).toLowerCase();
+  return Object.keys(DRUMS).includes(short) ? short : null;
 }
-/* chord object: {note:'A'|'A#', type:''|'m'|'7'|'m7' etc}
-   filename pattern: if type empty or 'maj' -> NOTE.mp3 (ex C/C.mp3)
-                     else -> NOTE + type + .mp3 (ex: C/Cm.mp3 or CS/CS7.mp3) */
+
+/* Create candidate filenames for bass, prefer 16S then S then plain.
+   e.g. note='F' => bass-F16S.mp3, bass-FS.mp3, bass-F.mp3
+   note might be like 'F#' or 'F' or 'Fs16' (we always map '#'->'S' and uppercase) */
+function getBassCandidates(note){
+  if(!note) return [];
+  let n = note.toString().toUpperCase().replace('#','S');
+  // if it's like 'F16S' user may pass full variant already -> include as-is
+  const cands = [];
+  if (!n.endsWith('16S') && n.length===2 && /[A-G]S?/.test(n)) {
+    cands.push(`assets/bass-${n}16S.mp3`); // prefer 16S if present
+    cands.push(`assets/bass-${n}S.mp3`);   // fallback with S (double S ok if already)
+    cands.push(`assets/bass-${n}.mp3`);
+  } else {
+    // generic: try full, then remove trailing parts
+    cands.push(`assets/bass-${n}.mp3`);
+    // also try base (strip digits)
+    const base = n.replace(/[0-9]/g,'');
+    if (base !== n) {
+      cands.push(`assets/bass-${base}.mp3`);
+    }
+    // try with S variant if missing
+    if (!n.endsWith('S')) cands.push(`assets/bass-${n}S.mp3`);
+  }
+  // ensure unique order
+  return [...new Set(cands)];
+}
+
+/* ------------------ chord filename helpers (folder & filename) ------------------ */
+function noteToFolder(note){ if(!note) return 'C'; return note.toString().replace('#','S'); }
 function chordFileNameObj(chord){
   const folder = noteToFolder(chord.note || 'C');
   const type = (chord.type||'').toString();
@@ -188,7 +249,7 @@ function chordFileNameObj(chord){
   return {folder, filename: `${base}${type}.mp3`};
 }
 
-/* ======= Offline render (fixed muting per piece) ======= */
+/* ------------------ renderOne: load buffers and schedule with per-piece muting ------------------ */
 async function renderOne(params){
   const {durationSec,bpm,groove,chordPlan,chordDurations,frameSize,hopSize} = params;
   const sampleRate = 44100;
@@ -197,23 +258,24 @@ async function renderOne(params){
 
   // gains
   const master = offline.createGain(); master.connect(offline.destination);
-  const drumGain = offline.createGain(); drumGain.connect(master); drumGain.gain.value = 0.7;
-  const bassGain = offline.createGain(); bassGain.connect(master); bassGain.gain.value = 0.6;
-  const cleanGain = offline.createGain(); cleanGain.connect(master); cleanGain.gain.value = 0.5;
-  const distGain = offline.createGain(); distGain.connect(master); distGain.gain.value = 0.45;
-  const pianoGain = offline.createGain(); pianoGain.connect(master); pianoGain.gain.value = 0.5;
-  const organGain = offline.createGain(); organGain.connect(master); organGain.gain.value = 0.4;
+  const drumGain = offline.createGain(); drumGain.connect(master); drumGain.gain.value = 0.8;
+  const bassGain = offline.createGain(); bassGain.connect(master); bassGain.gain.value = 0.7;
+  const cleanGain = offline.createGain(); cleanGain.connect(master); cleanGain.gain.value = 0.6;
+  const distGain = offline.createGain(); distGain.connect(master); distGain.gain.value = 0.5;
+  const pianoGain = offline.createGain(); pianoGain.connect(master); pianoGain.gain.value = 0.55;
+  const organGain = offline.createGain(); organGain.connect(master); organGain.gain.value = 0.45;
 
   const beats = Number((groove.meter||'4/4').split('/')[0])||4;
   const sixteenth = 60/bpm/4;
   const totalSteps = Math.floor(durationSec / sixteenth);
 
+  // rhythms
   const bassRh = expandRhythm(groove.bassRhythm || ['x - x -'], totalSteps);
   const drumParsed = parsePattern((groove.drumPattern && groove.drumPattern.join(' ')) || 'bu - ca - ch -');
   const drumLoop = drumParsed.loop.length ? drumParsed.loop : drumParsed.intro;
   const drumSeq = expandRhythm(drumLoop, totalSteps);
 
-  // collect urls: chords, drums, bass
+  // collect candidate urls: chords + drum files + bass candidates
   const urls = new Set();
   for(const ch of chordPlan){
     const {folder, filename} = chordFileNameObj(ch);
@@ -223,22 +285,31 @@ async function renderOne(params){
     urls.add(`Orgao/${folder}/${filename}`);
     urls.add(`GuitarraEcho/${folder}/${filename}`);
   }
-  Object.values(DRUMS).forEach(u=>urls.add(u));
-  Object.values(BASS_SAMPLES).forEach(u=>urls.add(u));
+  // drums (all known tokens)
+  Object.values(DRUMS).forEach(u => urls.add(u));
+  // bass: try all canonical pitch names and keep patterns (loader will fetch what exists)
+  for(const p of PITCHES){
+    urls.add(`assets/bass-${p}.mp3`);
+    urls.add(`assets/bass-${p}16S.mp3`);
+    urls.add(`assets/bass-${p}S.mp3`);
+  }
+  urls.add('assets/bass-muted.mp3');
 
-  // load buffers
+  // load buffers (skip missing)
   const buffers = {};
-  await Promise.all(Array.from(urls).map(async (url)=>{
+  await Promise.all(Array.from(urls).map(async url => {
     try{
       const r = await fetch(url);
-      if(!r.ok) return;
+      if(!r.ok) { /*console.warn('404', url);*/ return; }
       const ab = await r.arrayBuffer();
       const buf = await offline.decodeAudioData(ab);
       if(buf) buffers[url] = buf;
-    }catch(e){ /* ignore missing */ }
+    } catch(e){ /* ignore */ }
   }));
+  // console report of missing drums if critical
+  Object.keys(DRUMS).forEach(k => { if(!buffers[DRUMS[k]]) console.warn('Drum sample missing:', DRUMS[k]); });
 
-  // lastSource keyed per logical voice (drum-bu, drum-ca, bass-C, chord-clean-C, chord-dist-C, piano-C, organ-C)
+  // last sources keyed per logical voice
   const lastSource = {};
 
   function schedule(buf, when, gainNode, key, maxLen=3.0, gainVal=1.0){
@@ -248,7 +319,7 @@ async function renderOne(params){
     const src = offline.createBufferSource();
     const g = offline.createGain();
     src.buffer = buf; src.connect(g); g.connect(gainNode);
-    g.gain.setValueAtTime(0, when); g.gain.linearRampToValueAtTime(gainVal, when+0.01);
+    g.gain.setValueAtTime(0, when); g.gain.linearRampToValueAtTime(gainVal, when + 0.01);
     src.start(when);
     const stopTime = Math.min(when + buf.duration, when + maxLen, durationSec);
     src.stop(stopTime);
@@ -258,22 +329,31 @@ async function renderOne(params){
   // scheduling loop
   for(let step=0; step<totalSteps; step++){
     const t = step * sixteenth;
-    // drums: tokens like 'bu', 'ca', 'ch', 'bch'
-    const dTok = drumSeq[step];
-    if(dTok && dTok !== '-'){
-      const url = DRUMS[dTok] || DRUMS[dTok.replace(/\W/g,'')];
-      if(url && buffers[url]) schedule(buffers[url], t, drumGain, `drum-${dTok}`, 1.2, 0.95);
+
+    // drums
+    const rawTok = drumSeq[step];
+    const dKey = resolveDrumToken(rawTok);
+    if(dKey){
+      const drumUrl = DRUMS[dKey];
+      if(drumUrl && buffers[drumUrl]) schedule(buffers[drumUrl], t, drumGain, `drum-${dKey}`, 1.2, 0.95);
+      else console.debug('Drum buffer not loaded for', dKey, drumUrl);
     }
 
     // bass
-    const bTok = bassRh[step] || '-';
+    const bTok = (bassRh[step]||'-').toString();
     if(bTok !== '-' && bTok !== 'x'){
-      const bKey = bTok.toUpperCase();
-      const bUrl = BASS_SAMPLES[bKey] || BASS_SAMPLES[bTok];
-      if(bUrl && buffers[bUrl]) schedule(buffers[bUrl], t, bassGain, `bass-${bKey}`, 1.6, 1.0);
-    } else if(bTok === 'x'){
-      const bUrl = BASS_SAMPLES['x'];
-      if(bUrl && buffers[bUrl]) schedule(buffers[bUrl], t, bassGain, `bass-muted`, 1.6, 0.8);
+      // normalize token like "F" or "Fs" or "FS" etc.
+      let note = bTok.toUpperCase().replace('#','S'); // if user used '#' -> S
+      // try candidate filenames
+      const cands = getBassCandidates(note);
+      let found = false;
+      for(const cand of cands){
+        if(buffers[cand]){ schedule(buffers[cand], t, bassGain, `bass-${note}`, 1.6, 1.0); found=true; break; }
+      }
+      if(!found) console.debug('Bass sample not found for', note, cands);
+    } else if (bTok === 'x'){
+      const muteUrl = 'assets/bass-muted.mp3';
+      if(buffers[muteUrl]) schedule(buffers[muteUrl], t, bassGain, `bass-muted`, 1.6, 0.85);
     }
 
     // chords at bar start
@@ -282,51 +362,47 @@ async function renderOne(params){
       const chord = chordPlan[chordIdx];
       if(chord){
         const {folder, filename} = chordFileNameObj(chord);
-        const urlsTry = [
+        const tryList = [
           {url:`guitarraLimpa/${folder}/${filename}`, key:`chord-clean-${folder}`, gain:cleanGain},
           {url:`guitarraDistorcao/${folder}/${filename}`, key:`chord-dist-${folder}`, gain:distGain},
           {url:`assets/PianoStringChord/${folder}/${filename}`, key:`chord-piano-${folder}`, gain:pianoGain},
           {url:`Orgao/${folder}/${filename}`, key:`chord-organ-${folder}`, gain:organGain},
           {url:`GuitarraEcho/${folder}/${filename}`, key:`chord-echo-${folder}`, gain:cleanGain}
         ];
-        urlsTry.forEach(item => { const buf=buffers[item.url]; if(buf) schedule(buf, t, item.gain, item.key, 3.0, 0.95); });
+        tryList.forEach(item => { const buf = buffers[item.url]; if(buf) schedule(buf, t, item.gain, item.key, 3.0, 0.95); else console.debug('missing chord sample', item.url); });
       }
     }
-  } // end for steps
+  } // end scheduling
 
   // render
   const rendered = await offline.startRendering();
   const left = rendered.getChannelData(0), right = rendered.getChannelData(1);
-  const inter = interleave(left,right);
+  const inter = interleave(left, right);
   const wavBlob = writeWav(inter, rendered.sampleRate);
 
-  // mel
-  const mono = new Float32Array(left.length); for(let i=0;i<left.length;i++) mono[i]=0.5*(left[i]+right[i]);
+  // mel (mono)
+  const mono = new Float32Array(left.length); for(let i=0;i<left.length;i++) mono[i] = 0.5 * (left[i] + right[i]);
   const melObj = computeMelSpectrogram(mono, rendered.sampleRate, frameSize||1024, hopSize||512, 128);
   const melPng = await melToPngBlob(melObj);
 
   return {wavBlob, melPng, chordPlan, chordDurations};
 }
 
-/* ======= UI + batch control ======= */
+/* ------------------ UI & batch control ------------------ */
 let running=false, stopRequested=false, dirHandle=null;
 const logEl=document.getElementById('log'), barEl=document.getElementById('bar');
 function log(msg, append=true){ if(!append) logEl.textContent=msg; else logEl.textContent += '\n'+msg; logEl.scrollTop=99999; }
 
 async function maybeWriteFile(name, blob){
   if(dirHandle && dirHandle.getFileHandle){
-    try{
-      const fh = await dirHandle.getFileHandle(name, {create:true});
-      const w = await fh.createWritable(); await w.write(blob); await w.close(); return true;
-    }catch(e){ console.warn('FS write failed', e); }
+    try{ const fh = await dirHandle.getFileHandle(name, {create:true}); const w = await fh.createWritable(); await w.write(blob); await w.close(); return true; }
+    catch(e){ console.warn('FS write failed', e); }
   }
-  // fallback: download
-  const a=document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); URL.revokeObjectURL(a.href); a.remove();
-  return false;
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); URL.revokeObjectURL(a.href); a.remove(); return false;
 }
 
 document.getElementById('pickFolder').addEventListener('click', async ()=>{
-  try{ if(window.showDirectoryPicker){ dirHandle = await window.showDirectoryPicker(); log('Pasta escolhida: '+(dirHandle.name||''), false); } else { dirHandle=null; log('showDirectoryPicker não suportado — fallback para downloads', false);} }
+  try{ if(window.showDirectoryPicker){ dirHandle = await window.showDirectoryPicker(); log('Pasta escolhida: '+(dirHandle.name||''), false); } else { dirHandle=null; log('showDirectoryPicker não suportado — fallback para downloads', false); } }
   catch(e){ dirHandle=null; log('Cancelado/erro: '+e.message, false); }
 });
 
@@ -337,6 +413,7 @@ document.getElementById('start').addEventListener('click', async ()=>{
   const bpmVal = Number(document.getElementById('bpm').value||100);
   const frameSize = Number(document.getElementById('frameSize').value||1024);
   const hopSize = Number(document.getElementById('hopSize').value||512);
+
   log(`Iniciando geração: ${count} faixas de ${duration}s (frame=${frameSize}, hop=${hopSize})`, false);
   const startAll = Date.now();
 
@@ -344,10 +421,9 @@ document.getElementById('start').addEventListener('click', async ()=>{
     if(stopRequested){ log('Parada solicitada — abortando.'); break; }
     const groove = ALL_GROOVES[Math.floor(Math.random()*ALL_GROOVES.length)];
     const bpm = (bpmVal>0)?bpmVal:(80 + Math.floor(Math.random()*80));
-    // build chordPlan (key C synthetic)
     const beatsPerBar = Number((groove.meter||'4/4').split('/')[0]) || 4;
     const bars = Math.ceil((duration / (60/bpm/4)) / (beatsPerBar*4));
-    const chordPlan=[], chordDurations=[];
+    const chordPlan = [], chordDurations = [];
     const degToNote = {1:'C',2:'D',3:'E',4:'F',5:'G',6:'A',7:'B'};
     for(let b=0;b<bars;b++){ const degCandidates=[1,4,5,6]; const deg=degCandidates[Math.floor(Math.random()*degCandidates.length)];
       chordPlan.push({note: degToNote[deg], type:'', display:degToNote[deg]}); chordDurations.push(1);
@@ -364,7 +440,7 @@ document.getElementById('start').addEventListener('click', async ()=>{
       await maybeWriteFile(base + '.wav', wavBlob);
       await maybeWriteFile(base + '-mel.png', melPng);
 
-      // metadata json
+      // metadata
       const sixteenthDur = 60/bpm/4;
       const chords = []; let step=0;
       for(let j=0;j<cp.length;j++){
@@ -374,10 +450,10 @@ document.getElementById('start').addEventListener('click', async ()=>{
         step += (cd[j]||1) * beatsPerBar * 4;
       }
       const meta = {bpm, meter:groove.meter||'4/4', key:'C', quality:'maj', style:groove.name, duration, chords};
-      await maybeWriteFile(base + '.json', new Blob([JSON.stringify(meta,null,2)],{type:'application/json'}));
+      await maybeWriteFile(base + '.json', new Blob([JSON.stringify(meta,null,2)], {type:'application/json'}));
 
       const perc = Math.round(((i+1)/count)*100); barEl.style.width = perc + '%';
-    }catch(e){
+    } catch(e){
       console.error('Erro render:', e); log('Erro ao renderizar faixa '+(i+1)+': '+(e.message||e));
     }
 
