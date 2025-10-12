@@ -3,61 +3,85 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Jam Batch – Gerador de Dataset Musical</title>
+  <title>Jam Batch – Gerador de Dataset</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: #121212;
       color: #e0e0e0;
-      padding: 20px;
       margin: 0;
-    }
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
+      padding: 20px;
+      text-align: center;
     }
     h1 {
       color: #5eead4;
-      text-align: center;
+      margin-bottom: 20px;
     }
-    .controls {
-      text-align: center;
+    .card {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #1e1e1e;
+      border-radius: 16px;
+      padding: 25px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
       margin: 20px 0;
     }
     button {
-      padding: 12px 24px;
-      font-size: 1.1em;
-      background: #5eead4;
-      color: #121212;
+      padding: 12px 20px;
       border: none;
       border-radius: 8px;
-      cursor: pointer;
       font-weight: bold;
+      cursor: pointer;
+      background: #5eead4;
+      color: #121212;
+      font-size: 1em;
+    }
+    button:hover:not(:disabled) {
+      opacity: 0.9;
     }
     button:disabled {
       opacity: 0.5;
       cursor: not-allowed;
     }
     .status {
-      background: #1e1e1e;
-      padding: 15px;
-      border-radius: 10px;
       margin-top: 20px;
+      padding: 12px;
+      border-radius: 8px;
+      background: #2a2a2a;
       font-family: monospace;
-      white-space: pre-wrap;
-      max-height: 300px;
-      overflow-y: auto;
+    }
+    .instructions {
+      color: #aaa;
+      font-size: 0.9em;
+      margin-top: 15px;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>🎵 Jam Batch – Gerador de Dataset Musical</h1>
-    <p>Clique para gerar 1000 músicas de 30s com todos os instrumentos e lógica do Jam On.</p>
-    <div class="controls">
-      <button id="btnStart">🚀 Iniciar Geração em Lote</button>
+  <h1>🎵 Jam Batch – Gerador de Dataset Musical</h1>
+  <div class="card">
+    <p>Este gerador usa a lógica completa do Jam On para criar músicas variadas.</p>
+    <p>Cada música tem <strong>30 segundos</strong>, com metadados em JSON.</p>
+
+    <div class="btn-group">
+      <button data-count="5">Gerar 5 músicas</button>
+      <button data-count="10">Gerar 10 músicas</button>
+      <button data-count="100">Gerar 100 músicas</button>
+      <button data-count="500">Gerar 500 músicas</button>
+      <button data-count="1000">Gerar 1000 músicas</button>
     </div>
-    <div class="status" id="log">Aguardando...</div>
+
+    <div class="instructions">
+      ⚠️ Seu navegador deve estar configurado para <strong>"Perguntar onde salvar arquivos"</strong> (recomendado).
+    </div>
+
+    <div class="status" id="status">Pronto para gerar.</div>
   </div>
 
   <script>
@@ -80,21 +104,78 @@
       { name: "Jazz", meter: "4/4", bassScale: "chromatic" }
     ];
 
-    // === FUNÇÕES AUXILIARES ===
     function meterToBeats(meter) {
       return Number(meter.split('/')[0]) || 4;
     }
+
     function randomChoice(arr) {
       return arr[Math.floor(Math.random() * arr.length)];
     }
-    function transposeDown3Semitones(note) {
-      const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-      const index = notes.indexOf(note);
-      if (index === -1) return note;
-      return notes[(index - 3 + 12) % 12];
+
+    function buildBassAndChordPlan(bpm, meter, key, quality, durationSec = 30) {
+      const sixteenthDur = 60 / bpm / 4;
+      const beats = meterToBeats(meter);
+      const stepsPerBar = beats * 4;
+      const totalSteps = Math.ceil(durationSec / sixteenthDur);
+
+      // Escolhe groove
+      const groove = randomChoice(ALL_GROOVES);
+      const styleKey = groove.name.split('_')[0].replace(/\d+/g, '');
+      const progressions = STYLE_PROGRESSIONS[styleKey] || STYLE_PROGRESSIONS.Rock;
+      const prog = randomChoice(progressions);
+      const chordPlan = prog.map(degree => {
+        const rootIdx = (PITCHES.indexOf(key) + DEGREE_TO_ROOT[degree]) % 12;
+        const rootNote = PITCHES[rootIdx];
+        let type = '';
+        if (degree === 7) type = 'dim';
+        else if ([2,3,6].includes(degree) && quality === 'maj') type = 'm';
+        return { note: rootNote, type, display: CHORD_NAMES[rootIdx] + type, rootNote: CHORD_NAMES[rootIdx] };
+      });
+
+      // Monta plano de baixo (simplificado)
+      const bassPlan = [];
+      for (let step = 0; step < totalSteps; step++) {
+        const bar = Math.floor(step / stepsPerBar);
+        const chord = chordPlan[bar % chordPlan.length];
+        const rootIdx = PITCHES.indexOf(chord.note);
+        const scale = groove.bassScale === "chromatic"
+          ? Array(12).fill().map((_, i) => PITCHES[(rootIdx + i) % 12])
+          : groove.bassScale.map(i => {
+              const offset = quality === 'min' && ![1,4,5].includes(prog[bar % prog.length])
+                ? {1:0,2:2,3:3,4:5,5:7,6:8,7:10,8:12}[i] || 0
+                : {1:0,2:2,3:4,4:5,5:7,6:9,7:11,8:12}[i] || 0;
+              return PITCHES[(rootIdx + offset) % 12];
+            });
+        const note = scale[Math.floor(step / stepsPerBar) % scale.length];
+        bassPlan.push(note);
+      }
+
+      return { chordPlan, bassPlan, groove, sixteenthDur, stepsPerBar, totalSteps };
     }
 
-    // === FUNÇÕES DE ÁUDIO (OFFLINE) ===
+    function generateMetadata(bpm, meter, key, quality, chordPlan, sixteenthDur, stepsPerBar, durationSec = 30) {
+      const chords = [];
+      const totalSteps = Math.ceil(durationSec / sixteenthDur);
+      for (let step = 0; step < totalSteps; step++) {
+        const bar = Math.floor(step / stepsPerBar);
+        const chord = chordPlan[bar % chordPlan.length];
+        const start = step * sixteenthDur;
+        const end = start + sixteenthDur;
+        if (end > durationSec) break;
+        chords.push({
+          start: parseFloat(start.toFixed(3)),
+          end: parseFloat(end.toFixed(3)),
+          chord: chord.display,
+          root: chord.rootNote,
+          quality: chord.type || 'maj',
+          bar,
+          step
+        });
+      }
+      return { bpm, meter, key: CHORD_NAMES[PITCHES.indexOf(key)], quality, style: chordPlan[0]?.display?.includes('m') ? 'Minor' : 'Major', duration: durationSec, chords };
+    }
+
+    // === FUNÇÕES DE ÁUDIO ===
     function audioBufferToWav(buffer) {
       const numOfChan = buffer.numberOfChannels;
       const length = buffer.length * numOfChan * 2 + 44;
@@ -141,165 +222,140 @@
       URL.revokeObjectURL(url);
     }
 
-    // === GERAÇÃO DE METADADOS ===
-    function generateMetadata(bpm, meter, key, quality, style, chordPlan, sixteenthDur) {
-      const beats = meterToBeats(meter);
-      const stepsPerBar = beats * 4;
-      const totalSteps = Math.ceil(30.0 / sixteenthDur);
-      const chords = [];
-      for (let step = 0; step < totalSteps; step++) {
-        const bar = Math.floor(step / stepsPerBar);
-        const chordIndex = bar % chordPlan.length;
-        const chord = chordPlan[chordIndex];
-        const start = step * sixteenthDur;
-        const end = start + sixteenthDur;
-        if (end > 30.0) break;
-        chords.push({
-          start: parseFloat(start.toFixed(3)),
-          end: parseFloat(end.toFixed(3)),
-          chord: chord.display,
-          root: chord.rootNote,
-          quality: chord.type || 'maj',
-          bar,
-          step
-        });
-      }
-      return {
-        bpm,
-        meter,
-        key: CHORD_NAMES[PITCHES.indexOf(key)],
-        quality,
-        style,
-        duration: 30.0,
-        chords
-      };
-    }
-
-    // === SIMULAÇÃO DE INSTRUMENTOS (sem carregar arquivos reais) ===
-    // Na prática, substitua por loadBuffer() se quiser usar samples reais
-    function playDummyNote(ctx, time, duration, freq, gainNode) {
-      if (time >= 30.0) return;
-      const osc = ctx.createOscillator();
-      const g = ctx.createGain();
-      osc.type = 'sawtooth';
-      osc.frequency.value = freq;
-      osc.connect(g);
-      g.connect(gainNode);
-      g.gain.setValueAtTime(0.2, time);
-      g.gain.exponentialRampToValueAtTime(0.001, time + Math.min(duration, 0.5));
-      osc.start(time);
-      osc.stop(time + Math.min(duration, 0.5));
-    }
-
-    // === FUNÇÃO PRINCIPAL: GERA 1 MÚSICA ===
-    async function generateOneMusic(index) {
-      const logEl = document.getElementById('log');
-      logEl.textContent += `\n[${index.toString().padStart(4, '0')}] Gerando...`;
-
-      // Parâmetros aleatórios
-      const groove = randomChoice(ALL_GROOVES);
-      const style = groove.name;
-      const meter = groove.meter;
+    async function renderOneMusic(index, durationSec = 30) {
       const bpm = Math.floor(Math.random() * 100) + 70;
+      const groove = randomChoice(ALL_GROOVES);
+      const meter = groove.meter;
       const key = randomChoice(PITCHES);
       const quality = Math.random() > 0.5 ? 'maj' : 'min';
 
-      const sixteenthDur = 60 / bpm / 4;
-      const beats = meterToBeats(meter);
-      const totalSteps = Math.ceil(30.0 / sixteenthDur);
+      const { chordPlan, bassPlan, sixteenthDur, stepsPerBar, totalSteps } = buildBassAndChordPlan(bpm, meter, key, quality, durationSec);
+      const metadata = generateMetadata(bpm, meter, key, quality, chordPlan, sixteenthDur, stepsPerBar, durationSec);
 
-      // Progressão
-      const progressions = STYLE_PROGRESSIONS[style] || STYLE_PROGRESSIONS.Rock;
-      const prog = randomChoice(progressions);
-      const chordPlan = prog.map(degree => {
-        const rootIdx = (PITCHES.indexOf(key) + DEGREE_TO_ROOT[degree]) % 12;
-        const rootNote = PITCHES[rootIdx];
-        let type = '';
-        if ([2,3,6].includes(degree) && quality === 'maj') type = 'm';
-        return {
-          note: rootNote,
-          type,
-          display: CHORD_NAMES[rootIdx] + type,
-          rootNote: CHORD_NAMES[rootIdx]
-        };
-      });
-
-      // Salva JSON
-      const metadata = generateMetadata(bpm, meter, key, quality, style, chordPlan, sixteenthDur);
-      const jsonBlob = new Blob([JSON.stringify(metadata, null, 2)], { type: 'application/json' });
-      downloadBlob(jsonBlob, `jam-${index.toString().padStart(4, '0')}.json`);
-
-      // Renderiza áudio offline
+      // Render offline
       const sampleRate = 44100;
-      const offlineCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(2, Math.ceil(30 * sampleRate), sampleRate);
+      const offlineCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(2, Math.ceil(durationSec * sampleRate), sampleRate);
 
-      // Árvore de ganho
+      // Ganho master
       const master = offlineCtx.createGain();
       master.gain.value = 0.8;
       master.connect(offlineCtx.destination);
 
+      // Instrumentos (todos ativos)
       const gains = {};
-      ['drums', 'bass', 'clean', 'dist', 'piano', 'echo', 'cleanPicked', 'organ', 'melody'].forEach(name => {
+      ['bass', 'drums', 'clean', 'dist', 'piano', 'echo', 'cleanPicked', 'organ', 'melody'].forEach(name => {
         gains[name] = offlineCtx.createGain();
         gains[name].gain.value = 0.5;
         gains[name].connect(master);
       });
 
+      // Simulação de samples (substitua por loadBuffer() se quiser usar seus arquivos reais)
+      function playDummy(time, duration, freq, gainNode) {
+        if (time >= durationSec) return;
+        const osc = offlineCtx.createOscillator();
+        const g = offlineCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        osc.connect(g);
+        g.connect(gainNode);
+        g.gain.setValueAtTime(0.2, time);
+        g.gain.exponentialRampToValueAtTime(0.001, time + Math.min(duration, 0.5));
+        osc.start(time);
+        osc.stop(time + Math.min(duration, 0.5));
+      }
+
       // Agenda eventos
+      const lastSources = { bass: null, clean: null, dist: null, piano: null, echo: null, cleanPicked: null, organ: null, melody: null };
+      function scheduleNote(time, duration, freq, gainNode, instrumentKey) {
+        if (lastSources[instrumentKey]) {
+          try { lastSources[instrumentKey].stop(time); } catch (e) {}
+        }
+        const osc = offlineCtx.createOscillator();
+        const g = offlineCtx.createGain();
+        osc.frequency.value = freq;
+        osc.connect(g);
+        g.connect(gainNode);
+        g.gain.setValueAtTime(0.2, time);
+        g.gain.exponentialRampToValueAtTime(0.001, time + Math.min(duration, 0.5));
+        osc.start(time);
+        osc.stop(time + Math.min(duration, 0.5));
+        lastSources[instrumentKey] = osc;
+      }
+
       for (let step = 0; step < totalSteps; step++) {
         const time = step * sixteenthDur;
-        if (time >= 30.0) break;
-
-        const bar = Math.floor(step / (beats * 4));
+        if (time >= durationSec) break;
+        const bar = Math.floor(step / stepsPerBar);
         const chord = chordPlan[bar % chordPlan.length];
         const freqBase = 220 * Math.pow(2, (PITCHES.indexOf(chord.note) - 3) / 12);
 
-        // Baixo
-        playDummyNote(offlineCtx, time, 0.3, freqBase, gains.bass);
+        const isNewBar = (step % stepsPerBar) === 0;
+
+        // Baixo (cada step)
+        scheduleNote(time, 0.3, freqBase, gains.bass, 'bass');
 
         // Bateria (a cada 4 steps)
-        if (step % 4 === 0) playDummyNote(offlineCtx, time, 0.1, 60, gains.drums);
+        if (step % 4 === 0) playDummy(time, 0.1, 60, gains.drums);
 
-        // Harmonia (a cada compasso)
-        if (step % (beats * 4) === 0) {
-          playDummyNote(offlineCtx, time, 1.0, freqBase * 2, gains.clean);
-          playDummyNote(offlineCtx, time, 1.0, freqBase * 2.5, gains.dist);
-          playDummyNote(offlineCtx, time, 1.0, freqBase * 3, gains.piano);
-          playDummyNote(offlineCtx, time, 1.0, freqBase * 2.2, gains.echo);
-          playDummyNote(offlineCtx, time, 1.0, freqBase * 2.8, gains.cleanPicked);
-          playDummyNote(offlineCtx, time, 1.0, freqBase * 3.5, gains.organ);
+        // Harmonia (uma vez por compasso)
+        if (isNewBar) {
+          scheduleNote(time, 1.0, freqBase * 2, gains.clean, 'clean');
+          scheduleNote(time, 1.0, freqBase * 2.5, gains.dist, 'dist');
+          scheduleNote(time, 1.0, freqBase * 3, gains.piano, 'piano');
+          scheduleNote(time, 1.0, freqBase * 2.2, gains.echo, 'echo');
+          scheduleNote(time, 1.0, freqBase * 2.8, gains.cleanPicked, 'cleanPicked');
+          scheduleNote(time, 1.0, freqBase * 3.5, gains.organ, 'organ');
         }
 
         // Melodia
         if (step % 8 === 0) {
           const melodyFreq = freqBase * [1, 1.25, 1.5, 2][Math.floor(Math.random() * 4)];
-          playDummyNote(offlineCtx, time, 0.4, melodyFreq, gains.melody);
+          scheduleNote(time, 0.4, melodyFreq, gains.melody, 'melody');
         }
       }
 
-      // Renderiza e salva WAV
       const buffer = await offlineCtx.startRendering();
       const wavBlob = audioBufferToWav(buffer);
-      downloadBlob(wavBlob, `jam-${index.toString().padStart(4, '0')}.wav`);
+      const jsonBlob = new Blob([JSON.stringify(metadata, null, 2)], { type: 'application/json' });
 
-      logEl.textContent += ` ✅`;
+      downloadBlob(wavBlob, `jam-${String(index).padStart(4, '0')}.wav`);
+      downloadBlob(jsonBlob, `jam-${String(index).padStart(4, '0')}.json`);
     }
 
-    // === INÍCIO DO LOTE ===
-    document.getElementById('btnStart').addEventListener('click', async () => {
-      const btn = document.getElementById('btnStart');
-      btn.disabled = true;
-      const logEl = document.getElementById('log');
-      logEl.textContent = 'Iniciando geração de 1000 músicas...\n';
+    // === CONTROLE DE BATCH ===
+    let isGenerating = false;
 
-      for (let i = 1; i <= 1000; i++) {
-        await generateOneMusic(i);
-        // Pequena pausa para não sobrecarregar o navegador
-        await new Promise(r => setTimeout(r, 10));
+    async function generateBatch(count) {
+      if (isGenerating) return;
+      isGenerating = true;
+      const statusEl = document.getElementById('status');
+      statusEl.textContent = `Iniciando geração de ${count} músicas...`;
+
+      for (let i = 1; i <= count; i++) {
+        statusEl.textContent = `Gerando música ${i} de ${count}...`;
+        try {
+          await renderOneMusic(i, 30);
+          // Pequena pausa para não sobrecarregar o navegador
+          await new Promise(r => setTimeout(r, 100));
+        } catch (e) {
+          console.error('Erro na música', i, e);
+          alert(`Erro ao gerar música ${i}. Verifique o console.`);
+          break;
+        }
       }
 
-      logEl.textContent += '\n\n✅ Todas as 1000 músicas foram geradas!';
-      btn.textContent = 'Concluído!';
+      statusEl.textContent = `✅ ${count} músicas geradas!`;
+      isGenerating = false;
+    }
+
+    // === EVENTOS ===
+    document.querySelectorAll('button[data-count]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const count = Number(btn.dataset.count);
+        if (confirm(`Deseja gerar ${count} músicas de 30s cada? Isso pode levar vários minutos.`)) {
+          generateBatch(count);
+        }
+      });
     });
   </script>
 </body>
