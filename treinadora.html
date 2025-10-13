@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Upload + Extração de Features para Treinamento</title>
   <!-- REMOVA OS ESPAÇOS NO FINAL DA URL -->
-  <script src="https://cdn.jsdelivr.net/npm/meyda@5.4.0/dist/meyda.min.js"></script>
+  <script src="https://unpkg.com/meyda/dist/web/meyda.min.js"></script>
+
   <style>
     body {
       font-family: sans-serif;
@@ -64,160 +65,157 @@
   </div>
 
   <script>
-    const dropZone = document.getElementById('dropZone');
-    const fileInput = document.getElementById('fileInput');
-    const statusEl = document.getElementById('status');
-    const btnProcess = document.getElementById('btnProcess');
-    const btnExport = document.getElementById('btnExport');
+window.addEventListener('load', () => {
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+  const statusEl = document.getElementById('status');
+  const btnProcess = document.getElementById('btnProcess');
+  const btnExport = document.getElementById('btnExport');
 
-    let uploadedFiles = [];
-    let dataset = []; // { id, metadata, mfcc: Float32Array[], duration }
+  let uploadedFiles = [];
+  let dataset = [];
 
-    // === DRAG & DROP ===
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(e => {
-      dropZone.addEventListener(e, preventDefaults, false);
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(e => {
+    dropZone.addEventListener(e, preventDefaults, false);
+  });
+  function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  dropZone.addEventListener('drop', e => {
+    uploadedFiles = uploadedFiles.concat(Array.from(e.dataTransfer.files));
+    renderStatus();
+  });
+  dropZone.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', e => {
+    uploadedFiles = uploadedFiles.concat(Array.from(e.target.files));
+    renderStatus();
+  });
+
+  function renderStatus() {
+    const grouped = groupFiles(uploadedFiles);
+    const valid = Object.values(grouped).filter(p => p.wav && p.json).length;
+    statusEl.textContent = `Arquivos carregados: ${uploadedFiles.length}. Pares válidos: ${valid}.`;
+    btnProcess.disabled = valid === 0;
+  }
+
+  function groupFiles(files) {
+    const groups = {};
+    files.forEach(f => {
+      const base = f.name.replace(/\.(wav|json)$/, '');
+      if (!groups[base]) groups[base] = {};
+      if (f.name.endsWith('.wav')) groups[base].wav = f;
+      else if (f.name.endsWith('.json')) groups[base].json = f;
     });
-    function preventDefaults(e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    dropZone.addEventListener('drop', e => {
-      uploadedFiles = uploadedFiles.concat(Array.from(e.dataTransfer.files));
-      renderStatus();
-    });
-    dropZone.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', e => {
-      uploadedFiles = uploadedFiles.concat(Array.from(e.target.files));
-      renderStatus();
-    });
+    return groups;
+  }
 
-    function renderStatus() {
-      const grouped = groupFiles(uploadedFiles);
-      const valid = Object.values(grouped).filter(p => p.wav && p.json).length;
-      statusEl.textContent = `Arquivos carregados: ${uploadedFiles.length}. Pares válidos: ${valid}.`;
-      btnProcess.disabled = valid === 0;
-    }
+  async function processDataset() {
+    const grouped = groupFiles(uploadedFiles);
+    dataset = [];
 
-    function groupFiles(files) {
-      const groups = {};
-      files.forEach(f => {
-        const base = f.name.replace(/\.(wav|json)$/, '');
-        if (!groups[base]) groups[base] = {};
-        if (f.name.endsWith('.wav')) groups[base].wav = f;
-        else if (f.name.endsWith('.json')) groups[base].json = f;
-      });
-      return groups;
-    }
+    const audioCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, 1, 44100);
 
-    // === EXTRAÇÃO DE FEATURES ===
-    async function processDataset() {
-      const grouped = groupFiles(uploadedFiles);
-      dataset = [];
+    for (const [base, pair] of Object.entries(grouped)) {
+      if (!pair.wav || !pair.json) continue;
 
-      const audioCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, 1, 44100);
+      try {
+        const jsonText = await readFileAsText(pair.json);
+        const metadata = JSON.parse(jsonText);
+        const arrayBuffer = await readFileAsArrayBuffer(pair.wav);
+        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
 
-      for (const [base, pair] of Object.entries(grouped)) {
-        if (!pair.wav || !pair.json) continue;
+        console.log("Meyda disponível?", typeof Meyda);
 
-        try {
-          // Lê JSON
-          const jsonText = await readFileAsText(pair.json);
-          const metadata = JSON.parse(jsonText);
+        const mfccs = extractMFCC(audioBuffer);
 
-          // Lê áudio
-          const arrayBuffer = await readFileAsArrayBuffer(pair.wav);
-          const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-
-          // Extrai MFCCs (13 coeficientes, janela de 1024, hop = 512)
-          const mfccs = extractMFCC(audioBuffer);
-
-          dataset.push({
-            id: base,
-            metadata,
-            mfcc: mfccs,
-            duration: audioBuffer.duration
-          });
-
-          statusEl.textContent = `Processando: ${base}... (${dataset.length}/${Object.keys(grouped).length})`;
-        } catch (err) {
-          console.error('Erro ao processar:', base, err);
-          alert(`Erro em ${base}: ${err.message}`);
-          return;
-        }
-      }
-
-      statusEl.textContent = `✅ Dataset pronto! ${dataset.length} exemplos com MFCCs.`;
-      btnExport.disabled = false;
-    }
-
-    function readFileAsText(file) {
-      return new Promise((res, rej) => {
-        const r = new FileReader();
-        r.onload = () => res(r.result);
-        r.onerror = rej;
-        r.readAsText(file);
-      });
-    }
-
-    function readFileAsArrayBuffer(file) {
-      return new Promise((res, rej) => {
-        const r = new FileReader();
-        r.onload = () => res(r.result);
-        r.onerror = rej;
-        r.readAsArrayBuffer(file);
-      });
-    }
-
-    function extractMFCC(buffer) {
-      const channelData = buffer.getChannelData(0); // mono
-      const sampleRate = buffer.sampleRate;
-      const hopSize = 512;
-      const frameCount = Math.floor((channelData.length - 1024) / hopSize) + 1;
-      const mfccs = [];
-
-      for (let i = 0; i < frameCount; i++) {
-        const frame = channelData.slice(i * hopSize, i * hopSize + 1024);
-        if (frame.length < 1024) break;
-
-        // Meyda trabalha com Float32Array
-        const features = Meyda.extract('mfcc', frame, {
-          sampleRate,
-          bufferSize: 1024,
-          numberOfMFCCCoefficients: 13
+        dataset.push({
+          id: base,
+          metadata,
+          mfcc: mfccs,
+          duration: audioBuffer.duration
         });
 
-        mfccs.push(features);
+        statusEl.textContent = `Processando: ${base}... (${dataset.length}/${Object.keys(grouped).length})`;
+      } catch (err) {
+        console.error('Erro ao processar:', base, err);
+        alert(`Erro em ${base}: ${err.message}`);
+        return;
       }
-
-      return mfccs; // Array de Float32Array (13 dimensões)
     }
 
-    // === EXPORTAÇÃO ===
-    function exportDataset() {
-      // Simplifica: salva apenas metadados + estatísticas (MFCCs são grandes!)
-      const exportData = dataset.map(item => ({
-        id: item.id,
-        bpm: item.metadata.bpm,
-        key: item.metadata.key,
-        quality: item.metadata.quality,
-        style: item.metadata.style,
-        duration: item.duration,
-        mfccFrames: item.mfcc.length,
-        avgMfcc: Array.from(item.mfcc[0] || new Float32Array(13)) // exemplo: primeiro frame
-      }));
+    statusEl.textContent = `✅ Dataset pronto! ${dataset.length} exemplos com MFCCs.`;
+    btnExport.disabled = false;
+  }
 
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'dataset-features.json';
-      a.click();
-      URL.revokeObjectURL(url);
+  function readFileAsText(file) {
+    return new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(r.result);
+      r.onerror = rej;
+      r.readAsText(file);
+    });
+  }
+
+  function readFileAsArrayBuffer(file) {
+    return new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(r.result);
+      r.onerror = rej;
+      r.readAsArrayBuffer(file);
+    });
+  }
+
+  function extractMFCC(buffer) {
+    if (typeof Meyda === 'undefined') throw new Error("Meyda não carregou!");
+
+    const channelData = buffer.getChannelData(0);
+    const sampleRate = buffer.sampleRate;
+    const hopSize = 512;
+    const frameCount = Math.floor((channelData.length - 1024) / hopSize) + 1;
+    const mfccs = [];
+
+    for (let i = 0; i < frameCount; i++) {
+      const frame = channelData.slice(i * hopSize, i * hopSize + 1024);
+      if (frame.length < 1024) break;
+
+      const features = Meyda.extract('mfcc', frame, {
+        sampleRate,
+        bufferSize: 1024,
+        numberOfMFCCCoefficients: 13
+      });
+
+      mfccs.push(features);
     }
 
-    // === EVENTOS ===
-    btnProcess.addEventListener('click', processDataset);
-    btnExport.addEventListener('click', exportDataset);
-  </script>
+    return mfccs;
+  }
+
+  function exportDataset() {
+    const exportData = dataset.map(item => ({
+      id: item.id,
+      bpm: item.metadata.bpm,
+      key: item.metadata.key,
+      quality: item.metadata.quality,
+      style: item.metadata.style,
+      duration: item.duration,
+      mfccFrames: item.mfcc.length,
+      avgMfcc: Array.from(item.mfcc[0] || new Float32Array(13))
+    }));
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'dataset-features.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  btnProcess.addEventListener('click', processDataset);
+  btnExport.addEventListener('click', exportDataset);
+});
+</script>
+
 </body>
 </html>
