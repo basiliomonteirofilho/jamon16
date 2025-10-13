@@ -94,7 +94,7 @@
         ca: 'caixa',
         ch: 'chimbal',
         ba: 'bumbo-ataque',
-        cch: 'caixa-chimbal',
+        cch: 'caixa-chimbal',   // ← CORRETO: arquivo único
         co: 'conducao',
         bco: 'bumbo-conducao',
         cco: 'caixa-conducao',
@@ -464,14 +464,18 @@
         const buffers = { drums: {}, bass: {}, guitar: {}, melody: {} };
         const loadPromises = [];
 
-        // Bateria
-        Object.entries(DRUMS).forEach(([key, name]) => {
-            loadPromises.push(loadBuffer(`assets/${name}.mp3`).then(buf => { if (buf) buffers.drums[key] = buf; }));
+        // Bateria — CORRETO: usa DRUMS[key] para nome do arquivo
+        Object.entries(DRUMS).forEach(([key, filename]) => {
+            loadPromises.push(loadBuffer(`assets/${filename}.mp3`).then(buf => {
+                if (buf) buffers.drums[key] = buf;
+            }));
         });
 
         // Baixo
         Object.entries(BASS_SAMPLES).forEach(([key, url]) => {
-            loadPromises.push(loadBuffer(url).then(buf => { if (buf) buffers.bass[key] = buf; }));
+            loadPromises.push(loadBuffer(url).then(buf => {
+                if (buf) buffers.bass[key] = buf;
+            }));
         });
 
         // Harmonia
@@ -483,7 +487,9 @@
             });
         });
         guitarUrls.forEach(url => {
-            loadPromises.push(loadBuffer(url).then(buf => { if (buf) buffers.guitar[url] = buf; }));
+            loadPromises.push(loadBuffer(url).then(buf => {
+                if (buf) buffers.guitar[url] = buf;
+            }));
         });
 
         // Melodia
@@ -495,12 +501,14 @@
             });
         }
         melodyUrls.forEach(url => {
-            loadPromises.push(loadBuffer(url).then(buf => { if (buf) buffers.melody[url] = buf; }));
+            loadPromises.push(loadBuffer(url).then(buf => {
+                if (buf) buffers.melody[url] = buf;
+            }));
         });
 
         await Promise.all(loadPromises);
 
-        // Agenda eventos
+        // Agenda eventos — com interrupção correta
         const lastSources = {};
         function scheduleSample(buffer, time, gainNode, instrumentKey) {
             if (!buffer || time >= durationSec) return;
@@ -526,15 +534,15 @@
             const bar = Math.floor(step / sixteenthsPerBar);
             const chord = chordPlan[bar % chordPlan.length];
 
-            // Bateria
+            // BATERIA — com mapeamento correto de tokens
             const drumToken = drumSeq[step % drumSeq.length];
-            if (drumToken) {
+            if (drumToken && !['-', 'sm', 'x'].includes(drumToken)) {
                 let drumKey = null;
                 if (['bu', 'bumbo'].includes(drumToken)) drumKey = 'bu';
                 else if (['ca', 'caixa'].includes(drumToken)) drumKey = 'ca';
                 else if (['ch', 'chimbal'].includes(drumToken)) drumKey = 'ch';
                 else if (['ba', 'bumbo-ataque'].includes(drumToken)) drumKey = 'ba';
-                else if (['cch', 'caixa-chimbal'].includes(drumToken)) drumKey = 'cch';
+                else if (['cch', 'caixa-chimbal'].includes(drumToken)) drumKey = 'cch'; // ← FUNCIONA!
                 else if (['bco', 'bumbo-conducao'].includes(drumToken)) drumKey = 'bco';
                 else if (['co', 'conducao'].includes(drumToken)) drumKey = 'co';
                 else if (['cco', 'caixa-conducao'].includes(drumToken)) drumKey = 'cco';
@@ -542,6 +550,7 @@
                 else if (['to2', 'tom-2'].includes(drumToken)) drumKey = 'to2';
                 else if (['su', 'surdo'].includes(drumToken)) drumKey = 'su';
                 else if (['bch', 'bumbo-chimbal'].includes(drumToken)) drumKey = 'bch';
+
                 if (drumKey && buffers.drums[drumKey]) {
                     const src = offlineCtx.createBufferSource();
                     const g = offlineCtx.createGain();
