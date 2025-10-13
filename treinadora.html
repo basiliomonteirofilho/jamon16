@@ -192,25 +192,21 @@ window.addEventListener('load', () => {
   }
 
   function exportDataset() {
-    const exportData = dataset.map(item => ({
-      id: item.id,
-      bpm: item.metadata.bpm,
-      key: item.metadata.key,
-      quality: item.metadata.quality,
-      style: item.metadata.style,
-      duration: item.duration,
-      mfccFrames: item.mfcc.length,
-      avgMfcc: Array.from(item.mfcc[0] || new Float32Array(13))
-    }));
+  const exportData = dataset.map(item => ({
+    id: item.id,
+    metadata: item.metadata,
+    duration: item.duration,
+    mfcc: item.mfcc.map(frame => Array.from(frame)) // ✅ Converte Float32Array → Array
+  }));
 
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'dataset-features.json';
-    a.click();
-    URL.revokeObjectURL(url);
-  }
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'dataset-full-mfcc.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
   btnProcess.addEventListener('click', processDataset);
   btnExport.addEventListener('click', exportDataset);
