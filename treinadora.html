@@ -109,44 +109,48 @@ window.addEventListener('load', () => {
     });
     return groups;
   }
+async function processDataset() {
+  const grouped = groupFiles(uploadedFiles);
+  dataset = [];
 
-  async function processDataset() {
-    const grouped = groupFiles(uploadedFiles);
-    dataset = [];
+  const audioCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, 1, 44100);
+  let total = Object.keys(grouped).length;
+  let ok = 0;
+  let falhas = [];
 
-    const audioCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, 1, 44100);
+  for (const [base, pair] of Object.entries(grouped)) {
+    if (!pair.wav || !pair.json) continue;
 
-    for (const [base, pair] of Object.entries(grouped)) {
-      if (!pair.wav || !pair.json) continue;
+    try {
+      const jsonText = await readFileAsText(pair.json);
+      const metadata = JSON.parse(jsonText);
+      const arrayBuffer = await readFileAsArrayBuffer(pair.wav);
+      const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
 
-      try {
-        const jsonText = await readFileAsText(pair.json);
-        const metadata = JSON.parse(jsonText);
-        const arrayBuffer = await readFileAsArrayBuffer(pair.wav);
-        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+      if (typeof Meyda === 'undefined') throw new Error("Meyda não carregou!");
 
-        console.log("Meyda disponível?", typeof Meyda);
+      const mfccs = extractMFCC(audioBuffer);
 
-        const mfccs = extractMFCC(audioBuffer);
+      dataset.push({
+        id: base,
+        metadata,
+        mfcc: mfccs,
+        duration: audioBuffer.duration
+      });
 
-        dataset.push({
-          id: base,
-          metadata,
-          mfcc: mfccs,
-          duration: audioBuffer.duration
-        });
-
-        statusEl.textContent = `Processando: ${base}... (${dataset.length}/${Object.keys(grouped).length})`;
-      } catch (err) {
-        console.error('Erro ao processar:', base, err);
-        alert(`Erro em ${base}: ${err.message}`);
-        return;
-      }
+      ok++;
+      statusEl.textContent = `✅ Processado: ${base} (${ok}/${total})`;
+    } catch (err) {
+      console.warn(`⚠️ Falha em ${base}:`, err.message);
+      falhas.push(base);
+      continue; // <-- pula o par com erro e segue o próximo
     }
-
-    statusEl.textContent = `✅ Dataset pronto! ${dataset.length} exemplos com MFCCs.`;
-    btnExport.disabled = false;
   }
+
+  statusEl.textContent = `✅ Dataset pronto! ${dataset.length} exemplos com MFCCs. ${falhas.length > 0 ? 'Falhas: ' + falhas.join(', ') : ''}`;
+  btnExport.disabled = dataset.length === 0;
+}
+
 
   function readFileAsText(file) {
     return new Promise((res, rej) => {
