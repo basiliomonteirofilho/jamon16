@@ -109,7 +109,7 @@ window.addEventListener('load', () => {
     });
     return groups;
   }
-async function processDataset() {
+  async function processDataset() {
   const grouped = groupFiles(uploadedFiles);
   dataset = [];
 
@@ -125,7 +125,13 @@ async function processDataset() {
       const jsonText = await readFileAsText(pair.json);
       const metadata = JSON.parse(jsonText);
       const arrayBuffer = await readFileAsArrayBuffer(pair.wav);
-      const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+
+      let audioBuffer;
+      try {
+        audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+      } catch {
+        throw new Error("Unable to decode audio data");
+      }
 
       if (typeof Meyda === 'undefined') throw new Error("Meyda não carregou!");
 
@@ -134,8 +140,9 @@ async function processDataset() {
       dataset.push({
         id: base,
         metadata,
-        mfcc: mfccs,
-        duration: audioBuffer.duration
+        duration: audioBuffer.duration,
+        // 🔹 reduz tamanho do dataset guardando apenas 10 frames representativos
+        mfcc: mfccs.filter((_, i) => i % Math.ceil(mfccs.length / 10) === 0)
       });
 
       ok++;
@@ -143,13 +150,49 @@ async function processDataset() {
     } catch (err) {
       console.warn(`⚠️ Falha em ${base}:`, err.message);
       falhas.push(base);
-      continue; // <-- pula o par com erro e segue o próximo
+      continue;
     }
   }
 
-  statusEl.textContent = `✅ Dataset pronto! ${dataset.length} exemplos com MFCCs. ${falhas.length > 0 ? 'Falhas: ' + falhas.join(', ') : ''}`;
+  statusEl.textContent = `✅ Dataset pronto! ${dataset.length} exemplos válidos. ${
+    falhas.length ? 'Falhas: ' + falhas.join(', ') : ''
+  }`;
+
   btnExport.disabled = dataset.length === 0;
 }
+
+function exportDataset() {
+  if (!dataset.length) {
+    alert("Nenhum dado para exportar!");
+    return;
+  }
+
+  // 🔹 exporta em blocos para evitar estouro de memória
+  const blobParts = [];
+  blobParts.push('[');
+  dataset.forEach((item, idx) => {
+    const jsonItem = JSON.stringify({
+      id: item.id,
+      metadata: item.metadata,
+      duration: item.duration,
+      mfcc: item.mfcc.map(frame => Array.from(frame))
+    });
+    blobParts.push(jsonItem);
+    if (idx < dataset.length - 1) blobParts.push(',');
+  });
+  blobParts.push(']');
+
+  const blob = new Blob(blobParts, { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'dataset-mfcc.json';
+  a.click();
+  URL.revokeObjectURL(url);
+
+  statusEl.textContent = `💾 Dataset exportado com sucesso (${dataset.length} amostras)`;
+}
+
 
 
   function readFileAsText(file) {
