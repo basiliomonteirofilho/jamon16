@@ -383,9 +383,37 @@
         const grooveName = groove.name;
         let styleKey = "Rock";
         if (grooveName.includes("Samba")) styleKey = "Samba";
+        else if (grooveName.includes("Rock")) styleKey = "Rock";
+        else if (grooveName.includes("Rock2")) styleKey = "Rock2";
+        else if (grooveName.includes("Rock3")) styleKey = "Rock3";
+        else if (grooveName.includes("Rock4")) styleKey = "Rock4";
+        else if (grooveName.includes("Rock5")) styleKey = "Rock5";
+        else if (grooveName.includes("Rock6")) styleKey = "Rock6";
+        else if (grooveName.includes("Rock7")) styleKey = "Rock7";
         else if (grooveName.includes("Jazz")) styleKey = "Jazz";
         else if (grooveName.includes("Metal")) styleKey = "Metal";
         else if (grooveName.includes("Blues")) styleKey = "Blues";
+        else if (grooveName.includes("Metal2")) styleKey = "Metal";
+        else if (grooveName.includes("Blues2")) styleKey = "Blues2";
+        else if (grooveName.includes("Metal3")) styleKey = "Metal";
+        else if (grooveName.includes("Blues3")) styleKey = "Blues3";
+        else if (grooveName.includes("Metal4")) styleKey = "Metal";
+        else if (grooveName.includes("Blues4")) styleKey = "Blues4";
+        else if (grooveName.includes("Blues5")) styleKey = "Blues5";
+        else if (grooveName.includes("Forró")) styleKey = "Forró";
+        else if (grooveName.includes("Forró2")) styleKey = "Forró2";
+        else if (grooveName.includes("Forró3")) styleKey = "Forró3";
+        else if (grooveName.includes("Forró4")) styleKey = "Forró4";
+        else if (grooveName.includes("Blues6")) styleKey = "Blues6";
+        else if (grooveName.includes("Blues7")) styleKey = "Blues7";
+        else if (grooveName.includes("Rock_Progressivo")) styleKey = "Rock_Progressivo";
+        else if (grooveName.includes("Rock_Progressivo2")) styleKey = "Rock_Progressivo2";
+        else if (grooveName.includes("Rock_Progressivo3")) styleKey = "Rock_Progressivo3";
+        else if (grooveName.includes("Rock_Progressivo4")) styleKey = "Rock_Progressivo4";
+        else if (grooveName.includes("Rock_Progressivo5")) styleKey = "Rock_Progressivo5";
+        else if (grooveName.includes("Rock_Progressivo6")) styleKey = "Rock_Progressivo6";
+        else if (grooveName.includes("Rock_Progressivo7")) styleKey = "Rock_Progressivo7";
+
         const progressions = STYLE_PROGRESSIONS[styleKey] || STYLE_PROGRESSIONS.Rock;
         const prog = randomChoice(progressions.filter(p => !p.includes(7)) || progressions);
         const chordPlan = prog.map(degree => {
@@ -687,3 +715,4 @@
   </script>
 </body>
 </html>
+
