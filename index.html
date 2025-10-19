@@ -2650,7 +2650,7 @@ async function renderToWAV() {
   let currentX = 0;
 
   for (const chord of state.chordPlan) {
-    const url = `assets/PianoStringChord/${chord.display}.mp3`;
+    const url = `assets/PianoStringChord/${chord.note}/${chord.note}.mp3`;
     try {
       const res = await fetch(url);
       const buf = await res.arrayBuffer();
