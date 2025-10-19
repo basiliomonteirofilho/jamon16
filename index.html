@@ -1224,8 +1224,9 @@
         osc.start(time);
         osc.stop(time + 0.07);
     }
-async function onPlay() {
+ async function onPlay() {
   if (state.running && !state.paused) return;
+
   try {
     if (!audio.ctx) await initAudio();
     if (audio.ctx.state === "suspended") await audio.ctx.resume();
@@ -1243,8 +1244,13 @@ async function onPlay() {
     return;
   }
 
-  // Armazena playback anterior
-  if (state.bassPlan.length > 0 && state.chordPlan.length > 0) {
+  // ✅ CORREÇÃO: Salva o playback ATUAL (se válido) ANTES de gerar um novo
+  if (
+    state.bassPlan &&
+    state.bassPlan.length > 0 &&
+    state.chordPlan &&
+    state.chordPlan.length > 0
+  ) {
     if (!state.previousPlaybacks) state.previousPlaybacks = [];
     state.previousPlaybacks.push({
       bassPlan: [...state.bassPlan],
@@ -1252,7 +1258,13 @@ async function onPlay() {
       drumSeq: [...state.drumSeq],
       melodyPlan: [...state.melodyPlan],
       currentGroove: {...state.currentGroove},
-      bpm: state.bpm, key: state.key, quality: state.quality
+      meter: state.meter,
+      bpm: state.bpm,
+      key: state.key,
+      keyIdx: state.keyIdx,
+      quality: state.quality,
+      signatureTag: state.signatureTag,
+      chordProgression: [...state.chordProgression]
     });
   }
 
@@ -1290,58 +1302,70 @@ async function onPlay() {
             // ui.state.textContent = "Pausado"; // Removido
         }
     }
+function onPrevious() {
+  if (!state.previousPlaybacks || state.previousPlaybacks.length === 0) {
+    alert('Nenhum playback anterior disponível.');
+    return;
+  }
 
-    function onPrevious() {
-        if (!state.previousPlaybacks || state.previousPlaybacks.length === 0) {
-            alert('Nenhum playback anterior disponível.');
-            return;
-        }
-        // Recupera o último playback salvo
-        const prev = state.previousPlaybacks.pop();
-        // Salva o atual antes de trocar (para permitir "Avançar" futuramente se quiser)
-        if (!state.nextPlaybacks) state.nextPlaybacks = [];
-        state.nextPlaybacks.push({
-            bassPlan: [...state.bassPlan],
-            chordPlan: [...state.chordPlan],
-            drumSeq: [...state.drumSeq],
-            melodyPlan: [...state.melodyPlan],
-            currentGroove: {...state.currentGroove},
-            meter: state.meter,
-            bpm: state.bpm,
-            key: state.key,
-            keyIdx: state.keyIdx,
-            quality: state.quality,
-            signatureTag: state.signatureTag,
-            chordProgression: [...state.chordProgression]
-        });
-        // Restaura o playback anterior
-        state.bassPlan = [...prev.bassPlan];
-        state.chordPlan = [...prev.chordPlan];
-        state.drumSeq = [...prev.drumSeq];
-        state.melodyPlan = [...prev.melodyPlan];
-        state.currentGroove = {...prev.currentGroove};
-        state.meter = prev.meter;
-        state.bpm = prev.bpm;
-        state.key = prev.key;
-        state.keyIdx = prev.keyIdx;
-        state.quality = prev.quality;
-        state.signatureTag = prev.signatureTag;
-        state.chordProgression = [...prev.chordProgression];
-        // Atualiza a interface
-        ui.bpm.value = state.bpm;
-        ui.meter.value = state.meter;
-        // 🔹 ALTERAÇÃO 1: Chamada removida pois a função foi deletada.
-        // setStatePanel(); <-- REMOVIDO
-        const progEl = document.getElementById('chordProgression');
-        if (progEl && state.chordPlan.length > 0) {
-            const chordLabels = state.chordPlan.map(ch => ch.displayed);
-            progEl.innerHTML = chordLabels
-                .map((label, i) => `<span class="chord-item" data-index="${i}">${label}</span>`)
-                .join(' ');
-        }
-        // Inicia o playback restaurado
-        onPlay();
-    }
+  // Salva o atual (para possível "avançar" no futuro)
+  if (!state.nextPlaybacks) state.nextPlaybacks = [];
+  if (state.bassPlan?.length > 0) {
+    state.nextPlaybacks.push({
+      bassPlan: [...state.bassPlan],
+      chordPlan: [...state.chordPlan],
+      drumSeq: [...state.drumSeq],
+      melodyPlan: [...state.melodyPlan],
+      currentGroove: {...state.currentGroove},
+      meter: state.meter,
+      bpm: state.bpm,
+      key: state.key,
+      keyIdx: state.keyIdx,
+      quality: state.quality,
+      signatureTag: state.signatureTag,
+      chordProgression: [...state.chordProgression]
+    });
+  }
+
+  // Restaura o playback anterior
+  const prev = state.previousPlaybacks.pop();
+
+  // Restaura todos os estados
+  Object.assign(state, {
+    bassPlan: prev.bassPlan,
+    chordPlan: prev.chordPlan,
+    drumSeq: prev.drumSeq,
+    melodyPlan: prev.melodyPlan,
+    currentGroove: prev.currentGroove,
+    meter: prev.meter,
+    bpm: prev.bpm,
+    key: prev.key,
+    keyIdx: prev.keyIdx,
+    quality: prev.quality,
+    signatureTag: prev.signatureTag,
+    chordProgression: prev.chordProgression,
+    stepIndex: 0,
+    currentChordIndex: 0,
+    barsInChord: 0,
+    guitarPlan: null
+  });
+
+  // Atualiza UI
+  ui.bpm.value = state.bpm;
+  ui.meter.value = state.meter;
+
+  // Atualiza visualização da progressão
+  const progEl = document.getElementById('chordProgression');
+  if (progEl && state.chordPlan.length > 0) {
+    const chordLabels = state.chordPlan.map(ch => ch.displayed);
+    progEl.innerHTML = chordLabels
+      .map((label, i) => `<span class="chord-item" data-index="${i}">${label}</span>`)
+      .join(' ');
+  }
+
+  // Reinicia a reprodução com o playback restaurado
+  onPlay();
+}
 
     function scheduler() {
         if (!state.running || state.paused) return;
@@ -2746,3 +2770,5 @@ if (genBtn && !genBtn.hasListener) {
 
 </body>
 </html>
+
+
