@@ -2091,46 +2091,55 @@ async function onPlay() {
     }
 
     // ===== FUNÇÕES DE GRAVAÇÃO WAV (OFFLINE RENDER) =====
-    function audioBufferToWav(buffer) {
-        const numOfChan = buffer.numberOfChannels;
-        const length = buffer.length * numOfChan * 2 + 44;
-        const arrayBuffer = new ArrayBuffer(length);
-        const view = new DataView(arrayBuffer);
-        const channels = [];
-        let i, sample, offset = 0;
-        // Função auxiliar para escrever strings no DataView
-        function writeString(view, offset, string) {
-            for (let i = 0; i < string.length; i++) {
-                view.setUint8(offset + i, string.charCodeAt(i));
-            }
+   function audioBufferToWav(buffer) {
+    const numOfChan = buffer.numberOfChannels;
+    const length = buffer.length * numOfChan * 2 + 44;
+    const arrayBuffer = new ArrayBuffer(length);
+    const view = new DataView(arrayBuffer);
+    const channels = [];
+    let i, sample, offset = 0;
+    
+    // Função auxiliar para escrever strings no DataView
+    function writeString(view, offset, string) {
+        for (let i = 0; i < string.length; i++) {
+            view.setUint8(offset + i, string.charCodeAt(i));
         }
-        writeString(view, 0, 'RIFF');
-        view.setUint32(4, length - 8, true);
-        writeString(view, 8, 'WAVE');
-        writeString(view, 12, 'fmt ');
-        view.setUint32(16, 16, true);
-        view.setUint16(20, 1, true);
-        view.setUint16(22, numOfChan, true);
-        view.setUint32(24, buffer.sampleRate, true);
-        view.setUint32(28, buffer.sampleRate * 2 * numOfChan, true);
-        view.setUint16(32, 2 * numOfChan, true);
-        view.setUint16(34, 16, true);
-        writeString(view, 36, 'data');
-        view.setUint32(40, length - 44, true);
-        for (i = 0; i < buffer.numberOfChannels; i++) {
-            channels.push(buffer.getChannelData(i));
-        }
-        offset = 44;
-        for (i = 0; i < buffer.length; i++) {
-            for (let channel = 0; channel < numOfChan; channel++) {
-                sample = Math.max(-1, Math.min(1, channels[channel][i]));
-                sample = (sample < 0 ? sample * 0x8000 : sample * 0x7FFF);
-                view.setInt16(offset, sample, true);
-                offset += 2;
-            }
-        }
-        return new Blob([view], { type: 'audio/wav' });
     }
+    
+    // Escreve o cabeçalho WAV
+    writeString(view, 0, 'RIFF');
+    view.setUint32(4, length - 8, true);
+    writeString(view, 8, 'WAVE');
+    writeString(view, 12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, numOfChan, true);
+    view.setUint32(24, buffer.sampleRate, true);
+    view.setUint32(28, buffer.sampleRate * 2 * numOfChan, true);
+    view.setUint16(32, 2 * numOfChan, true);
+    view.setUint16(34, 16, true);
+    writeString(view, 36, 'data');
+    view.setUint32(40, length - 44, true);
+    
+    // Obtém os dados dos canais
+    for (i = 0; i < buffer.numberOfChannels; i++) {
+        channels.push(buffer.getChannelData(i));
+    }
+    
+    // Escreve os dados de áudio
+    offset = 44;
+    for (i = 0; i < buffer.length; i++) {
+        for (let channel = 0; channel < numOfChan; channel++) {
+            sample = Math.max(-1, Math.min(1, channels[channel][i]));
+            sample = (sample < 0 ? sample * 0x8000 : sample * 0x7FFF);
+            view.setInt16(offset, sample, true);
+            offset += 2;
+        }
+    }
+    
+    // Retorna um Blob
+    return new Blob([view], { type: 'audio/wav' });
+}
 
     function downloadBlob(blob, filename) {
         const url = URL.createObjectURL(blob);
@@ -2633,81 +2642,6 @@ if (genBtn && !genBtn.hasListener) {
   genBtn.addEventListener('click', generateRandomProgression);
   genBtn.hasListener = true;
 }
-
-async function renderToWAV() {
-  if (!audio.ctx) await initAudio();
-
-  const ctx = new OfflineAudioContext(2, 44100 * 60, 44100);
-  const gain = ctx.createGain();
-  gain.connect(ctx.destination);
-
-  const bufferList = [];
-  const vuFill = document.createElement('div');
-  vuFill.style.cssText = "height:10px;background:#5eead4;width:0;transition:width 0.1s";
-  document.body.appendChild(vuFill);
-
-  const mixGain = 0.8;
-  let currentX = 0;
-
-  for (const chord of state.chordPlan) {
-    const url = `assets/PianoStringChord/${chord.note}/${chord.note}.mp3`;
-    try {
-      const res = await fetch(url);
-      const buf = await res.arrayBuffer();
-      const audioBuf = await ctx.decodeAudioData(buf);
-      const src = ctx.createBufferSource();
-      src.buffer = audioBuf;
-      const g = ctx.createGain();
-      g.gain.value = mixGain;
-      src.connect(g).connect(gain);
-      src.start(currentX);
-      currentX += 1.5;
-      vuFill.style.width = Math.min(100, (currentX / state.chordPlan.length) * 100) + '%';
-    } catch (e) { console.warn(e); }
-  }
-
-  const rendered = await ctx.startRendering();
-  const wav = audioBufferToWav(rendered);
-  const blob = new Blob([new DataView(wav)], { type: 'audio/wav' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'jamon.wav';
-  a.click();
-  vuFill.style.background = '#22c55e';
-  vuFill.style.width = '100%';
-}
-
-function audioBufferToWav(buffer) {
-  const numOfChan = buffer.numberOfChannels,
-        length = buffer.length * numOfChan * 2 + 44,
-        bufferView = new ArrayBuffer(length),
-        view = new DataView(bufferView),
-        channels = [],
-        sampleRate = buffer.sampleRate;
-  let offset = 0;
-  const writeString = (s) => { for (let i = 0; i < s.length; i++) view.setUint8(offset++, s.charCodeAt(i)); };
-  writeString('RIFF'); view.setUint32(offset, 36 + buffer.length * numOfChan * 2, true); offset += 4;
-  writeString('WAVEfmt '); view.setUint32(offset, 16, true); offset += 4;
-  view.setUint16(offset, 1, true); offset += 2;
-  view.setUint16(offset, numOfChan, true); offset += 2;
-  view.setUint32(offset, sampleRate, true); offset += 4;
-  view.setUint32(offset, sampleRate * 2 * numOfChan, true); offset += 4;
-  view.setUint16(offset, numOfChan * 2, true); offset += 2;
-  view.setUint16(offset, 16, true); offset += 2;
-  writeString('data');
-  view.setUint32(offset, buffer.length * numOfChan * 2, true); offset += 4;
-  for (let i = 0; i < buffer.length; i++) {
-    for (let ch = 0; ch < numOfChan; ch++) {
-      const sample = Math.max(-1, Math.min(1, buffer.getChannelData(ch)[i]));
-      view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
-      offset += 2;
-    }
-  }
-  return bufferView;
-}
-
-// ui.btnSaveWAV.addEventListener('click', renderToWAV);
 
 
 </script>
