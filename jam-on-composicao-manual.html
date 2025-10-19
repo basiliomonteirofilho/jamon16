@@ -1153,49 +1153,37 @@ function addHarmonyBlock(containerIndex) {
     setupScrollSync();
   }, 50);
 }
-
- function updateMeasureDividers() {
+function updateMeasureDividers() {
   requestAnimationFrame(() => {
-    // Remove divisores existentes
     document.querySelectorAll('.measure-divider').forEach(el => el.remove());
-    
-    const allGrids = [
-      ...document.querySelectorAll('#harmonyContainer1 .columns-grid'),
-      ...document.querySelectorAll('#harmonyContainer2 .columns-grid'),
-      ...document.querySelectorAll('#harmonyContainer3 .columns-grid'),
-      ...document.querySelectorAll('#bassContainer .columns-grid'),
-      ...document.querySelectorAll('#melody1Container .columns-grid'),
-      ...document.querySelectorAll('#melody2Container .columns-grid'),
-      ...document.querySelectorAll('#drumContainer .columns-grid')
-    ].filter(Boolean);
+
+    const allGrids = document.querySelectorAll(
+      '#harmonyContainer1 .columns-grid, ' +
+      '#harmonyContainer2 .columns-grid, ' +
+      '#harmonyContainer3 .columns-grid, ' +
+      '#bassContainer .columns-grid, ' +
+      '#melody1Container .columns-grid, ' +
+      '#melody2Container .columns-grid, ' +
+      '#drumContainer .columns-grid'
+    );
+
+    const cellWidth = 42; // mesma largura da célula
+    const gap = 4;        // mesmo espaçamento definido no CSS
+    const measureSize = 8; // número de células por compasso
 
     allGrids.forEach(grid => {
-      const columns = grid.querySelectorAll('.column');
-      
-      // Para cada compasso (a cada 8 colunas)
-      for (let measureIndex = 1; measureIndex * 8 < columns.length; measureIndex++) {
-        const columnIndex = measureIndex * 8;
-        const columnBeforeDivider = columns[columnIndex - 1];
-        const columnAfterDivider = columns[columnIndex];
-        
-        if (columnBeforeDivider && columnAfterDivider) {
-          const divider = document.createElement('div');
-          divider.className = 'measure-divider';
-          
-          // Posiciona a linha ENTRE as colunas
-          const rectBefore = columnBeforeDivider.getBoundingClientRect();
-          const rectGrid = grid.getBoundingClientRect();
-          
-          // Calcula a posição relativa ao grid
-          const leftPosition = rectBefore.right - rectGrid.left + 1; // +1 para a margem entre colunas
-          
-          divider.style.left = `${leftPosition}px`;
-          grid.appendChild(divider);
-        }
+      const totalCols = grid.querySelectorAll('.column').length;
+      for (let m = 1; m * measureSize < totalCols; m++) {
+        const divider = document.createElement('div');
+        divider.className = 'measure-divider';
+        divider.style.left = `${m * measureSize * (cellWidth + gap)}px`;
+        grid.appendChild(divider);
       }
     });
   });
 }
+
+
 
 function getRelativePosition(element, parent) {
   const elementRect = element.getBoundingClientRect();
