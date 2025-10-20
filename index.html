@@ -1420,32 +1420,33 @@ function onPrevious() {
             }
         }
         // ===== BAIXO =====
-        const bassCommand = state.bassPlan[stepIdx % state.bassPlan.length];
-        if (!mute.bass) {
-            // SEMPRE para o sample anterior de baixo
-            if (state.lastBassSource) {
-                try {
-                    state.lastBassSource.stop(time);
-                } catch (e) {
-                    // Ignora se já tiver parado
-                }
-                state.lastBassSource = null;
-            }
-            if (bassCommand !== '-' && bassCommand !== 'x') {
-                const buf = state.buffers.bass[bassCommand];
-                if (buf) {
-                    const src = audio.ctx.createBufferSource();
-                    const g = audio.ctx.createGain();
-                    src.buffer = buf;
-                    src.connect(g);
-                    g.connect(audio.bassGain);
-                    g.gain.setValueAtTime(0.0, time);
-                    g.gain.linearRampToValueAtTime(1.0, time + 0.01);
-                    src.start(time);
-                    state.lastBassSource = src;
-                }
-            }
+       // ===== BAIXO =====
+const bassCommand = state.bassPlan[stepIdx % state.bassPlan.length];
+if (!mute.bass) {
+    // SEMPRE para o sample anterior de baixo
+    if (state.lastBassSource) {
+        try {
+            state.lastBassSource.stop(time);
+        } catch (e) {
+            // Ignora se já tiver parado
         }
+        state.lastBassSource = null;
+    }
+    if (bassCommand !== '-') { // Remove a verificação para 'x'
+        const buf = state.buffers.bass[bassCommand];
+        if (buf) {
+            const src = audio.ctx.createBufferSource();
+            const g = audio.ctx.createGain();
+            src.buffer = buf;
+            src.connect(g);
+            g.connect(audio.bassGain);
+            g.gain.setValueAtTime(0.0, time);
+            g.gain.linearRampToValueAtTime(1.0, time + 0.01);
+            src.start(time);
+            state.lastBassSource = src;
+        }
+    }
+}
         // ===== GUITARRA LIMPA ===== (uma vez por compasso)
         const chord = state.chordPlan[state.currentChordIndex];
         if (!mute.clean && chord && isNewBar) {
@@ -2396,12 +2397,13 @@ function downloadBlob(blob, filename) {
                     }
                 }
                 // ===== BAIXO =====
-                if (!mute.bass) {
-                    const bassCommand = state.bassPlan[stepIdx % state.bassPlan.length];
-                    if (bassCommand !== '-' && bassCommand !== 'x' && state.buffers.bass[bassCommand]) {
-                        scheduleSample(state.buffers.bass[bassCommand], currentTime, bassGain, 'bass');
-                    }
-                }
+                // ===== BAIXO =====
+if (!mute.bass) {
+    const bassCommand = state.bassPlan[stepIdx % state.bassPlan.length];
+    if (bassCommand !== '-' && state.buffers.bass[bassCommand]) { // Modifique aqui também
+        scheduleSample(state.buffers.bass[bassCommand], currentTime, bassGain, 'bass');
+    }
+}
                 // ===== GUITARRA LIMPA ===== (uma vez por compasso)
                 if (!mute.clean && chord && isNewBar) {
                     let fullChordName = chord.note + (chord.type || '');
