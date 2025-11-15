@@ -484,17 +484,15 @@
       return "G";
     }
 
-    /* ===== ANIMAÇÃO CABEÇA ===== */
     function generateHeadFramePaths() {
-      const frames = [];
-      const base = "./animacao/cabeca/";
-      for (let i = 1; i <= 121; i++) {
-        const num = String(i).padStart(4, "0");
-        frames.push(base + "cabeca" + num + ".png");
-      }
-      // se quiser incluir cabeca-parte-de-tras, pode push aqui
-      return frames;
-    }
+  const frames = [];
+  const base = "./animacao/cabeca/";
+  for (let i = 1; i <= 100; i++) {  // ajuste aqui conforme a quantidade real
+    const num = String(i).padStart(4, "0");
+    frames.push(base + "cabeca" + num + ".png");
+  }
+  return frames;
+}
 
     function preloadImages(arr) {
       return new Promise((resolve) => {
@@ -671,32 +669,43 @@
     }
 
     /* ===== GRIDS MANUAIS – BAIXO ===== */
-    function construirGridBaixo(container, seq) {
-      container.innerHTML = "";
-      seq.forEach((nota, idx) => {
-        const div = document.createElement("div");
-        div.className = "cell";
-        div.dataset.idx = idx;
-        div.textContent = nota;
-        if (nota !== "x") div.classList.add("active");
+   function construirGridBaixo(container, seq) {
+  container.innerHTML = "";
 
-        div.onclick = () => {
-          const atual = seq[idx];
-          if (atual === "x") {
-            seq[idx] = "1E";
-          } else {
-            const pos = notasValidas.indexOf(atual);
-            const prox = (pos + 1) % notasValidas.length;
-            seq[idx] = notasValidas[prox];
-          }
-          div.textContent = seq[idx];
-          if (seq[idx] === "x") div.classList.remove("active");
-          else div.classList.add("active");
-        };
+  // X + todas as notas válidas
+  const opcoes = ["x", ...notasValidas];
 
-        container.appendChild(div);
-      });
-    }
+  seq.forEach((nota, idx) => {
+    const div = document.createElement("div");
+    div.className = "cell";
+    div.dataset.idx = idx;
+    div.textContent = nota;
+
+    if (nota !== "x") div.classList.add("active");
+
+    div.onclick = () => {
+      let atual = seq[idx];
+
+      // Se por algum motivo não estiver em opcoes, força pra "x"
+      let p = opcoes.indexOf(atual);
+      if (p === -1) p = 0;
+
+      // Avança para a próxima opção: X → 1E → 2F → ... → 49E → X
+      p = (p + 1) % opcoes.length;
+      seq[idx] = opcoes[p];
+
+      div.textContent = seq[idx];
+      if (seq[idx] === "x") {
+        div.classList.remove("active");
+      } else {
+        div.classList.add("active");
+      }
+    };
+
+    container.appendChild(div);
+  });
+}
+
 
     /* ===== GRIDS MANUAIS – BATERIA ===== */
     function construirGridBateria(container, seq) {
@@ -757,15 +766,16 @@
 
     /* ===== INICIALIZAÇÃO INTERFACE ===== */
     function iniciarInterface() {
-      const baixoGrid = document.getElementById("baixoGrid");
-      const drumGrid = document.getElementById("drumGrid");
+  const baixoGrid = document.getElementById("baixoGrid");
+  const drumGrid = document.getElementById("drumGrid");
 
-      // seq inicial: 32 colcheias
-      baixoSeq = gerarSequenciaAleatoriaBaixo(32);
-      bateriaSeq = gerarSequenciaAleatoriaBateria(32);
+  // seq inicial: 32 colcheias, tudo vazio (X)
+  baixoSeq = Array(32).fill("x");
+  bateriaSeq = Array(32).fill("x");
 
-      construirGridBaixo(baixoGrid, baixoSeq);
-      construirGridBateria(drumGrid, bateriaSeq);
+  construirGridBaixo(baixoGrid, baixoSeq);
+  construirGridBateria(drumGrid, bateriaSeq);
+
 
       // BPM
       const bpmSlider = document.getElementById("bpmSlider");
