@@ -112,13 +112,19 @@
     }
 
     /* Cabeça (frames cabeca0001...cabeca0121) */
-    #cabecaLayer {
-      z-index: 5;
-      left: 90px;  /* ← ajuste horizontal da cabeça */
-      top: -10px;  /* ← ajuste vertical da cabeça   */
-      transform-origin: bottom center;
-    }
-
+#cabecaLayer {
+  z-index: 5;
+  left: 90px;  /* ← ajuste horizontal da cabeça */
+  top: -10px;  /* ← ajuste vertical da cabeça   */
+  transform-origin: bottom center;
+}
+/* Cabeça – parte de trás (imagem fixa) */
+#cabecaTrasLayer {
+  z-index: 4;          /* atrás da cabeça da frente */
+  left: 90px;          /* mesmo alinhamento da cabeça */
+  top: -10px;
+  transform-origin: bottom center;
+}
     /* =============================
        DIREITA: CONTROLES
        ============================ */
@@ -373,16 +379,19 @@
         <img id="pernasLayer" class="layer" src="./animacao/pernas/pernas.png" alt="pernas">
 
         <!-- Tronco + baixo + mão esquerda (1E como posição inicial) -->
-        <img id="troncoLayer" class="layer" src="./animacao/tronco_baixo/Pasta_1F/1E.png" alt="tronco-baixo">
+        <img id="troncoLayer" class="layer" src="animacao/tronco_baixo/Pasta_1F/1E.png" alt="tronco-baixo">
 
         <!-- Antebraço direito (corda E inicial) -->
-        <img id="antebracoLayer" class="layer" src="./animacao/antebraco/antebracoE.png" alt="antebraco">
+        <img id="antebracoLayer" class="layer" src="animacao/antebraco/antebracoE.png" alt="antebraco">
 
         <!-- Braço direito (frame inicial corda E) -->
-        <img id="bracoLayer" class="layer" src="./animacao/braco_direito/Corda_E1.png" alt="braco-direito">
+        <img id="bracoLayer" class="layer" src="animacao/braco_direito/Corda_E1.png" alt="braco-direito">
+
+        <!-- Cabeça – parte de trás (fixa) -->
+<img id="cabecaTrasLayer" class="layer" src="animacao/cabeca_tras/cabeca-parte-de-tras.jpg" alt="cabeca-tras">
 
         <!-- Cabeça (frame inicial) -->
-        <img id="cabecaLayer" class="layer" src="./animacao/cabeca/cabeca0001.png" alt="cabeca">
+        <img id="cabecaLayer" class="layer" src="animacao/cabeca/cabeca0001.png" alt="cabeca">
       </div>
     </div>
 
@@ -408,6 +417,7 @@
         <button id="playAleatorioBtn">Playback aleatório</button>
         <button id="playManualBtn" class="secondary">Tocar composição manual</button>
         <button id="playExportadoBtn" class="secondary">Carregar playback (.json)</button>
+        <button id="pauseBtn">⏸ Pausar</button>
 
         <div class="progressContainer">
           <div class="progressBar" id="progressBar"></div>
@@ -468,12 +478,17 @@ bo, Caixa, Chimbal, Condução, Ataque.
 
     // bateriaSeq: objeto com arrays por linha (bumbo/caixa/chimbal/conducao/ataque)
     const drumLines = [
-      { id: "bumbo",    label: "Bumbo",     file: "bumbo.mp3" },
-      { id: "caixa",    label: "Caixa",     file: "caixa.mp3" },
-      { id: "chimbal",  label: "Chimbal",   file: "chimbal.mp3" },   // ajuste o nome do arquivo se for diferente
-      { id: "conducao", label: "Condução",  file: "conducao.mp3" },  // idem
-      { id: "ataque",   label: "Ataque",    file: "ataque.mp3" }
-    ];
+  { id: "bumbo", label: "Bumbo", file: "bumbo.mp3" },
+  { id: "caixa", label: "Caixa", file: "caixa.mp3" },
+  { id: "chimbal", label: "Chimbal", file: "chimbal.mp3" },
+  { id: "chimbalaberto", label: "Chimbal Aberto", file: "chimbal-aberto.mp3" },
+  { id: "conducao", label: "Condução", file: "conducao.mp3" },
+  { id: "ataque", label: "Ataque", file: "ataque.mp3" },
+  { id: "tom1", label: "Tom 1", file: "tom-1.mp3" },
+  { id: "tom2", label: "Tom 2", file: "tom-2.mp3" },
+  { id: "surdo", label: "Surdo", file: "surdo.mp3" }
+];
+
     let bateriaSeq = {};
 
     let bpmAtual = 100;
@@ -493,6 +508,9 @@ bo, Caixa, Chimbal, Condução, Ataque.
       "33C","34CS","35D","36DS","37E","38F","39FS","40G","41GS","42A","43AS","44B","45C","46CS","47D",
       "48DS","49E"
     ];
+
+const HEAD_TOTAL_FRAMES = 100;
+
 
     /*
       Mapa de qual PASTA usar para cada nota.
@@ -568,13 +586,16 @@ bo, Caixa, Chimbal, Condução, Ataque.
        ANIMAÇÃO CABEÇA – FRAMES
        ============================ */
     function generateHeadFramePaths() {
-      const arr = [];
-      for (let i = 1; i <= 121; i++) {
-        const num = String(i).padStart(4, "0");
-        arr.push(`./animacao/cabeca/cabeca${num}.png`);
-      }
-      return arr;
-    }
+  const paths = [];
+  // arquivos: cabeca0001.png ... cabeca0100.png
+  for (let i = 1; i <= HEAD_TOTAL_FRAMES; i++) {
+    const num = String(i).padStart(4, "0");
+    paths.push(`jamon16/animacao/cabeca/cabeca${num}.png`)
+
+    // no GitHub fica: jamon16/animacao/cabeca/cabeca0001.png etc.
+  }
+  return paths;
+}
 
     async function preloadImages(srcArray) {
       const promises = srcArray.map(src => {
@@ -615,15 +636,20 @@ bo, Caixa, Chimbal, Condução, Ataque.
        ANIMAÇÃO – CABEÇA BALANÇANDO NO BPM
        ============================ */
     function startHeadTiltBpm(bpm) {
-      if (tiltTimer) clearInterval(tiltTimer);
-      const cabeca = document.getElementById("cabecaLayer");
-      let dir = 1;
-      tiltTimer = setInterval(() => {
-        const angle = dir * 5;
-        cabeca.style.transform = `rotate(${angle}deg)`;
-        dir *= -1;
-      }, 60000 / bpm); // um “vai e volta” por tempo (semínima)
+  if (tiltTimer) clearInterval(tiltTimer);
+  const cabeca = document.getElementById("cabecaLayer");
+  const cabecaTras = document.getElementById("cabecaTrasLayer");
+  let dir = 1;
+  tiltTimer = setInterval(() => {
+    const angle = dir * 5;
+    cabeca.style.transform = `rotate(${angle}deg)`;
+    if (cabecaTras) {
+      cabecaTras.style.transform = `rotate(${angle}deg)`;
     }
+    dir *= -1;
+  }, 60000 / bpm); // um “vai e volta” por tempo (semínima)
+}
+
 
     /* ============================
        ANIMAÇÃO – TRONCO + MÃO ESQ (FRAMES)
@@ -676,23 +702,26 @@ bo, Caixa, Chimbal, Condução, Ataque.
 
     /* ===== AUDIO ===== */
     function tocarNotaAudioBaixo(nota, volume) {
-      const a = new Audio("./jamon16/assets/BaixoMelodia/" + nota + ".mp3");
+      const a = new Audio("jamon16/assets/BaixoMelodia/" + nota + ".mp3");
+
+
       a.volume = volume;
       a.play();
     }
 
     function tocarBateriaNoStep(step, volume) {
-      drumLines.forEach(line => {
-        const seq = bateriaSeq[line.id];
-        if (!seq || step >= seq.length) return;
-        const val = seq[step];
-        if (val === line.id) {
-          const a = new Audio("./jamon16/assets/" + line.file);
-          a.volume = volume;
-          a.play();
-        }
-      });
+  drumLines.forEach(line => {
+    const seq = bateriaSeq[line.id];
+    if (!seq || step >= seq.length) return;
+    const val = seq[step];
+    if (val === line.id) {
+      const a = new Audio("assets/" + line.file);
+      a.volume = volume;
+      a.play();
     }
+  });
+}
+
 
     function tocarNotaComAnimacao(nota, duracaoMs, volume) {
       if (nota === "x") return;
@@ -811,6 +840,12 @@ bo, Caixa, Chimbal, Condução, Ataque.
       selectionOverlay.classList.add("visible");
     }
 
+    let playbackPaused = false;
+
+function pausePlayback() {
+  playbackPaused = true;
+}
+
     function fecharPainelSelecao() {
       selectionOverlay.classList.remove("visible");
       painelSelecao.tipo = null;
@@ -883,8 +918,17 @@ bo, Caixa, Chimbal, Condução, Ataque.
           }
 
           cell.onclick = () => {
-            abrirPainelSelecaoLinhaDrum(seq, idx, cell, line);
-          };
+  if (seq[idx] === "x") {
+    seq[idx] = line.id;
+    cell.classList.add("active");
+    cell.textContent = line.label.toUpperCase();
+  } else {
+    seq[idx] = "x";
+    cell.classList.remove("active");
+    cell.textContent = "X";
+  }
+};
+
 
           rowGrid.appendChild(cell);
         });
@@ -1143,3 +1187,4 @@ bo, Caixa, Chimbal, Condução, Ataque.
   </script>
 </body>
 </html>
+
