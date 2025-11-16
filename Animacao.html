@@ -216,13 +216,27 @@
       transition: width 0.15s linear;
     }
 
-    .composicaoGrid {
-      display: flex;
-      gap: 2px;
-      overflow-x: auto;
-      margin: 8px 0;
-      padding-bottom: 4px;
-    }
+    /* wrapper geral para baixo + bateria */
+.sequencerWrapper {
+  max-width: 100%;
+  overflow-x: auto;      /* UMA rolagem horizontal para tudo */
+  padding-bottom: 4px;
+}
+
+/* conteúdo interno (largura mínima = conteúdo) */
+.sequencerInner {
+  display: inline-block;
+}
+
+/* grid de células (cada linha) */
+.composicaoGrid {
+  display: flex;
+  gap: 2px;
+  overflow-x: visible;   /* quem rola é o .sequencerWrapper */
+  margin: 4px 0;
+  padding-bottom: 2px;
+}
+
 
     .cell {
       width: 30px;
@@ -273,8 +287,8 @@
     }
 
     .drumRow .composicaoGrid {
-      flex: 1;
-    }
+  flex: 0 0 auto; /* largura só o necessário, deixa o wrapper rolar */
+}
 
     @media (orientation: portrait) {
       #orientationOverlay { display: flex; }
@@ -379,19 +393,20 @@
         <img id="pernasLayer" class="layer" src="./animacao/pernas/pernas.png" alt="pernas">
 
         <!-- Tronco + baixo + mão esquerda (1E como posição inicial) -->
-        <img id="troncoLayer" class="layer" src="animacao/tronco_baixo/Pasta_1F/1E.png" alt="tronco-baixo">
+        <img id="troncoLayer" class="layer" src="jamon16/animacao/tronco_baixo/Pasta_1F/1E.png" alt="tronco-baixo">
 
         <!-- Antebraço direito (corda E inicial) -->
-        <img id="antebracoLayer" class="layer" src="animacao/antebraco/antebracoE.png" alt="antebraco">
+        <img id="antebracoLayer" class="layer" src="jamon16/animacao/antebraco/antebracoE.png" alt="antebraco">
 
         <!-- Braço direito (frame inicial corda E) -->
-        <img id="bracoLayer" class="layer" src="animacao/braco_direito/Corda_E1.png" alt="braco-direito">
+        <img id="bracoLayer" class="layer" src="jamon16/animacao/braco_direito/Corda_E1.png" alt="braco-direito">
 
         <!-- Cabeça – parte de trás (fixa) -->
 <img id="cabecaTrasLayer" class="layer" src="animacao/cabeca_tras/cabeca-parte-de-tras.jpg" alt="cabeca-tras">
 
-        <!-- Cabeça (frame inicial) -->
-        <img id="cabecaLayer" class="layer" src="animacao/cabeca/cabeca0001.png" alt="cabeca">
+<!-- Cabeça (frame inicial) -->
+<img id="cabecaLayer" class="layer" src="animacao/cabeca/cabeca0001.png" alt="cabeca">
+
       </div>
     </div>
 
@@ -425,32 +440,47 @@
       </div>
 
       <!-- Baixo manual -->
-      <div class="card">
-        <h3>🎸 Baixo – composição manual</h3>
-        <div class="labelPequena">
-          Clique em cada célula para abrir o painel e escolher a nota (X, 1E, 2F, 3F#...).
-        </div>
-        <div id="baixoGrid" class="composicaoGrid"></div>
-        <button id="addBaixoCol">+ Coluna</button>
-        <button id="clearBaixo">Limpar baixo</button>
-        <div class="labelPequena">Volume do baixo</div>
-        <input type="range" id="baixoVolume" class="volumeSlider" min="0" max="1" step="0.01" value="0.8">
-      </div>
+<div class="card">
+  <h3>🎸 Baixo – composição manual</h3>
+  <div class="labelPequena">
+    Clique em cada célula na linha "Baixo" (logo abaixo, junto com a bateria) para escolher a nota (X, 1E, 2F, 3F#...).
+  </div>
+  <!-- o grid do baixo agora está junto da bateria, no card abaixo -->
+  <button id="addBaixoCol">+ Coluna</button>
+  <button id="clearBaixo">Limpar baixo</button>
+  <div class="labelPequena">Volume do baixo</div>
+  <input type="range" id="baixoVolume" class="volumeSlider" min="0" max="1" step="0.01" value="0.8">
+</div>
+
 
       <!-- Bateria manual -->
-      <div class="card">
-        <h3>🥁 Bateria – composição manual</h3>
-        <div class="labelPequena">
-          Cada linha é uma peça: Bum
-bo, Caixa, Chimbal, Condução, Ataque.
-          Cada célula = 1/16.
-        </div>
-        <div id="drumGrid"></div>
-        <button id="addDrumCol">+ Coluna (todas as linhas)</button>
-        <button id="clearDrums">Limpar bateria</button>
-        <div class="labelPequena">Volume global da bateria</div>
-        <input type="range" id="drumVolume" class="volumeSlider" min="0" max="1" step="0.01" value="0.8">
+<div class="card">
+  <h3>🥁 Bateria – composição manual</h3>
+  <div class="labelPequena">
+    Linha "Baixo" + linhas da bateria (Bumbo, Caixa, Chimbal, Condução, Ataque, Tom1, Tom2, Surdo).  
+    Cada célula = 1/16.
+  </div>
+
+  <!-- WRAPPER COM ROLAGEM HORIZONTAL ÚNICA -->
+  <div class="sequencerWrapper">
+    <div class="sequencerInner">
+      <!-- Linha do BAIXO, alinhada com as linhas da bateria -->
+      <div class="drumRow">
+        <div class="drumLabel">Baixo</div>
+        <div id="baixoGrid" class="composicaoGrid"></div>
       </div>
+
+      <!-- Linhas da bateria (serão criadas pelo JS dentro deste drumGrid) -->
+      <div id="drumGrid"></div>
+    </div>
+  </div>
+
+  <button id="addDrumCol">+ Coluna (todas as linhas)</button>
+  <button id="clearDrums">Limpar bateria</button>
+  <div class="labelPequena">Volume global da bateria</div>
+  <input type="range" id="drumVolume" class="volumeSlider" min="0" max="1" step="0.01" value="0.8">
+</div>
+
     </div>
   </div>
 
@@ -585,17 +615,17 @@ const HEAD_TOTAL_FRAMES = 100;
     /* ============================
        ANIMAÇÃO CABEÇA – FRAMES
        ============================ */
-    function generateHeadFramePaths() {
+  function generateHeadFramePaths() {
   const paths = [];
   // arquivos: cabeca0001.png ... cabeca0100.png
   for (let i = 1; i <= HEAD_TOTAL_FRAMES; i++) {
     const num = String(i).padStart(4, "0");
-    paths.push(`jamon16/animacao/cabeca/cabeca${num}.png`)
-
-    // no GitHub fica: jamon16/animacao/cabeca/cabeca0001.png etc.
+    // caminho relativo ao Animacao.html
+    paths.push(`animacao/cabeca/cabeca${num}.png`);
   }
   return paths;
 }
+
 
     async function preloadImages(srcArray) {
       const promises = srcArray.map(src => {
@@ -702,12 +732,11 @@ const HEAD_TOTAL_FRAMES = 100;
 
     /* ===== AUDIO ===== */
     function tocarNotaAudioBaixo(nota, volume) {
-      const a = new Audio("jamon16/assets/BaixoMelodia/" + nota + ".mp3");
+  const a = new Audio("assets/BaixoMelodia/" + nota + ".mp3");
+  a.volume = volume;
+  a.play();
+}
 
-
-      a.volume = volume;
-      a.play();
-    }
 
     function tocarBateriaNoStep(step, volume) {
   drumLines.forEach(line => {
@@ -1184,6 +1213,8 @@ function pausePlayback() {
 
       iniciarInterface();
     };
+
+    
   </script>
 </body>
 </html>
