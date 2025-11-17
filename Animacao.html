@@ -527,6 +527,10 @@
     let playbackInterval = null;
     let atualPasso = 0;
 
+    // --- CONTROLE DE ÁUDIO DO BAIXO ---
+    let audioBaixoAtual = null;
+    let audioBaixoTimer = null;
+
     /*
       Notas válidas do baixo (1E…49E) — nomes casando com BaixoMelodia/XX.mp3
       "S" = sustenido (#) no nome de arquivo.
@@ -776,13 +780,59 @@
       animTimers = [];
     }
 
+    /* ===== SISTEMA DE MUTE PARA BAIXO ===== */
+    function pararAudioBaixo() {
+      if (audioBaixoAtual) {
+        audioBaixoAtual.pause();
+        audioBaixoAtual.currentTime = 0;
+        audioBaixoAtual = null;
+      }
+      if (audioBaixoTimer) {
+        clearTimeout(audioBaixoTimer);
+        audioBaixoTimer = null;
+      }
+    }
+
     /* ===== AUDIO ===== */
     function tocarNotaAudioBaixo(nota, volume) {
+      // Parar áudio anterior antes de tocar o novo
+      pararAudioBaixo();
+      
       // Converter nota para formato de arquivo correto (ex: "10C#" → "10CS")
       const notaArquivo = nota.replace(/#/g, "S");
       const a = new Audio("assets/BaixoMelodia/" + notaArquivo + ".mp3");
       a.volume = volume;
+      
+      // Configurar fade out automático após 80% da duração da nota
+      const stepTime = (60000 / bpmAtual) / 4; // 1/16 em ms
+      const fadeOutTime = stepTime * 0.8; // 80% do tempo da nota
+      
       a.play().catch(e => console.log("Erro ao tocar áudio:", e));
+      audioBaixoAtual = a;
+      
+      // Programar fade out
+      audioBaixoTimer = setTimeout(() => {
+        if (audioBaixoAtual === a) {
+          // Fade out suave
+          const fadeDuration = 50; // ms
+          const initialVolume = a.volume;
+          const step = initialVolume / (fadeDuration / 10);
+          let currentVolume = initialVolume;
+          
+          const fadeInterval = setInterval(() => {
+            currentVolume -= step;
+            if (currentVolume <= 0) {
+              a.pause();
+              clearInterval(fadeInterval);
+              if (audioBaixoAtual === a) {
+                audioBaixoAtual = null;
+              }
+            } else {
+              a.volume = currentVolume;
+            }
+          }, 10);
+        }
+      }, fadeOutTime);
     }
 
     function tocarBateriaNoStep(step, volume) {
@@ -799,7 +849,12 @@
     }
 
     function tocarNotaComAnimacao(nota, duracaoMs, volume) {
-      if (nota === "x") return;
+      if (nota === "x") {
+        // Se for pausa, para o áudio do baixo
+        pararAudioBaixo();
+        return;
+      }
+      
       tocarNotaAudioBaixo(nota, volume);
       trocarFrameTronco(nota);
       const corda = getCordaDaNota(nota);
@@ -1002,9 +1057,7 @@
     function tocarPasso(passo) {
         // Tocar nota do baixo
         const nota = (passo < baixoSeq.length) ? baixoSeq[passo] : "x";
-        if (nota !== "x") {
-            tocarNotaComAnimacao(nota, (60000 / bpmAtual) / 4, baixoVolumeGlobal);
-        }
+        tocarNotaComAnimacao(nota, (60000 / bpmAtual) / 4, baixoVolumeGlobal);
         
         // Tocar bateria
         tocarBateriaNoStep(passo, bateriaVolumeGlobal);
@@ -1051,6 +1104,9 @@
 
         clearInterval(playbackInterval);
         playbackInterval = null;
+        
+        // Para o áudio do baixo também
+        pararAudioBaixo();
 
         document.getElementById("playBtn").innerText = "▶ Play";
     }
