@@ -475,8 +475,9 @@
     </div>
   </div>
 
-  <button id="addDrumCol">+ Coluna (todas as linhas)</button>
-  <button id="clearDrums">Limpar bateria</button>
+ <button id="addCol">+ Coluna</button>
+<button id="duplicateSeq">Duplicar 16 células</button>
+<button id="clearAll">Limpar tudo</button>
   <div class="labelPequena">Volume global da bateria</div>
   <input type="range" id="drumVolume" class="volumeSlider" min="0" max="1" step="0.01" value="0.8">
 </div>
@@ -973,38 +974,41 @@ function pausePlayback() {
     }
 
     function tocarPlaybackCompleto(bpm) {
-      resetAnimTimers();
-      startTroncoBpm(bpm);
-      startHeadTiltBpm(bpm);
+  resetAnimTimers();
+  startTroncoBpm(bpm);
+  startHeadTiltBpm(bpm);
 
-      // Cada célula = 1/16
-      const stepMs = 60000 / bpm / 4;
+  const stepMs = 60000 / bpm / 4; // 1 célula = 1/16
 
-      const totalSteps = Math.max(
-        baixoSeq.length,
-        ...(drumLines.map(line => bateriaSeq[line.id].length))
-      );
+  const totalSteps = Math.max(
+    baixoSeq.length,
+    ...(drumLines.map(line => bateriaSeq[line.id].length))
+  );
 
-      let passo = 0;
+  let passo = 0;
 
-      function step() {
-        if (passo >= totalSteps) {
-          atualizarBarraProgresso(100);
-          return;
-        }
-        const nota = (passo < baixoSeq.length) ? baixoSeq[passo] : "x";
+  function step() {
 
-        atualizarBarraProgresso((passo / totalSteps) * 100);
-
-        tocarNotaComAnimacao(nota, stepMs, baixoVolumeGlobal);
-        tocarBateriaNoStep(passo, bateriaVolumeGlobal);
-
-        passo++;
-        setTimeout(step, stepMs);
-      }
-
-      step();
+    // 🔁 LOOP INFINITO
+    if (passo >= totalSteps) {
+      passo = 0;
+      atualizarBarraProgresso(0);
     }
+
+    const nota = (passo < baixoSeq.length) ? baixoSeq[passo] : "x";
+
+    atualizarBarraProgresso((passo / totalSteps) * 100);
+
+    tocarNotaComAnimacao(nota, stepMs, baixoVolumeGlobal);
+    tocarBateriaNoStep(passo, bateriaVolumeGlobal);
+
+    passo++;
+    setTimeout(step, stepMs);
+  }
+
+  step();
+}
+
 
     /* ===== GERAÇÃO ALEATÓRIA (SIMPLES) ===== */
     function gerarSequenciaAleatoriaBaixo(tam) {
@@ -1199,6 +1203,60 @@ function pausePlayback() {
       checar();
       window.addEventListener("resize", checar);
     }
+    document.getElementById("addCol").onclick = adicionarColuna;
+document.getElementById("duplicateSeq").onclick = duplicarBloco16;
+document.getElementById("clearAll").onclick = () => {
+    baixoSeq = [];
+    Object.keys(bateriaSeq).forEach(peca => bateriaSeq[peca] = []);
+    atualizarGrids();
+}
+
+function atualizarGrids() {
+    // Reconstrói grade do baixo
+    construirGridBaixo(document.getElementById("baixoGrid"), baixoSeq);
+
+    // Reconstrói grade da bateria
+    construirGridBateria(document.getElementById("drumGrid"), bateriaSeq);
+
+    // Garantir a barra de rolagem funcione
+    const wrapper = document.querySelector(".sequencerWrapper");
+    wrapper.scrollLeft = wrapper.scrollWidth;
+}
+
+// Adiciona 1 coluna em todas as linhas
+function adicionarColuna() {
+    // Baixo
+    baixoSeq.push("X"); // uma célula vazia
+
+    // Bateria
+    Object.keys(bateriaSeq).forEach(peca => {
+        bateriaSeq[peca].push(0);
+    });
+
+    atualizarGrids();
+}
+
+// Duplica o último bloco de 16 células
+function duplicarBloco16() {
+    const bloco = 16;
+
+    // 🔹 Baixo
+    if (baixoSeq.length >= bloco) {
+        const ultimas = baixoSeq.slice(-bloco);
+        baixoSeq = baixoSeq.concat(ultimas);
+    }
+
+    // 🔹 Bateria
+    Object.keys(bateriaSeq).forEach(peca => {
+        const arr = bateriaSeq[peca];
+        if (arr.length >= bloco) {
+            const ultimas = arr.slice(-bloco);
+            bateriaSeq[peca] = arr.concat(ultimas);
+        }
+    });
+
+    atualizarGrids();
+}
 
     /* ===== INÍCIO GERAL ===== */
     window.onload = async () => {
