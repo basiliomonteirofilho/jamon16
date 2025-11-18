@@ -889,9 +889,9 @@
 
     const posicionamentoInicial = {
       pernasLayer: { left: 130, top: 233 },
-      bracoLayer: { left: 74, top: 150 },
       antebracoLayer: { left: 74, top: 87 },
       troncoLayer: { left: 60, top: 40 },
+      bracoLayer: { left: 74, top: 150 },
       cabecaLayer: { left: 125, top: -61 },
       cabecaTrasLayer: { left: 83, top: -10 }
     };
@@ -1039,20 +1039,25 @@
     }
 
     function trocarFrameTronco(nota) {
-      const pasta = getPastaDaNota(nota);
-      const tronco = document.getElementById("troncoLayer");
-      // CORREÇÃO: Para PNGs, converter S para #
-      const nomeArquivo = nota.replace("S","#");
-      tronco.src = `animacao/tronco_baixo/${pasta}/${nomeArquivo}.png`;
-      
-      // Debug
-      console.log("Trocando frame tronco:", {
-        nota: nota,
-        pasta: pasta,
-        arquivo: nomeArquivo + '.png',
-        caminho: `animacao/tronco_baixo/${pasta}/${nomeArquivo}.png`
-      });
-    }
+  let pasta = getPastaDaNota(nota);
+  const tronco = document.getElementById("troncoLayer");
+  
+  // CORREÇÃO: Se a pasta tem # no nome, usar encodeURIComponent
+  // Isso preserva o # no URL
+  if (pasta.includes('#')) {
+    pasta = encodeURIComponent(pasta);
+  }
+  
+  const nomeArquivo = nota.replace("S","#");
+  tronco.src = `animacao/tronco_baixo/${pasta}/${nomeArquivo}.png`;
+  
+  console.log("Trocando frame tronco:", {
+    nota: nota,
+    pasta: pasta,
+    arquivo: nomeArquivo + '.png',
+    caminho: `animacao/tronco_baixo/${pasta}/${nomeArquivo}.png`
+  });
+}
 
     function tocarNotaAudioBaixo(nota, volume) {
       pararAudioBaixo();
