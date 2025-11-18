@@ -92,13 +92,7 @@
       transform-origin: 120px 140px;
     }
 
-    /* Antebraço direito (mão que toca a corda) */
-    #antebracoLayer {
-      z-index: 4;
-      left: 140px;
-      top: 120px;
-      transform-origin: 15px 10px;
-    }
+    
 
     /* Braço direito (acima do antebraço) */
     #bracoLayer {
@@ -106,6 +100,14 @@
       left: 120px;
       top: 90px;
       transform-origin: 18px 20px;
+    }
+
+    /* Antebraço direito (mão que toca a corda) */
+    #antebracoLayer {
+      z-index: 4;
+      left: 140px;
+      top: 120px;
+      transform-origin: 15px 10px;
     }
 
     /* Cabeça (frames cabeca0001...cabeca0121) */
@@ -473,11 +475,11 @@
         <!-- Tronco + baixo + mão esquerda (1E como posição inicial) -->
         <img id="troncoLayer" class="layer" src="animacao/tronco_baixo/Pasta_1F/1E.png" alt="tronco-baixo">
 
-        <!-- Antebraço direito (corda E inicial) -->
-        <img id="antebracoLayer" class="layer" src="animacao/antebraco/antebracoE.png" alt="antebraco">
-
         <!-- Braço direito (frame inicial corda E) -->
         <img id="bracoLayer" class="layer" src="animacao/braco_direito/Corda_E1.png" alt="braco-direito">
+
+        <!-- Antebraço direito (corda E inicial) -->
+        <img id="antebracoLayer" class="layer" src="animacao/antebraco/antebracoE.png" alt="antebraco">
 
         <!-- Cabeça – parte de trás (fixa) -->
         <img id="cabecaTrasLayer" class="layer" src="animacao/cabeca_tras/cabeca-parte-de-tras.png" alt="cabeca-tras">
@@ -887,9 +889,9 @@
 
     const posicionamentoInicial = {
       pernasLayer: { left: 130, top: 233 },
-      troncoLayer: { left: 60, top: 40 },
-      antebracoLayer: { left: 74, top: 87 },
       bracoLayer: { left: 74, top: 150 },
+      antebracoLayer: { left: 74, top: 87 },
+      troncoLayer: { left: 60, top: 40 },
       cabecaLayer: { left: 125, top: -61 },
       cabecaTrasLayer: { left: 83, top: -10 }
     };
