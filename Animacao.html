@@ -883,13 +883,15 @@
     /* ============================
        SISTEMA DE POSICIONAMENTO (TEMPORÁRIO)
        ============================ */
+       
+
     const posicionamentoInicial = {
-      pernasLayer: { left: 80, top: 180 },
+      pernasLayer: { left: 130, top: 233 },
       troncoLayer: { left: 60, top: 40 },
-      antebracoLayer: { left: 140, top: 120 },
-      bracoLayer: { left: 120, top: 90 },
-      cabecaLayer: { left: 90, top: -10 },
-      cabecaTrasLayer: { left: 90, top: -10 }
+      antebracoLayer: { left: 74, top: 87 },
+      bracoLayer: { left: 74, top: 150 },
+      cabecaLayer: { left: 125, top: -61 },
+      cabecaTrasLayer: { left: 83, top: -10 }
     };
 
     let posicionamentoAtual = JSON.parse(JSON.stringify(posicionamentoInicial));
@@ -1087,7 +1089,848 @@
       }, fadeOutTime);
     }
 
-    // ... (o resto do código permanece igual, incluindo todas as outras funções)
+    /* ============================
+       ANIMAÇÃO CABEÇA – FRAMES
+       ============================ */
+    function generateHeadFramePaths() {
+      const paths = [];
+      // arquivos: cabeca0001.png ... cabeca0100.png
+      for (let i = 1; i <= HEAD_TOTAL_FRAMES; i++) {
+        const num = String(i).padStart(4, "0");
+        // caminho relativo ao Animacao.html
+        paths.push(`animacao/cabeca/cabeca${num}.png`);
+      }
+      return paths;
+    }
+
+    async function preloadImages(srcArray) {
+      const promises = srcArray.map(src => {
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve();
+          img.onerror = () => resolve();
+          img.src = src;
+        });
+      });
+      await Promise.all(promises);
+    }
+
+    function startHeadLoop() {
+      if (headTimer) clearInterval(headTimer);
+      const cabeca = document.getElementById("cabecaLayer");
+      headTimer = setInterval(() => {
+        headFrameIndex = (headFrameIndex + 1) % headFrames.length;
+        cabeca.src = headFrames[headFrameIndex];
+      }, 50); // velocidade interna da cabeça
+    }
+
+    /* ============================
+       ANIMAÇÃO – TRONCO BALANÇANDO (no BPM)
+       ============================ */
+    function startTroncoBpm(bpm) {
+      if (troncoTimer) clearInterval(troncoTimer);
+      const tronco = document.getElementById("troncoLayer");
+      let direction = 1;
+      troncoTimer = setInterval(() => {
+        const angle = direction * 3; // 3 graus pra cada lado
+        tronco.style.transform = `rotate(${angle}deg)`;
+        direction *= -1;
+      }, (60000 / bpm) / 2); // colcheia
+    }
+
+    /* ============================
+       ANIMAÇÃO – CABEÇA BALANÇANDO NO BPM
+       ============================ */
+    function startHeadTiltBpm(bpm) {
+      if (tiltTimer) clearInterval(tiltTimer);
+      const cabeca = document.getElementById("cabecaLayer");
+      const cabecaTras = document.getElementById("cabecaTrasLayer");
+      let dir = 1;
+      tiltTimer = setInterval(() => {
+        const angle = dir * 5;
+        cabeca.style.transform = `rotate(${angle}deg)`;
+        if (cabecaTras) {
+          cabecaTras.style.transform = `rotate(${angle}deg)`;
+        }
+        dir *= -1;
+      }, 60000 / bpm); // um "vai e volta" por tempo (semínima)
+    }
+
+    /* ============================
+       ANIMAÇÃO – ANTEBRAÇO DIREITO
+       ============================ */
+    function trocarAntebraco(corda) {
+      const ante = document.getElementById("antebracoLayer");
+      ante.src = `animacao/antebraco/antebraco${corda}.png`;
+    }
+
+    /* ============================
+       ANIMAÇÃO – BRAÇO DIREITO (5 FRAMES)
+       ============================ */
+    function animarBracoDireito(corda, duracaoMs) {
+      const braco = document.getElementById("bracoLayer");
+      const frames = [
+        `animacao/braco_direito/Corda_${corda}1.png`,
+        `animacao/braco_direito/Corda_${corda}2.png`,
+        `animacao/braco_direito/Corda_${corda}3.png`,
+        `animacao/braco_direito/Corda_${corda}4.png`,
+        `animacao/braco_direito/Corda_${corda}5.png`
+      ];
+      
+      const passo = duracaoMs / frames.length;
+      let i = 0;
+      
+      const id = setInterval(() => {
+        if (i >= frames.length) {
+          clearInterval(id);
+          // Voltar para frame inicial
+          braco.src = `animacao/braco_direito/Corda_${corda}1.png`;
+          return;
+        }
+        braco.src = frames[i];
+        i++;
+      }, passo);
+
+      animTimers.push(id);
+    }
+
+    function resetAnimTimers() {
+      animTimers.forEach(id => clearInterval(id));
+      animTimers = [];
+    }
+
+    /* ===== SISTEMA DE MUTE PARA BAIXO ===== */
+    function pararAudioBaixo() {
+      if (audioBaixoAtual) {
+        audioBaixoAtual.pause();
+        audioBaixoAtual.currentTime = 0;
+        audioBaixoAtual = null;
+      }
+      if (audioBaixoTimer) {
+        clearTimeout(audioBaixoTimer);
+        audioBaixoTimer = null;
+      }
+    }
+
+    function tocarBateriaNoStep(step, volume) {
+      drumLines.forEach(line => {
+        const seq = bateriaSeq[line.id];
+        if (!seq || step >= seq.length) return;
+        const val = seq[step];
+        if (val === line.id) {
+          const a = new Audio("assets/" + line.file);
+          a.volume = volume;
+          a.play().catch(e => console.log("Erro ao tocar bateria:", e));
+        }
+      });
+    }
+
+    function tocarNotaComAnimacao(nota, duracaoMs, volume) {
+      if (nota === "x") {
+        // Se for pausa, para o áudio do baixo
+        pararAudioBaixo();
+        return;
+      }
+      
+      tocarNotaAudioBaixo(nota, volume);
+      trocarFrameTronco(nota);
+      const corda = getCordaDaNota(nota);
+      trocarAntebraco(corda);
+      animarBracoDireito(corda, duracaoMs);
+    }
+
+    /* ===== FUNÇÕES DO PRIMEIRO ARQUIVO ADAPTADAS ===== */
+    function expandRhythm(patternArray, totalSteps) {
+      const joined = patternArray.join(' ').replace(/\s+/g, ' ').trim();
+      const tokens = joined.split(/\s+/).filter(t => t);
+      const out = [];
+      let i = 0;
+      while (out.length < totalSteps) {
+        for (const token of tokens) {
+          if (out.length >= totalSteps) break;
+          out.push(token);
+        }
+        if (i++ > 1000) break;
+      }
+      return out.slice(0, totalSteps);
+    }
+
+    function parsePattern(patternText) {
+      const result = { intro: [], loop: [] };
+      const introMatch = patternText.match(/\[(.*?)\]/);
+      const loopMatch = patternText.match(/\((.*?)\)/);
+      if (introMatch) result.intro = introMatch[1].trim().split(/\s+/).filter(s => s);
+      if (loopMatch) result.loop = loopMatch[1].trim().split(/\s+/).filter(s => s);
+      if (!introMatch && !loopMatch) result.loop = patternText.trim().split(/\s+/).filter(s => s);
+      if (!result.loop.length) result.loop = result.intro.slice();
+      return result;
+    }
+
+    function meterToBeats(meter) {
+      return Number(meter.split('/')[0]) || 4;
+    }
+
+    /* ===== SISTEMA DE PLAYBACK ALEATÓRIO ===== */
+    async function gerarPlaybackAleatorio() {
+      // Escolhe um groove aleatório
+      const groove = ALL_GROOVES[Math.floor(Math.random() * ALL_GROOVES.length)];
+      
+      // Escolhe uma progressão de acordes baseada no estilo
+      const grooveName = groove.name;
+      let styleKey = "Rock";
+      if (grooveName.includes("Samba")) styleKey = "Samba";
+      else if (grooveName.includes("Jazz")) styleKey = "Jazz";
+      else if (grooveName.includes("Forró")) styleKey = "Forró";
+      else if (grooveName.includes("Metal")) styleKey = "Metal";
+      else if (grooveName.includes("Blues")) styleKey = "Blues";
+      
+      const progressions = STYLE_PROGRESSIONS[styleKey] || STYLE_PROGRESSIONS.Rock;
+      let availableProgressions = progressions.filter(prog => !prog.includes(7));
+      if (availableProgressions.length === 0) {
+        availableProgressions = progressions; // fallback
+      }
+      
+      const chordProgression = availableProgressions[Math.floor(Math.random() * availableProgressions.length)];
+      const totalBars = Math.min(chordProgression.length, 64);
+      const beats = meterToBeats(groove.meter);
+      const sixteenthsPerBar = beats * 4;
+      const totalSteps = sixteenthsPerBar * totalBars;
+      
+      // Gera sequência de baixo
+      const rhythm = expandRhythm(groove.bassRhythm, totalSteps);
+      const bassPlan = [];
+      
+      // Escolhe uma tonalidade aleatória
+      const keyIdx = Math.floor(Math.random() * PITCHES.length);
+      const key = PITCHES[keyIdx];
+      
+      // Função para obter notas do baixo da escala
+      function getBassNotesFromScale(degree, scale, chordType) {
+        let isMinor = false;
+        if ([1, 4, 5].includes(degree)) {
+          isMinor = (Math.random() > 0.5); // aleatório para exemplo
+        } else {
+          isMinor = (
+            chordType.startsWith('m') ||
+            chordType.includes('dim') ||
+            ['5+', '75+', '95+'].includes(chordType)
+          );
+        }
+
+        if (scale === "chromatic") {
+          const rootIdx = (keyIdx + DEGREE_TO_ROOT[degree]) % 12;
+          const rootNote = PITCHES[rootIdx];
+          const octave = 8;
+          return Array(8).fill().map((_, i) => {
+            const noteIdx = (rootIdx - i + 12) % 12;
+            const p = PITCHES[noteIdx];
+            return p.endsWith('S') ? `${p.replace('S', '')}${octave}S` : `${p}${octave}`;
+          });
+        }
+
+        if (Array.isArray(scale)) {
+          const rootIdx = (keyIdx + DEGREE_TO_ROOT[degree]) % 12;
+          return scale.map(interval => {
+            let intervalOffset;
+            if (isMinor) {
+              const minorIntervals = { 1: 0, 2: 2, 3: 3, 4: 5, 5: 7, 6: 8, 7: 10, 8: 12 };
+              intervalOffset = minorIntervals[interval] || 0;
+            } else {
+              const majorIntervals = { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11, 8: 12 };
+              intervalOffset = majorIntervals[interval] || 0;
+            }
+            const noteIdx = (rootIdx + intervalOffset) % 12;
+            const octave = interval === 1 ? '' : '8';
+            const noteName = PITCHES[noteIdx];
+            if (interval === 1) {
+              return noteName;
+            } else {
+              return noteName.endsWith('S') ? `${noteName.replace('S', '')}${octave}S` : `${noteName}${octave}`;
+            }
+          });
+        }
+
+        return [PITCHES[(keyIdx + DEGREE_TO_ROOT[degree]) % 12]];
+      }
+
+      // Gera as notas do baixo
+      for (let bar = 0; bar < totalBars; bar++) {
+        const degree = chordProgression[bar];
+        const bassNotes = getBassNotesFromScale(degree, groove.bassScale, '');
+        const stepsInBar = sixteenthsPerBar;
+        const notesPerBar = Math.ceil(stepsInBar / bassNotes.length);
+        const fullBassNotes = Array(stepsInBar).fill().map((_, i) => bassNotes[Math.floor(i / notesPerBar)] || bassNotes[0]);
+        
+        for (let stepInBar = 0; stepInBar < stepsInBar; stepInBar++) {
+          const step = bar * stepsInBar + stepInBar;
+          const sym = rhythm[step] || '-';
+          let bassNote = null;
+          if (sym === 'x') bassNote = 'x';
+          else if (sym === '-' || sym === 'sm') bassNote = '-';
+          else bassNote = fullBassNotes[stepInBar];
+          bassPlan.push(bassNote);
+        }
+      }
+
+      // Filtra apenas as notas válidas (remove '-' e mantém 'x' e notas)
+      const filteredBassPlan = bassPlan.filter(note => note !== '-');
+      
+      // Converte para o formato usado na animação
+      const formattedBassSeq = filteredBassPlan.map(note => {
+        if (note === 'x') return 'x';
+        
+        // Converte nota do formato do primeiro arquivo para o formato da animação
+        // Exemplo: "A8" -> "18A", "AS8" -> "19AS"
+        const noteName = note.replace(/8/g, '');
+        const noteIndex = PITCHES.indexOf(noteName);
+        if (noteIndex !== -1) {
+          // Encontra a nota correspondente na lista de notas válidas
+          const matchingNote = notasValidas.find(n => {
+            const num = parseInt(n, 10);
+            const notePart = n.substring(String(num).length);
+            return notePart === noteName;
+          });
+          return matchingNote || 'x';
+        }
+        return 'x';
+      });
+
+      // Gera sequência de bateria
+      const drumParsed = parsePattern(groove.drumPattern.join(' '));
+      const drumSeq = [...drumParsed.intro, ...drumParsed.loop];
+      const drumExpanded = [];
+      while (drumExpanded.length < formattedBassSeq.length) {
+        for (const t of drumSeq) {
+          if (drumExpanded.length >= formattedBassSeq.length) break;
+          drumExpanded.push(t);
+        }
+      }
+      
+      // Converte para o formato usado na animação
+      const formattedDrumSeq = {};
+      drumLines.forEach(line => {
+        formattedDrumSeq[line.id] = drumExpanded.slice(0, formattedBassSeq.length).map(token => {
+          // Mapeia tokens do primeiro arquivo para IDs do segundo
+          if (token === line.id) return line.id;
+          if (['bu', 'bumbo'].includes(token) && line.id === 'bumbo') return 'bumbo';
+          if (['ca', 'caixa'].includes(token) && line.id === 'caixa') return 'caixa';
+          if (['ch', 'chimbal'].includes(token) && line.id === 'chimbal') return 'chimbal';
+          if (['co', 'conducao'].includes(token) && line.id === 'conducao') return 'conducao';
+          if (['ba', 'bumbo-ataque'].includes(token) && line.id === 'ataque') return 'ataque';
+          return 'x';
+        });
+      });
+
+      return {
+        bass: formattedBassSeq,
+        drums: formattedDrumSeq,
+        bpm: bpmAtual
+      };
+    }
+
+    /* ===== SISTEMA DE PLAYBACK CORRIGIDO ===== */
+    
+    // --- REPRODUZ UM PASSO ---
+    function tocarPasso(passo) {
+        // Tocar nota do baixo
+        const nota = (passo < baixoSeq.length) ? baixoSeq[passo] : "x";
+        tocarNotaComAnimacao(nota, (60000 / bpmAtual) / 4, baixoVolumeGlobal);
+        
+        // Tocar bateria
+        tocarBateriaNoStep(passo, bateriaVolumeGlobal);
+        
+        // Atualizar barra de progresso
+        const totalSteps = Math.max(
+            baixoSeq.length,
+            ...(drumLines.map(line => bateriaSeq[line.id].length))
+        );
+        atualizarBarraProgresso((passo / totalSteps) * 100);
+    }
+
+    // --- INICIA PLAYBACK ---
+    function iniciarPlayback() {
+        if (isPlaying) return;
+
+        isPlaying = true;
+        atualPasso = 0;
+
+        const stepTime = (60000 / bpmAtual) / 4; // 1/16
+
+        playbackInterval = setInterval(() => {
+            tocarPasso(atualPasso);
+            atualPasso++;
+
+            const totalSteps = Math.max(
+                baixoSeq.length,
+                ...(drumLines.map(line => bateriaSeq[line.id].length))
+            );
+
+            if (atualPasso >= totalSteps) {
+                atualPasso = 0; // loop continuo
+            }
+        }, stepTime);
+
+        document.getElementById("playBtn").innerText = "⏸ Pause";
+    }
+
+    // --- PAUSA PLAYBACK ---
+    function pararPlayback() {
+        if (!isPlaying) return;
+
+        isPlaying = false;
+
+        clearInterval(playbackInterval);
+        playbackInterval = null;
+        
+        // Para o áudio do baixo também
+        pararAudioBaixo();
+
+        document.getElementById("playBtn").innerText = "▶ Play";
+    }
+
+    // --- BOTÃO PLAY/PAUSE ---
+    function togglePlay() {
+        if (!isPlaying) {
+            iniciarPlayback();
+        } else {
+            pararPlayback();
+        }
+    }
+
+    /* ===== PAINEL LATERAL – SELEÇÃO DE NOTAS / PEÇAS ===== */
+    const selectionOverlay = document.getElementById("selectionOverlay");
+    const selectionTitle   = document.getElementById("selectionTitle");
+    const selectionOptions = document.getElementById("selectionOptions");
+
+    const painelSelecao = {
+      tipo: null,     // "baixo" ou "drum"
+      seqRef: null,   // referência ao array (baixoSeq ou array de uma linha da bateria)
+      idx: null,      // índice na sequência
+      cell: null,     // elemento .cell clicado
+      drumLine: null  // se for drum, referência à linha
+    };
+
+    function abrirPainelSelecaoBaixo(seqRef, idx, cellEl) {
+      painelSelecao.tipo = "baixo";
+      painelSelecao.seqRef = seqRef;
+      painelSelecao.idx = idx;
+      painelSelecao.cell = cellEl;
+      painelSelecao.drumLine = null;
+
+      const valorAtual = seqRef[idx];
+      const opcoes = ["x", ...notasValidas];
+
+      selectionTitle.textContent = "Selecione a nota do baixo";
+      selectionOptions.innerHTML = "";
+
+      opcoes.forEach(opt => {
+        const div = document.createElement("div");
+        div.className = "selection-option";
+        let label = opt;
+
+        if (opt === "x") {
+          div.classList.add("x-option");
+          label = "X";
+        } else {
+          label = opt.replace(/S/g,"#");
+        }
+
+        if (opt === valorAtual) {
+          div.classList.add("active");
+        }
+
+        div.textContent = label;
+        div.onclick = () => {
+          painelSelecao.seqRef[painelSelecao.idx] = opt;
+          const c = painelSelecao.cell;
+          c.textContent = label;
+          if (opt === "x") c.classList.remove("active");
+          else c.classList.add("active");
+          fecharPainelSelecao();
+        };
+
+        selectionOptions.appendChild(div);
+      });
+
+      selectionOverlay.classList.add("visible");
+    }
+
+    function abrirPainelSelecaoLinhaDrum(seqRef, idx, cellEl, line) {
+      painelSelecao.tipo = "drum";
+      painelSelecao.seqRef = seqRef;
+      painelSelecao.idx = idx;
+      painelSelecao.cell = cellEl;
+      painelSelecao.drumLine = line;
+
+      const valorAtual = seqRef[idx];
+      // Opções: silêncio ou essa peça específica
+      const opcoes = ["x", line.id];
+
+      selectionTitle.textContent = "Selecione a peça: " + line.label;
+      selectionOptions.innerHTML = "";
+
+      opcoes.forEach(opt => {
+        const div = document.createElement("div");
+        div.className = "selection-option";
+        let label;
+
+        if (opt === "x") {
+          div.classList.add("x-option");
+          label = "X";
+        } else {
+          label = line.label.toUpperCase();
+        }
+
+        if (opt === valorAtual) {
+          div.classList.add("active");
+        }
+
+        div.textContent = label;
+        div.onclick = () => {
+          painelSelecao.seqRef[painelSelecao.idx] = opt;
+          const c = painelSelecao.cell;
+          if (opt === "x") {
+            c.textContent = "X";
+            c.classList.remove("active");
+          } else {
+            c.textContent = line.label.toUpperCase();
+            c.classList.add("active");
+          }
+          fecharPainelSelecao();
+        };
+
+        selectionOptions.appendChild(div);
+      });
+
+      selectionOverlay.classList.add("visible");
+    }
+
+    function fecharPainelSelecao() {
+      selectionOverlay.classList.remove("visible");
+      painelSelecao.tipo = null;
+      painelSelecao.seqRef = null;
+      painelSelecao.idx = null;
+      painelSelecao.cell = null;
+      painelSelecao.drumLine = null;
+    }
+
+    selectionOverlay.addEventListener("click", (ev) => {
+      if (ev.target === selectionOverlay) {
+        fecharPainelSelecao();
+      }
+    });
+
+    /* ===== GRIDS MANUAIS – BAIXO ===== */
+    function construirGridBaixo(container, seq) {
+      container.innerHTML = "";
+      seq.forEach((nota, idx) => {
+        const div = document.createElement("div");
+        div.className = "cell";
+        div.dataset.idx = idx;
+
+        if (nota === "x") {
+          div.textContent = "X";
+        } else {
+          div.textContent = nota.replace(/S/g,"#");
+          div.classList.add("active");
+        }
+
+        div.onclick = () => {
+          abrirPainelSelecaoBaixo(seq, idx, div);
+        };
+
+        container.appendChild(div);
+      });
+    }
+
+    /* ===== GRIDS MANUAIS – BATERIA (MULTILINHA) ===== */
+    function construirGridBateria(container, bateriaSeq) {
+      container.innerHTML = "";
+
+      drumLines.forEach(line => {
+        const rowDiv = document.createElement("div");
+        rowDiv.className = "drumRow";
+
+        const label = document.createElement("div");
+        label.className = "drumLabel";
+        label.textContent = line.label;
+        rowDiv.appendChild(label);
+
+        const rowGrid = document.createElement("div");
+        rowGrid.className = "composicaoGrid";
+
+        const seq = bateriaSeq[line.id];
+
+        seq.forEach((item, idx) => {
+          const cell = document.createElement("div");
+          cell.className = "cell";
+          cell.dataset.idx = idx;
+
+          if (item === "x") {
+            cell.textContent = "X";
+          } else if (item === line.id) {
+            cell.textContent = line.label.toUpperCase();
+            cell.classList.add("active");
+          } else {
+            // fallback, se tiver algo estranho guardado
+            cell.textContent = "?";
+          }
+
+          cell.onclick = () => {
+            if (seq[idx] === "x") {
+              seq[idx] = line.id;
+              cell.classList.add("active");
+              cell.textContent = line.label.toUpperCase();
+            } else {
+              seq[idx] = "x";
+              cell.classList.remove("active");
+              cell.textContent = "X";
+            }
+          };
+
+          rowGrid.appendChild(cell);
+        });
+
+        rowDiv.appendChild(rowGrid);
+        container.appendChild(rowDiv);
+      });
+    }
+
+    /* ===== PLAYBACK COMPLETO ===== */
+    function atualizarBarraProgresso(perc) {
+      document.getElementById("progressBar").style.width = perc + "%";
+    }
+
+    function tocarPlaybackCompleto(bpm) {
+      // Parar playback atual se estiver rodando
+      pararPlayback();
+      
+      // Iniciar animações
+      resetAnimTimers();
+      startTroncoBpm(bpm);
+      startHeadTiltBpm(bpm);
+      
+      // Iniciar playback
+      iniciarPlayback();
+    }
+
+    /* ===== GERAÇÃO ALEATÓRIA (SIMPLES) ===== */
+    function gerarSequenciaAleatoriaBaixo(tam) {
+      const seq = [];
+      for (let i = 0; i < tam; i++) {
+        if (Math.random() < 0.6) {
+          seq.push("x");
+        } else {
+          const idx = Math.floor(Math.random() * notasValidas.length);
+          seq.push(notasValidas[idx]);
+        }
+      }
+      return seq;
+    }
+
+    function gerarSequenciasAleatoriasBateria(tam) {
+      const obj = {};
+      drumLines.forEach(line => {
+        obj[line.id] = [];
+        for (let i = 0; i < tam; i++) {
+          // probabilidade simples; pode refinar pra cada peça
+          const r = Math.random();
+          if (r < 0.75) {
+            obj[line.id].push("x");
+          } else {
+            obj[line.id].push(line.id);
+          }
+        }
+      });
+      return obj;
+    }
+
+    /* ===== PLAYBACK EXPORTADO (.json) ===== */
+    function configurarPlaybackExportado() {
+      const btn = document.getElementById("playExportadoBtn");
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "application/json";
+      input.style.display = "none";
+      document.body.appendChild(input);
+
+      btn.onclick = () => input.click();
+      input.onchange = async (ev) => {
+        const file = ev.target.files[0];
+        if (!file) return;
+        try {
+          const txt = await file.text();
+          const obj = JSON.parse(txt);
+          if (!Array.isArray(obj.baixo) || typeof obj.bpm !== "number" || typeof obj.bateria !== "object") {
+            alert("JSON inválido. Esperado: { bpm, baixo[], bateria{bumbo[],...} }");
+            return;
+          }
+          baixoSeq = obj.baixo;
+          bpmAtual = obj.bpm;
+
+          drumLines.forEach(line => {
+            if (Array.isArray(obj.bateria[line.id])) {
+              bateriaSeq[line.id] = obj.bateria[line.id];
+            } else {
+              // se não vier, criar array de silêncio no mesmo tamanho do baixo
+              bateriaSeq[line.id] = Array(baixoSeq.length).fill("x");
+            }
+          });
+
+          document.getElementById("bpmSlider").value = bpmAtual;
+          document.getElementById("bpmDisplay").textContent = bpmAtual + " BPM";
+
+          construirGridBaixo(document.getElementById("baixoGrid"), baixoSeq);
+          construirGridBateria(document.getElementById("drumGrid"), bateriaSeq);
+
+          tocarPlaybackCompleto(bpmAtual);
+        } catch (e) {
+          console.error(e);
+          alert("Erro ao ler o arquivo JSON.");
+        }
+      };
+    }
+
+    /* ===== ORIENTAÇÃO (MODO PAISAGEM) ===== */
+    function garantirPaisagem() {
+      const overlay = document.getElementById("orientationOverlay");
+      function checar() {
+        if (window.innerWidth < window.innerHeight) {
+          overlay.style.display = "flex";
+        } else {
+          overlay.style.display = "none";
+        }
+      }
+      checar();
+      window.addEventListener("resize", checar);
+    }
+
+    /* ===== INTERFACE PRINCIPAL ===== */
+    function iniciarInterface() {
+      const baixoGrid = document.getElementById("baixoGrid");
+      const drumGrid  = document.getElementById("drumGrid");
+
+      // 1 compasso em 4/4 = 16 células (1/16 cada)
+      const passosIniciais = 16;
+
+      // inicialmente, geramos algo aleatório para já ter som
+      baixoSeq = gerarSequenciaAleatoriaBaixo(passosIniciais);
+      bateriaSeq = gerarSequenciasAleatoriasBateria(passosIniciais);
+
+      construirGridBaixo(baixoGrid, baixoSeq);
+      construirGridBateria(drumGrid, bateriaSeq);
+
+      // BPM
+      const bpmSlider   = document.getElementById("bpmSlider");
+      const bpmDisplay  = document.getElementById("bpmDisplay");
+      bpmSlider.oninput = () => {
+        bpmAtual = parseInt(bpmSlider.value, 10);
+        bpmDisplay.textContent = bpmAtual + " BPM";
+        startTroncoBpm(bpmAtual);
+        startHeadTiltBpm(bpmAtual);
+      };
+
+      // Volumes
+      const baixoVol = document.getElementById("baixoVolume");
+      const drumVol  = document.getElementById("drumVolume");
+      baixoVol.oninput = () => {
+        baixoVolumeGlobal = parseFloat(baixoVol.value);
+      };
+      drumVol.oninput = () => {
+        bateriaVolumeGlobal = parseFloat(drumVol.value);
+      };
+
+      // Botões de playback
+      document.getElementById("playAleatorioBtn").onclick = async () => {
+        try {
+          const playback = await gerarPlaybackAleatorio();
+          baixoSeq = playback.bass;
+          bateriaSeq = playback.drums;
+          bpmAtual = playback.bpm;
+          
+          document.getElementById("bpmSlider").value = bpmAtual;
+          document.getElementById("bpmDisplay").textContent = bpmAtual + " BPM";
+          
+          construirGridBaixo(baixoGrid, baixoSeq);
+          construirGridBateria(drumGrid, bateriaSeq);
+          tocarPlaybackCompleto(bpmAtual);
+        } catch (error) {
+          console.error("Erro ao gerar playback aleatório:", error);
+          alert("Erro ao gerar playback aleatório. Verifique o console para mais detalhes.");
+        }
+      };
+
+      document.getElementById("playManualBtn").onclick = () => {
+        tocarPlaybackCompleto(bpmAtual);
+      };
+
+      // Botões de controle de playback
+      document.getElementById("playBtn").onclick = togglePlay;
+      document.getElementById("pauseBtn").onclick = pararPlayback;
+
+      // Adicionar coluna (baixo)
+      document.getElementById("addBaixoCol").onclick = () => {
+        baixoSeq.push("x");
+        construirGridBaixo(baixoGrid, baixoSeq);
+
+        // também alonga todas as linhas da bateria com "x"
+        drumLines.forEach(line => {
+          bateriaSeq[line.id].push("x");
+        });
+        construirGridBateria(drumGrid, bateriaSeq);
+      };
+
+      // Limpar baixo
+      document.getElementById("clearBaixo").onclick = () => {
+        baixoSeq = baixoSeq.map(() => "x");
+        construirGridBaixo(baixoGrid, baixoSeq);
+      };
+
+      // Limpar bateria
+      document.getElementById("clearAll").onclick = () => {
+        baixoSeq = baixoSeq.map(() => "x");
+        drumLines.forEach(line => {
+          bateriaSeq[line.id] = bateriaSeq[line.id].map(() => "x");
+        });
+        construirGridBaixo(baixoGrid, baixoSeq);
+        construirGridBateria(drumGrid, bateriaSeq);
+      };
+
+      // Adicionar coluna geral
+      document.getElementById("addCol").onclick = () => {
+        baixoSeq.push("x");
+        drumLines.forEach(line => {
+          bateriaSeq[line.id].push("x");
+        });
+        construirGridBaixo(baixoGrid, baixoSeq);
+        construirGridBateria(drumGrid, bateriaSeq);
+      };
+
+      // Duplicar sequência
+      document.getElementById("duplicateSeq").onclick = () => {
+        const bloco = 16;
+        
+        // Baixo
+        if (baixoSeq.length >= bloco) {
+            const ultimas = baixoSeq.slice(-bloco);
+            baixoSeq = baixoSeq.concat(ultimas);
+        }
+
+        // Bateria
+        drumLines.forEach(line => {
+            const arr = bateriaSeq[line.id];
+            if (arr.length >= bloco) {
+                const ultimas = arr.slice(-bloco);
+                bateriaSeq[line.id] = arr.concat(ultimas);
+            }
+        });
+
+        construirGridBaixo(baixoGrid, baixoSeq);
+        construirGridBateria(drumGrid, bateriaSeq);
+      };
+
+      configurarPlaybackExportado();
+    }
 
     /* ===== INÍCIO GERAL ===== */
     window.onload = async () => {
@@ -1106,9 +1949,6 @@
 
       iniciarInterface();
     };
-
-    // ... (mantenha todas as outras funções existentes do seu código original)
-
   </script>
 </body>
 </html>
