@@ -4,21 +4,18 @@
   <meta charset="UTF-8" />
   <title>Jam On – Baixista Animada com Playback Aleatório</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
   <style>
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
-
     body {
       background: #101010;
       color: #eee;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
       overflow: hidden;
     }
-
     #orientationOverlay {
       position: fixed;
       inset: 0;
@@ -32,109 +29,58 @@
       padding: 20px;
       font-size: 1.1em;
     }
-
     .appRoot {
       width: 100vw;
       height: 100vh;
       display: flex;
-      flex-direction: row;
+      flex-direction: column;
     }
-
     /* ============================
-       ESQUERDA: ANIMAÇÃO BAIXISTA
+       TOPO: ANIMAÇÃO BAIXISTA
        ============================ */
     #animacaoArea {
-      width: 55%;
-      height: 100%;
+      width: 100%;
+      height: 60%;
       background: #151515;
-      border-right: 3px solid #222;
       display: flex;
       justify-content: center;
       align-items: center;
       position: relative;
       overflow: hidden;
+      z-index: 10;
     }
-
-    /* 
-      Palco da baixista – 420x360.
-    */
     #animacaoContainer {
       position: relative;
       width: 420px;
       height: 360px;
-      left: 20px;
-      top: 10px;
       image-rendering: pixelated;
-      border: 1px dashed #444; /* Para debug do posicionamento */
+      transform: scale(1.2);
     }
-
     .layer {
       position: absolute;
       top: 0;
       left: 0;
       image-rendering: pixelated;
       transform-origin: center center;
-      transition: all 0.3s ease; /* Para animação suave durante ajustes */
+      transition: none; /* Removido para não interferir no arrastar */
     }
-
-    /* Pernas – base da personagem */
-    #pernasLayer {
-      z-index: 1;
-      left: 130px;
-      top: 233px;
-    }
-
-    /* Tronco + baixo + mão esquerda (todos no mesmo frame) */
-    #troncoLayer {
-      z-index: 2;
-      left: 60px;
-      top: 40px;
-      transform-origin: 120px 140px;
-    }
-
-    /* Braço direito (acima do antebraço) */
-    #bracoLayer {
-      z-index: 3;
-      left: 74px;
-      top: 150px;
-      transform-origin: 18px 20px;
-    }
-
-    /* Antebraço direito (mão que toca a corda) */
-    #antebracoLayer {
-      z-index: 4;
-      left: 74px;
-      top: 87px;
-      transform-origin: 15px 10px;
-    }
-
-    /* Cabeça (frames cabeca0001...cabeca0121) */
-    #cabecaLayer {
-      z-index: 5;
-      left: 125px;
-      top: -61px;
-      transform-origin: bottom center;
-    }
-    
-    /* Cabeça – parte de trás (imagem fixa) */
-    #cabecaTrasLayer {
-      z-index: 4;
-      left: 83px;
-      top: -10px;
-      transform-origin: bottom center;
-    }
-
+    #pernasLayer { z-index: 1; left: 80px; top: 180px; }
+    #troncoLayer { z-index: 3; left: 60px; top: 40px; transform-origin: 120px 140px; }
+    #bracoLayer { z-index: 4; left: 120px; top: 90px; transform-origin: 18px 20px; }
+    #antebracoLayer { z-index: 2; left: 140px; top: 120px; transform-origin: 15px 10px; }
+    #cabecaLayer { z-index: 5; left: 90px; top: -10px; transform-origin: bottom center; }
+    #cabecaTrasLayer { z-index: 4; left: 90px; top: -10px; transform-origin: bottom center; }
     /* =============================
-       DIREITA: CONTROLES
+       BAIXO: CONTROLES
        ============================ */
     #painel {
-      width: 45%;
-      height: 100%;
+      width: 100%;
+      height: 40%;
       overflow-y: auto;
       padding: 16px;
       background: #181818;
+      z-index: 5;
     }
-
     header {
       margin-bottom: 10px;
     }
@@ -151,7 +97,6 @@
       background: #252525;
       color: #aaa;
     }
-
     .card {
       background: #202020;
       border-radius: 10px;
@@ -160,24 +105,20 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.5);
       border: 1px solid #2b2b2b;
     }
-
     .card h3 {
       margin-bottom: 6px;
       font-size: 1em;
       color: #fafafa;
     }
-
     .bpm-display {
       font-size: 1.4em;
       font-weight: bold;
       margin-bottom: 4px;
       color: #5eead4;
     }
-
     #bpmSlider {
       width: 100%;
     }
-
     button {
       border: none;
       padding: 6px 10px;
@@ -189,16 +130,13 @@
       margin: 4px 4px 4px 0;
       font-size: 0.85em;
     }
-
     button.secondary {
       background: #333;
       color: #eee;
     }
-
     button:hover {
       opacity: 0.9;
     }
-
     .progressContainer {
       margin-top: 6px;
       width: 100%;
@@ -207,27 +145,20 @@
       background: #333;
       overflow: hidden;
     }
-
     .progressBar {
       width: 0%;
       height: 100%;
       background: #5eead4;
       transition: width 0.15s linear;
     }
-
-    /* wrapper geral para baixo + bateria */
     .sequencerWrapper {
       max-width: 100%;
       overflow-x: auto;
       padding-bottom: 4px;
     }
-
-    /* conteúdo interno (largura mínima = conteúdo) */
     .sequencerInner {
       display: inline-block;
     }
-
-    /* grid de células (cada linha) */
     .composicaoGrid {
       display: flex;
       gap: 2px;
@@ -235,7 +166,6 @@
       margin: 4px 0;
       padding-bottom: 2px;
     }
-
     .cell {
       width: 30px;
       height: 30px;
@@ -253,25 +183,20 @@
       background: #5eead4;
       color: #111;
     }
-
     .volumeSlider {
       width: 100%;
       margin-top: 6px;
     }
-
     .labelPequena {
       font-size: 0.8em;
       color: #aaa;
       margin-top: 4px;
     }
-
-    /* Linhas da bateria (bumbo, caixa, etc.) */
     .drumRow {
       display: flex;
       align-items: flex-start;
       margin-bottom: 4px;
     }
-
     .drumLabel {
       width: 70px;
       font-size: 0.75em;
@@ -283,102 +208,17 @@
       text-align: left;
       flex-shrink: 0;
     }
-
     .drumRow .composicaoGrid {
       flex: 0 0 auto;
     }
-
-    /* ===== CONTROLES DE POSICIONAMENTO ===== */
-    .posicionamento-controls {
-      background: #2a1f1f !important;
-      border: 2px solid #ff6b6b !important;
-    }
-
-    .posicionamento-controls h3 {
-      color: #ff6b6b !important;
-    }
-
-    .layer-control {
-      display: flex;
-      align-items: center;
-      margin-bottom: 8px;
-      padding: 6px;
-      background: #3a2a2a;
-      border-radius: 6px;
-    }
-
-    .layer-label {
-      width: 120px;
-      font-size: 0.8em;
-      color: #ff9e9e;
-    }
-
-    .coord-inputs {
-      display: flex;
-      gap: 8px;
-      flex: 1;
-    }
-
-    .coord-input {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .coord-input label {
-      font-size: 0.75em;
-      color: #ccc;
-      min-width: 20px;
-    }
-
-    .coord-input input {
-      width: 60px;
-      padding: 4px;
-      border: 1px solid #555;
-      border-radius: 4px;
-      background: #222;
-      color: #fff;
-      font-size: 0.8em;
-    }
-
-    .pos-buttons {
-      display: flex;
-      gap: 4px;
-      margin-left: 8px;
-    }
-
-    .pos-btn {
-      padding: 4px 8px;
-      font-size: 0.7em;
-      background: #444;
-      color: #fff;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    .pos-btn:hover {
-      background: #555;
-    }
-
-    .debug-info {
-      font-size: 0.7em;
-      color: #888;
-      margin-top: 4px;
-      font-family: monospace;
-    }
-
     @media (orientation: portrait) {
       #orientationOverlay { display: flex; }
       .appRoot { display: none; }
     }
-
     @media (orientation: landscape) {
       #orientationOverlay { display: none; }
       .appRoot { display: flex; }
     }
-
-    /* ===== PAINEL LATERAL DE SELEÇÃO (BAIXO / BATERIA) ===== */
     .selection-overlay {
       position: fixed;
       inset: 0;
@@ -460,71 +300,27 @@
       <p>Use o Jam On em modo paisagem (horizontal) para ver a baixista e os controles.</p>
     </div>
   </div>
-
   <div class="appRoot">
-    <!-- ===============================
-         ÁREA DA ANIMAÇÃO DA BAIXISTA
-         =============================== -->
     <div id="animacaoArea">
       <div id="animacaoContainer">
-        <!-- Pernas (estáticas) -->
         <img id="pernasLayer" class="layer" src="animacao/pernas/pernas.png" alt="pernas">
-
-        <!-- Tronco + baixo + mão esquerda (1E como posição inicial) -->
-        <img id="troncoLayer" class="layer" src="animacao/tronco_baixo/Pasta_1F/1E.png" alt="tronco-baixo">
-
-        <!-- Braço direito (frame inicial corda E) -->
-        <img id="bracoLayer" class="layer" src="animacao/braco_direito/Corda_E1.png" alt="braco-direito">
-
-        <!-- Antebraço direito (corda E inicial) -->
         <img id="antebracoLayer" class="layer" src="animacao/antebraco/antebracoE.png" alt="antebraco">
-
-        <!-- Cabeça – parte de trás (fixa) -->
+        <img id="troncoLayer" class="layer" src="animacao/tronco_baixo/Pasta_1F/1E.png" alt="tronco-baixo">
+        <img id="bracoLayer" class="layer" src="animacao/braco_direito/Corda_E1.png" alt="braco-direito">
         <img id="cabecaTrasLayer" class="layer" src="animacao/cabeca_tras/cabeca-parte-de-tras.png" alt="cabeca-tras">
-
-        <!-- Cabeça (frame inicial) -->
         <img id="cabecaLayer" class="layer" src="animacao/cabeca/cabeca0001.png" alt="cabeca">
       </div>
     </div>
-
-    <!-- ===============================
-         PAINEL DIREITO – CONTROLES
-         =============================== -->
     <div id="painel">
       <header>
         <h1>Jam On – Baixista Animada</h1>
         <div class="pill">Baixo + Bateria – 1 célula = 1/16</div>
       </header>
-
-      <!-- Controles de Posicionamento (TEMPORÁRIO) -->
-      <div class="card posicionamento-controls">
-        <h3>🎛️ AJUSTE DE POSICIONAMENTO (TEMPORÁRIO)</h3>
-        <div class="labelPequena">
-          Ajuste as coordenadas X e Y de cada parte da animação. Use "Aplicar" para testar e "Copiar CSS" para salvar.
-        </div>
-        
-        <div id="posicionamentoControls">
-          <!-- Será preenchido pelo JavaScript -->
-        </div>
-        
-        <div class="pos-buttons" style="margin-top: 10px; justify-content: center;">
-          <button class="pos-btn" onclick="copiarCoordenadasParaCSS()">📋 Copiar CSS</button>
-          <button class="pos-btn" onclick="resetarPosicionamento()">🔄 Resetar</button>
-        </div>
-        
-        <div id="debugCoords" class="debug-info">
-          <!-- Debug info será mostrada aqui -->
-        </div>
-      </div>
-
-      <!-- BPM -->
       <div class="card">
         <h3>🎚 BPM</h3>
         <div class="bpm-display" id="bpmDisplay">100 BPM</div>
         <input id="bpmSlider" type="range" min="60" max="180" value="100">
       </div>
-
-      <!-- Playback -->
       <div class="card">
         <h3>🎵 Playback</h3>
         <button id="playAleatorioBtn">Playback aleatório</button>
@@ -532,13 +328,10 @@
         <button id="playExportadoBtn" class="secondary">Carregar playback (.json)</button>
         <button id="pauseBtn">⏸ Pausar</button>
         <button id="playBtn">▶ Play</button>
-
         <div class="progressContainer">
           <div class="progressBar" id="progressBar"></div>
         </div>
       </div>
-
-      <!-- Baixo manual -->
       <div class="card">
         <h3>🎸 Baixo – composição manual</h3>
         <div class="labelPequena">
@@ -549,46 +342,42 @@
         <div class="labelPequena">Volume do baixo</div>
         <input type="range" id="baixoVolume" class="volumeSlider" min="0" max="1" step="0.01" value="0.8">
       </div>
-
-      <!-- Bateria manual -->
       <div class="card">
         <h3>🥁 Bateria – composição manual</h3>
         <div class="labelPequena">
           Linha "Baixo" + linhas da bateria (Bumbo, Caixa, Chimbal, Condução, Ataque, Tom1, Tom2, Surdo).  
           Cada célula = 1/16.
         </div>
-
-        <!-- WRAPPER COM ROLAGEM HORIZONTAL ÚNICA -->
         <div class="sequencerWrapper">
           <div class="sequencerInner">
-            <!-- Linha do BAIXO, alinhada com as linhas da bateria -->
             <div class="drumRow">
               <div class="drumLabel">Baixo</div>
               <div id="baixoGrid" class="composicaoGrid"></div>
             </div>
-
-            <!-- Linhas da bateria (serão criadas pelo JS dentro deste drumGrid) -->
             <div id="drumGrid"></div>
           </div>
         </div>
-
         <button id="addCol">+ Coluna</button>
         <button id="duplicateSeq">Duplicar 16 células</button>
         <button id="clearAll">Limpar tudo</button>
         <div class="labelPequena">Volume global da bateria</div>
         <input type="range" id="drumVolume" class="volumeSlider" min="0" max="1" step="0.01" value="0.8">
       </div>
+      <!-- ✅ PAINEL DE AJUSTE VISUAL -->
+      <div class="card">
+        <h3>🔧 Ajuste Visual da Animação</h3>
+        <button id="btnModoAjuste">Ativar modo de arrastar</button>
+        <button id="btnExportarCSS">Copiar CSS ajustado</button>
+        <textarea id="cssAjustadoOutput" rows="6" style="width:100%; margin-top:8px; background:#151515; color:#eee; font-family:monospace; border:1px solid #333;" readonly></textarea>
+      </div>
     </div>
   </div>
-
-  <!-- OVERLAY + PAINEL LATERAL DE SELEÇÃO (BAIXO / BATERIA) -->
   <div id="selectionOverlay" class="selection-overlay">
     <div class="selection-panel" id="selectionPanel">
       <div id="selectionTitle" class="selection-title">Selecione</div>
       <div id="selectionOptions" class="selection-options"></div>
     </div>
   </div>
-
   <script>
     /* ============================
        ESTADO GLOBAL
@@ -596,14 +385,10 @@
     let headFrames = [];
     let headFrameIndex = 0;
     let headTimer = null;
-
     let tiltTimer = null;
     let troncoTimer = null;
-
-    // baixoSeq: sequência de notas ("x", "1E", "2F", etc.)
+    let lateralMovementTimer = null;
     let baixoSeq = [];
-
-    // bateriaSeq: objeto com arrays por linha (bumbo/caixa/chimbal/conducao/ataque)
     const drumLines = [
       { id: "bumbo", label: "Bumbo", file: "bumbo.mp3" },
       { id: "caixa", label: "Caixa", file: "caixa.mp3" },
@@ -615,39 +400,23 @@
       { id: "tom2", label: "Tom 2", file: "tom-2.mp3" },
       { id: "surdo", label: "Surdo", file: "surdo.mp3" }
     ];
-
     let bateriaSeq = {};
-
     let bpmAtual = 100;
-
     let baixoVolumeGlobal = 0.8;
     let bateriaVolumeGlobal = 0.8;
-
     let animTimers = [];
-
-    // --- CONTROLE GLOBAL DE PLAYBACK ---
     let isPlaying = false;
     let playbackInterval = null;
     let atualPasso = 0;
-
-    // --- CONTROLE DE ÁUDIO DO BAIXO ---
     let audioBaixoAtual = null;
     let audioBaixoTimer = null;
-
-    /*
-      Notas válidas do baixo (1E…49E) — nomes casando com BaixoMelodia/XX.mp3
-      "S" = sustenido (#) no nome de arquivo.
-    */
     const notasValidas = [
       "1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS",
       "18A","19AS","20B","21C","22CS","23D","24DS","25E","26F","27FS","28G","29GS","30A","31AS","32B",
       "33C","34CS","35D","36DS","37E","38F","39FS","40G","41GS","42A","43AS","44B","45C","46CS","47D",
       "48DS","49E"
     ];
-
     const HEAD_TOTAL_FRAMES = 100;
-
-    // ===== CONSTANTES MUSICAIS DO PRIMEIRO ARQUIVO =====
     const PITCHES = ['A','AS','B','C','CS','D','DS','E','F','FS','G','GS'];
     const DEGREE_TO_ROOT = { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11 };
     const CHORD_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
@@ -665,7 +434,6 @@
         su: 'surdo',
         bch: 'bumbo-chimbal'
     };
-
     const STYLE_PROGRESSIONS = {
         Rock: [[1,4,5,1], [1,5,6,4], [6,4,1,5]],
         Rock2: [[4,5,1,5], [5,4,1,4], [7,4,1,1]],
@@ -695,415 +463,72 @@
         Metal3: [[1, 3, 5, 3, 1, 2, 4, 5], [1, 3, 4, 5], [2, 5, 1, 5]],
         Jazz: [[1,2,5,1], [2,5,1,4], [3,6,2,5]]
     };
-
-    const ALL_GROOVES = [
-        { name: "Rock", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch bu"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 8] },
-        { name: "Rock2", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 5] },
-        { name: "Rock3", meter: "4/4", drumPattern: ["bch - ch bu cch bu ch - bch - ch - cch - ch -"], bassRhythm: ["bo - - bo - - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 1] },
-        { name: "Rock4", meter: "4/4", drumPattern: ["ba - co - cco - co - bco - co - cco bu bco bu"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 7, 8, 7, 5, 3] },
-        { name: "Rock5", meter: "4/4", drumPattern: ["bch ch ch ch cch ch ch ch bch ch ch ch cch ch ch -"], bassRhythm: ["bo - - bo - - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 1, 5] },
-        { name: "Rock6", meter: "4/4", drumPattern: ["bco co co co cco co co co bco co co co cco co co co"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [8, 8, 1, 1] },
-        { name: "Rock7", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - co - cco - co -"], bassRhythm: ["bo - - bo - - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 1] },
-        { name: "Rock_Progressivo", meter: "7/4", drumPattern: ["bch - ch -  cch - ch - bch - ch - cch - ch bu bch - ch - cch - ch - bch - ch bu"], bassRhythm: ["bo - - - - - - - bo - - - - - - bo - - bo bo bo bo bo bo bo bo bo bo"], bassScale: [1, 1, 1, 3, 5, 8, 3, 5, 8, 3, 5, 8, 5] },
-        { name: "Rock_Progressivo2", meter: "5/4", drumPattern: ["ba - ch - bch - ch - cch - ch - bch - ch - cch - ch bu"], bassRhythm: ["bo - x x bo - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 1, 3, 5, 8, 1, 3, 5, 8] },
-        { name: "Rock_Progressivo3", meter: "6/4", drumPattern: ["ba - - - ch - - bu cch - - - ch - - - bch - - - ch - - -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 3, 1, 1, 1, 3, 5, 5, 5, 1] },
-        { name: "Rock_Progressivo4", meter: "4/4", drumPattern: ["ba - ch bu cch - ch - bch - ch bu cch - ch bu"], bassRhythm: ["bo - - bo - - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 8] },
-        { name: "Rock_Progressivo5", meter: "7/4", drumPattern: ["ba - co - cco - co - bco - co bu cco - co bu bch bu co - cch - ch - bch - ch bu"], bassRhythm: ["bo - - bo bo - - - bo - - bo bo - - bo - - bo bo - - bo bo - - bo bo"], bassScale: [1, 3, 5, 8] },
-        { name: "Rock_Progressivo6", meter: "3/4", drumPattern: ["bch - - - ch - - bu cch - - -"], bassRhythm: ["bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 8, 8, 8]},
-        { name: "Rock_Progressivo7", meter: "4/4", drumPattern: ["bco co cch to1 cch - ch - bch - ch cch bu bu ch bu"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 1] },
-        { name: "Blues", meter: "4/4", drumPattern: ["bch - ch ch cch - ch ch bch - ch ch cch - ch ch"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 6, 8, 6, 5, 3] },
-        { name: "Blues2", meter: "4/4", drumPattern: ["bch - - - cch - - - bch - - - cch - - -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 6, 8, 6, 5, 3] },
-        { name: "Blues3", meter: "4/4", drumPattern: ["bch - - bu cch - ch - ch - - bu cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 6, 8, 6, 5, 3] },
-        { name: "Blues4", meter: "4/4", drumPattern: ["bch - - bu cch - ch - bch - - bu cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 6, 8, 6, 5, 3] },
-        { name: "Blues5", meter: "4/4", drumPattern: ["bch - - bu cch - ch - bch - - bu cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 6, 8, 6, 5, 3] },
-        { name: "Blues6", meter: "4/4", drumPattern: ["bch - - bu cch - ch - bch - - bu cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 6, 8, 6, 5, 3] },
-        { name: "Blues7", meter: "4/4", drumPattern: ["bch - - bu cch - ch - bch - - bu cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 6, 8, 6, 5, 3] },
-        { name: "Forró", meter: "2/4", drumPattern: ["bch - co - ch - ca -"], bassRhythm: ["bo - - - x - - -"], bassScale: [8, 1] },
-        { name: "Funk", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch -"], bassRhythm: ["bo - - - bo - bo x bo x bo x bo - x x"], bassScale: [1,8] },
-        { name: "Funk2", meter: "4/4", drumPattern: ["bch - - - cch - - - bch - - - cch - - -"], bassRhythm: ["bo bo bo bo bo x x x bo - x x bo - x x"], bassScale: [1,7,8,1] },
-        { name: "Disco", meter: "4/4", drumPattern: ["bu - ch ch bu - ch ch bu - ch ch bu - ch ch"], bassRhythm: ["bo - x x bo - x x bo - x x bo - x x"], bassScale: [1] },
-        { name: "Forró4", meter: "2/4", drumPattern: ["bch - co - ch - ca bu"], bassRhythm: ["bo - - - bo - - x"], bassScale: [8, 1] },
-        { name: "Metal", meter: "4/4", drumPattern: ["bch bu bch bu cch bu bch bu bch bu bch bu cch bu bch bu"], bassRhythm: ["bo bo bo bo bo bo bo bo bo bo bo bo bo bo bo bo"], guitarRhythm: ["ab ab ab ab so - - - ab - ab - so - - -"] },
-        { name: "Metal2", meter: "4/4", drumPattern: ["bch bu bch bu cch bu bch bu cch - ch bu cch bu bch bu"], bassRhythm: ["bo bo bo bo bo bo bo bo bo bo bo bo bo bo bo bo"], guitarRhythm: ["ab ab ab ab ab ab ab ab ab ab ab ab ab ab ab ab"] },
-        { name: "Metal3", meter: "4/4", drumPattern: ["bch bu bch - cch - ch - bch bu ch bu cch - ch -"], bassRhythm: ["bo bo bo - - - - - bo bo - bo - - - -"] },
-        { name: "Metal4", meter: "4/4", drumPattern: ["bch bu cch - bu bu cch - bu bu cch - bu bu cch -"], bassRhythm: ["bo bo bo - bo bo bo - bo bo bo - bo bo bo -"], guitarRhythm: ["ab - ab - so - - - ab - ab - so - - -"] },
-        { name: "Samba", meter: "2/4", drumPattern: ["bch - ch bu bch - ch bu"], bassRhythm: ["bo - x x bo - - x"], bassScale: [8, 5] },
-        { name: "Jazz", meter: "4/4", drumPattern: ["bch co co - co co co ca bch co co - bch co co cch"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: "chromatic" },
-    ];
-
-    /*
-      Mapa de qual PASTA usar para cada nota.
-    */
-    const pastaMap = {
-  // Pasta_1F (1E-20B)
-  "1E": "Pasta_1F", "2F": "Pasta_1F", "3FS": "Pasta_1F", "4G": "Pasta_1F", "5GS": "Pasta_1F",
-  "6A": "Pasta_1F", "7AS": "Pasta_1F", "8B": "Pasta_1F", "9C": "Pasta_1F", "10CS": "Pasta_1F",
-  "11D": "Pasta_1F", "12DS": "Pasta_1F", "13E": "Pasta_1F", "14F": "Pasta_1F", "15FS": "Pasta_1F",
-  "16G": "Pasta_1F", "17GS": "Pasta_1F", "18A": "Pasta_1F", "19AS": "Pasta_1F", "20B": "Pasta_1F",
-  
-  // Pasta_2F# (3F#-21C)
-  "3FS": "Pasta_2F#", "4G": "Pasta_2F#", "5GS": "Pasta_2F#", "6A": "Pasta_2F#", "8B": "Pasta_2F#",
-  "9C": "Pasta_2F#", "10CS": "Pasta_2F#", "11D": "Pasta_2F#", "13E": "Pasta_2F#", "14F": "Pasta_2F#",
-  "15FS": "Pasta_2F#", "16G": "Pasta_2F#", "18A": "Pasta_2F#", "19AS": "Pasta_2F#", "20B": "Pasta_2F#",
-  "21C": "Pasta_2F#",
-  
-  // Pasta_3G (4G-22C#)
-  "4G": "Pasta_3G", "5GS": "Pasta_3G", "6A": "Pasta_3G", "7AS": "Pasta_3G", "9C": "Pasta_3G",
-  "10CS": "Pasta_3G", "11D": "Pasta_3G", "12DS": "Pasta_3G", "14F": "Pasta_3G", "15FS": "Pasta_3G",
-  "16G": "Pasta_3G", "17GS": "Pasta_3G", "19AS": "Pasta_3G", "20B": "Pasta_3G", "21C": "Pasta_3G",
-  "22CS": "Pasta_3G",
-  
-  // Pasta_4G# (5G#-23D)
-  "5GS": "Pasta_4G#", "6A": "Pasta_4G#", "7AS": "Pasta_4G#", "8B": "Pasta_4G#", "10CS": "Pasta_4G#",
-  "11D": "Pasta_4G#", "12DS": "Pasta_4G#", "13E": "Pasta_4G#", "15FS": "Pasta_4G#", "16G": "Pasta_4G#",
-  "17GS": "Pasta_4G#", "18A": "Pasta_4G#", "20B": "Pasta_4G#", "21C": "Pasta_4G#", "22CS": "Pasta_4G#",
-  "23D": "Pasta_4G#",
-  
-  // Pasta_5A (6A-24D#)
-  "6A": "Pasta_5A", "7AS": "Pasta_5A", "8B": "Pasta_5A", "9C": "Pasta_5A", "11D": "Pasta_5A",
-  "12DS": "Pasta_5A", "13E": "Pasta_5A", "14F": "Pasta_5A", "16G": "Pasta_5A", "17GS": "Pasta_5A",
-  "18A": "Pasta_5A", "19AS": "Pasta_5A", "21C": "Pasta_5A", "22CS": "Pasta_5A", "23D": "Pasta_5A",
-  "24DS": "Pasta_5A",
-  
-  // Pasta_6A# (7A#-25E)
-  "7AS": "Pasta_6A#", "8B": "Pasta_6A#", "9C": "Pasta_6A#", "10CS": "Pasta_6A#", "12DS": "Pasta_6A#",
-  "13E": "Pasta_6A#", "14F": "Pasta_6A#", "15FS": "Pasta_6A#", "17GS": "Pasta_6A#", "18A": "Pasta_6A#",
-  "19AS": "Pasta_6A#", "20B": "Pasta_6A#", "22CS": "Pasta_6A#", "23D": "Pasta_6A#", "24DS": "Pasta_6A#",
-  "25E": "Pasta_6A#",
-  
-  // Pasta_7B (8B-26F)
-  "8B": "Pasta_7B", "9C": "Pasta_7B", "10CS": "Pasta_7B", "11D": "Pasta_7B", "13E": "Pasta_7B",
-  "14F": "Pasta_7B", "15FS": "Pasta_7B", "16G": "Pasta_7B", "18A": "Pasta_7B", "19AS": "Pasta_7B",
-  "20B": "Pasta_7B", "21C": "Pasta_7B", "23D": "Pasta_7B", "24DS": "Pasta_7B", "25E": "Pasta_7B",
-  "26F": "Pasta_7B",
-  
-  // Pasta_8C (9C-27F#)
-  "9C": "Pasta_8C", "10CS": "Pasta_8C", "11D": "Pasta_8C", "12DS": "Pasta_8C", "14F": "Pasta_8C",
-  "15FS": "Pasta_8C", "16G": "Pasta_8C", "17GS": "Pasta_8C", "19AS": "Pasta_8C", "20B": "Pasta_8C",
-  "21C": "Pasta_8C", "22CS": "Pasta_8C", "24DS": "Pasta_8C", "25E": "Pasta_8C", "26F": "Pasta_8C",
-  "27FS": "Pasta_8C",
-  
-  // Pasta_9C# (10C#-28G)
-  "10CS": "Pasta_9C#", "11D": "Pasta_9C#", "12DS": "Pasta_9C#", "13E": "Pasta_9C#", "15FS": "Pasta_9C#",
-  "16G": "Pasta_9C#", "17GS": "Pasta_9C#", "18A": "Pasta_9C#", "20B": "Pasta_9C#", "21C": "Pasta_9C#",
-  "22CS": "Pasta_9C#", "23D": "Pasta_9C#", "25E": "Pasta_9C#", "26F": "Pasta_9C#", "27FS": "Pasta_9C#",
-  "28G": "Pasta_9C#",
-  
-  // Pasta_10D (11D-29G#)
-  "11D": "Pasta_10D", "12DS": "Pasta_10D", "13E": "Pasta_10D", "14F": "Pasta_10D", "16G": "Pasta_10D",
-  "17GS": "Pasta_10D", "18A": "Pasta_10D", "19AS": "Pasta_10D", "21C": "Pasta_10D", "22CS": "Pasta_10D",
-  "23D": "Pasta_10D", "24DS": "Pasta_10D", "26F": "Pasta_10D", "27FS": "Pasta_10D", "28G": "Pasta_10D",
-  "29GS": "Pasta_10D",
-  
-  // Pasta_11D# (12D#-30A)
-  "12DS": "Pasta_11D#", "13E": "Pasta_11D#", "14F": "Pasta_11D#", "15FS": "Pasta_11D#", "17GS": "Pasta_11D#",
-  "18A": "Pasta_11D#", "19AS": "Pasta_11D#", "20B": "Pasta_11D#", "22CS": "Pasta_11D#", "23D": "Pasta_11D#",
-  "24DS": "Pasta_11D#", "25E": "Pasta_11D#", "27FS": "Pasta_11D#", "28G": "Pasta_11D#", "29GS": "Pasta_11D#",
-  "30A": "Pasta_11D#",
-  
-  // Pasta_12E (13E-31B)
-  "13E": "Pasta_12E", "14F": "Pasta_12E", "15FS": "Pasta_12E", "16G": "Pasta_12E", "18A": "Pasta_12E",
-  "19AS": "Pasta_12E", "20B": "Pasta_12E", "21C": "Pasta_12E", "23D": "Pasta_12E", "24DS": "Pasta_12E",
-  "25E": "Pasta_12E", "26F": "Pasta_12E", "28G": "Pasta_12E", "29GS": "Pasta_12E", "30A": "Pasta_12E",
-  "31B": "Pasta_12E",
-  
-  // Pasta_13F (14F-32B)
-  "14F": "Pasta_13F", "15FS": "Pasta_13F", "16G": "Pasta_13F", "17GS": "Pasta_13F", "19AS": "Pasta_13F",
-  "20B": "Pasta_13F", "21C": "Pasta_13F", "22CS": "Pasta_13F", "24DS": "Pasta_13F", "25E": "Pasta_13F",
-  "26F": "Pasta_13F", "27FS": "Pasta_13F", "29GS": "Pasta_13F", "30A": "Pasta_13F", "31AS": "Pasta_13F",
-  "32B": "Pasta_13F",
-  
-  // Pasta_14F# (15F#-33C)
-  "15FS": "Pasta_14F#", "16G": "Pasta_14F#", "17GS": "Pasta_14F#", "18A": "Pasta_14F#", "20B": "Pasta_14F#",
-  "21C": "Pasta_14F#", "22CS": "Pasta_14F#", "23D": "Pasta_14F#", "25E": "Pasta_14F#", "26F": "Pasta_14F#",
-  "27FS": "Pasta_14F#", "28G": "Pasta_14F#", "30A": "Pasta_14F#", "31AS": "Pasta_14F#", "32B": "Pasta_14F#",
-  "33C": "Pasta_14F#",
-  
-  // Pasta_15G (16G-34C#)
-  "16G": "Pasta_15G", "17GS": "Pasta_15G", "18A": "Pasta_15G", "19AS": "Pasta_15G", "21C": "Pasta_15G",
-  "22CS": "Pasta_15G", "23D": "Pasta_15G", "24DS": "Pasta_15G", "26F": "Pasta_15G", "27FS": "Pasta_15G",
-  "28G": "Pasta_15G", "29GS": "Pasta_15G", "31AS": "Pasta_15G", "32B": "Pasta_15G", "33C": "Pasta_15G",
-  "34CS": "Pasta_15G",
-  
-  // Pasta_16G# (17G#-35D)
-  "17GS": "Pasta_16G#", "18A": "Pasta_16G#", "19AS": "Pasta_16G#", "20B": "Pasta_16G#", "22CS": "Pasta_16G#",
-  "23D": "Pasta_16G#", "24DS": "Pasta_16G#", "25E": "Pasta_16G#", "27FS": "Pasta_16G#", "28G": "Pasta_16G#",
-  "29GS": "Pasta_16G#", "30A": "Pasta_16G#", "32B": "Pasta_16G#", "33C": "Pasta_16G#", "34CS": "Pasta_16G#",
-  "35D": "Pasta_16G#",
-  
-  // Pasta_17A (18A-36D#)
-  "18A": "Pasta_17A", "19AS": "Pasta_17A", "20B": "Pasta_17A", "21C": "Pasta_17A", "23D": "Pasta_17A",
-  "24DS": "Pasta_17A", "25E": "Pasta_17A", "26F": "Pasta_17A", "28G": "Pasta_17A", "29GS": "Pasta_17A",
-  "30A": "Pasta_17A", "31AS": "Pasta_17A", "33C": "Pasta_17A", "34CS": "Pasta_17A", "35D": "Pasta_17A",
-  "36DS": "Pasta_17A",
-  
-  // Pasta_18A# (19A#-37E)
-  "19AS": "Pasta_18A#", "20B": "Pasta_18A#", "21C": "Pasta_18A#", "22CS": "Pasta_18A#", "24DS": "Pasta_18A#",
-  "25E": "Pasta_18A#", "26F": "Pasta_18A#", "27FS": "Pasta_18A#", "29GS": "Pasta_18A#", "30A": "Pasta_18A#",
-  "31AS": "Pasta_18A#", "32B": "Pasta_18A#", "34CS": "Pasta_18A#", "35D": "Pasta_18A#", "36DS": "Pasta_18A#",
-  "37E": "Pasta_18A#",
-  
-  // Pasta_19B (20B-38F)
-  "20B": "Pasta_19B", "21C": "Pasta_19B", "22CS": "Pasta_19B", "23D": "Pasta_19B", "25E": "Pasta_19B",
-  "26F": "Pasta_19B", "27FS": "Pasta_19B", "28G": "Pasta_19B", "30A": "Pasta_19B", "31AS": "Pasta_19B",
-  "32B": "Pasta_19B", "33C": "Pasta_19B", "35D": "Pasta_19B", "36DS": "Pasta_19B", "37E": "Pasta_19B",
-  "38F": "Pasta_19B",
-  
-  // Pasta_20C (21C-39F#)
-  "21C": "Pasta_20C", "22CS": "Pasta_20C", "23D": "Pasta_20C", "24DS": "Pasta_20C", "26F": "Pasta_20C",
-  "27FS": "Pasta_20C", "28G": "Pasta_20C", "29GS": "Pasta_20C", "31AS": "Pasta_20C", "32B": "Pasta_20C",
-  "33C": "Pasta_20C", "34CS": "Pasta_20C", "36DS": "Pasta_20C", "37E": "Pasta_20C", "38F": "Pasta_20C",
-  "39FS": "Pasta_20C",
-  
-  // Pasta_21C# (22C#-40G)
-  "22CS": "Pasta_21C#", "23D": "Pasta_21C#", "24DS": "Pasta_21C#", "25E": "Pasta_21C#", "27FS": "Pasta_21C#",
-  "28G": "Pasta_21C#", "29GS": "Pasta_21C#", "30A": "Pasta_21C#", "32B": "Pasta_21C#", "33C": "Pasta_21C#",
-  "34CS": "Pasta_21C#", "35D": "Pasta_21C#", "37E": "Pasta_21C#", "38F": "Pasta_21C#", "39FS": "Pasta_21C#",
-  "40G": "Pasta_21C#",
-  
-  // Pasta_22D (23D-41G#)
-  "23D": "Pasta_22D", "24DS": "Pasta_22D", "25E": "Pasta_22D", "26F": "Pasta_22D", "28G": "Pasta_22D",
-  "29GS": "Pasta_22D", "30A": "Pasta_22D", "31AS": "Pasta_22D", "33C": "Pasta_22D", "34CS": "Pasta_22D",
-  "35D": "Pasta_22D", "36DS": "Pasta_22D", "38F": "Pasta_22D", "39FS": "Pasta_22D", "40G": "Pasta_22D",
-  "41GS": "Pasta_22D",
-  
-  // Pasta_23D# (24D#-42A)
-  "24DS": "Pasta_23D#", "25E": "Pasta_23D#", "26F": "Pasta_23D#", "27FS": "Pasta_23D#", "29GS": "Pasta_23D#",
-  "30A": "Pasta_23D#", "31AS": "Pasta_23D#", "32B": "Pasta_23D#", "34CS": "Pasta_23D#", "35D": "Pasta_23D#",
-  "36DS": "Pasta_23D#", "37E": "Pasta_23D#", "39FS": "Pasta_23D#", "40G": "Pasta_23D#", "41GS": "Pasta_23D#",
-  "42A": "Pasta_23D#",
-  
-  // Pasta_24E (25E-43A#)
-  "25E": "Pasta_24E", "26F": "Pasta_24E", "27FS": "Pasta_24E", "28G": "Pasta_24E", "30A": "Pasta_24E",
-  "31AS": "Pasta_24E", "32B": "Pasta_24E", "33C": "Pasta_24E", "35D": "Pasta_24E", "36DS": "Pasta_24E",
-  "37E": "Pasta_24E", "38F": "Pasta_24E", "40G": "Pasta_24E", "41GS": "Pasta_24E", "42A": "Pasta_24E",
-  "43AS": "Pasta_24E"
-};
-
-    /* ============================
-       SISTEMA DE POSICIONAMENTO (TEMPORÁRIO)
-       ============================ */
-       
-
-    const posicionamentoInicial = {
-      pernasLayer: { left: 130, top: 233 },
-      antebracoLayer: { left: 74, top: 87 },
-      troncoLayer: { left: 60, top: 40 },
-      bracoLayer: { left: 74, top: 150 },
-      cabecaLayer: { left: 125, top: -61 },
-      cabecaTrasLayer: { left: 83, top: -10 }
+    /* CORRIGIDO: MAPA USA S, NÃO # */
+    const folderMapByNumber = {
+      1: "Pasta_1F", 2: "Pasta_1F", 3: "Pasta_1F", 4: "Pasta_1F", 5: "Pasta_1F",
+      6: "Pasta_1F", 7: "Pasta_1F", 8: "Pasta_1F", 9: "Pasta_1F", 10: "Pasta_1F",
+      11: "Pasta_1F", 12: "Pasta_1F", 13: "Pasta_1F", 14: "Pasta_1F", 15: "Pasta_1F",
+      16: "Pasta_1F", 17: "Pasta_1F", 18: "Pasta_1F", 19: "Pasta_1F", 20: "Pasta_1F",
+      21: "Pasta_2FS", 22: "Pasta_2FS", 23: "Pasta_2FS", 24: "Pasta_2FS", 25: "Pasta_2FS",
+      26: "Pasta_2FS", 27: "Pasta_3G", 28: "Pasta_3G", 29: "Pasta_3G", 30: "Pasta_3G",
+      31: "Pasta_3G", 32: "Pasta_3G", 33: "Pasta_4GS", 34: "Pasta_4GS", 35: "Pasta_4GS",
+      36: "Pasta_4GS", 37: "Pasta_4GS", 38: "Pasta_4GS", 39: "Pasta_4GS", 40: "Pasta_4GS",
+      41: "Pasta_4GS", 42: "Pasta_4GS", 43: "Pasta_4GS", 44: "Pasta_4GS", 45: "Pasta_4GS",
+      46: "Pasta_4GS", 47: "Pasta_4GS", 48: "Pasta_4GS", 49: "Pasta_4GS"
     };
 
-    let posicionamentoAtual = JSON.parse(JSON.stringify(posicionamentoInicial));
-
-    function inicializarControlesPosicionamento() {
-      const container = document.getElementById('posicionamentoControls');
-      container.innerHTML = '';
-
-      Object.keys(posicionamentoAtual).forEach(layerId => {
-        const layer = document.getElementById(layerId);
-        if (!layer) return;
-
-        const controlDiv = document.createElement('div');
-        controlDiv.className = 'layer-control';
-        
-        const coords = posicionamentoAtual[layerId];
-        
-        controlDiv.innerHTML = `
-          <div class="layer-label">${layerId}</div>
-          <div class="coord-inputs">
-            <div class="coord-input">
-              <label>X:</label>
-              <input type="number" id="${layerId}_left" value="${coords.left}" step="1">
-            </div>
-            <div class="coord-input">
-              <label>Y:</label>
-              <input type="number" id="${layerId}_top" value="${coords.top}" step="1">
-            </div>
-          </div>
-          <div class="pos-buttons">
-            <button class="pos-btn" onclick="aplicarPosicao('${layerId}')">Aplicar</button>
-            <button class="pos-btn" onclick="moverLayer('${layerId}', 0, -1)">↑</button>
-            <button class="pos-btn" onclick="moverLayer('${layerId}', 0, 1)">↓</button>
-            <button class="pos-btn" onclick="moverLayer('${layerId}', -1, 0)">←</button>
-            <button class="pos-btn" onclick="moverLayer('${layerId}', 1, 0)">→</button>
-          </div>
-        `;
-
-        // Adicionar event listeners para inputs
-        const leftInput = controlDiv.querySelector(`#${layerId}_left`);
-        const topInput = controlDiv.querySelector(`#${layerId}_top`);
-        
-        leftInput.addEventListener('change', () => aplicarPosicao(layerId));
-        topInput.addEventListener('change', () => aplicarPosicao(layerId));
-
-        container.appendChild(controlDiv);
-      });
-    }
-
-    function aplicarPosicao(layerId) {
-      const leftInput = document.getElementById(`${layerId}_left`);
-      const topInput = document.getElementById(`${layerId}_top`);
-      const layer = document.getElementById(layerId);
-
-      if (leftInput && topInput && layer) {
-        const left = parseInt(leftInput.value);
-        const top = parseInt(topInput.value);
-        
-        posicionamentoAtual[layerId] = { left, top };
-        layer.style.left = left + 'px';
-        layer.style.top = top + 'px';
-        
-        atualizarDebugInfo();
-      }
-    }
-
-    function moverLayer(layerId, deltaX, deltaY) {
-      const coords = posicionamentoAtual[layerId];
-      if (coords) {
-        coords.left += deltaX;
-        coords.top += deltaY;
-        
-        // Atualizar inputs
-        const leftInput = document.getElementById(`${layerId}_left`);
-        const topInput = document.getElementById(`${layerId}_top`);
-        if (leftInput) leftInput.value = coords.left;
-        if (topInput) topInput.value = coords.top;
-        
-        aplicarPosicao(layerId);
-      }
-    }
-
-    function copiarCoordenadasParaCSS() {
-      let css = '';
-      Object.keys(posicionamentoAtual).forEach(layerId => {
-        const coords = posicionamentoAtual[layerId];
-        css += `#${layerId} { left: ${coords.left}px; top: ${coords.top}px; }\n`;
-      });
-      
-      // Copiar para área de transferência
-      navigator.clipboard.writeText(css).then(() => {
-        alert('CSS copiado para a área de transferência!');
-        console.log('CSS para copiar:\n' + css);
-      }).catch(err => {
-        console.error('Erro ao copiar:', err);
-        alert('Erro ao copiar. Verifique o console.');
-      });
-    }
-
-    function resetarPosicionamento() {
-      posicionamentoAtual = JSON.parse(JSON.stringify(posicionamentoInicial));
-      Object.keys(posicionamentoAtual).forEach(layerId => {
-        const layer = document.getElementById(layerId);
-        const coords = posicionamentoAtual[layerId];
-        if (layer) {
-          layer.style.left = coords.left + 'px';
-          layer.style.top = coords.top + 'px';
-        }
-      });
-      inicializarControlesPosicionamento();
-      atualizarDebugInfo();
-    }
-
-    function atualizarDebugInfo() {
-      const debugDiv = document.getElementById('debugCoords');
-      if (debugDiv) {
-        let info = 'Coordenadas atuais:\n';
-        Object.keys(posicionamentoAtual).forEach(layerId => {
-          const coords = posicionamentoAtual[layerId];
-          info += `${layerId}: ${coords.left}px, ${coords.top}px\n`;
-        });
-        debugDiv.textContent = info;
-      }
-    }
-
-    /* ============================
-       FUNÇÕES PRINCIPAIS CORRIGIDAS
-       ============================ */
-    
-    // FUNÇÃO CORRIGIDA: Converte # para S para compatibilidade com arquivos
-    function converterNotaParaS(nota) {
+    // ================= FUNÇÕES DE CONVERSÃO =================
+    function notaToFilename(nota) {
       return nota.replace(/#/g, "S");
-    }
-    
-    // FUNÇÃO CORRIGIDA: Converte S para # para exibição
-    function converterNotaParaExibicao(nota) {
-      return nota.replace(/S/g, "#");
     }
 
     function getPastaDaNota(nota) {
-      const notaConvertida = converterNotaParaS(nota);
-      return pastaMap[notaConvertida] || "Pasta_1F";
+      if (nota === "x") return "Pasta_1F";
+      const notaCorrigida = notaToFilename(nota);
+      const numero = parseInt(notaCorrigida, 10);
+      return folderMapByNumber[numero] || "Pasta_1F";
     }
 
     function getCordaDaNota(nota) {
       if (!nota || nota === "x") return "E";
-      
-      const n = parseInt(nota, 10);
-      if (isNaN(n)) return "E";
-      
-      if (n <= 20) return "E";    // 1E-20B
-      if (n <= 26) return "A";    // 21C-26F  
-      if (n <= 32) return "D";    // 27FS-32B
-      return "G";                 // 33C-49E
+      const num = parseInt(notaToFilename(nota), 10);
+      if (isNaN(num)) return "E";
+      if (num <= 20) return "E";
+      if (num <= 26) return "A";
+      if (num <= 32) return "D";
+      return "G";
     }
 
     function trocarFrameTronco(nota) {
-      if (nota === "x") return; // Não trocar frame para pausa
-      
-      let pasta = getPastaDaNota(nota);
+      if (nota === "x") return;
+      const notaCorrigida = notaToFilename(nota);
+      const pasta = getPastaDaNota(nota);
       const tronco = document.getElementById("troncoLayer");
-      
-      // CORREÇÃO: Converte nota para formato correto (com S)
-      const notaArquivo = converterNotaParaS(nota);
-      
-      // CORREÇÃO: Se a pasta tem # no nome, usar encodeURIComponent
-      // Isso preserva o # no URL
-      if (pasta.includes('#')) {
-        pasta = encodeURIComponent(pasta);
-      }
-      
-      tronco.src = `animacao/tronco_baixo/${pasta}/${notaArquivo}.png`;
-      
-      console.log("Trocando frame tronco:", {
-        nota: nota,
-        pasta: pasta,
-        arquivo: notaArquivo + '.png',
-        caminho: `animacao/tronco_baixo/${pasta}/${notaArquivo}.png`
-      });
+      tronco.src = `animacao/tronco_baixo/${pasta}/${notaCorrigida}.png`;
     }
 
     function tocarNotaAudioBaixo(nota, volume) {
       pararAudioBaixo();
-      
-      if (nota === "x") return; // Não tocar áudio para pausa
-      
-      // CORRETO: Converter nota para formato de arquivo correto (ex: "10C#" → "10CS")
-      const notaArquivo = converterNotaParaS(nota);
-      const a = new Audio("assets/BaixoMelodia/" + notaArquivo + ".mp3");
+      if (nota === "x") return;
+      const notaCorrigida = notaToFilename(nota);
+      const a = new Audio("assets/BaixoMelodia/" + notaCorrigida + ".mp3");
       a.volume = volume;
-      
       const stepTime = (60000 / bpmAtual) / 4;
       const fadeOutTime = stepTime * 0.8;
-      
       a.play().catch(e => console.log("Erro ao tocar áudio:", e));
       audioBaixoAtual = a;
-      
       audioBaixoTimer = setTimeout(() => {
         if (audioBaixoAtual === a) {
           const fadeDuration = 50;
           const initialVolume = a.volume;
           const step = initialVolume / (fadeDuration / 10);
           let currentVolume = initialVolume;
-          
           const fadeInterval = setInterval(() => {
             currentVolume -= step;
             if (currentVolume <= 0) {
               a.pause();
               clearInterval(fadeInterval);
-              if (audioBaixoAtual === a) {
-                audioBaixoAtual = null;
-              }
+              if (audioBaixoAtual === a) audioBaixoAtual = null;
             } else {
               a.volume = currentVolume;
             }
@@ -1112,15 +537,11 @@
       }, fadeOutTime);
     }
 
-    /* ============================
-       ANIMAÇÃO CABEÇA – FRAMES
-       ============================ */
+    // ================= ANIMAÇÕES =================
     function generateHeadFramePaths() {
       const paths = [];
-      // arquivos: cabeca0001.png ... cabeca0100.png
       for (let i = 1; i <= HEAD_TOTAL_FRAMES; i++) {
         const num = String(i).padStart(4, "0");
-        // caminho relativo ao Animacao.html
         paths.push(`animacao/cabeca/cabeca${num}.png`);
       }
       return paths;
@@ -1144,26 +565,20 @@
       headTimer = setInterval(() => {
         headFrameIndex = (headFrameIndex + 1) % headFrames.length;
         cabeca.src = headFrames[headFrameIndex];
-      }, 50); // velocidade interna da cabeça
+      }, 50);
     }
 
-    /* ============================
-       ANIMAÇÃO – TRONCO BALANÇANDO (no BPM)
-       ============================ */
     function startTroncoBpm(bpm) {
       if (troncoTimer) clearInterval(troncoTimer);
       const tronco = document.getElementById("troncoLayer");
       let direction = 1;
       troncoTimer = setInterval(() => {
-        const angle = direction * 3; // 3 graus pra cada lado
+        const angle = direction * 3;
         tronco.style.transform = `rotate(${angle}deg)`;
         direction *= -1;
-      }, (60000 / bpm) / 2); // colcheia
+      }, (60000 / bpm) / 2);
     }
 
-    /* ============================
-       ANIMAÇÃO – CABEÇA BALANÇANDO NO BPM
-       ============================ */
     function startHeadTiltBpm(bpm) {
       if (tiltTimer) clearInterval(tiltTimer);
       const cabeca = document.getElementById("cabecaLayer");
@@ -1172,24 +587,35 @@
       tiltTimer = setInterval(() => {
         const angle = dir * 5;
         cabeca.style.transform = `rotate(${angle}deg)`;
-        if (cabecaTras) {
-          cabecaTras.style.transform = `rotate(${angle}deg)`;
-        }
+        if (cabecaTras) cabecaTras.style.transform = `rotate(${angle}deg)`;
         dir *= -1;
-      }, 60000 / bpm); // um "vai e volta" por tempo (semínima)
+      }, 60000 / bpm);
     }
 
-    /* ============================
-       ANIMAÇÃO – ANTEBRAÇO DIREITO
-       ============================ */
+    function startLateralMovement() {
+      if (lateralMovementTimer) clearInterval(lateralMovementTimer);
+      const layersToMove = [
+        'antebracoLayer', 'troncoLayer', 'bracoLayer',
+        'cabecaLayer', 'cabecaTrasLayer'
+      ];
+      let direction = 1;
+      let position = 0;
+      const maxOffset = 10;
+      lateralMovementTimer = setInterval(() => {
+        position += direction;
+        if (Math.abs(position) >= maxOffset) direction *= -1;
+        layersToMove.forEach(layerId => {
+          const layer = document.getElementById(layerId);
+          if (layer) layer.style.transform = `translateX(${position}px)`;
+        });
+      }, 100);
+    }
+
     function trocarAntebraco(corda) {
       const ante = document.getElementById("antebracoLayer");
       ante.src = `animacao/antebraco/antebraco${corda}.png`;
     }
 
-    /* ============================
-       ANIMAÇÃO – BRAÇO DIREITO (5 FRAMES) - CORRIGIDA
-       ============================ */
     function animarBracoDireito(corda, duracaoMs) {
       const braco = document.getElementById("bracoLayer");
       const frames = [
@@ -1199,21 +625,17 @@
         `animacao/braco_direito/Corda_${corda}4.png`,
         `animacao/braco_direito/Corda_${corda}5.png`
       ];
-      
       const passo = duracaoMs / frames.length;
       let i = 0;
-      
       const id = setInterval(() => {
         if (i >= frames.length) {
           clearInterval(id);
-          // Voltar para frame inicial
-          braco.src = `animacao/braco_direito/Corda_${corda}1.png`;
+          braco.src = frames[0];
           return;
         }
         braco.src = frames[i];
         i++;
       }, passo);
-
       animTimers.push(id);
     }
 
@@ -1222,11 +644,9 @@
       animTimers = [];
     }
 
-    /* ===== SISTEMA DE MUTE PARA BAIXO ===== */
     function pararAudioBaixo() {
       if (audioBaixoAtual) {
         audioBaixoAtual.pause();
-        audioBaixoAtual.currentTime = 0;
         audioBaixoAtual = null;
       }
       if (audioBaixoTimer) {
@@ -1239,22 +659,19 @@
       drumLines.forEach(line => {
         const seq = bateriaSeq[line.id];
         if (!seq || step >= seq.length) return;
-        const val = seq[step];
-        if (val === line.id) {
+        if (seq[step] === line.id) {
           const a = new Audio("assets/" + line.file);
           a.volume = volume;
-          a.play().catch(e => console.log("Erro ao tocar bateria:", e));
+          a.play().catch(e => console.log("Erro:", e));
         }
       });
     }
 
     function tocarNotaComAnimacao(nota, duracaoMs, volume) {
       if (nota === "x") {
-        // Se for pausa, para o áudio do baixo
         pararAudioBaixo();
         return;
       }
-      
       tocarNotaAudioBaixo(nota, volume);
       trocarFrameTronco(nota);
       const corda = getCordaDaNota(nota);
@@ -1262,7 +679,53 @@
       animarBracoDireito(corda, duracaoMs);
     }
 
-    /* ===== FUNÇÕES DO PRIMEIRO ARQUIVO ADAPTADAS ===== */
+    // ================= MODOS DE AJUSTE VISUAL =================
+    function ativarModoAjuste() {
+      const containers = ['pernasLayer', 'antebracoLayer', 'troncoLayer', 'bracoLayer', 'cabecaLayer', 'cabecaTrasLayer'];
+      containers.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        let isDragging = false;
+        let startX, startY;
+
+        el.style.cursor = 'move';
+        el.onmousedown = (e) => {
+          isDragging = true;
+          const rect = el.getBoundingClientRect();
+          startX = e.clientX - rect.left;
+          startY = e.clientY - rect.top;
+          e.preventDefault();
+        };
+
+        document.onmousemove = (e) => {
+          if (!isDragging) return;
+          const containerRect = document.getElementById('animacaoContainer').getBoundingClientRect();
+          const x = e.clientX - containerRect.left - startX;
+          const y = e.clientY - containerRect.top - startY;
+          el.style.left = Math.round(x) + 'px';
+          el.style.top = Math.round(y) + 'px';
+        };
+
+        document.onmouseup = () => {
+          isDragging = false;
+        };
+      });
+    }
+
+    function gerarCSSAjustado() {
+      const containers = ['pernasLayer', 'antebracoLayer', 'troncoLayer', 'bracoLayer', 'cabecaLayer', 'cabecaTrasLayer'];
+      let css = "/* --- POSIÇÕES AJUSTADAS --- */\n";
+      containers.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const left = parseInt(el.style.left) || 0;
+        const top = parseInt(el.style.top) || 0;
+        css += `#${id} { left: ${left}px; top: ${top}px; }\n`;
+      });
+      return css;
+    }
+
+    // ================= FUNÇÕES ORIGINAIS (mantidas) =================
     function expandRhythm(patternArray, totalSteps) {
       const joined = patternArray.join(' ').replace(/\s+/g, ' ').trim();
       const tokens = joined.split(/\s+/).filter(t => t);
@@ -1293,12 +756,8 @@
       return Number(meter.split('/')[0]) || 4;
     }
 
-    /* ===== SISTEMA DE PLAYBACK ALEATÓRIO ===== */
     async function gerarPlaybackAleatorio() {
-      // Escolhe um groove aleatório
       const groove = ALL_GROOVES[Math.floor(Math.random() * ALL_GROOVES.length)];
-      
-      // Escolhe uma progressão de acordes baseada no estilo
       const grooveName = groove.name;
       let styleKey = "Rock";
       if (grooveName.includes("Samba")) styleKey = "Samba";
@@ -1306,32 +765,26 @@
       else if (grooveName.includes("Forró")) styleKey = "Forró";
       else if (grooveName.includes("Metal")) styleKey = "Metal";
       else if (grooveName.includes("Blues")) styleKey = "Blues";
-      
       const progressions = STYLE_PROGRESSIONS[styleKey] || STYLE_PROGRESSIONS.Rock;
       let availableProgressions = progressions.filter(prog => !prog.includes(7));
       if (availableProgressions.length === 0) {
-        availableProgressions = progressions; // fallback
+        availableProgressions = progressions;
       }
-      
       const chordProgression = availableProgressions[Math.floor(Math.random() * availableProgressions.length)];
       const totalBars = Math.min(chordProgression.length, 64);
       const beats = meterToBeats(groove.meter);
       const sixteenthsPerBar = beats * 4;
       const totalSteps = sixteenthsPerBar * totalBars;
-      
-      // Gera sequência de baixo
+
       const rhythm = expandRhythm(groove.bassRhythm, totalSteps);
       const bassPlan = [];
-      
-      // Escolhe uma tonalidade aleatória
       const keyIdx = Math.floor(Math.random() * PITCHES.length);
       const key = PITCHES[keyIdx];
-      
-      // Função para obter notas do baixo da escala
+
       function getBassNotesFromScale(degree, scale, chordType) {
         let isMinor = false;
         if ([1, 4, 5].includes(degree)) {
-          isMinor = (Math.random() > 0.5); // aleatório para exemplo
+          isMinor = (Math.random() > 0.5);
         } else {
           isMinor = (
             chordType.startsWith('m') ||
@@ -1339,7 +792,6 @@
             ['5+', '75+', '95+'].includes(chordType)
           );
         }
-
         if (scale === "chromatic") {
           const rootIdx = (keyIdx + DEGREE_TO_ROOT[degree]) % 12;
           const rootNote = PITCHES[rootIdx];
@@ -1350,7 +802,6 @@
             return p.endsWith('S') ? `${p.replace('S', '')}${octave}S` : `${p}${octave}`;
           });
         }
-
         if (Array.isArray(scale)) {
           const rootIdx = (keyIdx + DEGREE_TO_ROOT[degree]) % 12;
           return scale.map(interval => {
@@ -1372,18 +823,15 @@
             }
           });
         }
-
         return [PITCHES[(keyIdx + DEGREE_TO_ROOT[degree]) % 12]];
       }
 
-      // Gera as notas do baixo
       for (let bar = 0; bar < totalBars; bar++) {
         const degree = chordProgression[bar];
         const bassNotes = getBassNotesFromScale(degree, groove.bassScale, '');
         const stepsInBar = sixteenthsPerBar;
         const notesPerBar = Math.ceil(stepsInBar / bassNotes.length);
         const fullBassNotes = Array(stepsInBar).fill().map((_, i) => bassNotes[Math.floor(i / notesPerBar)] || bassNotes[0]);
-        
         for (let stepInBar = 0; stepInBar < stepsInBar; stepInBar++) {
           const step = bar * stepsInBar + stepInBar;
           const sym = rhythm[step] || '-';
@@ -1395,19 +843,12 @@
         }
       }
 
-      // Filtra apenas as notas válidas (remove '-' e mantém 'x' e notas)
       const filteredBassPlan = bassPlan.filter(note => note !== '-');
-      
-      // Converte para o formato usado na animação
       const formattedBassSeq = filteredBassPlan.map(note => {
         if (note === 'x') return 'x';
-        
-        // Converte nota do formato do primeiro arquivo para o formato da animação
-        // Exemplo: "A8" -> "18A", "AS8" -> "19AS"
         const noteName = note.replace(/8/g, '');
         const noteIndex = PITCHES.indexOf(noteName);
         if (noteIndex !== -1) {
-          // Encontra a nota correspondente na lista de notas válidas
           const matchingNote = notasValidas.find(n => {
             const num = parseInt(n, 10);
             const notePart = n.substring(String(num).length);
@@ -1418,7 +859,6 @@
         return 'x';
       });
 
-      // Gera sequência de bateria
       const drumParsed = parsePattern(groove.drumPattern.join(' '));
       const drumSeq = [...drumParsed.intro, ...drumParsed.loop];
       const drumExpanded = [];
@@ -1428,12 +868,10 @@
           drumExpanded.push(t);
         }
       }
-      
-      // Converte para o formato usado na animação
+
       const formattedDrumSeq = {};
       drumLines.forEach(line => {
         formattedDrumSeq[line.id] = drumExpanded.slice(0, formattedBassSeq.length).map(token => {
-          // Mapeia tokens do primeiro arquivo para IDs do segundo
           if (token === line.id) return line.id;
           if (['bu', 'bumbo'].includes(token) && line.id === 'bumbo') return 'bumbo';
           if (['ca', 'caixa'].includes(token) && line.id === 'caixa') return 'caixa';
@@ -1451,18 +889,10 @@
       };
     }
 
-    /* ===== SISTEMA DE PLAYBACK CORRIGIDO ===== */
-    
-    // --- REPRODUZ UM PASSO ---
     function tocarPasso(passo) {
-        // Tocar nota do baixo
         const nota = (passo < baixoSeq.length) ? baixoSeq[passo] : "x";
         tocarNotaComAnimacao(nota, (60000 / bpmAtual) / 4, baixoVolumeGlobal);
-        
-        // Tocar bateria
         tocarBateriaNoStep(passo, bateriaVolumeGlobal);
-        
-        // Atualizar barra de progresso
         const totalSteps = Math.max(
             baixoSeq.length,
             ...(drumLines.map(line => bateriaSeq[line.id].length))
@@ -1470,48 +900,34 @@
         atualizarBarraProgresso((passo / totalSteps) * 100);
     }
 
-    // --- INICIA PLAYBACK ---
     function iniciarPlayback() {
         if (isPlaying) return;
-
         isPlaying = true;
         atualPasso = 0;
-
-        const stepTime = (60000 / bpmAtual) / 4; // 1/16
-
+        const stepTime = (60000 / bpmAtual) / 4;
         playbackInterval = setInterval(() => {
             tocarPasso(atualPasso);
             atualPasso++;
-
             const totalSteps = Math.max(
                 baixoSeq.length,
                 ...(drumLines.map(line => bateriaSeq[line.id].length))
             );
-
             if (atualPasso >= totalSteps) {
-                atualPasso = 0; // loop continuo
+                atualPasso = 0;
             }
         }, stepTime);
-
         document.getElementById("playBtn").innerText = "⏸ Pause";
     }
 
-    // --- PAUSA PLAYBACK ---
     function pararPlayback() {
         if (!isPlaying) return;
-
         isPlaying = false;
-
         clearInterval(playbackInterval);
         playbackInterval = null;
-        
-        // Para o áudio do baixo também
         pararAudioBaixo();
-
         document.getElementById("playBtn").innerText = "▶ Play";
     }
 
-    // --- BOTÃO PLAY/PAUSE ---
     function togglePlay() {
         if (!isPlaying) {
             iniciarPlayback();
@@ -1520,17 +936,11 @@
         }
     }
 
-    /* ===== PAINEL LATERAL – SELEÇÃO DE NOTAS / PEÇAS ===== */
     const selectionOverlay = document.getElementById("selectionOverlay");
     const selectionTitle   = document.getElementById("selectionTitle");
     const selectionOptions = document.getElementById("selectionOptions");
-
     const painelSelecao = {
-      tipo: null,     // "baixo" ou "drum"
-      seqRef: null,   // referência ao array (baixoSeq ou array de uma linha da bateria)
-      idx: null,      // índice na sequência
-      cell: null,     // elemento .cell clicado
-      drumLine: null  // se for drum, referência à linha
+      tipo: null, seqRef: null, idx: null, cell: null, drumLine: null
     };
 
     function abrirPainelSelecaoBaixo(seqRef, idx, cellEl) {
@@ -1539,29 +949,23 @@
       painelSelecao.idx = idx;
       painelSelecao.cell = cellEl;
       painelSelecao.drumLine = null;
-
       const valorAtual = seqRef[idx];
       const opcoes = ["x", ...notasValidas];
-
       selectionTitle.textContent = "Selecione a nota do baixo";
       selectionOptions.innerHTML = "";
-
       opcoes.forEach(opt => {
         const div = document.createElement("div");
         div.className = "selection-option";
         let label = opt;
-
         if (opt === "x") {
           div.classList.add("x-option");
           label = "X";
         } else {
-          label = converterNotaParaExibicao(opt);
+          label = opt.replace(/S/g,"#");
         }
-
         if (opt === valorAtual) {
           div.classList.add("active");
         }
-
         div.textContent = label;
         div.onclick = () => {
           painelSelecao.seqRef[painelSelecao.idx] = opt;
@@ -1571,10 +975,8 @@
           else c.classList.add("active");
           fecharPainelSelecao();
         };
-
         selectionOptions.appendChild(div);
       });
-
       selectionOverlay.classList.add("visible");
     }
 
@@ -1584,30 +986,23 @@
       painelSelecao.idx = idx;
       painelSelecao.cell = cellEl;
       painelSelecao.drumLine = line;
-
       const valorAtual = seqRef[idx];
-      // Opções: silêncio ou essa peça específica
       const opcoes = ["x", line.id];
-
       selectionTitle.textContent = "Selecione a peça: " + line.label;
       selectionOptions.innerHTML = "";
-
       opcoes.forEach(opt => {
         const div = document.createElement("div");
         div.className = "selection-option";
         let label;
-
         if (opt === "x") {
           div.classList.add("x-option");
           label = "X";
         } else {
           label = line.label.toUpperCase();
         }
-
         if (opt === valorAtual) {
           div.classList.add("active");
         }
-
         div.textContent = label;
         div.onclick = () => {
           painelSelecao.seqRef[painelSelecao.idx] = opt;
@@ -1621,10 +1016,8 @@
           }
           fecharPainelSelecao();
         };
-
         selectionOptions.appendChild(div);
       });
-
       selectionOverlay.classList.add("visible");
     }
 
@@ -1643,62 +1036,49 @@
       }
     });
 
-    /* ===== GRIDS MANUAIS – BAIXO ===== */
     function construirGridBaixo(container, seq) {
       container.innerHTML = "";
       seq.forEach((nota, idx) => {
         const div = document.createElement("div");
         div.className = "cell";
         div.dataset.idx = idx;
-
         if (nota === "x") {
           div.textContent = "X";
         } else {
-          div.textContent = converterNotaParaExibicao(nota);
+          div.textContent = nota.replace(/S/g,"#");
           div.classList.add("active");
         }
-
         div.onclick = () => {
           abrirPainelSelecaoBaixo(seq, idx, div);
         };
-
         container.appendChild(div);
       });
     }
 
-    /* ===== GRIDS MANUAIS – BATERIA (MULTILINHA) ===== */
     function construirGridBateria(container, bateriaSeq) {
       container.innerHTML = "";
-
       drumLines.forEach(line => {
         const rowDiv = document.createElement("div");
         rowDiv.className = "drumRow";
-
         const label = document.createElement("div");
         label.className = "drumLabel";
         label.textContent = line.label;
         rowDiv.appendChild(label);
-
         const rowGrid = document.createElement("div");
         rowGrid.className = "composicaoGrid";
-
         const seq = bateriaSeq[line.id];
-
         seq.forEach((item, idx) => {
           const cell = document.createElement("div");
           cell.className = "cell";
           cell.dataset.idx = idx;
-
           if (item === "x") {
             cell.textContent = "X";
           } else if (item === line.id) {
             cell.textContent = line.label.toUpperCase();
             cell.classList.add("active");
           } else {
-            // fallback, se tiver algo estranho guardado
             cell.textContent = "?";
           }
-
           cell.onclick = () => {
             if (seq[idx] === "x") {
               seq[idx] = line.id;
@@ -1710,34 +1090,26 @@
               cell.textContent = "X";
             }
           };
-
           rowGrid.appendChild(cell);
         });
-
         rowDiv.appendChild(rowGrid);
         container.appendChild(rowDiv);
       });
     }
 
-    /* ===== PLAYBACK COMPLETO ===== */
     function atualizarBarraProgresso(perc) {
       document.getElementById("progressBar").style.width = perc + "%";
     }
 
     function tocarPlaybackCompleto(bpm) {
-      // Parar playback atual se estiver rodando
       pararPlayback();
-      
-      // Iniciar animações
       resetAnimTimers();
       startTroncoBpm(bpm);
       startHeadTiltBpm(bpm);
-      
-      // Iniciar playback
+      startLateralMovement();
       iniciarPlayback();
     }
 
-    /* ===== GERAÇÃO ALEATÓRIA (SIMPLES) ===== */
     function gerarSequenciaAleatoriaBaixo(tam) {
       const seq = [];
       for (let i = 0; i < tam; i++) {
@@ -1756,7 +1128,6 @@
       drumLines.forEach(line => {
         obj[line.id] = [];
         for (let i = 0; i < tam; i++) {
-          // probabilidade simples; pode refinar pra cada peça
           const r = Math.random();
           if (r < 0.75) {
             obj[line.id].push("x");
@@ -1768,7 +1139,6 @@
       return obj;
     }
 
-    /* ===== PLAYBACK EXPORTADO (.json) ===== */
     function configurarPlaybackExportado() {
       const btn = document.getElementById("playExportadoBtn");
       const input = document.createElement("input");
@@ -1776,7 +1146,6 @@
       input.accept = "application/json";
       input.style.display = "none";
       document.body.appendChild(input);
-
       btn.onclick = () => input.click();
       input.onchange = async (ev) => {
         const file = ev.target.files[0];
@@ -1790,22 +1159,17 @@
           }
           baixoSeq = obj.baixo;
           bpmAtual = obj.bpm;
-
           drumLines.forEach(line => {
             if (Array.isArray(obj.bateria[line.id])) {
               bateriaSeq[line.id] = obj.bateria[line.id];
             } else {
-              // se não vier, criar array de silêncio no mesmo tamanho do baixo
               bateriaSeq[line.id] = Array(baixoSeq.length).fill("x");
             }
           });
-
           document.getElementById("bpmSlider").value = bpmAtual;
           document.getElementById("bpmDisplay").textContent = bpmAtual + " BPM";
-
           construirGridBaixo(document.getElementById("baixoGrid"), baixoSeq);
           construirGridBateria(document.getElementById("drumGrid"), bateriaSeq);
-
           tocarPlaybackCompleto(bpmAtual);
         } catch (e) {
           console.error(e);
@@ -1814,7 +1178,6 @@
       };
     }
 
-    /* ===== ORIENTAÇÃO (MODO PAISAGEM) ===== */
     function garantirPaisagem() {
       const overlay = document.getElementById("orientationOverlay");
       function checar() {
@@ -1828,58 +1191,43 @@
       window.addEventListener("resize", checar);
     }
 
-    /* ===== INTERFACE PRINCIPAL ===== */
     function iniciarInterface() {
       const baixoGrid = document.getElementById("baixoGrid");
       const drumGrid  = document.getElementById("drumGrid");
-
-      // 1 compasso em 4/4 = 16 células (1/16 cada)
       const passosIniciais = 16;
-
-      // inicialmente, geramos algo aleatório para já ter som
       baixoSeq = gerarSequenciaAleatoriaBaixo(passosIniciais);
       bateriaSeq = gerarSequenciasAleatoriasBateria(passosIniciais);
-
       construirGridBaixo(baixoGrid, baixoSeq);
       construirGridBateria(drumGrid, bateriaSeq);
 
-      // BPM
-      const bpmSlider   = document.getElementById("bpmSlider");
-      const bpmDisplay  = document.getElementById("bpmDisplay");
-      bpmSlider.oninput = () => {
-        bpmAtual = parseInt(bpmSlider.value, 10);
-        bpmDisplay.textContent = bpmAtual + " BPM";
+      document.getElementById("bpmSlider").oninput = () => {
+        bpmAtual = parseInt(document.getElementById("bpmSlider").value, 10);
+        document.getElementById("bpmDisplay").textContent = bpmAtual + " BPM";
         startTroncoBpm(bpmAtual);
         startHeadTiltBpm(bpmAtual);
       };
 
-      // Volumes
-      const baixoVol = document.getElementById("baixoVolume");
-      const drumVol  = document.getElementById("drumVolume");
-      baixoVol.oninput = () => {
-        baixoVolumeGlobal = parseFloat(baixoVol.value);
+      document.getElementById("baixoVolume").oninput = () => {
+        baixoVolumeGlobal = parseFloat(document.getElementById("baixoVolume").value);
       };
-      drumVol.oninput = () => {
-        bateriaVolumeGlobal = parseFloat(drumVol.value);
+      document.getElementById("drumVolume").oninput = () => {
+        bateriaVolumeGlobal = parseFloat(document.getElementById("drumVolume").value);
       };
 
-      // Botões de playback
       document.getElementById("playAleatorioBtn").onclick = async () => {
         try {
           const playback = await gerarPlaybackAleatorio();
           baixoSeq = playback.bass;
           bateriaSeq = playback.drums;
           bpmAtual = playback.bpm;
-          
           document.getElementById("bpmSlider").value = bpmAtual;
           document.getElementById("bpmDisplay").textContent = bpmAtual + " BPM";
-          
           construirGridBaixo(baixoGrid, baixoSeq);
           construirGridBateria(drumGrid, bateriaSeq);
           tocarPlaybackCompleto(bpmAtual);
         } catch (error) {
           console.error("Erro ao gerar playback aleatório:", error);
-          alert("Erro ao gerar playback aleatório. Verifique o console para mais detalhes.");
+          alert("Erro ao gerar playback aleatório. Verifique o console.");
         }
       };
 
@@ -1887,59 +1235,41 @@
         tocarPlaybackCompleto(bpmAtual);
       };
 
-      // Botões de controle de playback
       document.getElementById("playBtn").onclick = togglePlay;
       document.getElementById("pauseBtn").onclick = pararPlayback;
 
-      // Adicionar coluna (baixo)
       document.getElementById("addBaixoCol").onclick = () => {
         baixoSeq.push("x");
         construirGridBaixo(baixoGrid, baixoSeq);
-
-        // também alonga todas as linhas da bateria com "x"
-        drumLines.forEach(line => {
-          bateriaSeq[line.id].push("x");
-        });
+        drumLines.forEach(line => bateriaSeq[line.id].push("x"));
         construirGridBateria(drumGrid, bateriaSeq);
       };
 
-      // Limpar baixo
       document.getElementById("clearBaixo").onclick = () => {
         baixoSeq = baixoSeq.map(() => "x");
         construirGridBaixo(baixoGrid, baixoSeq);
       };
 
-      // Limpar bateria
       document.getElementById("clearAll").onclick = () => {
         baixoSeq = baixoSeq.map(() => "x");
-        drumLines.forEach(line => {
-          bateriaSeq[line.id] = bateriaSeq[line.id].map(() => "x");
-        });
+        drumLines.forEach(line => bateriaSeq[line.id] = bateriaSeq[line.id].map(() => "x"));
         construirGridBaixo(baixoGrid, baixoSeq);
         construirGridBateria(drumGrid, bateriaSeq);
       };
 
-      // Adicionar coluna geral
       document.getElementById("addCol").onclick = () => {
         baixoSeq.push("x");
-        drumLines.forEach(line => {
-          bateriaSeq[line.id].push("x");
-        });
+        drumLines.forEach(line => bateriaSeq[line.id].push("x"));
         construirGridBaixo(baixoGrid, baixoSeq);
         construirGridBateria(drumGrid, bateriaSeq);
       };
 
-      // Duplicar sequência
       document.getElementById("duplicateSeq").onclick = () => {
         const bloco = 16;
-        
-        // Baixo
         if (baixoSeq.length >= bloco) {
             const ultimas = baixoSeq.slice(-bloco);
             baixoSeq = baixoSeq.concat(ultimas);
         }
-
-        // Bateria
         drumLines.forEach(line => {
             const arr = bateriaSeq[line.id];
             if (arr.length >= bloco) {
@@ -1947,31 +1277,75 @@
                 bateriaSeq[line.id] = arr.concat(ultimas);
             }
         });
-
         construirGridBaixo(baixoGrid, baixoSeq);
         construirGridBateria(drumGrid, bateriaSeq);
+      };
+
+      // === BOTÕES DE AJUSTE VISUAL ===
+      document.getElementById("btnModoAjuste").onclick = () => {
+        ativarModoAjuste();
+        alert("Modo de ajuste ativado! Arraste as partes dentro do palco.");
+      };
+
+      document.getElementById("btnExportarCSS").onclick = () => {
+        const css = gerarCSSAjustado();
+        document.getElementById("cssAjustadoOutput").value = css;
+        navigator.clipboard.writeText(css).then(() => {
+          alert("CSS copiado para a área de transferência!");
+        }).catch(() => {
+          alert("Copie o CSS abaixo manualmente.");
+        });
       };
 
       configurarPlaybackExportado();
     }
 
-    /* ===== INÍCIO GERAL ===== */
     window.onload = async () => {
       garantirPaisagem();
-
-      // Inicializar sistema de posicionamento
-      inicializarControlesPosicionamento();
-      atualizarDebugInfo();
-
-      // pré-carrega frames da cabeça
       headFrames = generateHeadFramePaths();
       await preloadImages(headFrames);
       startHeadLoop();
       startTroncoBpm(bpmAtual);
       startHeadTiltBpm(bpmAtual);
-
+      startLateralMovement();
       iniciarInterface();
     };
+
+    // ========== LISTA DE GROOVES (copiada do original) ==========
+    const ALL_GROOVES = [
+      { name: "Rock", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch bu"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 8] },
+      { name: "Rock2", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 5] },
+      { name: "Rock3", meter: "4/4", drumPattern: ["bch - ch bu cch bu ch - bch - ch - cch - ch -"], bassRhythm: ["bo - - bo - - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 1] },
+      { name: "Rock4", meter: "4/4", drumPattern: ["ba - co - cco - co - bco - co - cco bu bco bu"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 7, 8, 7, 5, 3] },
+      { name: "Rock5", meter: "4/4", drumPattern: ["bch ch ch ch cch ch ch ch bch ch ch ch cch ch ch -"], bassRhythm: ["bo - - bo - - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 1, 5] },
+      { name: "Rock6", meter: "4/4", drumPattern: ["bco co co co cco co co co bco co co co cco co co co"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [8, 8, 1, 1] },
+      { name: "Rock7", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - co - cco - co -"], bassRhythm: ["bo - - bo - - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 1] },
+      { name: "Rock_Progressivo", meter: "7/4", drumPattern: ["bch - ch -  cch - ch - bch - ch - cch - ch bu bch - ch - cch - ch - bch - ch bu"], bassRhythm: ["bo - - - - - - - bo - - - - - - bo - - bo bo bo bo bo bo bo bo bo bo"], bassScale: [1, 1, 1, 3, 5, 8, 3, 5, 8, 3, 5, 8, 5] },
+      { name: "Rock_Progressivo2", meter: "5/4", drumPattern: ["ba - ch - bch - ch - cch - ch - bch - ch - cch - ch bu"], bassRhythm: ["bo - x x bo - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 1, 3, 5, 8, 1, 3, 5, 8] },
+      { name: "Rock_Progressivo3", meter: "6/4", drumPattern: ["ba - - - ch - - bu cch - - - ch - - - bch - - - ch - - -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 3, 1, 1, 1, 3, 5, 5, 5, 1] },
+      { name: "Rock_Progressivo4", meter: "4/4", drumPattern: ["ba - ch bu cch - ch - bch - ch bu cch - ch bu"], bassRhythm: ["bo - - bo - - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 8] },
+      { name: "Rock_Progressivo5", meter: "7/4", drumPattern: ["ba - co - cco - co - bco - co bu cco - co bu bch bu co - cch - ch - bch - ch bu"], bassRhythm: ["bo - - bo bo - - - bo - - bo bo - - bo - - bo bo - - bo bo - - bo bo"], bassScale: [1, 3, 5, 8] },
+      { name: "Rock_Progressivo6", meter: "3/4", drumPattern: ["bch - - - ch - - bu cch - - -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 8, 8, 8]},
+      { name: "Rock_Progressivo7", meter: "4/4", drumPattern: ["bco co cch to1 cch - ch - bch - ch cch bu bu ch bu"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 1] },
+      { name: "Blues", meter: "4/4", drumPattern: ["bch - ch ch cch - ch ch bch - ch ch cch - ch ch"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 6, 8, 6, 5, 3] },
+      { name: "Blues2", meter: "4/4", drumPattern: ["bch - - - cch - - - bch - - - cch - - -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 6, 8, 6, 5, 3] },
+      { name: "Blues3", meter: "4/4", drumPattern: ["bch - - bu cch - ch - ch - - bu cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 6, 8, 6, 5, 3] },
+      { name: "Blues4", meter: "4/4", drumPattern: ["bch - - bu cch - ch - bch - - bu cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 6, 8, 6, 5, 3] },
+      { name: "Blues5", meter: "4/4", drumPattern: ["bch - - bu cch - ch - bch - - bu cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 6, 8, 6, 5, 3] },
+      { name: "Blues6", meter: "4/4", drumPattern: ["bch - - bu cch - ch - bch - - bu cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 6, 8, 6, 5, 3] },
+      { name: "Blues7", meter: "4/4", drumPattern: ["bch - - bu cch - ch - bch - - bu cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 6, 8, 6, 5, 3] },
+      { name: "Forró", meter: "2/4", drumPattern: ["bch - co - ch - ca -"], bassRhythm: ["bo - - - x - - -"], bassScale: [8, 1] },
+      { name: "Funk", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch -"], bassRhythm: ["bo - - - bo - bo x bo x bo x bo - x x"], bassScale: [1,8] },
+      { name: "Funk2", meter: "4/4", drumPattern: ["bch - - - cch - - - bch - - - cch - - -"], bassRhythm: ["bo bo bo bo bo x x x bo - x x bo - x x"], bassScale: [1,7,8,1] },
+      { name: "Disco", meter: "4/4", drumPattern: ["bu - ch ch bu - ch ch bu - ch ch bu - ch ch"], bassRhythm: ["bo - x x bo - x x bo - x x bo - x x"], bassScale: [1] },
+      { name: "Forró4", meter: "2/4", drumPattern: ["bch - co - ch - ca bu"], bassRhythm: ["bo - - - bo - - x"], bassScale: [8, 1] },
+      { name: "Metal", meter: "4/4", drumPattern: ["bch bu bch bu cch bu bch bu bch bu bch bu cch bu bch bu"], bassRhythm: ["bo bo bo bo bo bo bo bo bo bo bo bo bo bo bo bo"], guitarRhythm: ["ab ab ab ab so - - - ab - ab - so - - -"] },
+      { name: "Metal2", meter: "4/4", drumPattern: ["bch bu bch bu cch bu bch bu cch - ch bu cch bu bch bu"], bassRhythm: ["bo bo bo bo bo bo bo bo bo bo bo bo bo bo bo bo"], guitarRhythm: ["ab ab ab ab ab ab ab ab ab ab ab ab ab ab ab ab"] },
+      { name: "Metal3", meter: "4/4", drumPattern: ["bch bu bch - cch - ch - bch bu ch bu cch - ch -"], bassRhythm: ["bo bo bo - - - - - bo bo - bo - - - -"] },
+      { name: "Metal4", meter: "4/4", drumPattern: ["bch bu cch - bu bu cch - bu bu cch - bu bu cch -"], bassRhythm: ["bo bo bo - bo bo bo - bo bo bo - bo bo bo -"], guitarRhythm: ["ab - ab - so - - - ab - ab - so - - -"] },
+      { name: "Samba", meter: "2/4", drumPattern: ["bch - ch bu bch - ch bu"], bassRhythm: ["bo - x x bo - - x"], bassScale: [8, 5] },
+      { name: "Jazz", meter: "4/4", drumPattern: ["bch co co - co co co ca bch co co - bch co co cch"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo - bo - bo - bo - bo - bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: "chromatic" },
+    ];
   </script>
 </body>
 </html>
