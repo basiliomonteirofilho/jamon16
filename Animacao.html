@@ -37,22 +37,22 @@
       width: 100vw;
       height: 100vh;
       display: flex;
-      flex-direction: row;
+      flex-direction: column;
     }
 
     /* ============================
-       ESQUERDA: ANIMAÇÃO BAIXISTA
+       TOPO: ANIMAÇÃO BAIXISTA
        ============================ */
     #animacaoArea {
-      width: 55%;
-      height: 100%;
+      width: 100%;
+      height: 60%;
       background: #151515;
-      border-right: 3px solid #222;
       display: flex;
       justify-content: center;
       align-items: center;
       position: relative;
       overflow: hidden;
+      z-index: 10;
     }
 
     /* 
@@ -62,10 +62,8 @@
       position: relative;
       width: 420px;
       height: 360px;
-      left: 20px;
-      top: 10px;
       image-rendering: pixelated;
-      border: 1px dashed #444; /* Para debug do posicionamento */
+      transform: scale(1.2); /* Aumentar a baixista */
     }
 
     .layer {
@@ -86,25 +84,23 @@
 
     /* Tronco + baixo + mão esquerda (todos no mesmo frame) */
     #troncoLayer {
-      z-index: 2;
+      z-index: 3;
       left: 60px;
       top: 40px;
       transform-origin: 120px 140px;
     }
 
-    
-
     /* Braço direito (acima do antebraço) */
     #bracoLayer {
-      z-index: 3;
+      z-index: 4;
       left: 120px;
       top: 90px;
       transform-origin: 18px 20px;
     }
 
-    /* Antebraço direito (mão que toca a corda) */
+    /* Antebraço direito (mão que toca a corda) - AGORA ATRÁS DO BRAÇO E TRONCO */
     #antebracoLayer {
-      z-index: 4;
+      z-index: 2;
       left: 140px;
       top: 120px;
       transform-origin: 15px 10px;
@@ -127,14 +123,15 @@
     }
 
     /* =============================
-       DIREITA: CONTROLES
+       BAIXO: CONTROLES
        ============================ */
     #painel {
-      width: 45%;
-      height: 100%;
+      width: 100%;
+      height: 40%;
       overflow-y: auto;
       padding: 16px;
       background: #181818;
+      z-index: 5;
     }
 
     header {
@@ -290,86 +287,6 @@
       flex: 0 0 auto;
     }
 
-    /* ===== CONTROLES DE POSICIONAMENTO ===== */
-    .posicionamento-controls {
-      background: #2a1f1f !important;
-      border: 2px solid #ff6b6b !important;
-    }
-
-    .posicionamento-controls h3 {
-      color: #ff6b6b !important;
-    }
-
-    .layer-control {
-      display: flex;
-      align-items: center;
-      margin-bottom: 8px;
-      padding: 6px;
-      background: #3a2a2a;
-      border-radius: 6px;
-    }
-
-    .layer-label {
-      width: 120px;
-      font-size: 0.8em;
-      color: #ff9e9e;
-    }
-
-    .coord-inputs {
-      display: flex;
-      gap: 8px;
-      flex: 1;
-    }
-
-    .coord-input {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .coord-input label {
-      font-size: 0.75em;
-      color: #ccc;
-      min-width: 20px;
-    }
-
-    .coord-input input {
-      width: 60px;
-      padding: 4px;
-      border: 1px solid #555;
-      border-radius: 4px;
-      background: #222;
-      color: #fff;
-      font-size: 0.8em;
-    }
-
-    .pos-buttons {
-      display: flex;
-      gap: 4px;
-      margin-left: 8px;
-    }
-
-    .pos-btn {
-      padding: 4px 8px;
-      font-size: 0.7em;
-      background: #444;
-      color: #fff;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    .pos-btn:hover {
-      background: #555;
-    }
-
-    .debug-info {
-      font-size: 0.7em;
-      color: #888;
-      margin-top: 4px;
-      font-family: monospace;
-    }
-
     @media (orientation: portrait) {
       #orientationOverlay { display: flex; }
       .appRoot { display: none; }
@@ -472,14 +389,14 @@
         <!-- Pernas (estáticas) -->
         <img id="pernasLayer" class="layer" src="animacao/pernas/pernas.png" alt="pernas">
 
+        <!-- Antebraço direito (corda E inicial) - AGORA ATRÁS DO BRAÇO E TRONCO -->
+        <img id="antebracoLayer" class="layer" src="animacao/antebraco/antebracoE.png" alt="antebraco">
+
         <!-- Tronco + baixo + mão esquerda (1E como posição inicial) -->
         <img id="troncoLayer" class="layer" src="animacao/tronco_baixo/Pasta_1F/1E.png" alt="tronco-baixo">
 
         <!-- Braço direito (frame inicial corda E) -->
         <img id="bracoLayer" class="layer" src="animacao/braco_direito/Corda_E1.png" alt="braco-direito">
-
-        <!-- Antebraço direito (corda E inicial) -->
-        <img id="antebracoLayer" class="layer" src="animacao/antebraco/antebracoE.png" alt="antebraco">
 
         <!-- Cabeça – parte de trás (fixa) -->
         <img id="cabecaTrasLayer" class="layer" src="animacao/cabeca_tras/cabeca-parte-de-tras.png" alt="cabeca-tras">
@@ -490,34 +407,13 @@
     </div>
 
     <!-- ===============================
-         PAINEL DIREITO – CONTROLES
+         PAINEL INFERIOR – CONTROLES
          =============================== -->
     <div id="painel">
       <header>
         <h1>Jam On – Baixista Animada</h1>
         <div class="pill">Baixo + Bateria – 1 célula = 1/16</div>
       </header>
-
-      <!-- Controles de Posicionamento (TEMPORÁRIO) -->
-      <div class="card posicionamento-controls">
-        <h3>🎛️ AJUSTE DE POSICIONAMENTO (TEMPORÁRIO)</h3>
-        <div class="labelPequena">
-          Ajuste as coordenadas X e Y de cada parte da animação. Use "Aplicar" para testar e "Copiar CSS" para salvar.
-        </div>
-        
-        <div id="posicionamentoControls">
-          <!-- Será preenchido pelo JavaScript -->
-        </div>
-        
-        <div class="pos-buttons" style="margin-top: 10px; justify-content: center;">
-          <button class="pos-btn" onclick="copiarCoordenadasParaCSS()">📋 Copiar CSS</button>
-          <button class="pos-btn" onclick="resetarPosicionamento()">🔄 Resetar</button>
-        </div>
-        
-        <div id="debugCoords" class="debug-info">
-          <!-- Debug info será mostrada aqui -->
-        </div>
-      </div>
 
       <!-- BPM -->
       <div class="card">
@@ -601,6 +497,7 @@
 
     let tiltTimer = null;
     let troncoTimer = null;
+    let lateralMovementTimer = null;
 
     // baixoSeq: sequência de notas ("x", "1E", "2F", etc.)
     let baixoSeq = [];
@@ -744,10 +641,10 @@
   "16G": "Pasta_1F", "17GS": "Pasta_1F", "18A": "Pasta_1F", "19AS": "Pasta_1F", "20B": "Pasta_1F",
   
   // Pasta_2F# (3F#-21C)
-  "3FS": "Pasta_2FS", "4G": "Pasta_2FS", "5GS": "Pasta_2FS", "6A": "Pasta_2FS", "8B": "Pasta_2FS",
-  "9C": "Pasta_2FS", "10CS": "Pasta_2FS", "11D": "Pasta_2FS", "13E": "Pasta_2FS", "14F": "Pasta_2FS",
-  "15FS": "Pasta_2FS", "16G": "Pasta_2FS", "18A": "Pasta_2FS", "19AS": "Pasta_2FS", "20B": "Pasta_2FS",
-  "21C": "Pasta_2FS",
+  "3FS": "Pasta_2F%23", "4G": "Pasta_2F%23", "5GS": "Pasta_2F%23", "6A": "Pasta_2F%23", "8B": "Pasta_2F%23",
+  "9C": "Pasta_2F%23", "10CS": "Pasta_2F%23", "11D": "Pasta_2F%23", "13E": "Pasta_2F%23", "14F": "Pasta_2F%23",
+  "15FS": "Pasta_2F%23", "16G": "Pasta_2F%23", "18A": "Pasta_2F%23", "19AS": "Pasta_2F%23", "20B": "Pasta_2F%23",
+  "21C": "Pasta_2F%23",
   
   // Pasta_3G (4G-22C#)
   "4G": "Pasta_3G", "5GS": "Pasta_3G", "6A": "Pasta_3G", "7AS": "Pasta_3G", "9C": "Pasta_3G",
@@ -756,10 +653,10 @@
   "22CS": "Pasta_3G",
   
   // Pasta_4G# (5G#-23D)
-  "5GS": "Pasta_4GS", "6A": "Pasta_4GS", "7AS": "Pasta_4GS", "8B": "Pasta_4GS", "10CS": "Pasta_4GS",
-  "11D": "Pasta_4GS", "12DS": "Pasta_4GS", "13E": "Pasta_4GS", "15FS": "Pasta_4GS", "16G": "Pasta_4GS",
-  "17GS": "Pasta_4GS", "18A": "Pasta_4GS", "20B": "Pasta_4GS", "21C": "Pasta_4GS", "22CS": "Pasta_4GS",
-  "23D": "Pasta_4GS",
+  "5GS": "Pasta_4G%23", "6A": "Pasta_4G%23", "7AS": "Pasta_4G%23", "8B": "Pasta_4G%23", "10CS": "Pasta_4G%23",
+  "11D": "Pasta_4G%23", "12DS": "Pasta_4G%23", "13E": "Pasta_4G%23", "15FS": "Pasta_4G%23", "16G": "Pasta_4G%23",
+  "17GS": "Pasta_4G%23", "18A": "Pasta_4G%23", "20B": "Pasta_4G%23", "21C": "Pasta_4G%23", "22CS": "Pasta_4G%23",
+  "23D": "Pasta_4G%23",
   
   // Pasta_5A (6A-24D#)
   "6A": "Pasta_5A", "7AS": "Pasta_5A", "8B": "Pasta_5A", "9C": "Pasta_5A", "11D": "Pasta_5A",
@@ -768,10 +665,10 @@
   "24DS": "Pasta_5A",
   
   // Pasta_6A# (7A#-25E)
-  "7AS": "Pasta_6AS", "8B": "Pasta_6AS", "9C": "Pasta_6AS", "10CS": "Pasta_6AS", "12DS": "Pasta_6AS",
-  "13E": "Pasta_6AS", "14F": "Pasta_6AS", "15FS": "Pasta_6AS", "17GS": "Pasta_6AS", "18A": "Pasta_6AS",
-  "19AS": "Pasta_6AS", "20B": "Pasta_6AS", "22CS": "Pasta_6AS", "23D": "Pasta_6AS", "24DS": "Pasta_6AS",
-  "25E": "Pasta_6AS",
+  "7AS": "Pasta_6A%23", "8B": "Pasta_6A%23", "9C": "Pasta_6A%23", "10CS": "Pasta_6A%23", "12DS": "Pasta_6A%23",
+  "13E": "Pasta_6A%23", "14F": "Pasta_6A%23", "15FS": "Pasta_6A%23", "17GS": "Pasta_6A%23", "18A": "Pasta_6A%23",
+  "19AS": "Pasta_6A%23", "20B": "Pasta_6A%23", "22CS": "Pasta_6A%23", "23D": "Pasta_6A%23", "24DS": "Pasta_6A%23",
+  "25E": "Pasta_6A%23",
   
   // Pasta_7B (8B-26F)
   "8B": "Pasta_7B", "9C": "Pasta_7B", "10CS": "Pasta_7B", "11D": "Pasta_7B", "13E": "Pasta_7B",
@@ -786,10 +683,10 @@
   "27FS": "Pasta_8C",
   
   // Pasta_9C# (10C#-28G)
-  "10CS": "Pasta_9CS", "11D": "Pasta_9CS", "12DS": "Pasta_9CS", "13E": "Pasta_9CS", "15FS": "Pasta_9CS",
-  "16G": "Pasta_9CS", "17GS": "Pasta_9CS", "18A": "Pasta_9CS", "20B": "Pasta_9CS", "21C": "Pasta_9CS",
-  "22CS": "Pasta_9CS", "23D": "Pasta_9CS", "25E": "Pasta_9CS", "26F": "Pasta_9CS", "27FS": "Pasta_9CS",
-  "28G": "Pasta_9CS",
+  "10CS": "Pasta_9C%23", "11D": "Pasta_9C%23", "12DS": "Pasta_9C%23", "13E": "Pasta_9C%23", "15FS": "Pasta_9C%23",
+  "16G": "Pasta_9C%23", "17GS": "Pasta_9C%23", "18A": "Pasta_9C%23", "20B": "Pasta_9C%23", "21C": "Pasta_9C%23",
+  "22CS": "Pasta_9C%23", "23D": "Pasta_9C%23", "25E": "Pasta_9C%23", "26F": "Pasta_9C%23", "27FS": "Pasta_9C%23",
+  "28G": "Pasta_9C%23",
   
   // Pasta_10D (11D-29G#)
   "11D": "Pasta_10D", "12DS": "Pasta_10D", "13E": "Pasta_10D", "14F": "Pasta_10D", "16G": "Pasta_10D",
@@ -798,10 +695,10 @@
   "29GS": "Pasta_10D",
   
   // Pasta_11D# (12D#-30A)
-  "12DS": "Pasta_11DS", "13E": "Pasta_11DS", "14F": "Pasta_11DS", "15FS": "Pasta_11DS", "17GS": "Pasta_11DS",
-  "18A": "Pasta_11DS", "19AS": "Pasta_11DS", "20B": "Pasta_11DS", "22CS": "Pasta_11DS", "23D": "Pasta_11DS",
-  "24DS": "Pasta_11DS", "25E": "Pasta_11DS", "27FS": "Pasta_11DS", "28G": "Pasta_11DS", "29GS": "Pasta_11DS",
-  "30A": "Pasta_11DS",
+  "12DS": "Pasta_11D%23", "13E": "Pasta_11D%23", "14F": "Pasta_11D%23", "15FS": "Pasta_11D%23", "17GS": "Pasta_11D%23",
+  "18A": "Pasta_11D%23", "19AS": "Pasta_11D%23", "20B": "Pasta_11D%23", "22CS": "Pasta_11D%23", "23D": "Pasta_11D%23",
+  "24DS": "Pasta_11D%23", "25E": "Pasta_11D%23", "27FS": "Pasta_11D%23", "28G": "Pasta_11D%23", "29GS": "Pasta_11D%23",
+  "30A": "Pasta_11D%23",
   
   // Pasta_12E (13E-31B)
   "13E": "Pasta_12E", "14F": "Pasta_12E", "15FS": "Pasta_12E", "16G": "Pasta_12E", "18A": "Pasta_12E",
@@ -816,10 +713,10 @@
   "32B": "Pasta_13F",
   
   // Pasta_14F# (15F#-33C)
-  "15FS": "Pasta_14FS", "16G": "Pasta_14FS", "17GS": "Pasta_14FS", "18A": "Pasta_14FS", "20B": "Pasta_14FS",
-  "21C": "Pasta_14FS", "22CS": "Pasta_14FS", "23D": "Pasta_14FS", "25E": "Pasta_14FS", "26F": "Pasta_14FS",
-  "27FS": "Pasta_14FS", "28G": "Pasta_14FS", "30A": "Pasta_14FS", "31AS": "Pasta_14FS", "32B": "Pasta_14FS",
-  "33C": "Pasta_14FS",
+  "15FS": "Pasta_14F%23", "16G": "Pasta_14F%23", "17GS": "Pasta_14F%23", "18A": "Pasta_14F%23", "20B": "Pasta_14F%23",
+  "21C": "Pasta_14F%23", "22CS": "Pasta_14F%23", "23D": "Pasta_14F%23", "25E": "Pasta_14F%23", "26F": "Pasta_14F%23",
+  "27FS": "Pasta_14F%23", "28G": "Pasta_14F%23", "30A": "Pasta_14F%23", "31AS": "Pasta_14F%23", "32B": "Pasta_14F%23",
+  "33C": "Pasta_14F%23",
   
   // Pasta_15G (16G-34C#)
   "16G": "Pasta_15G", "17GS": "Pasta_15G", "18A": "Pasta_15G", "19AS": "Pasta_15G", "21C": "Pasta_15G",
@@ -828,10 +725,10 @@
   "34CS": "Pasta_15G",
   
   // Pasta_16G# (17G#-35D)
-  "17GS": "Pasta_16GS", "18A": "Pasta_16GS", "19AS": "Pasta_16GS", "20B": "Pasta_16GS", "22CS": "Pasta_16GS",
-  "23D": "Pasta_16GS", "24DS": "Pasta_16GS", "25E": "Pasta_16GS", "27FS": "Pasta_16GS", "28G": "Pasta_16GS",
-  "29GS": "Pasta_16GS", "30A": "Pasta_16GS", "32B": "Pasta_16GS", "33C": "Pasta_16GS", "34CS": "Pasta_16GS",
-  "35D": "Pasta_16GS",
+  "17GS": "Pasta_16G%23", "18A": "Pasta_16G%23", "19AS": "Pasta_16G%23", "20B": "Pasta_16G%23", "22CS": "Pasta_16G%23",
+  "23D": "Pasta_16G%23", "24DS": "Pasta_16G%23", "25E": "Pasta_16G%23", "27FS": "Pasta_16G%23", "28G": "Pasta_16G%23",
+  "29GS": "Pasta_16G%23", "30A": "Pasta_16G%23", "32B": "Pasta_16G%23", "33C": "Pasta_16G%23", "34CS": "Pasta_16G%23",
+  "35D": "Pasta_16G%23",
   
   // Pasta_17A (18A-36D#)
   "18A": "Pasta_17A", "19AS": "Pasta_17A", "20B": "Pasta_17A", "21C": "Pasta_17A", "23D": "Pasta_17A",
@@ -840,10 +737,10 @@
   "36DS": "Pasta_17A",
   
   // Pasta_18A# (19A#-37E)
-  "19AS": "Pasta_18AS", "20B": "Pasta_18AS", "21C": "Pasta_18AS", "22CS": "Pasta_18AS", "24DS": "Pasta_18AS",
-  "25E": "Pasta_18AS", "26F": "Pasta_18AS", "27FS": "Pasta_18AS", "29GS": "Pasta_18AS", "30A": "Pasta_18AS",
-  "31AS": "Pasta_18AS", "32B": "Pasta_18AS", "34CS": "Pasta_18AS", "35D": "Pasta_18AS", "36DS": "Pasta_18AS",
-  "37E": "Pasta_18AS",
+  "19AS": "Pasta_18A%23", "20B": "Pasta_18A%23", "21C": "Pasta_18A%23", "22CS": "Pasta_18A%23", "24DS": "Pasta_18A%23",
+  "25E": "Pasta_18A%23", "26F": "Pasta_18A%23", "27FS": "Pasta_18A%23", "29GS": "Pasta_18A%23", "30A": "Pasta_18A%23",
+  "31AS": "Pasta_18A%23", "32B": "Pasta_18A%23", "34CS": "Pasta_18A%23", "35D": "Pasta_18A%23", "36DS": "Pasta_18A%23",
+  "37E": "Pasta_18A%23",
   
   // Pasta_19B (20B-38F)
   "20B": "Pasta_19B", "21C": "Pasta_19B", "22CS": "Pasta_19B", "23D": "Pasta_19B", "25E": "Pasta_19B",
@@ -858,10 +755,10 @@
   "39FS": "Pasta_20C",
   
   // Pasta_21C# (22C#-40G)
-  "22CS": "Pasta_21CS", "23D": "Pasta_21CS", "24DS": "Pasta_21CS", "25E": "Pasta_21CS", "27FS": "Pasta_21CS",
-  "28G": "Pasta_21CS", "29GS": "Pasta_21CS", "30A": "Pasta_21CS", "32B": "Pasta_21CS", "33C": "Pasta_21CS",
-  "34CS": "Pasta_21CS", "35D": "Pasta_21CS", "37E": "Pasta_21CS", "38F": "Pasta_21CS", "39FS": "Pasta_21CS",
-  "40G": "Pasta_21CS",
+  "22CS": "Pasta_21C%23", "23D": "Pasta_21C%23", "24DS": "Pasta_21C%23", "25E": "Pasta_21C%23", "27FS": "Pasta_21C%23",
+  "28G": "Pasta_21C%23", "29GS": "Pasta_21C%23", "30A": "Pasta_21C%23", "32B": "Pasta_21C%23", "33C": "Pasta_21C%23",
+  "34CS": "Pasta_21C%23", "35D": "Pasta_21C%23", "37E": "Pasta_21C%23", "38F": "Pasta_21C%23", "39FS": "Pasta_21C%23",
+  "40G": "Pasta_21C%23",
   
   // Pasta_22D (23D-41G#)
   "23D": "Pasta_22D", "24DS": "Pasta_22D", "25E": "Pasta_22D", "26F": "Pasta_22D", "28G": "Pasta_22D",
@@ -870,10 +767,10 @@
   "41GS": "Pasta_22D",
   
   // Pasta_23D# (24D#-42A)
-  "24DS": "Pasta_23DS", "25E": "Pasta_23DS", "26F": "Pasta_23DS", "27FS": "Pasta_23DS", "29GS": "Pasta_23DS",
-  "30A": "Pasta_23DS", "31AS": "Pasta_23DS", "32B": "Pasta_23DS", "34CS": "Pasta_23DS", "35D": "Pasta_23DS",
-  "36DS": "Pasta_23DS", "37E": "Pasta_23DS", "39FS": "Pasta_23DS", "40G": "Pasta_23DS", "41GS": "Pasta_23DS",
-  "42A": "Pasta_23DS",
+  "24DS": "Pasta_23D%23", "25E": "Pasta_23D%23", "26F": "Pasta_23D%23", "27FS": "Pasta_23D%23", "29GS": "Pasta_23D%23",
+  "30A": "Pasta_23D%23", "31AS": "Pasta_23D%23", "32B": "Pasta_23D%23", "34CS": "Pasta_23D%23", "35D": "Pasta_23D%23",
+  "36DS": "Pasta_23D%23", "37E": "Pasta_23D%23", "39FS": "Pasta_23D%23", "40G": "Pasta_23D%23", "41GS": "Pasta_23D%23",
+  "42A": "Pasta_23D%23",
   
   // Pasta_24E (25E-43A#)
   "25E": "Pasta_24E", "26F": "Pasta_24E", "27FS": "Pasta_24E", "28G": "Pasta_24E", "30A": "Pasta_24E",
@@ -881,143 +778,6 @@
   "37E": "Pasta_24E", "38F": "Pasta_24E", "40G": "Pasta_24E", "41GS": "Pasta_24E", "42A": "Pasta_24E",
   "43AS": "Pasta_24E"
 };
-
-    /* ============================
-       SISTEMA DE POSICIONAMENTO (TEMPORÁRIO)
-       ============================ */
-       
-
-    const posicionamentoInicial = {
-      pernasLayer: { left: 130, top: 233 },
-      antebracoLayer: { left: 74, top: 87 },
-      troncoLayer: { left: 60, top: 40 },
-      bracoLayer: { left: 74, top: 150 },
-      cabecaLayer: { left: 125, top: -61 },
-      cabecaTrasLayer: { left: 83, top: -10 }
-    };
-
-    let posicionamentoAtual = JSON.parse(JSON.stringify(posicionamentoInicial));
-
-    function inicializarControlesPosicionamento() {
-      const container = document.getElementById('posicionamentoControls');
-      container.innerHTML = '';
-
-      Object.keys(posicionamentoAtual).forEach(layerId => {
-        const layer = document.getElementById(layerId);
-        if (!layer) return;
-
-        const controlDiv = document.createElement('div');
-        controlDiv.className = 'layer-control';
-        
-        const coords = posicionamentoAtual[layerId];
-        
-        controlDiv.innerHTML = `
-          <div class="layer-label">${layerId}</div>
-          <div class="coord-inputs">
-            <div class="coord-input">
-              <label>X:</label>
-              <input type="number" id="${layerId}_left" value="${coords.left}" step="1">
-            </div>
-            <div class="coord-input">
-              <label>Y:</label>
-              <input type="number" id="${layerId}_top" value="${coords.top}" step="1">
-            </div>
-          </div>
-          <div class="pos-buttons">
-            <button class="pos-btn" onclick="aplicarPosicao('${layerId}')">Aplicar</button>
-            <button class="pos-btn" onclick="moverLayer('${layerId}', 0, -1)">↑</button>
-            <button class="pos-btn" onclick="moverLayer('${layerId}', 0, 1)">↓</button>
-            <button class="pos-btn" onclick="moverLayer('${layerId}', -1, 0)">←</button>
-            <button class="pos-btn" onclick="moverLayer('${layerId}', 1, 0)">→</button>
-          </div>
-        `;
-
-        // Adicionar event listeners para inputs
-        const leftInput = controlDiv.querySelector(`#${layerId}_left`);
-        const topInput = controlDiv.querySelector(`#${layerId}_top`);
-        
-        leftInput.addEventListener('change', () => aplicarPosicao(layerId));
-        topInput.addEventListener('change', () => aplicarPosicao(layerId));
-
-        container.appendChild(controlDiv);
-      });
-    }
-
-    function aplicarPosicao(layerId) {
-      const leftInput = document.getElementById(`${layerId}_left`);
-      const topInput = document.getElementById(`${layerId}_top`);
-      const layer = document.getElementById(layerId);
-
-      if (leftInput && topInput && layer) {
-        const left = parseInt(leftInput.value);
-        const top = parseInt(topInput.value);
-        
-        posicionamentoAtual[layerId] = { left, top };
-        layer.style.left = left + 'px';
-        layer.style.top = top + 'px';
-        
-        atualizarDebugInfo();
-      }
-    }
-
-    function moverLayer(layerId, deltaX, deltaY) {
-      const coords = posicionamentoAtual[layerId];
-      if (coords) {
-        coords.left += deltaX;
-        coords.top += deltaY;
-        
-        // Atualizar inputs
-        const leftInput = document.getElementById(`${layerId}_left`);
-        const topInput = document.getElementById(`${layerId}_top`);
-        if (leftInput) leftInput.value = coords.left;
-        if (topInput) topInput.value = coords.top;
-        
-        aplicarPosicao(layerId);
-      }
-    }
-
-    function copiarCoordenadasParaCSS() {
-      let css = '';
-      Object.keys(posicionamentoAtual).forEach(layerId => {
-        const coords = posicionamentoAtual[layerId];
-        css += `#${layerId} { left: ${coords.left}px; top: ${coords.top}px; }\n`;
-      });
-      
-      // Copiar para área de transferência
-      navigator.clipboard.writeText(css).then(() => {
-        alert('CSS copiado para a área de transferência!');
-        console.log('CSS para copiar:\n' + css);
-      }).catch(err => {
-        console.error('Erro ao copiar:', err);
-        alert('Erro ao copiar. Verifique o console.');
-      });
-    }
-
-    function resetarPosicionamento() {
-      posicionamentoAtual = JSON.parse(JSON.stringify(posicionamentoInicial));
-      Object.keys(posicionamentoAtual).forEach(layerId => {
-        const layer = document.getElementById(layerId);
-        const coords = posicionamentoAtual[layerId];
-        if (layer) {
-          layer.style.left = coords.left + 'px';
-          layer.style.top = coords.top + 'px';
-        }
-      });
-      inicializarControlesPosicionamento();
-      atualizarDebugInfo();
-    }
-
-    function atualizarDebugInfo() {
-      const debugDiv = document.getElementById('debugCoords');
-      if (debugDiv) {
-        let info = 'Coordenadas atuais:\n';
-        Object.keys(posicionamentoAtual).forEach(layerId => {
-          const coords = posicionamentoAtual[layerId];
-          info += `${layerId}: ${coords.left}px, ${coords.top}px\n`;
-        });
-        debugDiv.textContent = info;
-      }
-    }
 
     /* ============================
        FUNÇÕES PRINCIPAIS CORRIGIDAS
@@ -1039,25 +799,20 @@
     }
 
     function trocarFrameTronco(nota) {
-  let pasta = getPastaDaNota(nota);
-  const tronco = document.getElementById("troncoLayer");
-  
-  // CORREÇÃO: Se a pasta tem # no nome, usar encodeURIComponent
-  // Isso preserva o # no URL
-  if (pasta.includes('#')) {
-    pasta = encodeURIComponent(pasta);
-  }
-  
-  const nomeArquivo = nota.replace("S","#");
-  tronco.src = `animacao/tronco_baixo/${pasta}/${nomeArquivo}.png`;
-  
-  console.log("Trocando frame tronco:", {
-    nota: nota,
-    pasta: pasta,
-    arquivo: nomeArquivo + '.png',
-    caminho: `animacao/tronco_baixo/${pasta}/${nomeArquivo}.png`
-  });
-}
+      let pasta = getPastaDaNota(nota);
+      const tronco = document.getElementById("troncoLayer");
+      
+      // CORREÇÃO: Usar pasta diretamente do mapa (já com codificação para #)
+      const nomeArquivo = nota.replace("S","#");
+      tronco.src = `animacao/tronco_baixo/${pasta}/${nomeArquivo}.png`;
+      
+      console.log("Trocando frame tronco:", {
+        nota: nota,
+        pasta: pasta,
+        arquivo: nomeArquivo + '.png',
+        caminho: `animacao/tronco_baixo/${pasta}/${nomeArquivo}.png`
+      });
+    }
 
     function tocarNotaAudioBaixo(nota, volume) {
       pararAudioBaixo();
@@ -1161,6 +916,37 @@
         }
         dir *= -1;
       }, 60000 / bpm); // um "vai e volta" por tempo (semínima)
+    }
+
+    /* ============================
+       ANIMAÇÃO – MOVIMENTO LATERAL
+       ============================ */
+    function startLateralMovement() {
+      if (lateralMovementTimer) clearInterval(lateralMovementTimer);
+      
+      const layersToMove = [
+        'antebracoLayer', 'troncoLayer', 'bracoLayer', 
+        'cabecaLayer', 'cabecaTrasLayer'
+      ];
+      
+      let direction = 1;
+      let position = 0;
+      const maxOffset = 10; // Máximo deslocamento em pixels
+      
+      lateralMovementTimer = setInterval(() => {
+        position += direction;
+        
+        if (Math.abs(position) >= maxOffset) {
+          direction *= -1;
+        }
+        
+        layersToMove.forEach(layerId => {
+          const layer = document.getElementById(layerId);
+          if (layer) {
+            layer.style.transform = `translateX(${position}px)`;
+          }
+        });
+      }, 100); // Velocidade do movimento lateral
     }
 
     /* ============================
@@ -1716,6 +1502,7 @@
       resetAnimTimers();
       startTroncoBpm(bpm);
       startHeadTiltBpm(bpm);
+      startLateralMovement();
       
       // Iniciar playback
       iniciarPlayback();
@@ -1943,16 +1730,13 @@
     window.onload = async () => {
       garantirPaisagem();
 
-      // Inicializar sistema de posicionamento
-      inicializarControlesPosicionamento();
-      atualizarDebugInfo();
-
       // pré-carrega frames da cabeça
       headFrames = generateHeadFramePaths();
       await preloadImages(headFrames);
       startHeadLoop();
       startTroncoBpm(bpmAtual);
       startHeadTiltBpm(bpmAtual);
+      startLateralMovement();
 
       iniciarInterface();
     };
