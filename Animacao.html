@@ -291,6 +291,29 @@
       border-color: #5eead4;
       font-weight: bold;
     }
+    
+    /* Estilos para o modo de ajuste */
+    .ajuste-controls {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.8);
+      padding: 10px;
+      border-radius: 8px;
+      z-index: 1000;
+      display: none;
+    }
+    .ajuste-controls.ativo {
+      display: block;
+    }
+    .ajuste-controls button {
+      margin: 2px;
+      font-size: 0.7em;
+      padding: 4px 8px;
+    }
+    .layer.ajustavel {
+      outline: 2px dashed #5eead4;
+    }
   </style>
 </head>
 <body>
@@ -372,12 +395,22 @@
       </div>
     </div>
   </div>
+  
+  <!-- Controles de ajuste visual -->
+  <div class="ajuste-controls" id="ajusteControls">
+    <div style="color: white; margin-bottom: 5px;">Ajuste Visual</div>
+    <button id="btnResetPosicoes">Resetar Posições</button>
+    <button id="btnSalvarPosicoes">Salvar Posições</button>
+    <button id="btnSairAjuste">Sair do Modo Ajuste</button>
+  </div>
+  
   <div id="selectionOverlay" class="selection-overlay">
     <div class="selection-panel" id="selectionPanel">
       <div id="selectionTitle" class="selection-title">Selecione</div>
       <div id="selectionOptions" class="selection-options"></div>
     </div>
   </div>
+  
   <script>
     /* ============================
        ESTADO GLOBAL
@@ -463,7 +496,13 @@
         Metal3: [[1, 3, 5, 3, 1, 2, 4, 5], [1, 3, 4, 5], [2, 5, 1, 5]],
         Jazz: [[1,2,5,1], [2,5,1,4], [3,6,2,5]]
     };
-    /* CORRIGIDO: MAPA USA S, NÃO # */
+    
+    // CORREÇÃO: Função para converter # para S em todos os caminhos de imagem
+    function corrigirCaminhoImagem(caminho) {
+      return caminho.replace(/#/g, "S");
+    }
+    
+    // CORREÇÃO: Mapa atualizado para usar S em vez de #
     const folderMapByNumber = {
       1: "Pasta_1F", 2: "Pasta_1F", 3: "Pasta_1F", 4: "Pasta_1F", 5: "Pasta_1F",
       6: "Pasta_1F", 7: "Pasta_1F", 8: "Pasta_1F", 9: "Pasta_1F", 10: "Pasta_1F",
@@ -479,7 +518,8 @@
 
     // ================= FUNÇÕES DE CONVERSÃO =================
     function notaToFilename(nota) {
-      return nota.replace(/#/g, "S");
+      // CORREÇÃO: Converter # para S
+      return corrigirCaminhoImagem(nota.replace(/#/g, "S"));
     }
 
     function getPastaDaNota(nota) {
@@ -504,14 +544,16 @@
       const notaCorrigida = notaToFilename(nota);
       const pasta = getPastaDaNota(nota);
       const tronco = document.getElementById("troncoLayer");
-      tronco.src = `animacao/tronco_baixo/${pasta}/${notaCorrigida}.png`;
+      // CORREÇÃO: Usar função corrigirCaminhoImagem
+      tronco.src = corrigirCaminhoImagem(`animacao/tronco_baixo/${pasta}/${notaCorrigida}.png`);
     }
 
     function tocarNotaAudioBaixo(nota, volume) {
       pararAudioBaixo();
       if (nota === "x") return;
       const notaCorrigida = notaToFilename(nota);
-      const a = new Audio("assets/BaixoMelodia/" + notaCorrigida + ".mp3");
+      // CORREÇÃO: Usar função corrigirCaminhoImagem
+      const a = new Audio(corrigirCaminhoImagem("assets/BaixoMelodia/" + notaCorrigida + ".mp3"));
       a.volume = volume;
       const stepTime = (60000 / bpmAtual) / 4;
       const fadeOutTime = stepTime * 0.8;
@@ -542,7 +584,8 @@
       const paths = [];
       for (let i = 1; i <= HEAD_TOTAL_FRAMES; i++) {
         const num = String(i).padStart(4, "0");
-        paths.push(`animacao/cabeca/cabeca${num}.png`);
+        // CORREÇÃO: Usar função corrigirCaminhoImagem
+        paths.push(corrigirCaminhoImagem(`animacao/cabeca/cabeca${num}.png`));
       }
       return paths;
     }
@@ -553,7 +596,8 @@
           const img = new Image();
           img.onload = () => resolve();
           img.onerror = () => resolve();
-          img.src = src;
+          // CORREÇÃO: Usar função corrigirCaminhoImagem
+          img.src = corrigirCaminhoImagem(src);
         });
       });
       await Promise.all(promises);
@@ -564,7 +608,8 @@
       const cabeca = document.getElementById("cabecaLayer");
       headTimer = setInterval(() => {
         headFrameIndex = (headFrameIndex + 1) % headFrames.length;
-        cabeca.src = headFrames[headFrameIndex];
+        // CORREÇÃO: Usar função corrigirCaminhoImagem
+        cabeca.src = corrigirCaminhoImagem(headFrames[headFrameIndex]);
       }, 50);
     }
 
@@ -613,18 +658,21 @@
 
     function trocarAntebraco(corda) {
       const ante = document.getElementById("antebracoLayer");
-      ante.src = `animacao/antebraco/antebraco${corda}.png`;
+      // CORREÇÃO: Usar função corrigirCaminhoImagem
+      ante.src = corrigirCaminhoImagem(`animacao/antebraco/antebraco${corda}.png`);
     }
 
     function animarBracoDireito(corda, duracaoMs) {
       const braco = document.getElementById("bracoLayer");
+      // CORREÇÃO: Usar função corrigirCaminhoImagem e corrigir nomes dos frames
       const frames = [
-        `animacao/braco_direito/Corda_${corda}1.png`,
-        `animacao/braco_direito/Corda_${corda}2.png`,
-        `animacao/braco_direito/Corda_${corda}3.png`,
-        `animacao/braco_direito/Corda_${corda}4.png`,
-        `animacao/braco_direito/Corda_${corda}5.png`
+        corrigirCaminhoImagem(`animacao/braco_direito/Corda_${corda}1.png`),
+        corrigirCaminhoImagem(`animacao/braco_direito/Corda_${corda}2.png`),
+        corrigirCaminhoImagem(`animacao/braco_direito/Corda_${corda}3.png`),
+        corrigirCaminhoImagem(`animacao/braco_direito/Corda_${corda}4.png`),
+        corrigirCaminhoImagem(`animacao/braco_direito/Corda_${corda}5.png`)
       ];
+      
       const passo = duracaoMs / frames.length;
       let i = 0;
       const id = setInterval(() => {
@@ -660,7 +708,8 @@
         const seq = bateriaSeq[line.id];
         if (!seq || step >= seq.length) return;
         if (seq[step] === line.id) {
-          const a = new Audio("assets/" + line.file);
+          // CORREÇÃO: Usar função corrigirCaminhoImagem
+          const a = new Audio(corrigirCaminhoImagem("assets/" + line.file));
           a.volume = volume;
           a.play().catch(e => console.log("Erro:", e));
         }
@@ -680,11 +729,25 @@
     }
 
     // ================= MODOS DE AJUSTE VISUAL =================
+    let modoAjusteAtivo = false;
+    let posicoesOriginais = {};
+
     function ativarModoAjuste() {
+      modoAjusteAtivo = true;
       const containers = ['pernasLayer', 'antebracoLayer', 'troncoLayer', 'bracoLayer', 'cabecaLayer', 'cabecaTrasLayer'];
+      
+      // Salvar posições originais
       containers.forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
+        posicoesOriginais[id] = {
+          left: el.style.left,
+          top: el.style.top
+        };
+        
+        // Adicionar classe para destacar
+        el.classList.add('ajustavel');
+        
         let isDragging = false;
         let startX, startY;
 
@@ -709,6 +772,49 @@
         document.onmouseup = () => {
           isDragging = false;
         };
+      });
+      
+      // Mostrar controles de ajuste
+      document.getElementById('ajusteControls').classList.add('ativo');
+    }
+
+    function desativarModoAjuste() {
+      modoAjusteAtivo = false;
+      const containers = ['pernasLayer', 'antebracoLayer', 'troncoLayer', 'bracoLayer', 'cabecaLayer', 'cabecaTrasLayer'];
+      
+      containers.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.classList.remove('ajustavel');
+        el.style.cursor = 'default';
+        el.onmousedown = null;
+      });
+      
+      document.onmousemove = null;
+      document.onmouseup = null;
+      
+      // Esconder controles de ajuste
+      document.getElementById('ajusteControls').classList.remove('ativo');
+    }
+
+    function resetarPosicoes() {
+      const containers = ['pernasLayer', 'antebracoLayer', 'troncoLayer', 'bracoLayer', 'cabecaLayer', 'cabecaTrasLayer'];
+      
+      containers.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el || !posicoesOriginais[id]) return;
+        el.style.left = posicoesOriginais[id].left;
+        el.style.top = posicoesOriginais[id].top;
+      });
+    }
+
+    function salvarPosicoes() {
+      const css = gerarCSSAjustado();
+      document.getElementById("cssAjustadoOutput").value = css;
+      navigator.clipboard.writeText(css).then(() => {
+        alert("CSS copiado para a área de transferência!");
+      }).catch(() => {
+        alert("Copie o CSS abaixo manualmente.");
       });
     }
 
@@ -1296,6 +1402,11 @@
           alert("Copie o CSS abaixo manualmente.");
         });
       };
+
+      // === CONTROLES DE AJUSTE VISUAL ===
+      document.getElementById("btnResetPosicoes").onclick = resetarPosicoes;
+      document.getElementById("btnSalvarPosicoes").onclick = salvarPosicoes;
+      document.getElementById("btnSairAjuste").onclick = desativarModoAjuste;
 
       configurarPlaybackExportado();
     }
