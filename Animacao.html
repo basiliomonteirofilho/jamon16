@@ -1,910 +1,691 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <script src="jamon-engine.js"></script>
-
   <meta charset="UTF-8" />
-  <title>Jam On – Baixista Animada com Playback Aleatório</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Baixista + Bateria - Animação Integrada</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <style>
     * {
+      box-sizing: border-box;
       margin: 0;
       padding: 0;
-      box-sizing: border-box;
     }
     body {
-      background: #101010;
-      color: #f5f5f5;
+      margin: 0;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #111;
+      color: #f5f5f5;
       overflow: hidden;
     }
-    h1, h2, h3 {
-      font-weight: 600;
-    }
-    button {
-      cursor: pointer;
-    }
 
-    /* Overlay de orientação (paisagem) */
     #orientationOverlay {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.9);
+      background: rgba(0, 0, 0, 0.9);
       color: #fff;
       display: none;
-      align-items: center;
       justify-content: center;
-      z-index: 9999;
+      align-items: center;
       text-align: center;
-      padding: 2rem;
+      z-index: 9999;
+      padding: 16px;
     }
-    #orientationOverlay h2 {
-      font-size: 1.7rem;
-      margin-bottom: 0.8rem;
+
+    #orientationOverlay h1 {
+      font-size: 1.4rem;
+      margin-bottom: 0.5rem;
     }
+
     #orientationOverlay p {
-      opacity: 0.85;
+      font-size: 0.95rem;
+      opacity: 0.8;
     }
 
-    /* Overlay de contagem regressiva */
-    #countdownOverlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.7);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 9998;
-    }
-    #countdownOverlay span {
-      font-size: 5rem;
-      font-weight: 800;
-      color: #00e0ff;
-      text-shadow: 0 0 18px #00e0ff;
-    }
-
-    /* Container raiz */
     .appRoot {
       width: 100vw;
       height: 100vh;
       display: flex;
       flex-direction: column;
+      background: radial-gradient(circle at top, #222 0, #050505 60%);
     }
 
-    /* ============================
-       TOPO: ANIMAÇÃO BAIXISTA
-       ============================ */
-    #animacaoArea {
-      width: 100%;
-      height: 60%;
-      background: #151515;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+    #topArea {
       position: relative;
-      border-bottom: 1px solid #222;
-      overflow: hidden;
-    }
-    #animacaoInner {
-      position: relative;
-      width: min(480px, 60vw);
-      height: min(420px, 55vh);
-    }
-    #animacaoInner img {
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      user-select: none;
-      pointer-events: none;
-      image-rendering: auto;
-    }
-    #pernasLayer {
-      bottom: 0;
-      width: 68%;
-    }
-    #troncoLayer {
-      bottom: 0;
-      width: 70%;
-    }
-    #cabecaLayer {
-      bottom: 38%;
-      width: 48%;
-      transform-origin: 50% 85%;
-    }
-    #bracoDireitoLayer {
-      bottom: 20%;
-      width: 52%;
-      transform-origin: 15% 10%;
-    }
-    #antebracoLayer {
-      bottom: 24%;
-      width: 52%;
-      transform-origin: 15% 5%;
-    }
-
-    /* Suave balanço lateral do grupo (tronco+pernas) */
-    .grupoBalanço {
-      animation: sway 4s ease-in-out infinite;
-    }
-    @keyframes sway {
-      0%   { transform: translateX(-50%) rotate(-1.5deg); }
-      50%  { transform: translateX(-50%) rotate(1.5deg); }
-      100% { transform: translateX(-50%) rotate(-1.5deg); }
-    }
-
-    /* ===== Editor de posição (modo ajuste) ===== */
-    #posEditor {
-      position: absolute;
-      left: 8px;
-      bottom: 8px;
-      padding: 6px 8px;
-      background: rgba(0,0,0,0.65);
-      border-radius: 8px;
-      font-size: 0.75rem;
-      z-index: 5000;
-      backdrop-filter: blur(4px);
-    }
-    #posEditor label {
+      flex: 0 0 58%;
       display: flex;
-      gap: 4px;
       align-items: center;
-    }
-    #posEditorControls {
-      margin-top: 4px;
-      display: none;
-      flex-direction: column;
-      gap: 4px;
-    }
-    #posEditorControls select {
-      font-size: 0.75rem;
-      padding: 2px 4px;
-      border-radius: 4px;
-      border: 1px solid #444;
-      background: #111;
-      color: #eee;
-    }
-    #posEditorButtons {
-      display: grid;
-      grid-template-columns: repeat(3, 20px);
-      grid-template-rows: repeat(2, 20px);
-      gap: 2px;
       justify-content: center;
-    }
-    #posEditorButtons button {
-      font-size: 0.7rem;
-      padding: 0;
-      border-radius: 4px;
-      border: 1px solid #444;
-      background: #222;
-      color: #eee;
-    }
-    #posEditor textarea {
-      width: 200px;
-      height: 80px;
-      resize: none;
-      font-size: 0.7rem;
-      background: #050505;
-      color: #0f0;
-      border-radius: 4px;
-      border: 1px solid #333;
-      padding: 3px 4px;
+      padding-top: 24px;
     }
 
-    /* ============================
-       BASE: CONTROLES E COMPOSIÇÃO
-       ============================ */
-    #painel {
-      width: 100%;
-      height: 40%;
-      background: #111;
+    #bottomArea {
+      flex: 0 0 42%;
       display: flex;
       flex-direction: column;
-      padding: 10px 12px 8px;
-      gap: 8px;
+      background: rgba(5, 5, 5, 0.95);
+      border-top: 1px solid #333;
+      padding: 6px 10px 10px 10px;
       overflow: hidden;
     }
 
-    #topControls {
+    #playerControlsRow {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
       align-items: center;
-      justify-content: space-between;
-      border-radius: 8px;
-      padding: 6px 10px;
-      background: linear-gradient(90deg, #181818, #181822);
-      box-shadow: 0 0 0 1px #222 inset;
+      gap: 8px;
+      margin-bottom: 6px;
       font-size: 0.9rem;
     }
-    #topControls-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
+
+    #playerControlsRow button,
+    #playerControlsRow input[type="range"] {
+      cursor: pointer;
     }
-    #topControls-right {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
+
+    #playBtn,
+    #playAleatorioBtn,
+    #playExportadoBtn,
+    #addBaixoCol,
+    #addCol,
+    #duplicateSeq,
+    #clearBaixo,
+    #clearAll {
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid #555;
+      background: #222;
+      color: #eee;
+      font-size: 0.82rem;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    #playBtn:hover,
+    #playAleatorioBtn:hover,
+    #playExportadoBtn:hover,
+    #addBaixoCol:hover,
+    #addCol:hover,
+    #duplicateSeq:hover,
+    #clearBaixo:hover,
+    #clearAll:hover {
+      background: #333;
+      transform: translateY(-1px);
+    }
+
+    #bpmDisplay {
+      min-width: 70px;
+      font-weight: 600;
     }
 
     .sliderGroup {
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
     }
+
     .sliderGroup label {
       font-size: 0.8rem;
-      opacity: 0.9;
+      opacity: 0.85;
     }
+
     .sliderGroup input[type="range"] {
-      width: 120px;
+      width: 90px;
     }
 
-    .btn {
-      padding: 4px 10px;
-      border-radius: 999px;
-      border: none;
-      font-size: 0.8rem;
-      font-weight: 500;
-      background: #00a8ff;
-      color: #fff;
-      box-shadow: 0 0 0 1px #0077b6 inset;
-      transition: background 0.2s, transform 0.08s;
-      white-space: nowrap;
-    }
-    .btn:hover {
-      background: #00c4ff;
-      transform: translateY(-1px);
-    }
-    .btn.secondary {
-      background: #333;
-      color: #eee;
-      box-shadow: 0 0 0 1px #555 inset;
-    }
-    .btn.secondary:hover {
-      background: #444;
-    }
-    .btn.danger {
-      background: #bb2d3b;
-      box-shadow: 0 0 0 1px #7a1c25 inset;
-    }
-    .btn.danger:hover {
-      background: #d63348;
-    }
-
-    #descricaoModo {
-      font-size: 0.75rem;
-      opacity: 0.75;
-    }
-
-    /* Barra de progresso */
     #progressContainer {
       width: 100%;
       height: 5px;
-      background: #222;
       border-radius: 999px;
+      background: #2c2c2c;
       overflow: hidden;
-      box-shadow: 0 0 0 1px #000 inset;
+      margin-bottom: 8px;
     }
+
     #progressBar {
-      width: 0%;
       height: 100%;
-      background: linear-gradient(90deg, #00e0ff, #00ff85);
-      transition: width 0.08s linear;
+      width: 0%;
+      background: linear-gradient(90deg, #00c853, #ffd600);
+      transition: width 0.12s linear;
     }
 
-    /* Área de composição (baixo + bateria) */
-    #composicaoSection {
+    #gridsArea {
       flex: 1;
-      min-height: 0;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 4px;
+      overflow: auto;
     }
 
-    #sequencerCard {
-      flex: 1;
-      min-height: 0;
-      background: #151515;
-      border-radius: 10px;
-      box-shadow: 0 0 0 1px #222 inset;
-      padding: 6px 8px;
+    #baixoLabelRow {
       display: flex;
-      flex-direction: column;
-      gap: 6px;
-      overflow: hidden;
-    }
-
-    #sequencerHeader {
-      display: flex;
-      justify-content: space-between;
       align-items: center;
-      font-size: 0.8rem;
-    }
-    #sequencerHeaderLeft span {
-      font-weight: 500;
-    }
-    #sequencerHeaderRight {
-      display: flex;
       gap: 6px;
-      flex-wrap: wrap;
-    }
-
-    #sequencerInner {
-      flex: 1;
-      min-height: 0;
-      overflow: auto; /* scroll único para baixo + todas as linhas da bateria */
-      padding-top: 4px;
-    }
-
-    .gridTitulo {
-      font-size: 0.78rem;
       margin-bottom: 2px;
-      color: #ddd;
     }
 
-    .baixoRowContainer {
+    #baixoLabelRow span {
+      font-size: 0.78rem;
+      opacity: 0.9;
+    }
+
+    #baixoGridContainer {
+      display: flex;
+      align-items: center;
+      gap: 6px;
       margin-bottom: 4px;
     }
-    .baixoLabel {
-      font-size: 0.75rem;
+
+    #baixoGridLabel {
+      width: 60px;
+      font-size: 0.78rem;
+      text-align: right;
       opacity: 0.85;
-      margin-bottom: 1px;
+      padding-right: 6px;
+    }
+
+    #baixoGrid {
+      flex: 1;
+      display: grid;
+      grid-auto-rows: 24px;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(20px, 1fr);
+      gap: 2px;
+      background: #080808;
+      padding: 2px;
+      border-radius: 4px;
+      border: 1px solid #333;
+    }
+
+    .gridWrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    #drumGrid {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding-top: 2px;
+      border-top: 1px solid #222;
+      margin-top: 2px;
     }
 
     .drumRow {
       display: flex;
       align-items: center;
-      margin: 1px 0;
+      gap: 4px;
+      min-height: 22px;
     }
+
     .drumLabel {
-      width: 90px;
-      font-size: 0.7rem;
-      opacity: 0.8;
+      width: 60px;
+      font-size: 0.76rem;
+      text-align: right;
+      opacity: 0.85;
+      padding-right: 6px;
+      white-space: nowrap;
     }
 
     .composicaoGrid {
-      display: flex;
-      flex-wrap: nowrap;
-      /* sem overflow-x aqui: quem rola é o sequencerInner */
-      border-radius: 6px;
-      background: #101010;
-      box-shadow: 0 0 0 1px #222 inset;
+      flex: 1;
+      display: grid;
+      grid-auto-rows: 22px;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(20px, 1fr);
+      gap: 2px;
+      background: #050505;
       padding: 2px;
+      border-radius: 4px;
+      border: 1px solid #222;
     }
 
     .cell {
-      min-width: 24px;
-      height: 22px;
-      border-radius: 4px;
-      margin: 1px;
       font-size: 0.7rem;
-      display: inline-flex;
+      display: flex;
       align-items: center;
       justify-content: center;
-      background: #181818;
-      color: #888;
+      border-radius: 3px;
+      border: 1px solid #333;
+      background: #151515;
       cursor: pointer;
       user-select: none;
-      transition: background 0.1s, transform 0.06s, color 0.1s;
-    }
-    .cell.active {
-      background: #0077ff;
-      color: #fff;
-      box-shadow: 0 0 0 1px #0050b3 inset;
-    }
-    .cell:hover {
-      transform: translateY(-1px);
-      background: #222;
-      color: #fff;
+      color: #f5f5f5;
+      min-width: 20px;
     }
 
-    /* Overlay de seleção de nota / peça */
+    .cell.active {
+      background: #1b5e20;
+      border-color: #00c853;
+      font-weight: 600;
+    }
+
+    .cell:hover {
+      filter: brightness(1.2);
+    }
+
+    #animacaoStageWrapper {
+      position: relative;
+      width: 60vw;
+      max-width: 520px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #baixistaStage {
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      height: 100%;
+      max-height: 360px;
+      margin: 0 auto;
+    }
+
+    #baixistaStage img {
+      position: absolute;
+      image-rendering: crisp-edges;
+      image-rendering: pixelated;
+      pointer-events: none;
+    }
+
+    #cabecaLayer {
+      z-index: 10;
+    }
+
+    #troncoBaixoLayer {
+      z-index: 5;
+    }
+
+    #antebracoLayer {
+      z-index: 8;
+    }
+
+    #bracoDireitoLayer {
+      z-index: 9;
+    }
+
+    #pernasLayer {
+      z-index: 1;
+    }
+
+    .countdownOverlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1500;
+      background: radial-gradient(circle, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.95));
+      color: #fff;
+      font-size: 3rem;
+      font-weight: bold;
+    }
+
     #selectionOverlay {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.75);
+      background: rgba(0, 0, 0, 0.65);
       display: none;
       align-items: center;
       justify-content: center;
-      z-index: 6000;
+      z-index: 9000;
     }
+
     #selectionOverlay.visible {
       display: flex;
     }
+
     #selectionPanel {
       background: #181818;
-      border-radius: 10px;
-      box-shadow: 0 0 0 1px #333 inset;
-      padding: 10px 12px;
-      max-width: 480px;
-      width: 90vw;
+      padding: 10px;
+      border-radius: 6px;
+      max-width: 520px;
       max-height: 70vh;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+      overflow: auto;
+      border: 1px solid #444;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
     }
+
     #selectionTitle {
       font-size: 0.9rem;
+      margin-bottom: 6px;
       font-weight: 600;
     }
+
     #selectionOptions {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+      gap: 4px;
+    }
+
+    .selection-option {
+      border-radius: 4px;
+      background: #222;
+      border: 1px solid #555;
+      font-size: 0.72rem;
+      text-align: center;
+      padding: 4px 2px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .selection-option.active {
+      background: #1b5e20;
+      border-color: #00c853;
+      font-weight: 600;
+    }
+
+    .selection-option.x-option {
+      background: #880e4f;
+      border-color: #f50057;
+    }
+
+    .selection-option.x-option.active {
+      background: #ad1457;
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #444;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #111;
+    }
+
+    #posEditorPanel {
+      position: fixed;
+      top: 6px;
+      left: 6px;
+      z-index: 9999;
+      background: rgba(0, 0, 0, 0.75);
+      color: #fff;
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-size: 12px;
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
-      overflow-y: auto;
-      padding-right: 4px;
+      gap: 4px;
+      align-items: center;
     }
-    .selection-option {
-      padding: 4px 8px;
-      border-radius: 6px;
-      background: #222;
-      font-size: 0.8rem;
+    #posEditorPanel label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    #posEditorPanel select {
+      font-size: 12px;
+    }
+    #posEditButtons button,
+    #posCopyCssBtn {
+      font-size: 11px;
+      padding: 2px 6px;
       cursor: pointer;
-    }
-    .selection-option.active {
-      background: #0077ff;
-    }
-    .selection-option.x-option {
-      background: #333;
-      color: #ffb3b3;
     }
 
     @media (max-width: 900px) {
-      #animacaoInner {
-        width: min(420px, 90vw);
+      #animacaoStageWrapper {
+        width: 90vw;
       }
-      .cell {
-        min-width: 22px;
-        height: 20px;
+      #baixistaStage {
+        max-height: 320px;
       }
-      .drumLabel {
-        width: 70px;
+      #bottomArea {
+        flex-basis: 45%;
+      }
+      #playerControlsRow {
+        font-size: 0.8rem;
+      }
+    }
+
+    @media (max-width: 600px) {
+      #bottomArea {
+        flex-basis: 48%;
+      }
+      #playerControlsRow button {
+        padding: 3px 6px;
+        font-size: 0.7rem;
+      }
+      #baixoGrid,
+      .composicaoGrid {
+        grid-auto-rows: 20px;
       }
     }
   </style>
 </head>
 <body>
-  <!-- Overlay para orientar a usar paisagem -->
   <div id="orientationOverlay">
     <div>
-      <h2>Gire o aparelho</h2>
-      <p>Use o modo paisagem (horizontal) para ver a baixista e o painel de edição.</p>
+      <h1>Gire o dispositivo</h1>
+      <p>Para uma experiência melhor, use em modo paisagem (deitado).</p>
     </div>
   </div>
 
-  <!-- Overlay de contagem regressiva -->
-  <div id="countdownOverlay">
-    <span id="countdownNumber">3</span>
+  <!-- Painel de ajuste de posição (modo editor) -->
+  <div id="posEditorPanel">
+    <label>
+      <input type="checkbox" id="posEditToggle" />
+      Modo edição de posição
+    </label>
+    <label for="posPartSelect">Parte:</label>
+    <select id="posPartSelect">
+      <option value="troncoBaixoLayer">Tronco / Baixo</option>
+      <option value="cabecaLayer">Cabeça</option>
+      <option value="antebracoLayer">Antebraço</option>
+      <option value="bracoDireitoLayer">Braço direito</option>
+      <option value="pernasLayer">Pernas</option>
+    </select>
+    <div id="posEditButtons">
+      <button type="button" id="posUpBtn">↑</button>
+      <button type="button" id="posDownBtn">↓</button>
+      <button type="button" id="posLeftBtn">←</button>
+      <button type="button" id="posRightBtn">→</button>
+    </div>
+    <button type="button" id="posCopyCssBtn">Copiar CSS</button>
+    <small>(Use apenas para calibrar, depois pode desativar no código.)</small>
   </div>
 
   <div class="appRoot">
-    <!-- TOPO: ANIMAÇÃO -->
-    <section id="animacaoArea">
-      <div id="animacaoInner">
-        <!-- Pernas estáticas -->
-        <img id="pernasLayer" class="grupoBalanço" src="animacao/pernas/Pernas.png" alt="Pernas" />
-        <!-- Tronco + baixo (mão esquerda) -->
-        <img id="troncoLayer" class="grupoBalanço" src="animacao/tronco_baixo/Pasta_1F/1E.png" alt="Tronco e baixo" />
-        <!-- Cabeça -->
-        <img id="cabecaLayer" src="animacao/cabeca/cabeca0001.png" alt="Cabeça" />
-        <!-- Braço direito (ombro/bíceps – 4 cordas) -->
-        <img id="antebracoLayer" src="animacao/antebraco/antebracoE.png" alt="Antebraço/ombro" />
-        <!-- Mão direita / antebraço (5 frames por corda) -->
-        <img id="bracoDireitoLayer" src="animacao/braco_direito/Corda_E1.png" alt="Braço direito" />
-      </div>
-
-      <!-- Painel de ajuste de posição -->
-      <div id="posEditor">
-        <label>
-          <input type="checkbox" id="posEditorToggle">
-          <span>Modo ajuste</span>
-        </label>
-        <div id="posEditorControls">
-          <select id="posEditorLayer"></select>
-          <div id="posEditorButtons">
-            <div></div>
-            <button id="posUp">▲</button>
-            <div></div>
-            <button id="posLeft">◀</button>
-            <button id="posDown">▼</button>
-            <button id="posRight">▶</button>
+    <div id="topArea">
+      <div id="animacaoStageWrapper">
+        <div id="baixistaStage">
+          <img id="pernasLayer" src="animacao/pernas/pernas.png" alt="Pernas" />
+          <img id="troncoBaixoLayer" src="animacao/tronco_baixo/Pasta_1F/1E.png" alt="Tronco/Baixo" />
+          <img id="antebracoLayer" src="animacao/antebraco/Corda_E.png" alt="Antebraço direito" />
+          <img id="bracoDireitoLayer" src="animacao/braco_direito/Corda_E1.png" alt="Braço direito" />
+          <img id="cabecaLayer" src="animacao/cabeca/cabeca0001.png" alt="Cabeça" />
+          <div id="countdownOverlay" class="countdownOverlay">
+            <span id="countdownText">3</span>
           </div>
-          <textarea id="posEditorCss" readonly></textarea>
         </div>
       </div>
-    </section>
+    </div>
 
-    <!-- BASE: CONTROLES + COMPOSIÇÃO -->
-    <section id="painel">
-      <div id="topControls">
-        <div id="topControls-left">
-          <strong>JamOn – Baixista Animada (Animacao6)</strong>
-          <span id="descricaoModo">Baixista toca composição manual e playback aleatório (baixo + bateria)</span>
-        </div>
-        <div id="topControls-right">
-          <div class="sliderGroup">
-            <label for="bpmSlider">BPM:</label>
-            <input id="bpmSlider" type="range" min="60" max="180" value="110">
-            <span id="bpmDisplay">110 BPM</span>
-          </div>
-          <div class="sliderGroup">
-            <label for="baixoVolume">Baixo:</label>
-            <input id="baixoVolume" type="range" min="0" max="1" step="0.01" value="0.9">
-          </div>
-          <div class="sliderGroup">
-            <label for="drumVolume">Bateria:</label>
-            <input id="drumVolume" type="range" min="0" max="1" step="0.01" value="0.8">
-          </div>
+    <div id="bottomArea">
+      <div id="playerControlsRow">
+        <button id="playBtn">▶ Play</button>
+        <button id="playAleatorioBtn">🎲 Playback aleatório</button>
+        <button id="playExportadoBtn">📁 Carregar JSON exportado</button>
 
-          <button id="playComposicaoBtn" class="btn secondary">▶ Tocar composição manual</button>
-          <button id="playAleatorioBtn" class="btn secondary">🔀 Playback aleatório (baixo+bateria)</button>
-          <button id="playBtn" class="btn">▶ Play / Pause</button>
-          <button id="stopBtn" class="btn secondary">⏹ Parar</button>
+        <span id="bpmDisplay">120 BPM</span>
+        <input type="range" id="bpmSlider" min="60" max="180" value="120" />
+
+        <div class="sliderGroup">
+          <label for="baixoVolume">Baixo</label>
+          <input type="range" id="baixoVolume" min="0" max="1" step="0.01" value="0.9" />
         </div>
+
+        <div class="sliderGroup">
+          <label for="drumVolume">Bateria</label>
+          <input type="range" id="drumVolume" min="0" max="1" step="0.01" value="0.9" />
+        </div>
+
+        <button id="addBaixoCol">+1 passo baixo</button>
+        <button id="addCol">+1 passo tudo</button>
+        <button id="duplicateSeq">×2 últimos 16</button>
+        <button id="clearBaixo">Limpar baixo</button>
+        <button id="clearAll">Limpar tudo</button>
       </div>
 
       <div id="progressContainer">
         <div id="progressBar"></div>
       </div>
 
-      <section id="composicaoSection">
-        <div id="sequencerCard">
-          <div id="sequencerHeader">
-            <div id="sequencerHeaderLeft">
-              <span>Baixo (clique para editar notas – X = ghost / silêncio)</span>
-            </div>
-            <div id="sequencerHeaderRight">
-              <button id="addCol" class="btn secondary">+ Coluna</button>
-              <button id="duplicateSeq" class="btn secondary">×2 Duplicar últimas 16</button>
-              <button id="clearBaixo" class="btn secondary">Limpar Baixo</button>
-              <button id="clearAll" class="btn danger">Limpar Tudo</button>
-            </div>
-          </div>
-          <div id="sequencerInner">
-            <!-- Baixo -->
-            <div class="baixoRowContainer">
-              <div class="baixoLabel">Baixo</div>
-              <div id="baixoGrid" class="composicaoGrid"></div>
-            </div>
-            <!-- Bateria -->
-            <div class="gridTitulo">Bateria (clique para ativar/desativar peças)</div>
-            <div id="drumGrid"></div>
-          </div>
+      <div id="gridsArea">
+        <div id="baixoLabelRow">
+          <span>Baixo: clique nas células para escolher nota ou X (ghost note).</span>
         </div>
-      </section>
-    </section>
-  </div>
-
-  <!-- Painel de seleção (nota / peça de bateria) -->
-  <div id="selectionOverlay">
-    <div id="selectionPanel">
-      <div id="selectionTitle">Selecione</div>
-      <div id="selectionOptions"></div>
-      <div style="text-align:right;margin-top:6px;">
-        <button class="btn secondary" onclick="fecharPainelSelecao()">Fechar</button>
+        <div id="baixoGridContainer">
+          <div id="baixoGridLabel">Baixo</div>
+          <div id="baixoGrid"></div>
+        </div>
+        <div class="gridWrapper" id="drumGrid"></div>
       </div>
     </div>
   </div>
 
+  <div id="selectionOverlay">
+    <div id="selectionPanel">
+      <div id="selectionTitle">Selecione a nota</div>
+      <div id="selectionOptions"></div>
+    </div>
+  </div>
+
+  <script src="jamon-engine.js"></script>
   <script>
-    /* ======================================================
-       CONFIG - para desativar o editor depois, troque para false
-       ====================================================== */
-    const ENABLE_POSITION_EDITOR = true;
+    let headFrames = [];
+    let headFrameIndex = 0;
+    let headLoopTimer = null;
+    let troncoTimerBpm = null;
+    let headTiltTimerBpm = null;
+    let lateralTimer = null;
+    let animTimers = [];
 
-    /* ===========================================
-       CONSTANTES / ESTADO GLOBAL
-       =========================================== */
-    const BASS_SAMPLES = {
-      '1E': 'assets/BaixoMelodia/1E.mp3',
-      '2F': 'assets/BaixoMelodia/2F.mp3',
-      '3FS': 'assets/BaixoMelodia/3FS.mp3',
-      '4G': 'assets/BaixoMelodia/4G.mp3',
-      '5GS': 'assets/BaixoMelodia/5GS.mp3',
-      '6A': 'assets/BaixoMelodia/6A.mp3',
-      '7AS': 'assets/BaixoMelodia/7AS.mp3',
-      '8B': 'assets/BaixoMelodia/8B.mp3',
-      '9C': 'assets/BaixoMelodia/9C.mp3',
-      '10CS': 'assets/BaixoMelodia/10CS.mp3',
-      '11D': 'assets/BaixoMelodia/11D.mp3',
-      '12DS': 'assets/BaixoMelodia/12DS.mp3',
-      '13E': 'assets/BaixoMelodia/13E.mp3',
-      '14F': 'assets/BaixoMelodia/14F.mp3',
-      '15FS': 'assets/BaixoMelodia/15FS.mp3',
-      '16G': 'assets/BaixoMelodia/16G.mp3',
-      '17GS': 'assets/BaixoMelodia/17GS.mp3',
-      '18A': 'assets/BaixoMelodia/18A.mp3',
-      '19AS': 'assets/BaixoMelodia/19AS.mp3',
-      '20B': 'assets/BaixoMelodia/20B.mp3',
-      '21C': 'assets/BaixoMelodia/21C.mp3',
-      '22CS': 'assets/BaixoMelodia/22CS.mp3',
-      '23D': 'assets/BaixoMelodia/23D.mp3',
-      '24DS': 'assets/BaixoMelodia/24DS.mp3',
-      '25E': 'assets/BaixoMelodia/25E.mp3',
-      '26F': 'assets/BaixoMelodia/26F.mp3',
-      '27FS': 'assets/BaixoMelodia/27FS.mp3',
-      '28G': 'assets/BaixoMelodia/28G.mp3',
-      '29GS': 'assets/BaixoMelodia/29GS.mp3',
-      '30A': 'assets/BaixoMelodia/30A.mp3',
-      '31AS': 'assets/BaixoMelodia/31AS.mp3',
-      '32B': 'assets/BaixoMelodia/32B.mp3',
-      '33C': 'assets/BaixoMelodia/33C.mp3',
-      '34CS': 'assets/BaixoMelodia/34CS.mp3',
-      '35D': 'assets/BaixoMelodia/35D.mp3',
-      '36DS': 'assets/BaixoMelodia/36DS.mp3',
-      '37E': 'assets/BaixoMelodia/37E.mp3',
-      '38F': 'assets/BaixoMelodia/38F.mp3',
-      '39FS': 'assets/BaixoMelodia/39FS.mp3',
-      '40G': 'assets/BaixoMelodia/40G.mp3',
-      '41GS': 'assets/BaixoMelodia/41GS.mp3',
-      '42A': 'assets/BaixoMelodia/42A.mp3',
-      '43AS': 'assets/BaixoMelodia/43AS.mp3',
-      'x': 'assets/bass-muted.mp3'
-    };
-
-    /*  Todas as peças pedidas.
-        Ajuste os caminhos "file" conforme os nomes reais dos seus áudios. */
-    const drumLines = [
-      { id: "bumbo",       label: "Bumbo",        file: "assets/bumbo.mp3" },
-      { id: "caixa",       label: "Caixa",        file: "assets/caixa.mp3" },
-      { id: "caixa_Aro",       label: "Caixa_Aro",        file: "assets/caixaAro.mp3" },
-      { id: "chimbalF",    label: "Chimbal F.",   file: "assets/chimbal.mp3" },
-      { id: "chimbalA",    label: "Chimbal A.",   file: "assets/chimbal-aberto.mp3" },
-      { id: "ataque",      label: "Ataque",       file: "assets/ataque.mp3" },
-      { id: "tom1",        label: "Tom 1",        file: "assets/tom-1.mp3" },
-      { id: "tom2",        label: "Tom 2",        file: "assets/tom-2.mp3" },
-      { id: "surdo",       label: "Surdo",        file: "assets/surdo.mp3" },
-      { id: "conducaoC",   label: "Cond. centro", file: "assets/conducao-centro.mp3" },
-      { id: "conducaoE",   label: "Cond. ext.",   file: "assets/conducao.mp3" }
-    ];
-
-    const notasValidas = [
-      "1E","2F","3FS","4G","5GS",
-      "6A","7AS","8B","9C","10CS",
-      "11D","12DS","13E","14F","15FS",
-      "16G","17GS","18A","19AS","20B",
-      "21C","22CS","23D","24DS","25E","26F",
-      "27FS","28G","29GS","30A","31AS","32B",
-      "33C","34CS","35D","36DS","37E","38F","39FS",
-      "40G","41GS","42A","43AS"
-    ];
-
+    let bpmAtual = 120;
     let baixoSeq = [];
     let bateriaSeq = {};
-
-    let bpmAtual = 110;
     let isPlaying = false;
     let playbackInterval = null;
     let atualPasso = 0;
 
     let baixoVolumeGlobal = 0.9;
-    let bateriaVolumeGlobal = 0.8;
+    let bateriaVolumeGlobal = 0.9;
 
     let audioBaixoAtual = null;
     let audioBaixoTimer = null;
 
-    let headFrames = [];
-    let headFrameIndex = 0;
-    let headInterval = null;
-    let headTiltInterval = null;
-    let troncoBpmInterval = null;
-    let lateralInterval = null;
-
+    let notaAnteriorTronco = null;
     let ultimaCordaUsada = "E";
 
-    /* ===========================================
-       FUNÇÕES DE AJUDA
-       =========================================== */
+    const notasValidas = [
+      "1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS",
+      "11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B",
+      "21C","22CS","23D","24DS","25E","26F","27FS","28G","29GS","30A",
+      "31AS","32B","33C","34CS","35D","36DS","37E","38F","39FS","40G",
+      "41GS","42A","43AS"
+    ];
+
+    const BAIXO_SAMPLES = {};
+    notasValidas.forEach(n => {
+      BAIXO_SAMPLES[n] = "assets/BaixoMelodia/" + n + ".mp3";
+    });
+    BAIXO_SAMPLES["x"] = "assets/bass-muted.mp3";
+
+    const drumLines = [
+      { id: "bumbo",          label: "B",    file: "bumbo.mp3" },
+      { id: "caixa",          label: "C",    file: "caixa.mp3" },
+      { id: "caixaAro",       label: "Rim",  file: "caixaAro.mp3" },
+      { id: "chimbal",        label: "HH",   file: "chimbal.mp3" },
+      { id: "chimbal_pedal",  label: "HHP",  file: "chimbal-pedal.mp3" },
+      { id: "chimbalaberto",  label: "HHo",  file: "chimbal-aberto.mp3" },
+      { id: "ataque",         label: "Atk",  file: "ataque.mp3" },
+      { id: "tom1",           label: "T1",   file: "tom-1.mp3" },
+      { id: "tom2",           label: "T2",   file: "tom-2.mp3" },
+      { id: "surdo",          label: "Sd",   file: "surdo.mp3" },
+      { id: "conducao",       label: "Rd",   file: "conducao.mp3" },
+      { id: "conducao_centro",label: "RdC",  file: "conducao-centro.mp3" }
+    ];
 
     function generateHeadFramePaths() {
       const arr = [];
-      for (let i = 1; i <= 100; i++) {
-        const num = i.toString().padStart(4, "0");
-        arr.push(`animacao/cabeca/cabeca${num}.png`);
+      for (let i = 1; i <= 809; i++) {
+        const num = String(i).padStart(4, "0");
+        arr.push("animacao/cabeca/cabeca" + num + ".png");
       }
       return arr;
     }
 
     function preloadImages(urls) {
-      return Promise.all(urls.map(url => {
-        return new Promise((resolve) => {
+      return new Promise(resolve => {
+        if (!urls || !urls.length) return resolve();
+        let loaded = 0;
+        urls.forEach(src => {
           const img = new Image();
-          img.onload = () => resolve(url);
-          img.onerror = () => {
-            console.warn("Falha ao carregar:", url);
-            resolve(url);
+          img.onload = img.onerror = () => {
+            loaded++;
+            if (loaded >= urls.length) resolve();
           };
-          img.src = url;
+          img.src = src;
         });
-      }));
+      });
     }
 
-    /* Animação da cabeça – laço longo */
     function startHeadLoop() {
-      const cabeca = document.getElementById("cabecaLayer");
-      if (headInterval) clearInterval(headInterval);
-      headInterval = setInterval(() => {
+      const el = document.getElementById("cabecaLayer");
+      if (!el) return;
+      if (headLoopTimer) clearInterval(headLoopTimer);
+      headLoopTimer = setInterval(() => {
         headFrameIndex = (headFrameIndex + 1) % headFrames.length;
-        cabeca.src = headFrames[headFrameIndex];
-      }, 80);
-    }
-
-    function startHeadTiltBpm(bpm) {
-      const cabeca = document.getElementById("cabecaLayer");
-      if (headTiltInterval) clearInterval(headTiltInterval);
-      const msBeat = 60000 / bpm;
-      let toggle = false;
-      headTiltInterval = setInterval(() => {
-        toggle = !toggle;
-        const deg = toggle ? -6 : 6;
-        cabeca.style.transform = `translateX(-50%) rotate(${deg}deg)`;
-      }, msBeat * 4);
+        el.src = headFrames[headFrameIndex];
+      }, 1000 / 30);
     }
 
     function startTroncoBpm(bpm) {
-      const tronco = document.getElementById("troncoLayer");
-      if (troncoBpmInterval) clearInterval(troncoBpmInterval);
-      const msBeat = 60000 / bpm;
+      const el = document.getElementById("troncoBaixoLayer");
+      if (!el) return;
+      if (troncoTimerBpm) clearInterval(troncoTimerBpm);
+      const interval = (60000 / bpm) / 2;
+      let up = false;
+      troncoTimerBpm = setInterval(() => {
+        up = !up;
+        el.style.transform = up ? "translateY(-2px)" : "translateY(0px)";
+      }, interval);
+    }
+
+    function startHeadTiltBpm(bpm) {
+      const el = document.getElementById("cabecaLayer");
+      if (!el) return;
+      if (headTiltTimerBpm) clearInterval(headTiltTimerBpm);
+      const interval = (60000 / bpm) / 4;
       let toggle = false;
-      troncoBpmInterval = setInterval(() => {
+      headTiltTimerBpm = setInterval(() => {
         toggle = !toggle;
-        const scale = toggle ? 1.01 : 1;
-        tronco.style.transform = `translateX(-50%) scale(${scale})`;
-      }, msBeat * 4);
+        el.style.transform = toggle ? "rotate(-2deg)" : "rotate(2deg)";
+      }, interval);
     }
 
     function startLateralMovement() {
-      const inner = document.getElementById("animacaoInner");
-      if (lateralInterval) clearInterval(lateralInterval);
+      const el = document.getElementById("baixistaStage");
+      if (!el) return;
+      if (lateralTimer) clearInterval(lateralTimer);
       let dir = 1;
-      let pos = 0;
-      lateralInterval = setInterval(() => {
-        pos += dir * 0.15;
-        if (pos > 1.2) dir = -1;
-        if (pos < -1.2) dir = 1;
-        inner.style.transform = `translateX(${pos}%)`;
-      }, 40);
+      let offset = 0;
+      lateralTimer = setInterval(() => {
+        offset += dir * 0.4;
+        if (offset > 2) dir = -1;
+        if (offset < -2) dir = 1;
+        el.style.transform = "translateX(" + offset + "px)";
+      }, 80);
     }
 
     function resetAnimTimers() {
-      if (headInterval) clearInterval(headInterval);
-      if (headTiltInterval) clearInterval(headTiltInterval);
-      if (troncoBpmInterval) clearInterval(troncoBpmInterval);
-      if (lateralInterval) clearInterval(lateralInterval);
-    }
-
-    /* ===========================================
-       TRONCO / MÃO ESQUERDA – TRANSIÇÕES
-       =========================================== */
-
-    const transicoesPasta = {
-      "1F": ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B"],
-      "2FS": ["3FS","4G","5GS","6A","8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C"],
-      "3G": ["4G","5GS","6A","7AS","9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS"],
-      "4GS": ["5GS","6A","7AS","8B","10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D"],
-      "5A": ["6A","7AS","8B","9C","11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS"],
-      "6AS": ["7AS","8B","9C","10CS","12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E"],
-      "7B": ["8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F"],
-      "8C": ["9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS"],
-      "9CS": ["10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G"],
-      "10D": ["11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS"],
-      "11DS": ["12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A"],
-      "12E": ["13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31B"],
-      "13F": ["14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B"],
-      "14FS": ["15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C"],
-      "15G": ["16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS"],
-      "16GS": ["17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D"],
-      "17A": ["18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS"],
-      "18AS": ["19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E"],
-      "19B": ["20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F"],
-      "20C": ["21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS","36DS","37E","38F","39FS"],
-      "21CS": ["22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D","37E","38F","39FS","40G"],
-      "22D": ["23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS","38F","39FS","40G","41GS"],
-      "23DS": ["24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E","39FS","40G","41GS","42A"],
-      "24E": ["25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F","40G","41GS","42A","43AS"]
-    };
-
-    function escolherPastaTransicao(notaAnterior, notaAtual) {
-      if (!notaAnterior) return "1F";
-
-      const idxAnt = notasValidas.indexOf(notaAnterior);
-      const idxAtual = notasValidas.indexOf(notaAtual);
-      if (idxAnt === -1 || idxAtual === -1) return "1F";
-
-      if (idxAtual < idxAnt - 1) return "1F";
-
-      // aqui você pode refinar a lógica se quiser usar o mapa transicoesPasta
-      return "1F";
-    }
-
-    function trocarFrameTronco(nota) {
-      const tronco = document.getElementById("troncoLayer");
-
-      const notaAnterior = tronco.dataset.notaAtual || "1E";
-      const pasta = escolherPastaTransicao(notaAnterior, nota);
-
-      tronco.dataset.notaAtual = nota;
-
-      const src = `animacao/tronco_baixo/Pasta_${pasta}/${nota}.png`;
-      tronco.src = src;
-    }
-
-    /* ===========================================
-       CORDA / BRAÇO DIREITO / ANTEBRAÇO
-       =========================================== */
-
-    function getCordaDaNota(nota) {
-      if (!nota || nota === "x") return "E";
-
-      const numMatch = nota.match(/^(\d+)/);
-      if (!numMatch) return "E";
-
-      const n = parseInt(numMatch[1], 10);
-      if (isNaN(n)) return "E";
-
-      if (n <= 5) return "E";
-      if (n <= 10) return "A";
-      if (n <= 15) return "D";
-      return "G";
-    }
-
-    function trocarAntebraco(corda) {
-      const ante = document.getElementById("antebracoLayer");
-      let nome = "antebracoE";
-      if (corda === "A") nome = "antebracoA";
-      else if (corda === "D") nome = "antebracoD";
-      else if (corda === "G") nome = "antebracoG";
-      ante.src = `animacao/antebraco/${nome}.png`;
-    }
-
-    function animarBracoDireito(corda, duracaoMs) {
-      const braco = document.getElementById("bracoDireitoLayer");
-      const totalFrames = 5;
-      const frameDuration = Math.max(30, duracaoMs / totalFrames);
-
-      let frame = 1;
-      let contador = 0;
-
-      braco.dataset.cordaAtual = corda;
-
-      const id = setInterval(() => {
-        frame++;
-        if (frame > totalFrames) frame = totalFrames;
-        braco.src = `animacao/braco_direito/Corda_${corda}${frame}.png`;
-        contador += frameDuration;
-        if (contador >= duracaoMs) {
-          clearInterval(id);
-          braco.src = `animacao/braco_direito/Corda_${corda}1.png`;
-        }
-      }, frameDuration);
-    }
-
-    /* ===========================================
-       ÁUDIO – BAIXO E BATERIA
-       =========================================== */
-
-    function tocarNotaAudioBaixo(nota, volume) {
-      // corta a nota anterior – nova nota ou "x" encerram a anterior
-      if (audioBaixoAtual) {
-        audioBaixoAtual.pause();
-        audioBaixoAtual = null;
-      }
-      if (audioBaixoTimer) {
-        clearTimeout(audioBaixoTimer);
-        audioBaixoTimer = null;
-      }
-
-      const arquivo = BASS_SAMPLES[nota] || BASS_SAMPLES['x'];
-      const audio = new Audio(arquivo);
-      audio.volume = volume;
-      audioBaixoAtual = audio;
-
-      audio.play().catch(err => {
-        console.error("Erro ao tocar áudio do baixo:", nota, err);
-      });
+      animTimers.forEach(id => clearInterval(id));
+      animTimers = [];
     }
 
     function pararAudioBaixo() {
@@ -932,9 +713,84 @@
       });
     }
 
-    /* ===========================================
-       NOTA + ANIMAÇÃO COMPLETA
-       =========================================== */
+    function tocarNotaAudioBaixo(nota, volume) {
+      if (!nota) return;
+      let src = BAIXO_SAMPLES[nota];
+      if (!src) src = BAIXO_SAMPLES["x"];
+      if (audioBaixoAtual) {
+        audioBaixoAtual.pause();
+        audioBaixoAtual.currentTime = 0;
+      }
+      const a = new Audio(src);
+      a.volume = volume;
+      audioBaixoAtual = a;
+      audioBaixoAtual.play().catch(e => {
+        console.log("Erro ao tocar áudio do baixo:", nota, e);
+      });
+    }
+
+    function trocarFrameTronco(nota) {
+      const tronco = document.getElementById("troncoBaixoLayer");
+      if (!tronco) return;
+      if (!nota || nota === "x") return;
+
+      const idxAtual = notasValidas.indexOf(nota);
+      let pasta = "Pasta_1F";
+      if (idxAtual >= 0) {
+        if (idxAtual < 8) pasta = "Pasta_1F";
+        else if (idxAtual < 12) pasta = "Pasta_2FS";
+        else if (idxAtual < 16) pasta = "Pasta_3G";
+        else if (idxAtual < 20) pasta = "Pasta_4GS";
+        else if (idxAtual < 24) pasta = "Pasta_5A";
+        else if (idxAtual < 28) pasta = "Pasta_6AS";
+        else if (idxAtual < 32) pasta = "Pasta_7B";
+        else if (idxAtual < 36) pasta = "Pasta_8C";
+        else if (idxAtual < 40) pasta = "Pasta_9CS";
+        else pasta = "Pasta_24E";
+      }
+      const path = "animacao/tronco_baixo/" + pasta + "/" + nota + ".png";
+      tronco.onerror = () => {
+        console.warn("Falha ao carregar:", path);
+      };
+      tronco.src = path;
+      notaAnteriorTronco = nota;
+    }
+
+    function getCordaDaNota(nota) {
+      const m = nota && nota.match(/^(\d+)/);
+      if (!m) return "E";
+      const n = parseInt(m[1], 10);
+      if (n <= 5) return "E";
+      if (n <= 10) return "A";
+      if (n <= 15) return "D";
+      return "G";
+    }
+
+    function trocarAntebraco(corda) {
+      const el = document.getElementById("antebracoLayer");
+      if (!el) return;
+      const path = "animacao/antebraco/Corda_" + corda + ".png";
+      el.src = path;
+    }
+
+    function animarBracoDireito(corda, duracaoMs) {
+      const el = document.getElementById("bracoDireitoLayer");
+      if (!el) return;
+      let frame = 1;
+      const totalFrames = 5;
+      const intervalo = Math.max(40, duracaoMs / (totalFrames * 2));
+      if (!corda) corda = "E";
+      clearInterval(el.__timerBraco || 0);
+
+      el.__timerBraco = setInterval(() => {
+        const path = "animacao/braco_direito/Corda_" + corda + frame + ".png";
+        el.src = path;
+        frame++;
+        if (frame > totalFrames) {
+          frame = 1;
+        }
+      }, intervalo);
+    }
 
     function tocarNotaComAnimacao(nota, duracaoMs, volume) {
       tocarNotaAudioBaixo(nota, volume);
@@ -954,47 +810,35 @@
       animarBracoDireito(corda, duracaoMs);
     }
 
-    /* ===========================================
-       PLAYBACK EM LOOP
-       =========================================== */
-
-    function atualizarBarraProgresso(perc) {
-      document.getElementById("progressBar").style.width = perc + "%";
-    }
-
-    function totalPassos() {
-      const bateriasLen = drumLines.map(line =>
-        bateriaSeq[line.id] ? bateriaSeq[line.id].length : 0
-      );
-      return Math.max(baixoSeq.length || 0, ...bateriasLen, 0);
-    }
-
     function tocarPasso(passo) {
-      const nota = (passo < baixoSeq.length) ? baixoSeq[passo] : "x";
+      const baixoLen = Array.isArray(baixoSeq) ? baixoSeq.length : 0;
+      const nota = (passo < baixoLen) ? baixoSeq[passo] : "x";
       const stepTime = (60000 / bpmAtual) / 4;
       tocarNotaComAnimacao(nota, stepTime, baixoVolumeGlobal);
       tocarBateriaNoStep(passo, bateriaVolumeGlobal);
 
-      const total = totalPassos();
-      if (total > 0) {
-        atualizarBarraProgresso((passo / total) * 100);
-      }
+      const totalSteps = Math.max(
+        baixoLen,
+        ...(drumLines.map(line => (bateriaSeq[line.id] || []).length))
+      );
+      atualizarBarraProgresso(totalSteps > 0 ? (passo / totalSteps) * 100 : 0);
     }
 
     function iniciarPlayback() {
-      const total = totalPassos();
-      if (total === 0) return;
       if (isPlaying) return;
-
       isPlaying = true;
       atualPasso = 0;
       const stepTime = (60000 / bpmAtual) / 4;
       playbackInterval = setInterval(() => {
-        const totalLocal = totalPassos();
-        if (totalLocal === 0) return;
         tocarPasso(atualPasso);
         atualPasso++;
-        if (atualPasso >= totalLocal) atualPasso = 0;
+        const baixoLen = Array.isArray(baixoSeq) ? baixoSeq.length : 0;
+        const totalSteps = Math.max(
+          baixoLen,
+          ...(drumLines.map(line => (bateriaSeq[line.id] || []).length))
+        );
+        if (totalSteps === 0) return;
+        if (atualPasso >= totalSteps) atualPasso = 0;
       }, stepTime);
       document.getElementById("playBtn").innerText = "⏸ Pause";
     }
@@ -1015,48 +859,49 @@
 
     function iniciarContagemRegressiva(callback) {
       const overlay = document.getElementById("countdownOverlay");
-      const numero = document.getElementById("countdownNumber");
-
-      let valor = 3;
-      numero.textContent = valor.toString();
+      const txt = document.getElementById("countdownText");
+      if (!overlay || !txt) {
+        callback();
+        return;
+      }
+      let valor = 4;
       overlay.style.display = "flex";
-
-      const id = setInterval(async () => {
+      txt.textContent = valor;
+      const id = setInterval(() => {
         valor--;
         if (valor <= 0) {
           clearInterval(id);
           overlay.style.display = "none";
-          await callback();
+          callback();
         } else {
-          numero.textContent = valor.toString();
+          txt.textContent = valor;
         }
-      }, 600);
+      }, 60000 / bpmAtual);
     }
 
     async function preScanAnimacao() {
-      const imagens = [];
-      baixoSeq.forEach((nota, idx) => {
-        if (nota === "x") return;
-        const notaAnterior = idx > 0 ? baixoSeq[idx - 1] : null;
-        const pasta = escolherPastaTransicao(notaAnterior, nota);
-        imagens.push(`animacao/tronco_baixo/Pasta_${pasta}/${nota}.png`);
-      });
-
-      const cordasUsadas = new Set();
-      baixoSeq.forEach(nota => {
-        if (nota && nota !== "x") {
-          cordasUsadas.add(getCordaDaNota(nota));
+      const frames = [];
+      let notaAnt = null;
+      (baixoSeq || []).forEach(nota => {
+        if (!nota || nota === "x") return;
+        const idx = notasValidas.indexOf(nota);
+        let pasta = "Pasta_1F";
+        if (idx >= 0) {
+          if (idx < 8) pasta = "Pasta_1F";
+          else if (idx < 12) pasta = "Pasta_2FS";
+          else if (idx < 16) pasta = "Pasta_3G";
+          else if (idx < 20) pasta = "Pasta_4GS";
+          else if (idx < 24) pasta = "Pasta_5A";
+          else if (idx < 28) pasta = "Pasta_6AS";
+          else if (idx < 32) pasta = "Pasta_7B";
+          else if (idx < 36) pasta = "Pasta_8C";
+          else if (idx < 40) pasta = "Pasta_9CS";
+          else pasta = "Pasta_24E";
         }
+        frames.push("animacao/tronco_baixo/" + pasta + "/" + nota + ".png");
+        notaAnt = nota;
       });
-      ["E","A","D","G"].forEach(c => {
-        if (cordasUsadas.has(c)) {
-          for (let i = 1; i <= 5; i++) {
-            imagens.push(`animacao/braco_direito/Corda_${c}${i}.png`);
-          }
-        }
-      });
-
-      await preloadImages(imagens);
+      await preloadImages(frames);
       console.log("Pré-carregamento de imagens da animação concluído.");
     }
 
@@ -1077,10 +922,6 @@
         iniciarPlayback();
       });
     }
-
-    /* ===========================================
-       GRID / UI – BAIXO E BATERIA
-       =========================================== */
 
     const selectionOverlay = document.getElementById("selectionOverlay");
     const selectionTitle = document.getElementById("selectionTitle");
@@ -1104,7 +945,7 @@
           div.classList.add("x-option");
           label = "X";
         } else {
-          label = opt.replace(/S/g,"#");
+          label = opt.replace(/S/g, "#");
         }
         if (opt === valorAtual) div.classList.add("active");
         div.textContent = label;
@@ -1132,13 +973,14 @@
 
     function construirGridBaixo(container, seq) {
       container.innerHTML = "";
+      if (!Array.isArray(seq)) return;
       seq.forEach((nota, idx) => {
         const div = document.createElement("div");
         div.className = "cell";
         if (nota === "x") {
           div.textContent = "X";
         } else {
-          div.textContent = nota.replace(/S/g,"#");
+          div.textContent = String(nota).replace(/S/g, "#");
           div.classList.add("active");
         }
         div.onclick = () => abrirPainelSelecaoBaixo(seq, idx, div);
@@ -1157,18 +999,14 @@
         rowDiv.appendChild(label);
         const rowGrid = document.createElement("div");
         rowGrid.className = "composicaoGrid";
-        let seq = bateriaSeqObj[line.id];
-        if (!Array.isArray(seq)) {
-          seq = Array(baixoSeq.length || 16).fill("x");
-          bateriaSeqObj[line.id] = seq;
-        }
+        const seq = bateriaSeqObj[line.id] || [];
         seq.forEach((item, idx) => {
           const cell = document.createElement("div");
           cell.className = "cell";
           if (item === "x") {
             cell.textContent = "X";
           } else if (item === line.id) {
-            cell.textContent = line.label.toUpperCase()[0];
+            cell.textContent = line.label.toUpperCase();
             cell.classList.add("active");
           } else {
             cell.textContent = "?";
@@ -1177,7 +1015,7 @@
             if (seq[idx] === "x") {
               seq[idx] = line.id;
               cell.classList.add("active");
-              cell.textContent = line.label.toUpperCase()[0];
+              cell.textContent = line.label.toUpperCase();
             } else {
               seq[idx] = "x";
               cell.classList.remove("active");
@@ -1189,6 +1027,10 @@
         rowDiv.appendChild(rowGrid);
         container.appendChild(rowDiv);
       });
+    }
+
+    function atualizarBarraProgresso(perc) {
+      document.getElementById("progressBar").style.width = perc + "%";
     }
 
     function gerarSequenciaAleatoriaBaixo(tam) {
@@ -1212,9 +1054,41 @@
     }
 
     function configurarPlaybackExportado() {
-      const btn = document.getElementById("playComposicaoBtn");
-      btn.onclick = () => {
-        tocarPlaybackCompleto(bpmAtual);
+      const btn = document.getElementById("playExportadoBtn");
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "application/json";
+      input.style.display = "none";
+      document.body.appendChild(input);
+      btn.onclick = () => input.click();
+      input.onchange = async (ev) => {
+        const file = ev.target.files[0];
+        if (!file) return;
+        try {
+          const txt = await file.text();
+          const obj = JSON.parse(txt);
+          if (!Array.isArray(obj.baixo) || typeof obj.bpm !== "number" || typeof obj.bateria !== "object") {
+            alert("JSON inválido. Esperado: { bpm, baixo[], bateria{bumbo[],...} }");
+            return;
+          }
+          baixoSeq = obj.baixo;
+          bpmAtual = obj.bpm;
+          drumLines.forEach(line => {
+            if (Array.isArray(obj.bateria[line.id])) {
+              bateriaSeq[line.id] = obj.bateria[line.id];
+            } else {
+              bateriaSeq[line.id] = Array(baixoSeq.length).fill("x");
+            }
+          });
+          document.getElementById("bpmSlider").value = bpmAtual;
+          document.getElementById("bpmDisplay").textContent = bpmAtual + " BPM";
+          construirGridBaixo(document.getElementById("baixoGrid"), baixoSeq);
+          construirGridBateria(document.getElementById("drumGrid"), bateriaSeq);
+          tocarPlaybackCompleto(bpmAtual);
+        } catch (e) {
+          console.error(e);
+          alert("Erro ao ler o arquivo JSON.");
+        }
       };
     }
 
@@ -1231,10 +1105,8 @@
       const baixoGrid = document.getElementById("baixoGrid");
       const drumGrid = document.getElementById("drumGrid");
       const passosIniciais = 16;
-
       baixoSeq = gerarSequenciaAleatoriaBaixo(passosIniciais);
       bateriaSeq = gerarSequenciasAleatoriasBateria(passosIniciais);
-
       construirGridBaixo(baixoGrid, baixoSeq);
       construirGridBateria(drumGrid, bateriaSeq);
 
@@ -1252,14 +1124,9 @@
         bateriaVolumeGlobal = parseFloat(document.getElementById("drumVolume").value);
       };
 
-      document.getElementById("addCol").onclick = () => {
+      document.getElementById("addBaixoCol").onclick = () => {
         baixoSeq.push("x");
-        drumLines.forEach(line => {
-          if (!Array.isArray(bateriaSeq[line.id])) bateriaSeq[line.id] = [];
-          bateriaSeq[line.id].push("x");
-        });
         construirGridBaixo(baixoGrid, baixoSeq);
-        construirGridBateria(drumGrid, bateriaSeq);
       };
 
       document.getElementById("clearBaixo").onclick = () => {
@@ -1269,12 +1136,16 @@
 
       document.getElementById("clearAll").onclick = () => {
         baixoSeq = baixoSeq.map(() => "x");
+        drumLines.forEach(line => bateriaSeq[line.id] = bateriaSeq[line.id].map(() => "x"));
+        construirGridBaixo(baixoGrid, baixoSeq);
+        construirGridBateria(drumGrid, bateriaSeq);
+      };
+
+      document.getElementById("addCol").onclick = () => {
+        baixoSeq.push("x");
         drumLines.forEach(line => {
-          if (Array.isArray(bateriaSeq[line.id])) {
-            bateriaSeq[line.id] = bateriaSeq[line.id].map(() => "x");
-          } else {
-            bateriaSeq[line.id] = Array(baixoSeq.length).fill("x");
-          }
+          if (!Array.isArray(bateriaSeq[line.id])) bateriaSeq[line.id] = [];
+          bateriaSeq[line.id].push("x");
         });
         construirGridBaixo(baixoGrid, baixoSeq);
         construirGridBateria(drumGrid, bateriaSeq);
@@ -1287,12 +1158,12 @@
           baixoSeq = baixoSeq.concat(ultimas);
         }
         drumLines.forEach(line => {
-          let arr = bateriaSeq[line.id] || [];
+          const arr = bateriaSeq[line.id] || [];
           if (arr.length >= bloco) {
             const ultimas = arr.slice(-bloco);
             bateriaSeq[line.id] = arr.concat(ultimas);
-          } else if (arr.length === 0) {
-            bateriaSeq[line.id] = Array(baixoSeq.length).fill("x");
+          } else {
+            bateriaSeq[line.id] = arr;
           }
         });
         construirGridBaixo(baixoGrid, baixoSeq);
@@ -1302,88 +1173,6 @@
       configurarPlaybackExportado();
     }
 
-    /* ===========================================
-       EDITOR DE POSIÇÃO (DEV MODE)
-       =========================================== */
-    function initPosEditor() {
-      const panel = document.getElementById("posEditor");
-      const controls = document.getElementById("posEditorControls");
-      const toggle = document.getElementById("posEditorToggle");
-      const select = document.getElementById("posEditorLayer");
-      const cssOut = document.getElementById("posEditorCss");
-
-      if (!ENABLE_POSITION_EDITOR) {
-        panel.style.display = "none";
-        return;
-      }
-
-      const layerIds = ["pernasLayer","troncoLayer","cabecaLayer","antebracoLayer","bracoDireitoLayer"];
-      const posState = {};
-
-      function labelFromId(id) {
-        if (id === "pernasLayer") return "Pernas";
-        if (id === "troncoLayer") return "Tronco/baixo";
-        if (id === "cabecaLayer") return "Cabeça";
-        if (id === "antebracoLayer") return "Antebraço";
-        if (id === "bracoDireitoLayer") return "Braço direito";
-        return id;
-      }
-
-      layerIds.forEach(id => {
-        const el = document.getElementById(id);
-        const cs = window.getComputedStyle(el);
-        const left = parseFloat(cs.left) || 0;
-        const bottom = parseFloat(cs.bottom) || 0;
-        posState[id] = { left, bottom };
-        el.style.left = left + "px";
-        el.style.bottom = bottom + "px";
-
-        const opt = document.createElement("option");
-        opt.value = id;
-        opt.textContent = labelFromId(id);
-        select.appendChild(opt);
-      });
-
-      function applyPos(id) {
-        const st = posState[id];
-        const el = document.getElementById(id);
-        el.style.left = st.left + "px";
-        el.style.bottom = st.bottom + "px";
-      }
-
-      function refreshCss() {
-        let out = "/* Copie para seu CSS */\n";
-        layerIds.forEach(id => {
-          const st = posState[id];
-          out += `#${id} { left: ${st.left}px; bottom: ${st.bottom}px; }\n`;
-        });
-        cssOut.value = out;
-      }
-
-      function move(dx, dy) {
-        if (!toggle.checked) return;
-        const id = select.value;
-        const st = posState[id];
-        st.left += dx;
-        st.bottom += dy;
-        applyPos(id);
-        refreshCss();
-      }
-
-      document.getElementById("posUp").onclick    = () => move(0,  -1);
-      document.getElementById("posDown").onclick  = () => move(0,   1);
-      document.getElementById("posLeft").onclick  = () => move(-1,  0);
-      document.getElementById("posRight").onclick = () => move(1,   0);
-
-      toggle.addEventListener("change", () => {
-        controls.style.display = toggle.checked ? "flex" : "none";
-        if (toggle.checked) refreshCss();
-      });
-    }
-
-    /* ===========================================
-       ONLOAD
-       =========================================== */
     window.onload = async () => {
       garantirPaisagem();
       headFrames = generateHeadFramePaths();
@@ -1393,21 +1182,29 @@
       startHeadTiltBpm(bpmAtual);
       startLateralMovement();
       iniciarInterface();
-      initPosEditor();
+      if (window.__initPosEditor) window.__initPosEditor();
+
+      document.getElementById("playBtn").onclick = togglePlay;
 
       document.getElementById("playAleatorioBtn").onclick = () => {
         try {
-          const playback = JamOnEngine.generateRandomPlayback(bpmAtual, 16);
-          // baixo
-          baixoSeq = playback.baixo || playback.bassSeq || [];
-          // bateria do engine (pode não ter todas as peças)
-          const bateriasEngine = playback.bateria || playback.bateriaSeq || {};
+          if (!window.JamOnEngine || typeof JamOnEngine.generateRandomPlayback !== "function") {
+            alert("Engine de playback não encontrada.");
+            return;
+          }
+          const passos = (Array.isArray(baixoSeq) && baixoSeq.length) ? baixoSeq.length : 16;
+          const playback = JamOnEngine.generateRandomPlayback(bpmAtual, passos);
+
+          baixoSeq = Array.isArray(playback.bassSeq) ? playback.bassSeq.slice() : [];
+
+          const bateriaOrig = playback.bateriaSeq || {};
           bateriaSeq = {};
           drumLines.forEach(line => {
-            if (Array.isArray(bateriasEngine[line.id])) {
-              bateriaSeq[line.id] = bateriasEngine[line.id];
+            const arr = bateriaOrig[line.id];
+            if (Array.isArray(arr)) {
+              bateriaSeq[line.id] = arr.slice();
             } else {
-              bateriaSeq[line.id] = Array(baixoSeq.length || 16).fill("x");
+              bateriaSeq[line.id] = new Array(baixoSeq.length || passos).fill("x");
             }
           });
 
@@ -1419,13 +1216,99 @@
           alert("Erro ao gerar playback aleatório. Veja o console.");
         }
       };
-
-      document.getElementById("playBtn").onclick = togglePlay;
-      document.getElementById("stopBtn").onclick = () => {
-        pararPlayback();
-        atualizarBarraProgresso(0);
-      };
     };
+
+    async function gerarPlaybackAleatorioAvancado(tamanho, bpm) {
+      if (window.JamOnEngine && typeof JamOnEngine.generateRandomPlayback === "function") {
+        const res = JamOnEngine.generateRandomPlayback(bpm, tamanho);
+        return {
+          baixo: res.bassSeq || [],
+          bateria: res.bateriaSeq || {}
+        };
+      } else {
+        const baixo = gerarSequenciaAleatoriaBaixo(tamanho);
+        const bateria = gerarSequenciasAleatoriasBateria(tamanho);
+        return { baixo, bateria };
+      }
+    }
+
+    (function configurarEditorPosicao() {
+      const partIds = [
+        "cabecaLayer",
+        "troncoBaixoLayer",
+        "antebracoLayer",
+        "bracoDireitoLayer",
+        "pernasLayer"
+      ];
+      const posMap = {};
+      let posEditEnabled = false;
+      let selectedPartId = "troncoBaixoLayer";
+
+      function lerPosicaoInicial(id) {
+        const el = document.getElementById(id);
+        if (!el) return { top: 0, left: 0 };
+        const st = window.getComputedStyle(el);
+        const top = parseInt(st.top || "0", 10) || 0;
+        const left = parseInt(st.left || "0", 10) || 0;
+        return { top, left };
+      }
+
+      function aplicarPosicao(id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const p = posMap[id];
+        el.style.top = p.top + "px";
+        el.style.left = p.left + "px";
+      }
+
+      function moverSelecionado(dx, dy) {
+        if (!posEditEnabled) return;
+        const id = selectedPartId;
+        if (!posMap[id]) return;
+        posMap[id].left += dx;
+        posMap[id].top += dy;
+        aplicarPosicao(id);
+      }
+
+      function copiarCss() {
+        let css = "";
+        for (const id of partIds) {
+          const p = posMap[id];
+          if (!p) continue;
+          css += "#" + id + "{ top:" + p.top + "px; left:" + p.left + "px; }\n";
+        }
+        console.log("CSS sugerido para posicionamento:\n" + css);
+        alert("CSS de posicionamento impresso no console (F12). Copie e cole no seu arquivo CSS.");
+      }
+
+      window.__initPosEditor = function() {
+        partIds.forEach(id => {
+          posMap[id] = lerPosicaoInicial(id);
+        });
+
+        const toggle = document.getElementById("posEditToggle");
+        const select = document.getElementById("posPartSelect");
+        const upBtn = document.getElementById("posUpBtn");
+        const downBtn = document.getElementById("posDownBtn");
+        const leftBtn = document.getElementById("posLeftBtn");
+        const rightBtn = document.getElementById("posRightBtn");
+        const copyBtn = document.getElementById("posCopyCssBtn");
+
+        if (!toggle || !select) return;
+
+        toggle.addEventListener("change", () => {
+          posEditEnabled = toggle.checked;
+        });
+        select.addEventListener("change", () => {
+          selectedPartId = select.value;
+        });
+        if (upBtn)   upBtn.addEventListener("click", () => moverSelecionado(0, -1));
+        if (downBtn) downBtn.addEventListener("click", () => moverSelecionado(0, 1));
+        if (leftBtn) leftBtn.addEventListener("click", () => moverSelecionado(-1, 0));
+        if (rightBtn)rightBtn.addEventListener("click", () => moverSelecionado(1, 0));
+        if (copyBtn) copyBtn.addEventListener("click", copiarCss);
+      };
+    })();
   </script>
 </body>
 </html>
