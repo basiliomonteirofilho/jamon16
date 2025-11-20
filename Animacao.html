@@ -320,6 +320,26 @@
       border-color: #5eead4;
       font-weight: bold;
     }
+    
+    /* ============================
+       CONTAGEM REGRESSIVA
+       ============================ */
+    #countdownOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      font-size: 8em;
+      color: #5eead4;
+      font-weight: bold;
+      text-shadow: 0 0 20px rgba(94, 234, 212, 0.7);
+    }
+    #countdownOverlay.visible {
+      display: flex;
+    }
   </style>
 </head>
 <body>
@@ -329,6 +349,7 @@
       <p>Use o Jam On em modo paisagem (horizontal) para ver a baixista e os controles.</p>
     </div>
   </div>
+  <div id="countdownOverlay"></div>
   <div class="appRoot">
     <div id="animacaoArea">
       <div id="animacaoContainer">
@@ -431,6 +452,7 @@
     let atualPasso = 0;
     let audioBaixoAtual = null;
     let audioBaixoTimer = null;
+    let countdownTimer = null;
 
     const notasValidas = [
       "1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS",
@@ -439,7 +461,7 @@
       "48DS","49E"
     ];
 
-    // Mapeamento de pastas para notas - CORRIGIDO
+    // Mapeamento de pastas para notas
     const pastasOrdenadas = [
       { start: 1,  name: "Pasta_1F" },
       { start: 3,  name: "Pasta_2FS" },
@@ -467,7 +489,35 @@
       { start: 25, name: "Pasta_24E" }
     ];
 
-    // Função para determinar pasta por nota - CORRIGIDA
+    /* ============================
+       CONTAGEM REGRESSIVA
+       ============================ */
+    function iniciarContagemRegressiva(callback) {
+      const countdownOverlay = document.getElementById("countdownOverlay");
+      let count = 4; // 4, 3, 2, 1, VAI!
+      
+      countdownOverlay.classList.add("visible");
+      
+      const updateCountdown = () => {
+        if (count > 1) {
+          countdownOverlay.textContent = (count - 1).toString();
+          count--;
+        } else if (count === 1) {
+          countdownOverlay.textContent = "VAI!";
+          count--;
+        } else {
+          clearInterval(countdownTimer);
+          countdownOverlay.classList.remove("visible");
+          if (callback) callback();
+        }
+      };
+      
+      // Iniciar imediatamente
+      updateCountdown();
+      countdownTimer = setInterval(updateCountdown, 1000);
+    }
+
+    // Função para determinar pasta por nota
     function determinarPastaPorNota(nota) {
       if (nota === "x") return "Pasta_1F";
       
@@ -490,7 +540,7 @@
       return "Pasta_1F";
     }
 
-    // Função para obter a corda da nota - CORRIGIDA
+    // Função para obter a corda da nota
     function getCordaDaNota(nota) {
       if (!nota || nota === "x") return "E";
       
@@ -507,7 +557,7 @@
       return "G";               // Corda G (Sol)
     }
 
-    // Função para trocar o frame do tronco - CORRIGIDA
+    // Função para trocar o frame do tronco
     function trocarFrameTronco(nota) {
       const tronco = document.getElementById("troncoLayer");
       if (nota === "x") {
@@ -516,8 +566,8 @@
       }
       
       const pasta = determinarPastaPorNota(nota);
-      // NÃO converter "S" para "#" - usar o nome exato do arquivo
-      const nomeArquivo = nota; // Usar o nome original da nota
+      // Usar o nome original da nota (com S)
+      const nomeArquivo = nota;
       const caminho = `animacao/tronco_baixo/${pasta}/${nomeArquivo}.png`;
       
       console.log(`Tentando carregar: ${caminho}`);
@@ -549,7 +599,7 @@
       img.src = caminho;
     }
 
-    // Função para tocar áudio do baixo - CORRIGIDA
+    // Função para tocar áudio do baixo
     function tocarNotaAudioBaixo(nota, volume) {
       pararAudioBaixo();
       if (nota === "x") return;
@@ -699,11 +749,11 @@
       img.src = `animacao/antebraco/antebraco${corda}.png`;
     }
 
-    // Animar braço direito - CORRIGIDA
+    // Animar braço direito - CORRIGIDA (5 frames por corda)
     function animarBracoDireito(corda, duracaoMs) {
       const braco = document.getElementById("bracoLayer");
       
-      // Gerar frames disponíveis
+      // Gerar frames disponíveis (5 frames por corda)
       const frames = [];
       for (let i = 1; i <= 5; i++) {
         frames.push(`animacao/braco_direito/Corda_${corda}${i}.png`);
@@ -775,7 +825,7 @@
       });
     }
 
-    // Tocar nota com animação completa - CORRIGIDA
+    // Tocar nota com animação completa
     function tocarNotaComAnimacao(nota, duracaoMs, volume) {
       if (nota === "x") {
         pararAudioBaixo();
@@ -826,6 +876,20 @@
     function togglePlay() {
       if (!isPlaying) iniciarPlayback();
       else pararPlayback();
+    }
+
+    // Função modificada para incluir contagem regressiva
+    function tocarPlaybackCompleto(bpm) {
+      pararPlayback();
+      resetAnimTimers();
+      startTroncoBpm(bpm);
+      startHeadTiltBpm(bpm);
+      startLateralMovement();
+      
+      // Iniciar contagem regressiva antes de começar
+      iniciarContagemRegressiva(() => {
+        iniciarPlayback();
+      });
     }
 
     /* ===== PAINEL LATERAL ===== */
@@ -939,15 +1003,6 @@
 
     function atualizarBarraProgresso(perc) {
       document.getElementById("progressBar").style.width = perc + "%";
-    }
-
-    function tocarPlaybackCompleto(bpm) {
-      pararPlayback();
-      resetAnimTimers();
-      startTroncoBpm(bpm);
-      startHeadTiltBpm(bpm);
-      startLateralMovement();
-      iniciarPlayback();
     }
 
     function gerarSequenciaAleatoriaBaixo(tam) {
