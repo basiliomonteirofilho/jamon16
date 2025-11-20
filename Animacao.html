@@ -320,7 +320,6 @@
       border-color: #5eead4;
       font-weight: bold;
     }
-    
     /* ============================
        CONTAGEM REGRESSIVA
        ============================ */
@@ -453,6 +452,7 @@
     let audioBaixoAtual = null;
     let audioBaixoTimer = null;
     let countdownTimer = null;
+    let ultimaNotaTocada = null; // <<< NOVO: guarda a última nota não "x"
 
     const notasValidas = [
       "1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS",
@@ -461,7 +461,84 @@
       "48DS","49E"
     ];
 
-    // Mapeamento de pastas para notas
+    // Mapeamento de pastas para notas (listas completas)
+    const pastaNotas = {
+      "Pasta_1F": [
+        "1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS",
+        "16G","17GS","18A","19AS","20B"
+      ],
+      "Pasta_2FS": [
+        "3FS","4G","5GS","6A","8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C"
+      ],
+      "Pasta_3G": [
+        "4G","5GS","6A","7AS","9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS"
+      ],
+      "Pasta_4GS": [
+        "5GS","6A","7AS","8B","10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D"
+      ],
+      "Pasta_5A": [
+        "6A","7AS","8B","9C","11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS"
+      ],
+      "Pasta_6AS": [
+        "7AS","8B","9C","10CS","12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E"
+      ],
+      "Pasta_7B": [
+        "8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F"
+      ],
+      "Pasta_8C": [
+        "9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS"
+      ],
+      "Pasta_9CS": [
+        "10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G"
+      ],
+      "Pasta_10D": [
+        "11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS"
+      ],
+      "Pasta_11DS": [
+        "12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A"
+      ],
+      "Pasta_12E": [
+        "13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31B"
+      ],
+      "Pasta_13F": [
+        "14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B"
+      ],
+      "Pasta_14FS": [
+        "15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C"
+      ],
+      "Pasta_15G": [
+        "16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS"
+      ],
+      "Pasta_16GS": [
+        "17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D"
+      ],
+      "Pasta_17A": [
+        "18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS"
+      ],
+      "Pasta_18AS": [
+        "19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E"
+      ],
+      "Pasta_19B": [
+        "20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F"
+      ],
+      "Pasta_20C": [
+        "21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS","36DS","37E","38F","39FS"
+      ],
+      "Pasta_21CS": [
+        "22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D","37E","38F","39FS","40G"
+      ],
+      "Pasta_22D": [
+        "23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS","38F","39FS","40G","41GS"
+      ],
+      "Pasta_23DS": [
+        "24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E","39FS","40G","41GS","42A"
+      ],
+      "Pasta_24E": [
+        "25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F","40G","41GS","42A","43AS"
+      ]
+    };
+
+    // Mapeamento de pastas por "nota de início"
     const pastasOrdenadas = [
       { start: 1,  name: "Pasta_1F" },
       { start: 3,  name: "Pasta_2FS" },
@@ -495,9 +572,9 @@
     function iniciarContagemRegressiva(callback) {
       const countdownOverlay = document.getElementById("countdownOverlay");
       let count = 4; // 4, 3, 2, 1, VAI!
-      
+
       countdownOverlay.classList.add("visible");
-      
+
       const updateCountdown = () => {
         if (count > 1) {
           countdownOverlay.textContent = (count - 1).toString();
@@ -511,27 +588,23 @@
           if (callback) callback();
         }
       };
-      
-      // Iniciar imediatamente
+
       updateCountdown();
       countdownTimer = setInterval(updateCountdown, 1000);
     }
 
-    // Função para determinar pasta por nota
+    // Determinar pasta pela nota sozinha (lógica antiga – fallback)
     function determinarPastaPorNota(nota) {
       if (nota === "x") return "Pasta_1F";
-      
-      // Extrair número da nota
+
       const numMatch = nota.match(/^(\d+)/);
       if (!numMatch) return "Pasta_1F";
-      
+
       const num = parseInt(numMatch[1], 10);
       if (isNaN(num)) return "Pasta_1F";
-      
-      // Para as primeiras 20 notas, usar Pasta_1F
+
       if (num <= 20) return "Pasta_1F";
-      
-      // Para as demais, encontrar a pasta correspondente
+
       for (let i = pastasOrdenadas.length - 1; i >= 0; i--) {
         if (num >= pastasOrdenadas[i].start) {
           return pastasOrdenadas[i].name;
@@ -540,58 +613,81 @@
       return "Pasta_1F";
     }
 
+    // Escolher pasta considerando nota anterior -> nota atual
+    function escolherPastaTransicao(notaAnterior, notaAtual) {
+      if (!notaAnterior || notaAnterior === "x" || !notaAtual || notaAtual === "x") {
+        return null;
+      }
+
+      // Verifica quais pastas contêm as DUAS notas
+      const candidatos = [];
+      for (const [pasta, listaNotas] of Object.entries(pastaNotas)) {
+        if (listaNotas.includes(notaAnterior) && listaNotas.includes(notaAtual)) {
+          const m = pasta.match(/^Pasta_(\d+)/);
+          const startNum = m ? parseInt(m[1], 10) : 0;
+          candidatos.push({ pasta, startNum });
+        }
+      }
+
+      if (!candidatos.length) return null;
+
+      // Heurística simples: pega a pasta com menor startNum (posição mais "baixa")
+      candidatos.sort((a, b) => a.startNum - b.startNum);
+      return candidatos[0].pasta;
+    }
+
     // Função para obter a corda da nota
     function getCordaDaNota(nota) {
       if (!nota || nota === "x") return "E";
-      
-      // Extrair número da nota
+
       const numMatch = nota.match(/^(\d+)/);
       if (!numMatch) return "E";
-      
+
       const n = parseInt(numMatch[1], 10);
       if (isNaN(n)) return "E";
-      
+
       if (n <= 20) return "E";  // Corda E (Mi)
       if (n <= 26) return "A";  // Corda A (Lá)
       if (n <= 32) return "D";  // Corda D (Ré)
       return "G";               // Corda G (Sol)
     }
 
-    // Função para trocar o frame do tronco
-    function trocarFrameTronco(nota) {
+    // Trocar frame do tronco/baixo usando transição
+    function trocarFrameTronco(notaAtual, notaAnterior) {
       const tronco = document.getElementById("troncoLayer");
-      if (nota === "x") {
+      if (notaAtual === "x") {
         tronco.src = "animacao/tronco_baixo/Pasta_1F/1E.png";
         return;
       }
-      
-      const pasta = determinarPastaPorNota(nota);
-      // Usar o nome original da nota (com S)
-      const nomeArquivo = nota;
+
+      // 1) tenta pasta que contem notaAnterior e notaAtual
+      let pasta = escolherPastaTransicao(notaAnterior, notaAtual);
+
+      // 2) se não achar, usa lógica antiga por nota isolada
+      if (!pasta) {
+        pasta = determinarPastaPorNota(notaAtual);
+      }
+
+      const nomeArquivo = notaAtual; // com S
       const caminho = `animacao/tronco_baixo/${pasta}/${nomeArquivo}.png`;
-      
-      console.log(`Tentando carregar: ${caminho}`);
-      
-      // Verificar se a imagem existe antes de tentar carregar
+
+      console.log(`Tentando carregar tronco: ${caminho} (anterior=${notaAnterior})`);
+
       const img = new Image();
       img.onload = () => {
-        console.log(`Imagem carregada: ${caminho}`);
         tronco.src = caminho;
       };
       img.onerror = () => {
         console.warn(`Imagem não encontrada: ${caminho}`);
-        // Tentar alternativa com sustenido
-        const caminhoAlternativo = `animacao/tronco_baixo/${pasta}/${nota.replace(/S/g, "#")}.png`;
+        const caminhoAlternativo = `animacao/tronco_baixo/${pasta}/${notaAtual.replace(/S/g, "#")}.png`;
         console.log(`Tentando alternativa: ${caminhoAlternativo}`);
-        
+
         const img2 = new Image();
         img2.onload = () => {
-          console.log(`Imagem carregada (alternativa): ${caminhoAlternativo}`);
           tronco.src = caminhoAlternativo;
         };
         img2.onerror = () => {
           console.warn(`Alternativa também falhou: ${caminhoAlternativo}`);
-          // Fallback para uma imagem padrão
           tronco.src = "animacao/tronco_baixo/Pasta_1F/1E.png";
         };
         img2.src = caminhoAlternativo;
@@ -599,25 +695,24 @@
       img.src = caminho;
     }
 
-    // Função para tocar áudio do baixo
+    // Tocar áudio do baixo
     function tocarNotaAudioBaixo(nota, volume) {
       pararAudioBaixo();
       if (nota === "x") return;
-      
-      // Usar o nome original da nota (com S)
+
       const notaArquivo = nota;
       const url = "assets/BaixoMelodia/" + notaArquivo + ".mp3";
-      
+
       console.log(`Tentando tocar áudio: ${url}`);
-      
+
       const a = new Audio(url);
       a.volume = volume;
       const stepTime = (60000 / bpmAtual) / 4;
       const fadeOutTime = stepTime * 0.8;
-      
+
       a.play().catch(e => console.warn("Erro ao tocar áudio:", notaArquivo, e));
       audioBaixoAtual = a;
-      
+
       audioBaixoTimer = setTimeout(() => {
         if (audioBaixoAtual === a) {
           const fadeDuration = 50;
@@ -644,7 +739,6 @@
        ============================ */
     const HEAD_TOTAL_FRAMES = 100;
 
-    // Gerar caminhos para os frames da cabeça
     function generateHeadFramePaths() {
       const paths = [];
       for (let i = 1; i <= HEAD_TOTAL_FRAMES; i++) {
@@ -654,7 +748,6 @@
       return paths;
     }
 
-    // Pré-carregar imagens
     async function preloadImages(srcArray) {
       const promises = srcArray.map(src => {
         return new Promise((resolve) => {
@@ -670,7 +763,6 @@
       await Promise.all(promises);
     }
 
-    // Iniciar loop da cabeça
     function startHeadLoop() {
       if (headTimer) clearInterval(headTimer);
       const cabeca = document.getElementById("cabecaLayer");
@@ -680,7 +772,6 @@
       }, 50);
     }
 
-    // Iniciar movimento do tronco baseado no BPM
     function startTroncoBpm(bpm) {
       if (troncoTimer) clearInterval(troncoTimer);
       const tronco = document.getElementById("troncoLayer");
@@ -692,7 +783,6 @@
       }, (60000 / bpm) / 2);
     }
 
-    // Iniciar inclinação da cabeça baseada no BPM
     function startHeadTiltBpm(bpm) {
       if (tiltTimer) clearInterval(tiltTimer);
       const cabeca = document.getElementById("cabecaLayer");
@@ -708,13 +798,10 @@
       }, 60000 / bpm);
     }
 
-    // Iniciar movimento lateral suave
+    // Movimento lateral suave aplicado no container inteiro
     function startLateralMovement() {
       if (lateralMovementTimer) clearInterval(lateralMovementTimer);
-      const layersToMove = [
-        'antebracoLayer', 'troncoLayer', 'bracoLayer', 
-        'cabecaLayer', 'cabecaTrasLayer'
-      ];
+      const container = document.getElementById("animacaoContainer");
       let direction = 1;
       let position = 0;
       const maxOffset = 10;
@@ -723,49 +810,38 @@
         if (Math.abs(position) >= maxOffset) {
           direction *= -1;
         }
-        layersToMove.forEach(layerId => {
-          const layer = document.getElementById(layerId);
-          if (layer) {
-            layer.style.transform = `translateX(${position}px)`;
-          }
-        });
+        container.style.transform = `scale(1.2) translateX(${position}px)`;
       }, 100);
     }
 
-    // Trocar antebraço baseado na corda - CORRIGIDA
     function trocarAntebraco(corda) {
       const ante = document.getElementById("antebracoLayer");
-      
-      // Verificar se a imagem existe
+
       const img = new Image();
       img.onload = () => {
         ante.src = `animacao/antebraco/antebraco${corda}.png`;
       };
       img.onerror = () => {
         console.warn(`Imagem de antebraço não encontrada: animacao/antebraco/antebraco${corda}.png`);
-        // Tentar carregar uma imagem genérica
         ante.src = "animacao/antebraco/antebracoE.png";
       };
       img.src = `animacao/antebraco/antebraco${corda}.png`;
     }
 
-    // Animar braço direito - CORRIGIDA (5 frames por corda)
     function animarBracoDireito(corda, duracaoMs) {
       const braco = document.getElementById("bracoLayer");
-      
-      // Gerar frames disponíveis (5 frames por corda)
+
       const frames = [];
       for (let i = 1; i <= 5; i++) {
         frames.push(`animacao/braco_direito/Corda_${corda}${i}.png`);
       }
-      
+
       const passo = duracaoMs / frames.length;
       let i = 0;
-      
+
       const id = setInterval(() => {
         if (i >= frames.length) {
           clearInterval(id);
-          // Voltar para a primeira posição
           const img = new Image();
           img.onload = () => {
             braco.src = `animacao/braco_direito/Corda_${corda}1.png`;
@@ -776,8 +852,7 @@
           img.src = `animacao/braco_direito/Corda_${corda}1.png`;
           return;
         }
-        
-        // Verificar se a imagem existe antes de definir
+
         const img = new Image();
         img.onload = () => {
           braco.src = frames[i];
@@ -788,17 +863,15 @@
         img.src = frames[i];
         i++;
       }, passo);
-      
+
       animTimers.push(id);
     }
 
-    // Resetar timers de animação
     function resetAnimTimers() {
       animTimers.forEach(id => clearInterval(id));
       animTimers = [];
     }
 
-    // Parar áudio do baixo
     function pararAudioBaixo() {
       if (audioBaixoAtual) {
         audioBaixoAtual.pause();
@@ -811,7 +884,6 @@
       }
     }
 
-    // Tocar bateria no passo atual
     function tocarBateriaNoStep(step, volume) {
       drumLines.forEach(line => {
         const seq = bateriaSeq[line.id];
@@ -825,20 +897,23 @@
       });
     }
 
-    // Tocar nota com animação completa
+    // Toca nota + decide pasta pela transição
     function tocarNotaComAnimacao(nota, duracaoMs, volume) {
       if (nota === "x") {
         pararAudioBaixo();
         return;
       }
-      
-      console.log(`Tocando nota: ${nota}`);
-      
+
+      console.log(`Tocando nota: ${nota} (anterior=${ultimaNotaTocada})`);
+
       tocarNotaAudioBaixo(nota, volume);
-      trocarFrameTronco(nota);
+      trocarFrameTronco(nota, ultimaNotaTocada);
       const corda = getCordaDaNota(nota);
       trocarAntebraco(corda);
       animarBracoDireito(corda, duracaoMs);
+
+      // Atualiza última nota real
+      ultimaNotaTocada = nota;
     }
 
     /* ===== PLAYBACK ===== */
@@ -846,7 +921,10 @@
       const nota = (passo < baixoSeq.length) ? baixoSeq[passo] : "x";
       tocarNotaComAnimacao(nota, (60000 / bpmAtual) / 4, baixoVolumeGlobal);
       tocarBateriaNoStep(passo, bateriaVolumeGlobal);
-      const totalSteps = Math.max(baixoSeq.length, ...(drumLines.map(line => bateriaSeq[line.id].length)));
+      const totalSteps = Math.max(
+        baixoSeq.length,
+        ...(drumLines.map(line => bateriaSeq[line.id].length))
+      );
       atualizarBarraProgresso((passo / totalSteps) * 100);
     }
 
@@ -858,7 +936,10 @@
       playbackInterval = setInterval(() => {
         tocarPasso(atualPasso);
         atualPasso++;
-        const totalSteps = Math.max(baixoSeq.length, ...(drumLines.map(line => bateriaSeq[line.id].length)));
+        const totalSteps = Math.max(
+          baixoSeq.length,
+          ...(drumLines.map(line => bateriaSeq[line.id].length))
+        );
         if (atualPasso >= totalSteps) atualPasso = 0;
       }, stepTime);
       document.getElementById("playBtn").innerText = "⏸ Pause";
@@ -878,16 +959,15 @@
       else pararPlayback();
     }
 
-    // Função modificada para incluir contagem regressiva
     function tocarPlaybackCompleto(bpm) {
       pararPlayback();
       resetAnimTimers();
       startTroncoBpm(bpm);
       startHeadTiltBpm(bpm);
       startLateralMovement();
-      
-      // Iniciar contagem regressiva antes de começar
+
       iniciarContagemRegressiva(() => {
+        ultimaNotaTocada = null; // reseta para nova sequência
         iniciarPlayback();
       });
     }
@@ -896,9 +976,7 @@
     const selectionOverlay = document.getElementById("selectionOverlay");
     const selectionTitle = document.getElementById("selectionTitle");
     const selectionOptions = document.getElementById("selectionOptions");
-    const painelSelecao = {
-      tipo: null, seqRef: null, idx: null, cell: null, drumLine: null
-    };
+    const painelSelecao = { tipo: null, seqRef: null, idx: null, cell: null, drumLine: null };
 
     function abrirPainelSelecaoBaixo(seqRef, idx, cellEl) {
       painelSelecao.tipo = "baixo";
@@ -1098,7 +1176,6 @@
 
       document.getElementById("playAleatorioBtn").onclick = async () => {
         try {
-          // Gerar sequência aleatória simples
           baixoSeq = gerarSequenciaAleatoriaBaixo(16);
           bateriaSeq = gerarSequenciasAleatoriasBateria(16);
           construirGridBaixo(baixoGrid, baixoSeq);
