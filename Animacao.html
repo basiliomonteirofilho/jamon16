@@ -494,9 +494,9 @@
     <div id="topArea">
       <div id="animacaoStageWrapper">
         <div id="baixistaStage">
-          <img id="pernasLayer" src="animacao/pernas/pernas.png" alt="Pernas" />
+          <img id="pernasLayer" src="animacao/pernas/Pernas.png" alt="Pernas" />
           <img id="troncoBaixoLayer" src="animacao/tronco_baixo/Pasta_1F/1E.png" alt="Tronco/Baixo" />
-          <img id="antebracoLayer" src="animacao/antebraco/Corda_E.png" alt="Antebraço direito" />
+          <img id="antebracoLayer" src="animacao/antebraco/antebracoE.png" alt="Antebraço direito" />
           <img id="bracoDireitoLayer" src="animacao/braco_direito/Corda_E1.png" alt="Braço direito" />
           <img id="cabecaLayer" src="animacao/cabeca/cabeca0001.png" alt="Cabeça" />
           <div id="countdownOverlay" class="countdownOverlay">
@@ -613,7 +613,7 @@
 
     function generateHeadFramePaths() {
       const arr = [];
-      for (let i = 1; i <= 809; i++) {
+      for (let i = 1; i <= 100; i++) {
         const num = String(i).padStart(4, "0");
         arr.push("animacao/cabeca/cabeca" + num + ".png");
       }
@@ -729,25 +729,42 @@
       });
     }
 
+    function getPastaDaNota(nota) {
+      const idxAtual = notasValidas.indexOf(nota);
+      if (idxAtual < 0) return "Pasta_1F";
+      
+      if (idxAtual < 8) return "Pasta_1F";
+      else if (idxAtual < 12) return "Pasta_2FS";
+      else if (idxAtual < 16) return "Pasta_3G";
+      else if (idxAtual < 20) return "Pasta_4GS";
+      else if (idxAtual < 24) return "Pasta_5A";
+      else if (idxAtual < 28) return "Pasta_6AS";
+      else if (idxAtual < 32) return "Pasta_7B";
+      else if (idxAtual < 36) return "Pasta_8C";
+      else if (idxAtual < 40) return "Pasta_9CS";
+      else if (idxAtual < 44) return "Pasta_10D";
+      else if (idxAtual < 48) return "Pasta_11DS";
+      else if (idxAtual < 52) return "Pasta_12E";
+      else if (idxAtual < 56) return "Pasta_13F";
+      else if (idxAtual < 60) return "Pasta_14FS";
+      else if (idxAtual < 64) return "Pasta_15G";
+      else if (idxAtual < 68) return "Pasta_16GS";
+      else if (idxAtual < 72) return "Pasta_17A";
+      else if (idxAtual < 76) return "Pasta_18AS";
+      else if (idxAtual < 80) return "Pasta_19B";
+      else if (idxAtual < 84) return "Pasta_20C";
+      else if (idxAtual < 88) return "Pasta_21CS";
+      else if (idxAtual < 92) return "Pasta_22D";
+      else if (idxAtual < 96) return "Pasta_23DS";
+      else return "Pasta_24E";
+    }
+
     function trocarFrameTronco(nota) {
       const tronco = document.getElementById("troncoBaixoLayer");
       if (!tronco) return;
       if (!nota || nota === "x") return;
 
-      const idxAtual = notasValidas.indexOf(nota);
-      let pasta = "Pasta_1F";
-      if (idxAtual >= 0) {
-        if (idxAtual < 8) pasta = "Pasta_1F";
-        else if (idxAtual < 12) pasta = "Pasta_2FS";
-        else if (idxAtual < 16) pasta = "Pasta_3G";
-        else if (idxAtual < 20) pasta = "Pasta_4GS";
-        else if (idxAtual < 24) pasta = "Pasta_5A";
-        else if (idxAtual < 28) pasta = "Pasta_6AS";
-        else if (idxAtual < 32) pasta = "Pasta_7B";
-        else if (idxAtual < 36) pasta = "Pasta_8C";
-        else if (idxAtual < 40) pasta = "Pasta_9CS";
-        else pasta = "Pasta_24E";
-      }
+      const pasta = getPastaDaNota(nota);
       const path = "animacao/tronco_baixo/" + pasta + "/" + nota + ".png";
       tronco.onerror = () => {
         console.warn("Falha ao carregar:", path);
@@ -769,7 +786,7 @@
     function trocarAntebraco(corda) {
       const el = document.getElementById("antebracoLayer");
       if (!el) return;
-      const path = "animacao/antebraco/Corda_" + corda + ".png";
+      const path = "animacao/antebraco/antebraco" + corda + ".png";
       el.src = path;
     }
 
@@ -884,20 +901,7 @@
       let notaAnt = null;
       (baixoSeq || []).forEach(nota => {
         if (!nota || nota === "x") return;
-        const idx = notasValidas.indexOf(nota);
-        let pasta = "Pasta_1F";
-        if (idx >= 0) {
-          if (idx < 8) pasta = "Pasta_1F";
-          else if (idx < 12) pasta = "Pasta_2FS";
-          else if (idx < 16) pasta = "Pasta_3G";
-          else if (idx < 20) pasta = "Pasta_4GS";
-          else if (idx < 24) pasta = "Pasta_5A";
-          else if (idx < 28) pasta = "Pasta_6AS";
-          else if (idx < 32) pasta = "Pasta_7B";
-          else if (idx < 36) pasta = "Pasta_8C";
-          else if (idx < 40) pasta = "Pasta_9CS";
-          else pasta = "Pasta_24E";
-        }
+        const pasta = getPastaDaNota(nota);
         frames.push("animacao/tronco_baixo/" + pasta + "/" + nota + ".png");
         notaAnt = nota;
       });
@@ -1000,6 +1004,12 @@
         const rowGrid = document.createElement("div");
         rowGrid.className = "composicaoGrid";
         const seq = bateriaSeqObj[line.id] || [];
+        
+        // Garantir que a bateria tenha o mesmo número de células que o baixo
+        while (seq.length < baixoSeq.length) {
+          seq.push("x");
+        }
+        
         seq.forEach((item, idx) => {
           const cell = document.createElement("div");
           cell.className = "cell";
