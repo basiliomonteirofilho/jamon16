@@ -1312,8 +1312,17 @@
     try {
         const playback = JamOnEngine.generateRandomPlayback(bpmAtual, 16);
 
-        baixoSeq = playback.baixo;
-        bateriaSeq = playback.bateria;
+        baixoSeq =
+          playback.baixo ||
+          playback.bass ||
+          playback.bassSeq ||
+          [];
+
+        bateriaSeq =
+          playback.bateria ||
+          playback.drums ||
+          playback.drumSeq ||
+          {};
 
         construirGridBaixo(document.getElementById("baixoGrid"), baixoSeq);
         construirGridBateria(document.getElementById("drumGrid"), bateriaSeq);
@@ -1325,6 +1334,7 @@
         alert("Erro ao gerar playback aleatório. Veja o console.");
     }
 };
+
 
 
     };
