@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Jam On – Baixista e Baterista Animadas</title>
+  <title>Jam On – Baixista Animada com Playback Aleatório</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
   <style>
@@ -411,7 +411,7 @@
          =============================== -->
     <div id="painel">
       <header>
-        <h1>Jam On – Baixista e Baterista Animadas</h1>
+        <h1>Jam On – Baixista Animada</h1>
         <div class="pill">Baixo + Bateria – 1 célula = 1/16</div>
       </header>
 
@@ -537,173 +537,228 @@
       Notas válidas do baixo (1E…49E) — nomes casando com BaixoMelodia/XX.mp3
       "S" = sustenido (#) no nome de arquivo.
     */
-    const notasValidas = [
-      "1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS",
-      "18A","19AS","20B","21C","22CS","23D","24DS","25E","26F","27FS","28G","29GS","30A","31AS","32B",
-      "33C","34CS","35D","36DS","37E","38F","39FS","40G","41GS","42A","43AS","44B","45C","46CS","47D",
-      "48DS","49E"
+    /*
+  Notas válidas do baixo (1E…49E)
+  Representação interna: usa "S" no lugar de "#"
+  Ex: "3FS" = F#
+*/
+const notasValidas = [
+  "1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS",
+  "18A","19AS","20B","21C","22CS","23D","24DS","25E","26F","27FS","28G","29GS","30A","31AS","32B",
+  "33C","34CS","35D","36DS","37E","38F","39FS","40G","41GS","42A","43AS","44B","45C","46CS","47D",
+  "48DS","49E"
+];
+
+/*
+  Determina automaticamente a pasta correta com base na nota.
+  Regra:
+    - Pasta_1F → notas 1 a 20 (inclui cordas soltas: E, A, D, G)
+    - Pasta_2FS → nota 3FS até 21C → mas vamos usar lógica por número
+  Melhor: usar o número da nota para decidir a pasta base.
+*/
+function determinarPastaPorNota(nota) {
+  if (nota === "x") return "Pasta_1F";
+  const num = parseInt(nota, 10);
+  if (isNaN(num)) return "Pasta_1F";
+
+  // Regra: cada pasta cobre um "range" de 16 notas a partir de um offset
+  // Pasta_1F: 1–20 → especial (tem cordas soltas)
+  if (num <= 20) return "Pasta_1F";
+
+  // A partir da nota 21, cada pasta começa em uma nota específica
+  // Pasta_N = "Pasta_" + nome da nota inicial da pasta
+  // Ex: nota 21C → Pasta_20C
+  // Mas seu sistema já nomeia pastas assim: Pasta_10D, Pasta_21CS, etc.
+  // Vamos encontrar a pasta cujo nome corresponda à nota mais próxima ≤ `num`
+
+  // Criar lista de pastas válidas com seus números iniciais
+  const pastasOrdenadas = [
+    { start: 1,  name: "Pasta_1F" },
+    { start: 3,  name: "Pasta_2FS" },
+    { start: 4,  name: "Pasta_3G" },
+    { start: 5,  name: "Pasta_4GS" },
+    { start: 6,  name: "Pasta_5A" },
+    { start: 7,  name: "Pasta_6AS" },
+    { start: 8,  name: "Pasta_7B" },
+    { start: 9,  name: "Pasta_8C" },
+    { start: 10, name: "Pasta_9CS" },
+    { start: 11, name: "Pasta_10D" },
+    { start: 12, name: "Pasta_11DS" },
+    { start: 13, name: "Pasta_12E" },
+    { start: 14, name: "Pasta_13F" },
+    { start: 15, name: "Pasta_14FS" },
+    { start: 16, name: "Pasta_15G" },
+    { start: 17, name: "Pasta_16GS" },
+    { start: 18, name: "Pasta_17A" },
+    { start: 19, name: "Pasta_18AS" },
+    { start: 20, name: "Pasta_19B" },
+    { start: 21, name: "Pasta_20C" },
+    { start: 22, name: "Pasta_21CS" },
+    { start: 23, name: "Pasta_22D" },
+    { start: 24, name: "Pasta_23DS" },
+    { start: 25, name: "Pasta_24E" }
+  ];
+
+  // Encontrar a maior pasta cujo `start` ≤ `num`
+  let pasta = "Pasta_1F";
+  for (let i = pastasOrdenadas.length - 1; i >= 0; i--) {
+    if (num >= pastasOrdenadas[i].start) {
+      pasta = pastasOrdenadas[i].name;
+      break;
+    }
+  }
+  return pasta;
+}
+
+function getCordaDaNota(nota) {
+  if (!nota || nota === "x") return "E";
+  const n = parseInt(nota, 10);
+  if (isNaN(n)) return "E";
+  if (n <= 20) return "E";    // Mi (E)
+  if (n <= 26) return "A";    // Lá (A)
+  if (n <= 32) return "D";    // Ré (D)
+  return "G";                 // Sol (G)
+}
+
+function trocarFrameTronco(nota) {
+  const tronco = document.getElementById("troncoLayer");
+  if (nota === "x") {
+    // Manter frame padrão ou resetar
+    tronco.src = "animacao/tronco_baixo/Pasta_1F/1E.png";
+    return;
+  }
+
+  const pasta = determinarPastaPorNota(nota);
+  // Converter interna (ex: "10CS") → nome de arquivo com "#"
+  const nomeArquivo = nota.replace(/S/g, "#");
+  const caminho = `animacao/tronco_baixo/${pasta}/${nomeArquivo}.png`;
+
+  tronco.src = caminho;
+  console.log("Tronco → nota:", nota, "| pasta:", pasta, "| caminho:", caminho);
+}
+
+function tocarNotaAudioBaixo(nota, volume) {
+  pararAudioBaixo();
+  if (nota === "x") return;
+
+  // Converter para nome de arquivo: "10C#" → "10CS"
+  const notaArquivo = nota.replace(/#/g, "S").replace(/S/g, "S"); // Garante S
+  const url = "assets/BaixoMelodia/" + notaArquivo + ".mp3";
+  
+  const a = new Audio(url);
+  a.volume = volume;
+  const stepTime = (60000 / bpmAtual) / 4;
+  const fadeOutTime = stepTime * 0.8;
+
+  a.play().catch(e => console.warn("Erro ao tocar áudio:", notaArquivo, e));
+  audioBaixoAtual = a;
+
+  audioBaixoTimer = setTimeout(() => {
+    if (audioBaixoAtual === a) {
+      const fadeDuration = 50;
+      const initialVol = a.volume;
+      const step = initialVol / (fadeDuration / 10);
+      let vol = initialVol;
+      const fadeInt = setInterval(() => {
+        vol -= step;
+        if (vol <= 0) {
+          a.pause();
+          a.currentTime = 0;
+          clearInterval(fadeInt);
+          if (audioBaixoAtual === a) audioBaixoAtual = null;
+        } else {
+          a.volume = vol;
+        }
+      }, 10);
+    }
+  }, fadeOutTime);
+}
+const DRUMS = {
+        bu: 'bumbo',
+        ca: 'caixa',
+        ch: 'chimbal',
+        ba: 'bumbo-ataque',
+        cch: 'caixa-chimbal',
+        co: 'conducao',
+        bco: 'bumbo-conducao',
+        cco: 'caixa-conducao',
+        to1: 'tom-1',
+        to2: 'tom-2',
+        su: 'surdo',
+        bch: 'bumbo-chimbal'
+    };
+
+    const STYLE_PROGRESSIONS = {
+        Rock: [[1,4,5,1], [1,5,6,4], [6,4,1,5]],
+        Rock2: [[4,5,1,5], [5,4,1,4], [7,4,1,1]],
+        Rock3: [[1,4,5,1], [1,3,4,5]],
+        Rock4: [[6,4,1,5,1,5,4,5], [1,4,5,1,4,5,4,5], [1,5,6,4,1,5,6,7]],
+        Rock5: [[1,5,7,4], [1,4,5,6], [1,5,6,4]],
+        Rock6: [[1,5,6,4], [1,4,5,1], [1,5,6,7]],
+        Rock7: [[2,3,5,1], [1,4,7,1], [1,5,3,4]],
+        Rock_Progressivo: [[4,5,1,1,4,5,7], [1,4,1,4,5,6,5], [1,4,5,6,3,5,4]],
+        Rock_Progressivo2: [[1,4,5,1,5], [4,5,3,1,3,1,4,5,7,5], [1,4,1,4,5]],
+        Rock_Progressivo3: [[1,4,5,1,5,7], [1,3,4,5,2,5]],
+        Rock_Progressivo4: [[4,5,1,1,4,5,7,5], [1,4,1,4,5,6,5,7], [1,4,5,6,3,5,4,5]],
+        Rock_Progressivo5: [[4,5,1,1,4,5,7], [1,4,1,4,5,6,5], [1,4,5,6,3,5,4]],
+        Rock_Progressivo6: [[1,4,5,6,3,5], [1,4,1,4,5,6,5]],
+        Rock_Progressivo7: [[4,5,1,1], [1,4,5,1]],
+        Blues: [[1,4,5,4,1,4,5,4,1,4,5,4], [1,4,5,1]],
+        Blues2: [[1,4,5,4,1,4,5,4,1,4,5,4], [1,4,5,1]],
+        Blues3: [[1,4,5,4,1,4,5,4,1,4,5,4], [1,4,5,7]],
+        Blues4: [[1,4,5,4,1,4,5,4,1,4,5,4], [1,4,5,1]],
+        Blues5: [[1,4,5,4,1,4,5,4,1,4,5,4], [1,4,5,7]],
+        Blues6: [[1,4,5,4,1,4,5,4,1,4,5,4], [1,4,5,1]],
+        Blues7: [[1,4,5,4,1,4,5,4,1,4,5,4], [1,4,5,1]],
+        Forró: [[1,5,1,5,4,5,4,5]],
+        Samba: [[2,5,1,1], [1,4,5,1]],
+        Metal: [[1, 3, 5, 6, 1, 2, 3, 4], [1, 3, 4, 5], [2, 5, 1, 5]],
+        Metal2: [[1, 3, 5, 4, 1, 2, 3, 4], [1, 3, 4, 5], [2, 5, 1, 5]],
+        Metal3: [[1, 3, 5, 3, 1, 2, 4, 5], [1, 3, 4, 5], [2, 5, 1, 5]],
+        Jazz: [[1,2,5,1], [2,5,1,4], [3,6,2,5]]
+    };
+
+    const ALL_GROOVES = [
+        { name: "Rock", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch bu"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 8] },
+        { name: "Rock2", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 5] },
+        { name: "Rock3", meter: "4/4", drumPattern: ["bch - ch bu cch bu ch - bch - ch - cch - ch -"], bassRhythm: ["bo - - bo - - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 1] },
+        { name: "Rock4", meter: "4/4", drumPattern: ["ba - co - cco - co - bco - co - cco bu bco bu"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 7, 8, 7, 5, 3] },
+        { name: "Rock5", meter: "4/4", drumPattern: ["bch ch ch ch cch ch ch ch bch ch ch ch cch ch ch -"], bassRhythm: ["bo - - bo - - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 1, 5] },
+        { name: "Rock6", meter: "4/4", drumPattern: ["bco co co co cco co co co bco co co co cco co co co"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [8, 8, 1, 1] },
+        { name: "Rock7", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - co - cco - co -"], bassRhythm: ["bo - - bo - - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 1] },
+        { name: "Rock_Progressivo", meter: "7/4", drumPattern: ["bch - ch -  cch - ch - bch - ch - cch - ch bu bch - ch - cch - ch - bch - ch bu"], bassRhythm: ["bo - - - - - - - bo - - - - - - bo - - bo bo bo bo bo bo bo bo bo bo"], bassScale: [1, 1, 1, 3, 5, 8, 3, 5, 8, 3, 5, 8, 5] },
+        { name: "Rock_Progressivo2", meter: "5/4", drumPattern: ["ba - ch - bch - ch - cch - ch - bch - ch - cch - ch bu"], bassRhythm: ["bo - x x bo - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 1, 3, 5, 8, 1, 3, 5, 8] },
+        { name: "Rock_Progressivo3", meter: "6/4", drumPattern: ["ba - - - ch - - bu cch - - - ch - - - bch - - - ch - - -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 3, 1, 1, 1, 3, 5, 5, 5, 1] },
+        { name: "Rock_Progressivo4", meter: "4/4", drumPattern: ["ba - ch bu cch - ch - bch - ch bu cch - ch bu"], bassRhythm: ["bo - - bo - - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 8] },
+        { name: "Rock_Progressivo5", meter: "7/4", drumPattern: ["ba - co - cco - co - bco - co bu cco - co bu bch bu co - cch - ch - bch - ch bu"], bassRhythm: ["bo - - bo bo - - - bo - - bo bo - - bo - - bo bo - - bo bo - - bo bo"], bassScale: [1, 3, 5, 8] },
+        { name: "Rock_Progressivo6", meter: "3/4", drumPattern: ["bch - - - ch - - bu cch - - -"], bassRhythm: ["bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 8, 8, 8]},
+        { name: "Rock_Progressivo7", meter: "4/4", drumPattern: ["bco co cch to1 cch - ch - bch - ch cch bu bu ch bu"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 1] },
+        { name: "Blues", meter: "4/4", drumPattern: ["bch - ch ch cch - ch ch bch - ch ch cch - ch ch"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 6, 8, 6, 5, 3] },
+        { name: "Blues2", meter: "4/4", drumPattern: ["bch - - - cch - - - bch - - - cch - - -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 6, 8, 6, 5, 3] },
+        { name: "Blues3", meter: "4/4", drumPattern: ["bch - - bu cch - ch - ch - - bu cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 6, 8, 6, 5, 3] },
+        { name: "Blues4", meter: "4/4", drumPattern: ["bch - - bu cch - ch - bch - - bu cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 6, 8, 6, 5, 3] },
+        { name: "Blues5", meter: "4/4", drumPattern: ["bch - - bu cch - ch - bch - - bu cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 6, 8, 6, 5, 3] },
+        { name: "Blues6", meter: "4/4", drumPattern: ["bch - - bu cch - ch - bch - - bu cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 6, 8, 6, 5, 3] },
+        { name: "Blues7", meter: "4/4", drumPattern: ["bch - - bu cch - ch - bch - - bu cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 6, 8, 6, 5, 3] },
+        { name: "Forró", meter: "2/4", drumPattern: ["bch - co - ch - ca -"], bassRhythm: ["bo - - - x - - -"], bassScale: [8, 1] },
+        { name: "Funk", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch -"], bassRhythm: ["bo - - - bo - bo x bo x bo x bo - x x"], bassScale: [1,8] },
+        { name: "Funk2", meter: "4/4", drumPattern: ["bch - - - cch - - - bch - - - cch - - -"], bassRhythm: ["bo bo bo bo bo x x x bo - x x bo - x x"], bassScale: [1,7,8,1] },
+        { name: "Disco", meter: "4/4", drumPattern: ["bu - ch ch bu - ch ch bu - ch ch bu - ch ch"], bassRhythm: ["bo - x x bo - x x bo - x x bo - x x"], bassScale: [1] },
+        { name: "Forró4", meter: "2/4", drumPattern: ["bch - co - ch - ca bu"], bassRhythm: ["bo - - - bo - - x"], bassScale: [8, 1] },
+        { name: "Metal", meter: "4/4", drumPattern: ["bch bu bch bu cch bu bch bu bch bu bch bu cch bu bch bu"], bassRhythm: ["bo bo bo bo bo bo bo bo bo bo bo bo bo bo bo bo"], guitarRhythm: ["ab ab ab ab so - - - ab - ab - so - - -"] },
+        { name: "Metal2", meter: "4/4", drumPattern: ["bch bu bch bu cch bu bch bu cch - ch bu cch bu bch bu"], bassRhythm: ["bo bo bo bo bo bo bo bo bo bo bo bo bo bo bo bo"], guitarRhythm: ["ab ab ab ab ab ab ab ab ab ab ab ab ab ab ab ab"] },
+        { name: "Metal3", meter: "4/4", drumPattern: ["bch bu bch - cch - ch - bch bu ch bu cch - ch -"], bassRhythm: ["bo bo bo - - - - - bo bo - bo - - - -"] },
+        { name: "Metal4", meter: "4/4", drumPattern: ["bch bu cch - bu bu cch - bu bu cch - bu bu cch -"], bassRhythm: ["bo bo bo - bo bo bo - bo bo bo - bo bo bo -"], guitarRhythm: ["ab - ab - so - - - ab - ab - so - - -"] },
+        { name: "Samba", meter: "2/4", drumPattern: ["bch - ch bu bch - ch bu"], bassRhythm: ["bo - x x bo - - x"], bassScale: [8, 5] },
+        { name: "Jazz", meter: "4/4", drumPattern: ["bch co co - co co co ca bch co co - bch co co cch"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: "chromatic" },
     ];
 
-    const HEAD_TOTAL_FRAMES = 100;
-
-    // ===== MAPA DE PASTAS CORRIGIDO =====
-    const pastaMap = {
-      // Pasta_1F (1E-20B)
-      "1E": "Pasta_1F", "2F": "Pasta_1F", "3FS": "Pasta_1F", "4G": "Pasta_1F", "5GS": "Pasta_1F",
-      "6A": "Pasta_1F", "7AS": "Pasta_1F", "8B": "Pasta_1F", "9C": "Pasta_1F", "10CS": "Pasta_1F",
-      "11D": "Pasta_1F", "12DS": "Pasta_1F", "13E": "Pasta_1F", "14F": "Pasta_1F", "15FS": "Pasta_1F",
-      "16G": "Pasta_1F", "17GS": "Pasta_1F", "18A": "Pasta_1F", "19AS": "Pasta_1F", "20B": "Pasta_1F",
-      
-      // Pasta_2FS (3FS-21C)
-      "3FS": "Pasta_2FS", "4G": "Pasta_2FS", "5GS": "Pasta_2FS", "6A": "Pasta_2FS", "8B": "Pasta_2FS",
-      "9C": "Pasta_2FS", "10CS": "Pasta_2FS", "11D": "Pasta_2FS", "13E": "Pasta_2FS", "14F": "Pasta_2FS",
-      "15FS": "Pasta_2FS", "16G": "Pasta_2FS", "18A": "Pasta_2FS", "19AS": "Pasta_2FS", "20B": "Pasta_2FS",
-      "21C": "Pasta_2FS",
-      
-      // Pasta_3G (4G-22CS)
-      "4G": "Pasta_3G", "5GS": "Pasta_3G", "6A": "Pasta_3G", "7AS": "Pasta_3G", "9C": "Pasta_3G",
-      "10CS": "Pasta_3G", "11D": "Pasta_3G", "12DS": "Pasta_3G", "14F": "Pasta_3G", "15FS": "Pasta_3G",
-      "16G": "Pasta_3G", "17GS": "Pasta_3G", "19AS": "Pasta_3G", "20B": "Pasta_3G", "21C": "Pasta_3G",
-      "22CS": "Pasta_3G",
-      
-      // Pasta_4GS (5GS-23D)
-      "5GS": "Pasta_4GS", "6A": "Pasta_4GS", "7AS": "Pasta_4GS", "8B": "Pasta_4GS", "10CS": "Pasta_4GS",
-      "11D": "Pasta_4GS", "12DS": "Pasta_4GS", "13E": "Pasta_4GS", "15FS": "Pasta_4GS", "16G": "Pasta_4GS",
-      "17GS": "Pasta_4GS", "18A": "Pasta_4GS", "20B": "Pasta_4GS", "21C": "Pasta_4GS", "22CS": "Pasta_4GS",
-      "23D": "Pasta_4GS",
-      
-      // Pasta_5A (6A-24DS)
-      "6A": "Pasta_5A", "7AS": "Pasta_5A", "8B": "Pasta_5A", "9C": "Pasta_5A", "11D": "Pasta_5A",
-      "12DS": "Pasta_5A", "13E": "Pasta_5A", "14F": "Pasta_5A", "16G": "Pasta_5A", "17GS": "Pasta_5A",
-      "18A": "Pasta_5A", "19AS": "Pasta_5A", "21C": "Pasta_5A", "22CS": "Pasta_5A", "23D": "Pasta_5A",
-      "24DS": "Pasta_5A",
-      
-      // Pasta_6AS (7AS-25E)
-      "7AS": "Pasta_6AS", "8B": "Pasta_6AS", "9C": "Pasta_6AS", "10CS": "Pasta_6AS", "12DS": "Pasta_6AS",
-      "13E": "Pasta_6AS", "14F": "Pasta_6AS", "15FS": "Pasta_6AS", "17GS": "Pasta_6AS", "18A": "Pasta_6AS",
-      "19AS": "Pasta_6AS", "20B": "Pasta_6AS", "22CS": "Pasta_6AS", "23D": "Pasta_6AS", "24DS": "Pasta_6AS",
-      "25E": "Pasta_6AS",
-      
-      // Pasta_7B (8B-26F)
-      "8B": "Pasta_7B", "9C": "Pasta_7B", "10CS": "Pasta_7B", "11D": "Pasta_7B", "13E": "Pasta_7B",
-      "14F": "Pasta_7B", "15FS": "Pasta_7B", "16G": "Pasta_7B", "18A": "Pasta_7B", "19AS": "Pasta_7B",
-      "20B": "Pasta_7B", "21C": "Pasta_7B", "23D": "Pasta_7B", "24DS": "Pasta_7B", "25E": "Pasta_7B",
-      "26F": "Pasta_7B",
-      
-      // Pasta_8C (9C-27FS)
-      "9C": "Pasta_8C", "10CS": "Pasta_8C", "11D": "Pasta_8C", "12DS": "Pasta_8C", "14F": "Pasta_8C",
-      "15FS": "Pasta_8C", "16G": "Pasta_8C", "17GS": "Pasta_8C", "19AS": "Pasta_8C", "20B": "Pasta_8C",
-      "21C": "Pasta_8C", "22CS": "Pasta_8C", "24DS": "Pasta_8C", "25E": "Pasta_8C", "26F": "Pasta_8C",
-      "27FS": "Pasta_8C",
-      
-      // Pasta_9CS (10CS-28G)
-      "10CS": "Pasta_9CS", "11D": "Pasta_9CS", "12DS": "Pasta_9CS", "13E": "Pasta_9CS", "15FS": "Pasta_9CS",
-      "16G": "Pasta_9CS", "17GS": "Pasta_9CS", "18A": "Pasta_9CS", "20B": "Pasta_9CS", "21C": "Pasta_9CS",
-      "22CS": "Pasta_9CS", "23D": "Pasta_9CS", "25E": "Pasta_9CS", "26F": "Pasta_9CS", "27FS": "Pasta_9CS",
-      "28G": "Pasta_9CS",
-      
-      // Pasta_10D (11D-29GS)
-      "11D": "Pasta_10D", "12DS": "Pasta_10D", "13E": "Pasta_10D", "14F": "Pasta_10D", "16G": "Pasta_10D",
-      "17GS": "Pasta_10D", "18A": "Pasta_10D", "19AS": "Pasta_10D", "21C": "Pasta_10D", "22CS": "Pasta_10D",
-      "23D": "Pasta_10D", "24DS": "Pasta_10D", "26F": "Pasta_10D", "27FS": "Pasta_10D", "28G": "Pasta_10D",
-      "29GS": "Pasta_10D",
-      
-      // Pasta_11DS (12DS-30A)
-      "12DS": "Pasta_11DS", "13E": "Pasta_11DS", "14F": "Pasta_11DS", "15FS": "Pasta_11DS", "17GS": "Pasta_11DS",
-      "18A": "Pasta_11DS", "19AS": "Pasta_11DS", "20B": "Pasta_11DS", "22CS": "Pasta_11DS", "23D": "Pasta_11DS",
-      "24DS": "Pasta_11DS", "25E": "Pasta_11DS", "27FS": "Pasta_11DS", "28G": "Pasta_11DS", "29GS": "Pasta_11DS",
-      "30A": "Pasta_11DS",
-      
-      // Pasta_12E (13E-31B)
-      "13E": "Pasta_12E", "14F": "Pasta_12E", "15FS": "Pasta_12E", "16G": "Pasta_12E", "18A": "Pasta_12E",
-      "19AS": "Pasta_12E", "20B": "Pasta_12E", "21C": "Pasta_12E", "23D": "Pasta_12E", "24DS": "Pasta_12E",
-      "25E": "Pasta_12E", "26F": "Pasta_12E", "28G": "Pasta_12E", "29GS": "Pasta_12E", "30A": "Pasta_12E",
-      "31B": "Pasta_12E",
-      
-      // Pasta_13F (14F-32B)
-      "14F": "Pasta_13F", "15FS": "Pasta_13F", "16G": "Pasta_13F", "17GS": "Pasta_13F", "19AS": "Pasta_13F",
-      "20B": "Pasta_13F", "21C": "Pasta_13F", "22CS": "Pasta_13F", "24DS": "Pasta_13F", "25E": "Pasta_13F",
-      "26F": "Pasta_13F", "27FS": "Pasta_13F", "29GS": "Pasta_13F", "30A": "Pasta_13F", "31AS": "Pasta_13F",
-      "32B": "Pasta_13F",
-      
-      // Pasta_14FS (15FS-33C)
-      "15FS": "Pasta_14FS", "16G": "Pasta_14FS", "17GS": "Pasta_14FS", "18A": "Pasta_14FS", "20B": "Pasta_14FS",
-      "21C": "Pasta_14FS", "22CS": "Pasta_14FS", "23D": "Pasta_14FS", "25E": "Pasta_14FS", "26F": "Pasta_14FS",
-      "27FS": "Pasta_14FS", "28G": "Pasta_14FS", "30A": "Pasta_14FS", "31AS": "Pasta_14FS", "32B": "Pasta_14FS",
-      "33C": "Pasta_14FS",
-      
-      // Pasta_15G (16G-34CS)
-      "16G": "Pasta_15G", "17GS": "Pasta_15G", "18A": "Pasta_15G", "19AS": "Pasta_15G", "21C": "Pasta_15G",
-      "22CS": "Pasta_15G", "23D": "Pasta_15G", "24DS": "Pasta_15G", "26F": "Pasta_15G", "27FS": "Pasta_15G",
-      "28G": "Pasta_15G", "29GS": "Pasta_15G", "31AS": "Pasta_15G", "32B": "Pasta_15G", "33C": "Pasta_15G",
-      "34CS": "Pasta_15G",
-      
-      // Pasta_16GS (17GS-35D)
-      "17GS": "Pasta_16GS", "18A": "Pasta_16GS", "19AS": "Pasta_16GS", "20B": "Pasta_16GS", "22CS": "Pasta_16GS",
-      "23D": "Pasta_16GS", "24DS": "Pasta_16GS", "25E": "Pasta_16GS", "27FS": "Pasta_16GS", "28G": "Pasta_16GS",
-      "29GS": "Pasta_16GS", "30A": "Pasta_16GS", "32B": "Pasta_16GS", "33C": "Pasta_16GS", "34CS": "Pasta_16GS",
-      "35D": "Pasta_16GS",
-      
-      // Pasta_17A (18A-36DS)
-      "18A": "Pasta_17A", "19AS": "Pasta_17A", "20B": "Pasta_17A", "21C": "Pasta_17A", "23D": "Pasta_17A",
-      "24DS": "Pasta_17A", "25E": "Pasta_17A", "26F": "Pasta_17A", "28G": "Pasta_17A", "29GS": "Pasta_17A",
-      "30A": "Pasta_17A", "31AS": "Pasta_17A", "33C": "Pasta_17A", "34CS": "Pasta_17A", "35D": "Pasta_17A",
-      "36DS": "Pasta_17A",
-      
-      // Pasta_18AS (19AS-37E)
-      "19AS": "Pasta_18AS", "20B": "Pasta_18AS", "21C": "Pasta_18AS", "22CS": "Pasta_18AS", "24DS": "Pasta_18AS",
-      "25E": "Pasta_18AS", "26F": "Pasta_18AS", "27FS": "Pasta_18AS", "29GS": "Pasta_18AS", "30A": "Pasta_18AS",
-      "31AS": "Pasta_18AS", "32B": "Pasta_18AS", "34CS": "Pasta_18AS", "35D": "Pasta_18AS", "36DS": "Pasta_18AS",
-      "37E": "Pasta_18AS",
-      
-      // Pasta_19B (20B-38F)
-      "20B": "Pasta_19B", "21C": "Pasta_19B", "22CS": "Pasta_19B", "23D": "Pasta_19B", "25E": "Pasta_19B",
-      "26F": "Pasta_19B", "27FS": "Pasta_19B", "28G": "Pasta_19B", "30A": "Pasta_19B", "31AS": "Pasta_19B",
-      "32B": "Pasta_19B", "33C": "Pasta_19B", "35D": "Pasta_19B", "36DS": "Pasta_19B", "37E": "Pasta_19B",
-      "38F": "Pasta_19B",
-      
-      // Pasta_20C (21C-39FS)
-      "21C": "Pasta_20C", "22CS": "Pasta_20C", "23D": "Pasta_20C", "24DS": "Pasta_20C", "26F": "Pasta_20C",
-      "27FS": "Pasta_20C", "28G": "Pasta_20C", "29GS": "Pasta_20C", "31AS": "Pasta_20C", "32B": "Pasta_20C",
-      "33C": "Pasta_20C", "34CS": "Pasta_20C", "36DS": "Pasta_20C", "37E": "Pasta_20C", "38F": "Pasta_20C",
-      "39FS": "Pasta_20C",
-      
-      // Pasta_21CS (22CS-40G)
-      "22CS": "Pasta_21CS", "23D": "Pasta_21CS", "24DS": "Pasta_21CS", "25E": "Pasta_21CS", "27FS": "Pasta_21CS",
-      "28G": "Pasta_21CS", "29GS": "Pasta_21CS", "30A": "Pasta_21CS", "32B": "Pasta_21CS", "33C": "Pasta_21CS",
-      "34CS": "Pasta_21CS", "35D": "Pasta_21CS", "37E": "Pasta_21CS", "38F": "Pasta_21CS", "39FS": "Pasta_21CS",
-      "40G": "Pasta_21CS",
-      
-      // Pasta_22D (23D-41GS)
-      "23D": "Pasta_22D", "24DS": "Pasta_22D", "25E": "Pasta_22D", "26F": "Pasta_22D", "28G": "Pasta_22D",
-      "29GS": "Pasta_22D", "30A": "Pasta_22D", "31AS": "Pasta_22D", "33C": "Pasta_22D", "34CS": "Pasta_22D",
-      "35D": "Pasta_22D", "36DS": "Pasta_22D", "38F": "Pasta_22D", "39FS": "Pasta_22D", "40G": "Pasta_22D",
-      "41GS": "Pasta_22D",
-      
-      // Pasta_23DS (24DS-42A)
-      "24DS": "Pasta_23DS", "25E": "Pasta_23DS", "26F": "Pasta_23DS", "27FS": "Pasta_23DS", "29GS": "Pasta_23DS",
-      "30A": "Pasta_23DS", "31AS": "Pasta_23DS", "32B": "Pasta_23DS", "34CS": "Pasta_23DS", "35D": "Pasta_23DS",
-      "36DS": "Pasta_23DS", "37E": "Pasta_23DS", "39FS": "Pasta_23DS", "40G": "Pasta_23DS", "41GS": "Pasta_23DS",
-      "42A": "Pasta_23DS",
-      
-      // Pasta_24E (25E-43AS)
-      "25E": "Pasta_24E", "26F": "Pasta_24E", "27FS": "Pasta_24E", "28G": "Pasta_24E", "30A": "Pasta_24E",
-      "31AS": "Pasta_24E", "32B": "Pasta_24E", "33C": "Pasta_24E", "35D": "Pasta_24E", "36DS": "Pasta_24E",
-      "37E": "Pasta_24E", "38F": "Pasta_24E", "40G": "Pasta_24E", "41GS": "Pasta_24E", "42A": "Pasta_24E",
-      "43AS": "Pasta_24E"
-    };
 
     /* ============================
        FUNÇÕES PRINCIPAIS CORRIGIDAS
        ============================ */
-    
-    // CORREÇÃO: Função para converter nota para formato de arquivo
-    function formatarNotaParaArquivo(nota) {
-      if (!nota || nota === "x") return "1E"; // Fallback
-      
-      // CORREÇÃO: Os arquivos usam "S" nos nomes, não "#"
-      // Manter "S" como está para os arquivos PNG
-      return nota;
+    function getPastaDaNota(nota) {
+      return pastaMap[nota] || "Pasta_1F";
     }
 
     function getCordaDaNota(nota) {
@@ -719,53 +774,26 @@
     }
 
     function trocarFrameTronco(nota) {
-      if (nota === "x") {
-        // Se for pausa, manter frame atual ou usar frame neutro
-        return;
-      }
-      
-      // CORREÇÃO: Usar o mapa completo que você forneceu
-      let pasta = pastaMap[nota] || "Pasta_1F";
+      let pasta = getPastaDaNota(nota);
       const tronco = document.getElementById("troncoLayer");
       
-      // CORREÇÃO: Usar função para formatar corretamente (manter "S")
-      const nomeArquivo = formatarNotaParaArquivo(nota);
-      const caminho = `animacao/tronco_baixo/${pasta}/${nomeArquivo}.png`;
+      // CORREÇÃO: Usar pasta diretamente do mapa (já com codificação para #)
+      const nomeArquivo = nota.replace("S","#");
+      tronco.src = `animacao/tronco_baixo/${pasta}/${nomeArquivo}.png`;
       
-      console.log("Tentando carregar:", caminho); // Para debug
-      
-      // Verificar se a imagem existe antes de tentar carregar
-      const img = new Image();
-      img.onload = function() {
-        tronco.src = caminho;
-        console.log("Imagem carregada com sucesso:", caminho);
-      };
-      img.onerror = function() {
-        console.warn("Imagem não encontrada:", caminho);
-        // Tentar fallback para Pasta_1F
-        const fallbackCaminho = `animacao/tronco_baixo/Pasta_1F/${nomeArquivo}.png`;
-        console.log("Tentando fallback:", fallbackCaminho);
-        
-        const fallbackImg = new Image();
-        fallbackImg.onload = function() {
-          tronco.src = fallbackCaminho;
-          console.log("Fallback carregado:", fallbackCaminho);
-        };
-        fallbackImg.onerror = function() {
-          console.error("Fallback também falhou:", fallbackCaminho);
-        };
-        fallbackImg.src = fallbackCaminho;
-      };
-      img.src = caminho;
+      console.log("Trocando frame tronco:", {
+        nota: nota,
+        pasta: pasta,
+        arquivo: nomeArquivo + '.png',
+        caminho: `animacao/tronco_baixo/${pasta}/${nomeArquivo}.png`
+      });
     }
 
     function tocarNotaAudioBaixo(nota, volume) {
       pararAudioBaixo();
       
-      if (nota === "x") return; // Não tocar áudio para pausa
-      
-      // CORREÇÃO: Converter nota para formato de arquivo correto
-      const notaArquivo = formatarNotaParaArquivo(nota);
+      // CORRETO: Converter nota para formato de arquivo correto (ex: "10C#" → "10CS")
+      const notaArquivo = nota.replace(/#/g, "S");
       const a = new Audio("assets/BaixoMelodia/" + notaArquivo + ".mp3");
       a.volume = volume;
       
@@ -834,44 +862,6 @@
     }
 
     /* ============================
-       ANIMAÇÃO – MOVIMENTO COORDENADO DO CORPO
-       ============================ */
-    function startCoordinatedMovement() {
-      if (lateralMovementTimer) clearInterval(lateralMovementTimer);
-      
-      const layersToMove = [
-        'antebracoLayer', 'troncoLayer', 'bracoLayer', 
-        'cabecaLayer', 'cabecaTrasLayer'
-      ];
-      
-      let direction = 1;
-      let position = 0;
-      const maxOffset = 8; // Máximo deslocamento em pixels
-      const speed = 80; // Velocidade do movimento (ms)
-      
-      lateralMovementTimer = setInterval(() => {
-        position += direction;
-        
-        if (Math.abs(position) >= maxOffset) {
-          direction *= -1;
-        }
-        
-        // Aplicar movimento lateral coordenado
-        layersToMove.forEach(layerId => {
-          const layer = document.getElementById(layerId);
-          if (layer) {
-            // Preservar transformações existentes (rotação) e adicionar translação
-            const currentTransform = layer.style.transform;
-            const rotationMatch = currentTransform.match(/rotate\(([^)]+)\)/);
-            const rotation = rotationMatch ? `rotate(${rotationMatch[1]})` : '';
-            
-            layer.style.transform = `${rotation} translateX(${position}px)`;
-          }
-        });
-      }, speed);
-    }
-
-    /* ============================
        ANIMAÇÃO – TRONCO BALANÇANDO (no BPM)
        ============================ */
     function startTroncoBpm(bpm) {
@@ -879,12 +869,8 @@
       const tronco = document.getElementById("troncoLayer");
       let direction = 1;
       troncoTimer = setInterval(() => {
-        const currentTransform = tronco.style.transform;
-        const translateMatch = currentTransform.match(/translateX\(([^)]+)\)/);
-        const translate = translateMatch ? `translateX(${translateMatch[1]})` : '';
-        
-        const angle = direction * 2; // 2 graus pra cada lado
-        tronco.style.transform = `${translate} rotate(${angle}deg)`;
+        const angle = direction * 3; // 3 graus pra cada lado
+        tronco.style.transform = `rotate(${angle}deg)`;
         direction *= -1;
       }, (60000 / bpm) / 2); // colcheia
     }
@@ -898,20 +884,44 @@
       const cabecaTras = document.getElementById("cabecaTrasLayer");
       let dir = 1;
       tiltTimer = setInterval(() => {
-        const angle = dir * 3;
-        
-        // Aplicar rotação preservando translação
-        [cabeca, cabecaTras].forEach(layer => {
-          if (layer) {
-            const currentTransform = layer.style.transform;
-            const translateMatch = currentTransform.match(/translateX\(([^)]+)\)/);
-            const translate = translateMatch ? `translateX(${translateMatch[1]})` : '';
-            layer.style.transform = `${translate} rotate(${angle}deg)`;
-          }
-        });
-        
+        const angle = dir * 5;
+        cabeca.style.transform = `rotate(${angle}deg)`;
+        if (cabecaTras) {
+          cabecaTras.style.transform = `rotate(${angle}deg)`;
+        }
         dir *= -1;
       }, 60000 / bpm); // um "vai e volta" por tempo (semínima)
+    }
+
+    /* ============================
+       ANIMAÇÃO – MOVIMENTO LATERAL
+       ============================ */
+    function startLateralMovement() {
+      if (lateralMovementTimer) clearInterval(lateralMovementTimer);
+      
+      const layersToMove = [
+        'antebracoLayer', 'troncoLayer', 'bracoLayer', 
+        'cabecaLayer', 'cabecaTrasLayer'
+      ];
+      
+      let direction = 1;
+      let position = 0;
+      const maxOffset = 10; // Máximo deslocamento em pixels
+      
+      lateralMovementTimer = setInterval(() => {
+        position += direction;
+        
+        if (Math.abs(position) >= maxOffset) {
+          direction *= -1;
+        }
+        
+        layersToMove.forEach(layerId => {
+          const layer = document.getElementById(layerId);
+          if (layer) {
+            layer.style.transform = `translateX(${position}px)`;
+          }
+        });
+      }, 100); // Velocidade do movimento lateral
     }
 
     /* ============================
@@ -919,13 +929,7 @@
        ============================ */
     function trocarAntebraco(corda) {
       const ante = document.getElementById("antebracoLayer");
-      // Preservar transformação existente
-      const currentTransform = ante.style.transform;
-      const translateMatch = currentTransform.match(/translateX\(([^)]+)\)/);
-      const translate = translateMatch ? `translateX(${translateMatch[1]})` : '';
-      
       ante.src = `animacao/antebraco/antebraco${corda}.png`;
-      ante.style.transform = translate; // Manter apenas a translação
     }
 
     /* ============================
@@ -947,23 +951,11 @@
       const id = setInterval(() => {
         if (i >= frames.length) {
           clearInterval(id);
-          // Voltar para frame inicial preservando transformação
-          const currentTransform = braco.style.transform;
-          const translateMatch = currentTransform.match(/translateX\(([^)]+)\)/);
-          const translate = translateMatch ? `translateX(${translateMatch[1]})` : '';
-          
+          // Voltar para frame inicial
           braco.src = `animacao/braco_direito/Corda_${corda}1.png`;
-          braco.style.transform = translate;
           return;
         }
-        
-        // Preservar transformação existente
-        const currentTransform = braco.style.transform;
-        const translateMatch = currentTransform.match(/translateX\(([^)]+)\)/);
-        const translate = translateMatch ? `translateX(${translateMatch[1]})` : '';
-        
         braco.src = frames[i];
-        braco.style.transform = translate;
         i++;
       }, passo);
 
@@ -1015,7 +1007,194 @@
       animarBracoDireito(corda, duracaoMs);
     }
 
-    // ... (o restante do código permanece igual)
+    /* ===== FUNÇÕES DO PRIMEIRO ARQUIVO ADAPTADAS ===== */
+    function expandRhythm(patternArray, totalSteps) {
+      const joined = patternArray.join(' ').replace(/\s+/g, ' ').trim();
+      const tokens = joined.split(/\s+/).filter(t => t);
+      const out = [];
+      let i = 0;
+      while (out.length < totalSteps) {
+        for (const token of tokens) {
+          if (out.length >= totalSteps) break;
+          out.push(token);
+        }
+        if (i++ > 1000) break;
+      }
+      return out.slice(0, totalSteps);
+    }
+
+    function parsePattern(patternText) {
+      const result = { intro: [], loop: [] };
+      const introMatch = patternText.match(/\[(.*?)\]/);
+      const loopMatch = patternText.match(/\((.*?)\)/);
+      if (introMatch) result.intro = introMatch[1].trim().split(/\s+/).filter(s => s);
+      if (loopMatch) result.loop = loopMatch[1].trim().split(/\s+/).filter(s => s);
+      if (!introMatch && !loopMatch) result.loop = patternText.trim().split(/\s+/).filter(s => s);
+      if (!result.loop.length) result.loop = result.intro.slice();
+      return result;
+    }
+
+    function meterToBeats(meter) {
+      return Number(meter.split('/')[0]) || 4;
+    }
+
+    /* ===== SISTEMA DE PLAYBACK ALEATÓRIO ===== */
+    async function gerarPlaybackAleatorio() {
+      // Escolhe um groove aleatório
+      const groove = ALL_GROOVES[Math.floor(Math.random() * ALL_GROOVES.length)];
+      
+      // Escolhe uma progressão de acordes baseada no estilo
+      const grooveName = groove.name;
+      let styleKey = "Rock";
+      if (grooveName.includes("Samba")) styleKey = "Samba";
+      else if (grooveName.includes("Jazz")) styleKey = "Jazz";
+      else if (grooveName.includes("Forró")) styleKey = "Forró";
+      else if (grooveName.includes("Metal")) styleKey = "Metal";
+      else if (grooveName.includes("Blues")) styleKey = "Blues";
+      
+      const progressions = STYLE_PROGRESSIONS[styleKey] || STYLE_PROGRESSIONS.Rock;
+      let availableProgressions = progressions.filter(prog => !prog.includes(7));
+      if (availableProgressions.length === 0) {
+        availableProgressions = progressions; // fallback
+      }
+      
+      const chordProgression = availableProgressions[Math.floor(Math.random() * availableProgressions.length)];
+      const totalBars = Math.min(chordProgression.length, 64);
+      const beats = meterToBeats(groove.meter);
+      const sixteenthsPerBar = beats * 4;
+      const totalSteps = sixteenthsPerBar * totalBars;
+      
+      // Gera sequência de baixo
+      const rhythm = expandRhythm(groove.bassRhythm, totalSteps);
+      const bassPlan = [];
+      
+      // Escolhe uma tonalidade aleatória
+      const keyIdx = Math.floor(Math.random() * PITCHES.length);
+      const key = PITCHES[keyIdx];
+      
+      // Função para obter notas do baixo da escala
+      function getBassNotesFromScale(degree, scale, chordType) {
+        let isMinor = false;
+        if ([1, 4, 5].includes(degree)) {
+          isMinor = (Math.random() > 0.5); // aleatório para exemplo
+        } else {
+          isMinor = (
+            chordType.startsWith('m') ||
+            chordType.includes('dim') ||
+            ['5+', '75+', '95+'].includes(chordType)
+          );
+        }
+
+        if (scale === "chromatic") {
+          const rootIdx = (keyIdx + DEGREE_TO_ROOT[degree]) % 12;
+          const rootNote = PITCHES[rootIdx];
+          const octave = 8;
+          return Array(8).fill().map((_, i) => {
+            const noteIdx = (rootIdx - i + 12) % 12;
+            const p = PITCHES[noteIdx];
+            return p.endsWith('S') ? `${p.replace('S', '')}${octave}S` : `${p}${octave}`;
+          });
+        }
+
+        if (Array.isArray(scale)) {
+          const rootIdx = (keyIdx + DEGREE_TO_ROOT[degree]) % 12;
+          return scale.map(interval => {
+            let intervalOffset;
+            if (isMinor) {
+              const minorIntervals = { 1: 0, 2: 2, 3: 3, 4: 5, 5: 7, 6: 8, 7: 10, 8: 12 };
+              intervalOffset = minorIntervals[interval] || 0;
+            } else {
+              const majorIntervals = { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11, 8: 12 };
+              intervalOffset = majorIntervals[interval] || 0;
+            }
+            const noteIdx = (rootIdx + intervalOffset) % 12;
+            const octave = interval === 1 ? '' : '8';
+            const noteName = PITCHES[noteIdx];
+            if (interval === 1) {
+              return noteName;
+            } else {
+              return noteName.endsWith('S') ? `${noteName.replace('S', '')}${octave}S` : `${noteName}${octave}`;
+            }
+          });
+        }
+
+        return [PITCHES[(keyIdx + DEGREE_TO_ROOT[degree]) % 12]];
+      }
+
+      // Gera as notas do baixo
+      for (let bar = 0; bar < totalBars; bar++) {
+        const degree = chordProgression[bar];
+        const bassNotes = getBassNotesFromScale(degree, groove.bassScale, '');
+        const stepsInBar = sixteenthsPerBar;
+        const notesPerBar = Math.ceil(stepsInBar / bassNotes.length);
+        const fullBassNotes = Array(stepsInBar).fill().map((_, i) => bassNotes[Math.floor(i / notesPerBar)] || bassNotes[0]);
+        
+        for (let stepInBar = 0; stepInBar < stepsInBar; stepInBar++) {
+          const step = bar * stepsInBar + stepInBar;
+          const sym = rhythm[step] || '-';
+          let bassNote = null;
+          if (sym === 'x') bassNote = 'x';
+          else if (sym === '-' || sym === 'sm') bassNote = '-';
+          else bassNote = fullBassNotes[stepInBar];
+          bassPlan.push(bassNote);
+        }
+      }
+
+      // Filtra apenas as notas válidas (remove '-' e mantém 'x' e notas)
+      const filteredBassPlan = bassPlan.filter(note => note !== '-');
+      
+      // Converte para o formato usado na animação
+      const formattedBassSeq = filteredBassPlan.map(note => {
+        if (note === 'x') return 'x';
+        
+        // Converte nota do formato do primeiro arquivo para o formato da animação
+        // Exemplo: "A8" -> "18A", "AS8" -> "19AS"
+        const noteName = note.replace(/8/g, '');
+        const noteIndex = PITCHES.indexOf(noteName);
+        if (noteIndex !== -1) {
+          // Encontra a nota correspondente na lista de notas válidas
+          const matchingNote = notasValidas.find(n => {
+            const num = parseInt(n, 10);
+            const notePart = n.substring(String(num).length);
+            return notePart === noteName;
+          });
+          return matchingNote || 'x';
+        }
+        return 'x';
+      });
+
+      // Gera sequência de bateria
+      const drumParsed = parsePattern(groove.drumPattern.join(' '));
+      const drumSeq = [...drumParsed.intro, ...drumParsed.loop];
+      const drumExpanded = [];
+      while (drumExpanded.length < formattedBassSeq.length) {
+        for (const t of drumSeq) {
+          if (drumExpanded.length >= formattedBassSeq.length) break;
+          drumExpanded.push(t);
+        }
+      }
+      
+      // Converte para o formato usado na animação
+      const formattedDrumSeq = {};
+      drumLines.forEach(line => {
+        formattedDrumSeq[line.id] = drumExpanded.slice(0, formattedBassSeq.length).map(token => {
+          // Mapeia tokens do primeiro arquivo para IDs do segundo
+          if (token === line.id) return line.id;
+          if (['bu', 'bumbo'].includes(token) && line.id === 'bumbo') return 'bumbo';
+          if (['ca', 'caixa'].includes(token) && line.id === 'caixa') return 'caixa';
+          if (['ch', 'chimbal'].includes(token) && line.id === 'chimbal') return 'chimbal';
+          if (['co', 'conducao'].includes(token) && line.id === 'conducao') return 'conducao';
+          if (['ba', 'bumbo-ataque'].includes(token) && line.id === 'ataque') return 'ataque';
+          return 'x';
+        });
+      });
+
+      return {
+        bass: formattedBassSeq,
+        drums: formattedDrumSeq,
+        bpm: bpmAtual
+      };
+    }
 
     /* ===== SISTEMA DE PLAYBACK CORRIGIDO ===== */
     
@@ -1121,7 +1300,6 @@
           div.classList.add("x-option");
           label = "X";
         } else {
-          // CORREÇÃO: Exibir sustenidos corretamente na interface
           label = opt.replace(/S/g,"#");
         }
 
@@ -1145,20 +1323,396 @@
       selectionOverlay.classList.add("visible");
     }
 
-    // ... (o restante do código permanece igual)
+    function abrirPainelSelecaoLinhaDrum(seqRef, idx, cellEl, line) {
+      painelSelecao.tipo = "drum";
+      painelSelecao.seqRef = seqRef;
+      painelSelecao.idx = idx;
+      painelSelecao.cell = cellEl;
+      painelSelecao.drumLine = line;
+
+      const valorAtual = seqRef[idx];
+      // Opções: silêncio ou essa peça específica
+      const opcoes = ["x", line.id];
+
+      selectionTitle.textContent = "Selecione a peça: " + line.label;
+      selectionOptions.innerHTML = "";
+
+      opcoes.forEach(opt => {
+        const div = document.createElement("div");
+        div.className = "selection-option";
+        let label;
+
+        if (opt === "x") {
+          div.classList.add("x-option");
+          label = "X";
+        } else {
+          label = line.label.toUpperCase();
+        }
+
+        if (opt === valorAtual) {
+          div.classList.add("active");
+        }
+
+        div.textContent = label;
+        div.onclick = () => {
+          painelSelecao.seqRef[painelSelecao.idx] = opt;
+          const c = painelSelecao.cell;
+          if (opt === "x") {
+            c.textContent = "X";
+            c.classList.remove("active");
+          } else {
+            c.textContent = line.label.toUpperCase();
+            c.classList.add("active");
+          }
+          fecharPainelSelecao();
+        };
+
+        selectionOptions.appendChild(div);
+      });
+
+      selectionOverlay.classList.add("visible");
+    }
+
+    function fecharPainelSelecao() {
+      selectionOverlay.classList.remove("visible");
+      painelSelecao.tipo = null;
+      painelSelecao.seqRef = null;
+      painelSelecao.idx = null;
+      painelSelecao.cell = null;
+      painelSelecao.drumLine = null;
+    }
+
+    selectionOverlay.addEventListener("click", (ev) => {
+      if (ev.target === selectionOverlay) {
+        fecharPainelSelecao();
+      }
+    });
+
+    /* ===== GRIDS MANUAIS – BAIXO ===== */
+    function construirGridBaixo(container, seq) {
+      container.innerHTML = "";
+      seq.forEach((nota, idx) => {
+        const div = document.createElement("div");
+        div.className = "cell";
+        div.dataset.idx = idx;
+
+        if (nota === "x") {
+          div.textContent = "X";
+        } else {
+          div.textContent = nota.replace(/S/g,"#");
+          div.classList.add("active");
+        }
+
+        div.onclick = () => {
+          abrirPainelSelecaoBaixo(seq, idx, div);
+        };
+
+        container.appendChild(div);
+      });
+    }
+
+    /* ===== GRIDS MANUAIS – BATERIA (MULTILINHA) ===== */
+    function construirGridBateria(container, bateriaSeq) {
+      container.innerHTML = "";
+
+      drumLines.forEach(line => {
+        const rowDiv = document.createElement("div");
+        rowDiv.className = "drumRow";
+
+        const label = document.createElement("div");
+        label.className = "drumLabel";
+        label.textContent = line.label;
+        rowDiv.appendChild(label);
+
+        const rowGrid = document.createElement("div");
+        rowGrid.className = "composicaoGrid";
+
+        const seq = bateriaSeq[line.id];
+
+        seq.forEach((item, idx) => {
+          const cell = document.createElement("div");
+          cell.className = "cell";
+          cell.dataset.idx = idx;
+
+          if (item === "x") {
+            cell.textContent = "X";
+          } else if (item === line.id) {
+            cell.textContent = line.label.toUpperCase();
+            cell.classList.add("active");
+          } else {
+            // fallback, se tiver algo estranho guardado
+            cell.textContent = "?";
+          }
+
+          cell.onclick = () => {
+            if (seq[idx] === "x") {
+              seq[idx] = line.id;
+              cell.classList.add("active");
+              cell.textContent = line.label.toUpperCase();
+            } else {
+              seq[idx] = "x";
+              cell.classList.remove("active");
+              cell.textContent = "X";
+            }
+          };
+
+          rowGrid.appendChild(cell);
+        });
+
+        rowDiv.appendChild(rowGrid);
+        container.appendChild(rowDiv);
+      });
+    }
+
+    /* ===== PLAYBACK COMPLETO ===== */
+    function atualizarBarraProgresso(perc) {
+      document.getElementById("progressBar").style.width = perc + "%";
+    }
+
+    function tocarPlaybackCompleto(bpm) {
+      // Parar playback atual se estiver rodando
+      pararPlayback();
+      
+      // Iniciar animações
+      resetAnimTimers();
+      startTroncoBpm(bpm);
+      startHeadTiltBpm(bpm);
+      startLateralMovement();
+      
+      // Iniciar playback
+      iniciarPlayback();
+    }
+
+    /* ===== GERAÇÃO ALEATÓRIA (SIMPLES) ===== */
+    function gerarSequenciaAleatoriaBaixo(tam) {
+      const seq = [];
+      for (let i = 0; i < tam; i++) {
+        if (Math.random() < 0.6) {
+          seq.push("x");
+        } else {
+          const idx = Math.floor(Math.random() * notasValidas.length);
+          seq.push(notasValidas[idx]);
+        }
+      }
+      return seq;
+    }
+
+    function gerarSequenciasAleatoriasBateria(tam) {
+      const obj = {};
+      drumLines.forEach(line => {
+        obj[line.id] = [];
+        for (let i = 0; i < tam; i++) {
+          // probabilidade simples; pode refinar pra cada peça
+          const r = Math.random();
+          if (r < 0.75) {
+            obj[line.id].push("x");
+          } else {
+            obj[line.id].push(line.id);
+          }
+        }
+      });
+      return obj;
+    }
+
+    /* ===== PLAYBACK EXPORTADO (.json) ===== */
+    function configurarPlaybackExportado() {
+      const btn = document.getElementById("playExportadoBtn");
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "application/json";
+      input.style.display = "none";
+      document.body.appendChild(input);
+
+      btn.onclick = () => input.click();
+      input.onchange = async (ev) => {
+        const file = ev.target.files[0];
+        if (!file) return;
+        try {
+          const txt = await file.text();
+          const obj = JSON.parse(txt);
+          if (!Array.isArray(obj.baixo) || typeof obj.bpm !== "number" || typeof obj.bateria !== "object") {
+            alert("JSON inválido. Esperado: { bpm, baixo[], bateria{bumbo[],...} }");
+            return;
+          }
+          baixoSeq = obj.baixo;
+          bpmAtual = obj.bpm;
+
+          drumLines.forEach(line => {
+            if (Array.isArray(obj.bateria[line.id])) {
+              bateriaSeq[line.id] = obj.bateria[line.id];
+            } else {
+              // se não vier, criar array de silêncio no mesmo tamanho do baixo
+              bateriaSeq[line.id] = Array(baixoSeq.length).fill("x");
+            }
+          });
+
+          document.getElementById("bpmSlider").value = bpmAtual;
+          document.getElementById("bpmDisplay").textContent = bpmAtual + " BPM";
+
+          construirGridBaixo(document.getElementById("baixoGrid"), baixoSeq);
+          construirGridBateria(document.getElementById("drumGrid"), bateriaSeq);
+
+          tocarPlaybackCompleto(bpmAtual);
+        } catch (e) {
+          console.error(e);
+          alert("Erro ao ler o arquivo JSON.");
+        }
+      };
+    }
+
+    /* ===== ORIENTAÇÃO (MODO PAISAGEM) ===== */
+    function garantirPaisagem() {
+      const overlay = document.getElementById("orientationOverlay");
+      function checar() {
+        if (window.innerWidth < window.innerHeight) {
+          overlay.style.display = "flex";
+        } else {
+          overlay.style.display = "none";
+        }
+      }
+      checar();
+      window.addEventListener("resize", checar);
+    }
+
+    /* ===== INTERFACE PRINCIPAL ===== */
+    function iniciarInterface() {
+      const baixoGrid = document.getElementById("baixoGrid");
+      const drumGrid  = document.getElementById("drumGrid");
+
+      // 1 compasso em 4/4 = 16 células (1/16 cada)
+      const passosIniciais = 16;
+
+      // inicialmente, geramos algo aleatório para já ter som
+      baixoSeq = gerarSequenciaAleatoriaBaixo(passosIniciais);
+      bateriaSeq = gerarSequenciasAleatoriasBateria(passosIniciais);
+
+      construirGridBaixo(baixoGrid, baixoSeq);
+      construirGridBateria(drumGrid, bateriaSeq);
+
+      // BPM
+      const bpmSlider   = document.getElementById("bpmSlider");
+      const bpmDisplay  = document.getElementById("bpmDisplay");
+      bpmSlider.oninput = () => {
+        bpmAtual = parseInt(bpmSlider.value, 10);
+        bpmDisplay.textContent = bpmAtual + " BPM";
+        startTroncoBpm(bpmAtual);
+        startHeadTiltBpm(bpmAtual);
+      };
+
+      // Volumes
+      const baixoVol = document.getElementById("baixoVolume");
+      const drumVol  = document.getElementById("drumVolume");
+      baixoVol.oninput = () => {
+        baixoVolumeGlobal = parseFloat(baixoVol.value);
+      };
+      drumVol.oninput = () => {
+        bateriaVolumeGlobal = parseFloat(drumVol.value);
+      };
+
+      // Botões de playback
+      document.getElementById("playAleatorioBtn").onclick = async () => {
+        try {
+          const playback = await gerarPlaybackAleatorio();
+          baixoSeq = playback.bass;
+          bateriaSeq = playback.drums;
+          bpmAtual = playback.bpm;
+          
+          document.getElementById("bpmSlider").value = bpmAtual;
+          document.getElementById("bpmDisplay").textContent = bpmAtual + " BPM";
+          
+          construirGridBaixo(baixoGrid, baixoSeq);
+          construirGridBateria(drumGrid, bateriaSeq);
+          tocarPlaybackCompleto(bpmAtual);
+        } catch (error) {
+          console.error("Erro ao gerar playback aleatório:", error);
+          alert("Erro ao gerar playback aleatório. Verifique o console para mais detalhes.");
+        }
+      };
+
+      document.getElementById("playManualBtn").onclick = () => {
+        tocarPlaybackCompleto(bpmAtual);
+      };
+
+      // Botões de controle de playback
+      document.getElementById("playBtn").onclick = togglePlay;
+      document.getElementById("pauseBtn").onclick = pararPlayback;
+
+      // Adicionar coluna (baixo)
+      document.getElementById("addBaixoCol").onclick = () => {
+        baixoSeq.push("x");
+        construirGridBaixo(baixoGrid, baixoSeq);
+
+        // também alonga todas as linhas da bateria com "x"
+        drumLines.forEach(line => {
+          bateriaSeq[line.id].push("x");
+        });
+        construirGridBateria(drumGrid, bateriaSeq);
+      };
+
+      // Limpar baixo
+      document.getElementById("clearBaixo").onclick = () => {
+        baixoSeq = baixoSeq.map(() => "x");
+        construirGridBaixo(baixoGrid, baixoSeq);
+      };
+
+      // Limpar bateria
+      document.getElementById("clearAll").onclick = () => {
+        baixoSeq = baixoSeq.map(() => "x");
+        drumLines.forEach(line => {
+          bateriaSeq[line.id] = bateriaSeq[line.id].map(() => "x");
+        });
+        construirGridBaixo(baixoGrid, baixoSeq);
+        construirGridBateria(drumGrid, bateriaSeq);
+      };
+
+      // Adicionar coluna geral
+      document.getElementById("addCol").onclick = () => {
+        baixoSeq.push("x");
+        drumLines.forEach(line => {
+          bateriaSeq[line.id].push("x");
+        });
+        construirGridBaixo(baixoGrid, baixoSeq);
+        construirGridBateria(drumGrid, bateriaSeq);
+      };
+
+      // Duplicar sequência
+      document.getElementById("duplicateSeq").onclick = () => {
+        const bloco = 16;
+        
+        // Baixo
+        if (baixoSeq.length >= bloco) {
+            const ultimas = baixoSeq.slice(-bloco);
+            baixoSeq = baixoSeq.concat(ultimas);
+        }
+
+        // Bateria
+        drumLines.forEach(line => {
+            const arr = bateriaSeq[line.id];
+            if (arr.length >= bloco) {
+                const ultimas = arr.slice(-bloco);
+                bateriaSeq[line.id] = arr.concat(ultimas);
+            }
+        });
+
+        construirGridBaixo(baixoGrid, baixoSeq);
+        construirGridBateria(drumGrid, bateriaSeq);
+      };
+
+      configurarPlaybackExportado();
+    }
 
     /* ===== INÍCIO GERAL ===== */
     window.onload = async () => {
-      // ... (código de inicialização permanece igual)
-      
-      // Inicializar sequências
-      const passosIniciais = 16;
-      baixoSeq = Array(passosIniciais).fill("x");
-      drumLines.forEach(line => {
-        bateriaSeq[line.id] = Array(passosIniciais).fill("x");
-      });
+      garantirPaisagem();
 
-      // Iniciar interface
+      // pré-carrega frames da cabeça
+      headFrames = generateHeadFramePaths();
+      await preloadImages(headFrames);
+      startHeadLoop();
+      startTroncoBpm(bpmAtual);
+      startHeadTiltBpm(bpmAtual);
+      startLateralMovement();
+
       iniciarInterface();
     };
   </script>
