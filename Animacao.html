@@ -1308,25 +1308,27 @@
       startHeadTiltBpm(bpmAtual);
       startLateralMovement();
       iniciarInterface();
-      document.getElementById("playAleatorioBtn").onclick = () => {
+     document.getElementById("playAleatorioBtn").onclick = () => {
     try {
+        // Gera usando engine do Index
         const playback = JamOnEngine.generateRandomPlayback(bpmAtual, 16);
 
-        baixoSeq =
-          playback.baixo ||
-          playback.bass ||
-          playback.bassSeq ||
-          [];
+        // Corrige nomes conforme engine REAL
+        baixoSeq = playback.bassSeq || playback.baixo || [];
+        bateriaSeq = playback.drums || playback.bateria || {};
 
-        bateriaSeq =
-          playback.bateria ||
-          playback.drums ||
-          playback.drumSeq ||
-          {};
+        // Garante que TODAS as linhas da drumLines existam
+        drumLines.forEach(line => {
+            if (!Array.isArray(bateriaSeq[line.id])) {
+                bateriaSeq[line.id] = Array(baixoSeq.length).fill("x");
+            }
+        });
 
+        // Atualiza interface
         construirGridBaixo(document.getElementById("baixoGrid"), baixoSeq);
         construirGridBateria(document.getElementById("drumGrid"), bateriaSeq);
 
+        // Toca playback
         tocarPlaybackCompleto(bpmAtual);
 
     } catch (error) {
