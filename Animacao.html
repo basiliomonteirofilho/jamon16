@@ -2,23 +2,20 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Jam On – Baixista e Baterista Animadas</title>
+  <title>Jam On – Baixista Animada com Playback Aleatório</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
   <style>
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
-
     body {
       background: #101010;
       color: #eee;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
       overflow: hidden;
     }
-
     #orientationOverlay {
       position: fixed;
       inset: 0;
@@ -32,14 +29,12 @@
       padding: 20px;
       font-size: 1.1em;
     }
-
     .appRoot {
       width: 100vw;
       height: 100vh;
       display: flex;
       flex-direction: column;
     }
-
     /* ============================
        TOPO: ANIMAÇÃO BAIXISTA
        ============================ */
@@ -54,7 +49,6 @@
       overflow: hidden;
       z-index: 10;
     }
-
     #animacaoContainer {
       position: relative;
       width: 420px;
@@ -62,7 +56,6 @@
       image-rendering: pixelated;
       transform: scale(1.2);
     }
-
     .layer {
       position: absolute;
       top: 0;
@@ -71,48 +64,41 @@
       transform-origin: center center;
       transition: all 0.3s ease;
     }
-
     #pernasLayer {
       z-index: 1;
       left: 80px;
       top: 180px;
     }
-
     #troncoLayer {
       z-index: 3;
       left: 60px;
       top: 40px;
       transform-origin: 120px 140px;
     }
-
     #bracoLayer {
       z-index: 4;
       left: 120px;
       top: 90px;
       transform-origin: 18px 20px;
     }
-
     #antebracoLayer {
       z-index: 2;
       left: 140px;
       top: 120px;
       transform-origin: 15px 10px;
     }
-
     #cabecaLayer {
       z-index: 5;
       left: 90px;
       top: -10px;
       transform-origin: bottom center;
     }
-    
     #cabecaTrasLayer {
       z-index: 4;
       left: 90px;
       top: -10px;
       transform-origin: bottom center;
     }
-
     /* =============================
        BAIXO: CONTROLES
        ============================ */
@@ -124,7 +110,6 @@
       background: #181818;
       z-index: 5;
     }
-
     header {
       margin-bottom: 10px;
     }
@@ -141,7 +126,6 @@
       background: #252525;
       color: #aaa;
     }
-
     .card {
       background: #202020;
       border-radius: 10px;
@@ -150,24 +134,20 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.5);
       border: 1px solid #2b2b2b;
     }
-
     .card h3 {
       margin-bottom: 6px;
       font-size: 1em;
       color: #fafafa;
     }
-
     .bpm-display {
       font-size: 1.4em;
       font-weight: bold;
       margin-bottom: 4px;
       color: #5eead4;
     }
-
     #bpmSlider {
       width: 100%;
     }
-
     button {
       border: none;
       padding: 6px 10px;
@@ -179,16 +159,13 @@
       margin: 4px 4px 4px 0;
       font-size: 0.85em;
     }
-
     button.secondary {
       background: #333;
       color: #eee;
     }
-
     button:hover {
       opacity: 0.9;
     }
-
     .progressContainer {
       margin-top: 6px;
       width: 100%;
@@ -197,24 +174,20 @@
       background: #333;
       overflow: hidden;
     }
-
     .progressBar {
       width: 0%;
       height: 100%;
       background: #5eead4;
       transition: width 0.15s linear;
     }
-
     .sequencerWrapper {
       max-width: 100%;
       overflow-x: auto;
       padding-bottom: 4px;
     }
-
     .sequencerInner {
       display: inline-block;
     }
-
     .composicaoGrid {
       display: flex;
       gap: 2px;
@@ -222,7 +195,6 @@
       margin: 4px 0;
       padding-bottom: 2px;
     }
-
     .cell {
       width: 30px;
       height: 30px;
@@ -240,24 +212,20 @@
       background: #5eead4;
       color: #111;
     }
-
     .volumeSlider {
       width: 100%;
       margin-top: 6px;
     }
-
     .labelPequena {
       font-size: 0.8em;
       color: #aaa;
       margin-top: 4px;
     }
-
     .drumRow {
       display: flex;
       align-items: flex-start;
       margin-bottom: 4px;
     }
-
     .drumLabel {
       width: 70px;
       font-size: 0.75em;
@@ -269,21 +237,17 @@
       text-align: left;
       flex-shrink: 0;
     }
-
     .drumRow .composicaoGrid {
       flex: 0 0 auto;
     }
-
     @media (orientation: portrait) {
       #orientationOverlay { display: flex; }
       .appRoot { display: none; }
     }
-
     @media (orientation: landscape) {
       #orientationOverlay { display: none; }
       .appRoot { display: flex; }
     }
-
     .selection-overlay {
       position: fixed;
       inset: 0;
@@ -365,7 +329,6 @@
       <p>Use o Jam On em modo paisagem (horizontal) para ver a baixista e os controles.</p>
     </div>
   </div>
-
   <div class="appRoot">
     <div id="animacaoArea">
       <div id="animacaoContainer">
@@ -377,19 +340,16 @@
         <img id="cabecaLayer" class="layer" src="animacao/cabeca/cabeca0001.png" alt="cabeca">
       </div>
     </div>
-
     <div id="painel">
       <header>
-        <h1>Jam On – Baixista e Baterista Animadas</h1>
+        <h1>Jam On – Baixista Animada</h1>
         <div class="pill">Baixo + Bateria – 1 célula = 1/16</div>
       </header>
-
       <div class="card">
         <h3>🎚 BPM</h3>
         <div class="bpm-display" id="bpmDisplay">100 BPM</div>
         <input id="bpmSlider" type="range" min="60" max="180" value="100">
       </div>
-
       <div class="card">
         <h3>🎵 Playback</h3>
         <button id="playAleatorioBtn">Playback aleatório</button>
@@ -397,12 +357,10 @@
         <button id="playExportadoBtn" class="secondary">Carregar playback (.json)</button>
         <button id="pauseBtn">⏸ Pausar</button>
         <button id="playBtn">▶ Play</button>
-
         <div class="progressContainer">
           <div class="progressBar" id="progressBar"></div>
         </div>
       </div>
-
       <div class="card">
         <h3>🎸 Baixo – composição manual</h3>
         <div class="labelPequena">
@@ -413,13 +371,11 @@
         <div class="labelPequena">Volume do baixo</div>
         <input type="range" id="baixoVolume" class="volumeSlider" min="0" max="1" step="0.01" value="0.8">
       </div>
-
       <div class="card">
         <h3>🥁 Bateria – composição manual</h3>
         <div class="labelPequena">
-          Linha "Baixo" + linhas da bateria.
+          Linha "Baixo" + linhas da bateria. Cada célula = 1/16.
         </div>
-
         <div class="sequencerWrapper">
           <div class="sequencerInner">
             <div class="drumRow">
@@ -429,7 +385,6 @@
             <div id="drumGrid"></div>
           </div>
         </div>
-
         <button id="addCol">+ Coluna</button>
         <button id="duplicateSeq">Duplicar 16 células</button>
         <button id="clearAll">Limpar tudo</button>
@@ -438,16 +393,16 @@
       </div>
     </div>
   </div>
-
   <div id="selectionOverlay" class="selection-overlay">
     <div class="selection-panel" id="selectionPanel">
       <div id="selectionTitle" class="selection-title">Selecione</div>
       <div id="selectionOptions" class="selection-options"></div>
     </div>
   </div>
-
   <script>
-    // ===== ESTADO GLOBAL =====
+    /* ============================
+       ESTADO GLOBAL
+       ============================ */
     let headFrames = [];
     let headFrameIndex = 0;
     let headTimer = null;
@@ -455,17 +410,6 @@
     let troncoTimer = null;
     let lateralMovementTimer = null;
     let baixoSeq = [];
-    let bateriaSeq = {};
-    let bpmAtual = 100;
-    let baixoVolumeGlobal = 0.8;
-    let bateriaVolumeGlobal = 0.8;
-    let animTimers = [];
-    let isPlaying = false;
-    let playbackInterval = null;
-    let atualPasso = 0;
-    let audioBaixoAtual = null;
-    let audioBaixoTimer = null;
-
     const drumLines = [
       { id: "bumbo", label: "Bumbo", file: "bumbo.mp3" },
       { id: "caixa", label: "Caixa", file: "caixa.mp3" },
@@ -477,6 +421,16 @@
       { id: "tom2", label: "Tom 2", file: "tom-2.mp3" },
       { id: "surdo", label: "Surdo", file: "surdo.mp3" }
     ];
+    let bateriaSeq = {};
+    let bpmAtual = 100;
+    let baixoVolumeGlobal = 0.8;
+    let bateriaVolumeGlobal = 0.8;
+    let animTimers = [];
+    let isPlaying = false;
+    let playbackInterval = null;
+    let atualPasso = 0;
+    let audioBaixoAtual = null;
+    let audioBaixoTimer = null;
 
     const notasValidas = [
       "1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS",
@@ -485,109 +439,44 @@
       "48DS","49E"
     ];
 
-    const pastaMap = {
-      "1E": "Pasta_1F", "2F": "Pasta_1F", "3FS": "Pasta_1F", "4G": "Pasta_1F", "5GS": "Pasta_1F",
-      "6A": "Pasta_1F", "7AS": "Pasta_1F", "8B": "Pasta_1F", "9C": "Pasta_1F", "10CS": "Pasta_1F",
-      "11D": "Pasta_1F", "12DS": "Pasta_1F", "13E": "Pasta_1F", "14F": "Pasta_1F", "15FS": "Pasta_1F",
-      "16G": "Pasta_1F", "17GS": "Pasta_1F", "18A": "Pasta_1F", "19AS": "Pasta_1F", "20B": "Pasta_1F",
-      "3FS": "Pasta_2FS", "4G": "Pasta_2FS", "5GS": "Pasta_2FS", "6A": "Pasta_2FS", "8B": "Pasta_2FS",
-      "9C": "Pasta_2FS", "10CS": "Pasta_2FS", "11D": "Pasta_2FS", "13E": "Pasta_2FS", "14F": "Pasta_2FS",
-      "15FS": "Pasta_2FS", "16G": "Pasta_2FS", "18A": "Pasta_2FS", "19AS": "Pasta_2FS", "20B": "Pasta_2FS",
-      "21C": "Pasta_2FS",
-      "4G": "Pasta_3G", "5GS": "Pasta_3G", "6A": "Pasta_3G", "7AS": "Pasta_3G", "9C": "Pasta_3G",
-      "10CS": "Pasta_3G", "11D": "Pasta_3G", "12DS": "Pasta_3G", "14F": "Pasta_3G", "15FS": "Pasta_3G",
-      "16G": "Pasta_3G", "17GS": "Pasta_3G", "19AS": "Pasta_3G", "20B": "Pasta_3G", "21C": "Pasta_3G",
-      "22CS": "Pasta_3G",
-      "5GS": "Pasta_4GS", "6A": "Pasta_4GS", "7AS": "Pasta_4GS", "8B": "Pasta_4GS", "10CS": "Pasta_4GS",
-      "11D": "Pasta_4GS", "12DS": "Pasta_4GS", "13E": "Pasta_4GS", "15FS": "Pasta_4GS", "16G": "Pasta_4GS",
-      "17GS": "Pasta_4GS", "18A": "Pasta_4GS", "20B": "Pasta_4GS", "21C": "Pasta_4GS", "22CS": "Pasta_4GS",
-      "23D": "Pasta_4GS",
-      "6A": "Pasta_5A", "7AS": "Pasta_5A", "8B": "Pasta_5A", "9C": "Pasta_5A", "11D": "Pasta_5A",
-      "12DS": "Pasta_5A", "13E": "Pasta_5A", "14F": "Pasta_5A", "16G": "Pasta_5A", "17GS": "Pasta_5A",
-      "18A": "Pasta_5A", "19AS": "Pasta_5A", "21C": "Pasta_5A", "22CS": "Pasta_5A", "23D": "Pasta_5A",
-      "24DS": "Pasta_5A",
-      "7AS": "Pasta_6AS", "8B": "Pasta_6AS", "9C": "Pasta_6AS", "10CS": "Pasta_6AS", "12DS": "Pasta_6AS",
-      "13E": "Pasta_6AS", "14F": "Pasta_6AS", "15FS": "Pasta_6AS", "17GS": "Pasta_6AS", "18A": "Pasta_6AS",
-      "19AS": "Pasta_6AS", "20B": "Pasta_6AS", "22CS": "Pasta_6AS", "23D": "Pasta_6AS", "24DS": "Pasta_6AS",
-      "25E": "Pasta_6AS",
-      "8B": "Pasta_7B", "9C": "Pasta_7B", "10CS": "Pasta_7B", "11D": "Pasta_7B", "13E": "Pasta_7B",
-      "14F": "Pasta_7B", "15FS": "Pasta_7B", "16G": "Pasta_7B", "18A": "Pasta_7B", "19AS": "Pasta_7B",
-      "20B": "Pasta_7B", "21C": "Pasta_7B", "23D": "Pasta_7B", "24DS": "Pasta_7B", "25E": "Pasta_7B",
-      "26F": "Pasta_7B",
-      "9C": "Pasta_8C", "10CS": "Pasta_8C", "11D": "Pasta_8C", "12DS": "Pasta_8C", "14F": "Pasta_8C",
-      "15FS": "Pasta_8C", "16G": "Pasta_8C", "17GS": "Pasta_8C", "19AS": "Pasta_8C", "20B": "Pasta_8C",
-      "21C": "Pasta_8C", "22CS": "Pasta_8C", "24DS": "Pasta_8C", "25E": "Pasta_8C", "26F": "Pasta_8C",
-      "27FS": "Pasta_8C",
-      "10CS": "Pasta_9CS", "11D": "Pasta_9CS", "12DS": "Pasta_9CS", "13E": "Pasta_9CS", "15FS": "Pasta_9CS",
-      "16G": "Pasta_9CS", "17GS": "Pasta_9CS", "18A": "Pasta_9CS", "20B": "Pasta_9CS", "21C": "Pasta_9CS",
-      "22CS": "Pasta_9CS", "23D": "Pasta_9CS", "25E": "Pasta_9CS", "26F": "Pasta_9CS", "27FS": "Pasta_9CS",
-      "28G": "Pasta_9CS",
-      "11D": "Pasta_10D", "12DS": "Pasta_10D", "13E": "Pasta_10D", "14F": "Pasta_10D", "16G": "Pasta_10D",
-      "17GS": "Pasta_10D", "18A": "Pasta_10D", "19AS": "Pasta_10D", "21C": "Pasta_10D", "22CS": "Pasta_10D",
-      "23D": "Pasta_10D", "24DS": "Pasta_10D", "26F": "Pasta_10D", "27FS": "Pasta_10D", "28G": "Pasta_10D",
-      "29GS": "Pasta_10D",
-      "12DS": "Pasta_11DS", "13E": "Pasta_11DS", "14F": "Pasta_11DS", "15FS": "Pasta_11DS", "17GS": "Pasta_11DS",
-      "18A": "Pasta_11DS", "19AS": "Pasta_11DS", "20B": "Pasta_11DS", "22CS": "Pasta_11DS", "23D": "Pasta_11DS",
-      "24DS": "Pasta_11DS", "25E": "Pasta_11DS", "27FS": "Pasta_11DS", "28G": "Pasta_11DS", "29GS": "Pasta_11DS",
-      "30A": "Pasta_11DS",
-      "13E": "Pasta_12E", "14F": "Pasta_12E", "15FS": "Pasta_12E", "16G": "Pasta_12E", "18A": "Pasta_12E",
-      "19AS": "Pasta_12E", "20B": "Pasta_12E", "21C": "Pasta_12E", "23D": "Pasta_12E", "24DS": "Pasta_12E",
-      "25E": "Pasta_12E", "26F": "Pasta_12E", "28G": "Pasta_12E", "29GS": "Pasta_12E", "30A": "Pasta_12E",
-      "31B": "Pasta_12E",
-      "14F": "Pasta_13F", "15FS": "Pasta_13F", "16G": "Pasta_13F", "17GS": "Pasta_13F", "19AS": "Pasta_13F",
-      "20B": "Pasta_13F", "21C": "Pasta_13F", "22CS": "Pasta_13F", "24DS": "Pasta_13F", "25E": "Pasta_13F",
-      "26F": "Pasta_13F", "27FS": "Pasta_13F", "29GS": "Pasta_13F", "30A": "Pasta_13F", "31AS": "Pasta_13F",
-      "32B": "Pasta_13F",
-      "15FS": "Pasta_14FS", "16G": "Pasta_14FS", "17GS": "Pasta_14FS", "18A": "Pasta_14FS", "20B": "Pasta_14FS",
-      "21C": "Pasta_14FS", "22CS": "Pasta_14FS", "23D": "Pasta_14FS", "25E": "Pasta_14FS", "26F": "Pasta_14FS",
-      "27FS": "Pasta_14FS", "28G": "Pasta_14FS", "30A": "Pasta_14FS", "31AS": "Pasta_14FS", "32B": "Pasta_14FS",
-      "33C": "Pasta_14FS",
-      "16G": "Pasta_15G", "17GS": "Pasta_15G", "18A": "Pasta_15G", "19AS": "Pasta_15G", "21C": "Pasta_15G",
-      "22CS": "Pasta_15G", "23D": "Pasta_15G", "24DS": "Pasta_15G", "26F": "Pasta_15G", "27FS": "Pasta_15G",
-      "28G": "Pasta_15G", "29GS": "Pasta_15G", "31AS": "Pasta_15G", "32B": "Pasta_15G", "33C": "Pasta_15G",
-      "34CS": "Pasta_15G",
-      "17GS": "Pasta_16GS", "18A": "Pasta_16GS", "19AS": "Pasta_16GS", "20B": "Pasta_16GS", "22CS": "Pasta_16GS",
-      "23D": "Pasta_16GS", "24DS": "Pasta_16GS", "25E": "Pasta_16GS", "27FS": "Pasta_16GS", "28G": "Pasta_16GS",
-      "29GS": "Pasta_16GS", "30A": "Pasta_16GS", "32B": "Pasta_16GS", "33C": "Pasta_16GS", "34CS": "Pasta_16GS",
-      "35D": "Pasta_16GS",
-      "18A": "Pasta_17A", "19AS": "Pasta_17A", "20B": "Pasta_17A", "21C": "Pasta_17A", "23D": "Pasta_17A",
-      "24DS": "Pasta_17A", "25E": "Pasta_17A", "26F": "Pasta_17A", "28G": "Pasta_17A", "29GS": "Pasta_17A",
-      "30A": "Pasta_17A", "31AS": "Pasta_17A", "33C": "Pasta_17A", "34CS": "Pasta_17A", "35D": "Pasta_17A",
-      "36DS": "Pasta_17A",
-      "19AS": "Pasta_18AS", "20B": "Pasta_18AS", "21C": "Pasta_18AS", "22CS": "Pasta_18AS", "24DS": "Pasta_18AS",
-      "25E": "Pasta_18AS", "26F": "Pasta_18AS", "27FS": "Pasta_18AS", "29GS": "Pasta_18AS", "30A": "Pasta_18AS",
-      "31AS": "Pasta_18AS", "32B": "Pasta_18AS", "34CS": "Pasta_18AS", "35D": "Pasta_18AS", "36DS": "Pasta_18AS",
-      "37E": "Pasta_18AS",
-      "20B": "Pasta_19B", "21C": "Pasta_19B", "22CS": "Pasta_19B", "23D": "Pasta_19B", "25E": "Pasta_19B",
-      "26F": "Pasta_19B", "27FS": "Pasta_19B", "28G": "Pasta_19B", "30A": "Pasta_19B", "31AS": "Pasta_19B",
-      "32B": "Pasta_19B", "33C": "Pasta_19B", "35D": "Pasta_19B", "36DS": "Pasta_19B", "37E": "Pasta_19B",
-      "38F": "Pasta_19B",
-      "21C": "Pasta_20C", "22CS": "Pasta_20C", "23D": "Pasta_20C", "24DS": "Pasta_20C", "26F": "Pasta_20C",
-      "27FS": "Pasta_20C", "28G": "Pasta_20C", "29GS": "Pasta_20C", "31AS": "Pasta_20C", "32B": "Pasta_20C",
-      "33C": "Pasta_20C", "34CS": "Pasta_20C", "36DS": "Pasta_20C", "37E": "Pasta_20C", "38F": "Pasta_20C",
-      "39FS": "Pasta_20C",
-      "22CS": "Pasta_21CS", "23D": "Pasta_21CS", "24DS": "Pasta_21CS", "25E": "Pasta_21CS", "27FS": "Pasta_21CS",
-      "28G": "Pasta_21CS", "29GS": "Pasta_21CS", "30A": "Pasta_21CS", "32B": "Pasta_21CS", "33C": "Pasta_21CS",
-      "34CS": "Pasta_21CS", "35D": "Pasta_21CS", "37E": "Pasta_21CS", "38F": "Pasta_21CS", "39FS": "Pasta_21CS",
-      "40G": "Pasta_21CS",
-      "23D": "Pasta_22D", "24DS": "Pasta_22D", "25E": "Pasta_22D", "26F": "Pasta_22D", "28G": "Pasta_22D",
-      "29GS": "Pasta_22D", "30A": "Pasta_22D", "31AS": "Pasta_22D", "33C": "Pasta_22D", "34CS": "Pasta_22D",
-      "35D": "Pasta_22D", "36DS": "Pasta_22D", "38F": "Pasta_22D", "39FS": "Pasta_22D", "40G": "Pasta_22D",
-      "41GS": "Pasta_22D",
-      "24DS": "Pasta_23DS", "25E": "Pasta_23DS", "26F": "Pasta_23DS", "27FS": "Pasta_23DS", "29GS": "Pasta_23DS",
-      "30A": "Pasta_23DS", "31AS": "Pasta_23DS", "32B": "Pasta_23DS", "34CS": "Pasta_23DS", "35D": "Pasta_23DS",
-      "36DS": "Pasta_23DS", "37E": "Pasta_23DS", "39FS": "Pasta_23DS", "40G": "Pasta_23DS", "41GS": "Pasta_23DS",
-      "42A": "Pasta_23DS",
-      "25E": "Pasta_24E", "26F": "Pasta_24E", "27FS": "Pasta_24E", "28G": "Pasta_24E", "30A": "Pasta_24E",
-      "31AS": "Pasta_24E", "32B": "Pasta_24E", "33C": "Pasta_24E", "35D": "Pasta_24E", "36DS": "Pasta_24E",
-      "37E": "Pasta_24E", "38F": "Pasta_24E", "40G": "Pasta_24E", "41GS": "Pasta_24E", "42A": "Pasta_24E",
-      "43AS": "Pasta_24E"
-    };
+    const pastasOrdenadas = [
+      { start: 1,  name: "Pasta_1F" },
+      { start: 3,  name: "Pasta_2FS" },
+      { start: 4,  name: "Pasta_3G" },
+      { start: 5,  name: "Pasta_4GS" },
+      { start: 6,  name: "Pasta_5A" },
+      { start: 7,  name: "Pasta_6AS" },
+      { start: 8,  name: "Pasta_7B" },
+      { start: 9,  name: "Pasta_8C" },
+      { start: 10, name: "Pasta_9CS" },
+      { start: 11, name: "Pasta_10D" },
+      { start: 12, name: "Pasta_11DS" },
+      { start: 13, name: "Pasta_12E" },
+      { start: 14, name: "Pasta_13F" },
+      { start: 15, name: "Pasta_14FS" },
+      { start: 16, name: "Pasta_15G" },
+      { start: 17, name: "Pasta_16GS" },
+      { start: 18, name: "Pasta_17A" },
+      { start: 19, name: "Pasta_18AS" },
+      { start: 20, name: "Pasta_19B" },
+      { start: 21, name: "Pasta_20C" },
+      { start: 22, name: "Pasta_21CS" },
+      { start: 23, name: "Pasta_22D" },
+      { start: 24, name: "Pasta_23DS" },
+      { start: 25, name: "Pasta_24E" }
+    ];
 
-    // ===== FUNÇÕES PRINCIPAIS =====
-    function formatarNotaParaArquivo(nota) {
-      if (!nota || nota === "x") return "1E";
-      return nota;
+    function determinarPastaPorNota(nota) {
+      if (nota === "x") return "Pasta_1F";
+      const num = parseInt(nota, 10);
+      if (isNaN(num)) return "Pasta_1F";
+      if (num <= 20) return "Pasta_1F";
+      for (let i = pastasOrdenadas.length - 1; i >= 0; i--) {
+        if (num >= pastasOrdenadas[i].start) {
+          return pastasOrdenadas[i].name;
+        }
+      }
+      return "Pasta_1F";
     }
 
     function getCordaDaNota(nota) {
@@ -601,67 +490,138 @@
     }
 
     function trocarFrameTronco(nota) {
-      if (nota === "x") return;
-      
-      let pasta = pastaMap[nota] || "Pasta_1F";
       const tronco = document.getElementById("troncoLayer");
-      const nomeArquivo = formatarNotaParaArquivo(nota);
+      if (nota === "x") {
+        tronco.src = "animacao/tronco_baixo/Pasta_1F/1E.png";
+        return;
+      }
+      const pasta = determinarPastaPorNota(nota);
+      const nomeArquivo = nota.replace(/S/g, "#");
       const caminho = `animacao/tronco_baixo/${pasta}/${nomeArquivo}.png`;
-      
-      console.log("Carregando imagem:", caminho);
-      
-      const img = new Image();
-      img.onload = function() {
-        tronco.src = caminho;
-        console.log("Imagem carregada:", caminho);
-      };
-      img.onerror = function() {
-        console.warn("Imagem não encontrada:", caminho);
-        const fallbackCaminho = `animacao/tronco_baixo/Pasta_1F/${nomeArquivo}.png`;
-        console.log("Tentando fallback:", fallbackCaminho);
-        tronco.src = fallbackCaminho;
-      };
-      img.src = caminho;
+      tronco.src = caminho;
     }
 
     function tocarNotaAudioBaixo(nota, volume) {
       pararAudioBaixo();
       if (nota === "x") return;
-      
-      const notaArquivo = formatarNotaParaArquivo(nota);
-      const a = new Audio("assets/BaixoMelodia/" + notaArquivo + ".mp3");
+      const notaArquivo = nota.replace(/#/g, "S");
+      const url = "assets/BaixoMelodia/" + notaArquivo + ".mp3";
+      const a = new Audio(url);
       a.volume = volume;
-      
       const stepTime = (60000 / bpmAtual) / 4;
       const fadeOutTime = stepTime * 0.8;
-      
-      a.play().catch(e => console.log("Erro ao tocar áudio:", e));
+      a.play().catch(e => console.warn("Erro ao tocar áudio:", notaArquivo, e));
       audioBaixoAtual = a;
-      
       audioBaixoTimer = setTimeout(() => {
         if (audioBaixoAtual === a) {
           const fadeDuration = 50;
-          const initialVolume = a.volume;
-          const step = initialVolume / (fadeDuration / 10);
-          let currentVolume = initialVolume;
-          
-          const fadeInterval = setInterval(() => {
-            currentVolume -= step;
-            if (currentVolume <= 0) {
+          const initialVol = a.volume;
+          const step = initialVol / (fadeDuration / 10);
+          let vol = initialVol;
+          const fadeInt = setInterval(() => {
+            vol -= step;
+            if (vol <= 0) {
               a.pause();
-              clearInterval(fadeInterval);
+              a.currentTime = 0;
+              clearInterval(fadeInt);
               if (audioBaixoAtual === a) audioBaixoAtual = null;
             } else {
-              a.volume = currentVolume;
+              a.volume = vol;
             }
           }, 10);
         }
       }, fadeOutTime);
     }
 
+    const PITCHES = ['A','AS','B','C','CS','D','DS','E','F','FS','G','GS'];
+    const DEGREE_TO_ROOT = { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11 };
+    const CHORD_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+    const DRUMS = {
+        bu: 'bumbo',
+        ca: 'caixa',
+        ch: 'chimbal',
+        ba: 'bumbo-ataque',
+        cch: 'caixa-chimbal',
+        co: 'conducao',
+        bco: 'bumbo-conducao',
+        cco: 'caixa-conducao',
+        to1: 'tom-1',
+        to2: 'tom-2',
+        su: 'surdo',
+        bch: 'bumbo-chimbal'
+    };
+    const STYLE_PROGRESSIONS = {
+        Rock: [[1,4,5,1], [1,5,6,4], [6,4,1,5]],
+        Rock2: [[4,5,1,5], [5,4,1,4], [7,4,1,1]],
+        Rock3: [[1,4,5,1], [1,3,4,5]],
+        Rock4: [[6,4,1,5,1,5,4,5], [1,4,5,1,4,5,4,5], [1,5,6,4,1,5,6,7]],
+        Rock5: [[1,5,7,4], [1,4,5,6], [1,5,6,4]],
+        Rock6: [[1,5,6,4], [1,4,5,1], [1,5,6,7]],
+        Rock7: [[2,3,5,1], [1,4,7,1], [1,5,3,4]],
+        Rock_Progressivo: [[4,5,1,1,4,5,7], [1,4,1,4,5,6,5], [1,4,5,6,3,5,4]],
+        Rock_Progressivo2: [[1,4,5,1,5], [4,5,3,1,3,1,4,5,7,5], [1,4,1,4,5]],
+        Rock_Progressivo3: [[1,4,5,1,5,7], [1,3,4,5,2,5]],
+        Rock_Progressivo4: [[4,5,1,1,4,5,7,5], [1,4,1,4,5,6,5,7], [1,4,5,6,3,5,4,5]],
+        Rock_Progressivo5: [[4,5,1,1,4,5,7], [1,4,1,4,5,6,5], [1,4,5,6,3,5,4]],
+        Rock_Progressivo6: [[1,4,5,6,3,5], [1,4,1,4,5,6,5]],
+        Rock_Progressivo7: [[4,5,1,1], [1,4,5,1]],
+        Blues: [[1,4,5,4,1,4,5,4,1,4,5,4], [1,4,5,1]],
+        Blues2: [[1,4,5,4,1,4,5,4,1,4,5,4], [1,4,5,1]],
+        Blues3: [[1,4,5,4,1,4,5,4,1,4,5,4], [1,4,5,7]],
+        Blues4: [[1,4,5,4,1,4,5,4,1,4,5,4], [1,4,5,1]],
+        Blues5: [[1,4,5,4,1,4,5,4,1,4,5,4], [1,4,5,7]],
+        Blues6: [[1,4,5,4,1,4,5,4,1,4,5,4], [1,4,5,1]],
+        Blues7: [[1,4,5,4,1,4,5,4,1,4,5,4], [1,4,5,1]],
+        Forró: [[1,5,1,5,4,5,4,5]],
+        Samba: [[2,5,1,1], [1,4,5,1]],
+        Metal: [[1, 3, 5, 6, 1, 2, 3, 4], [1, 3, 4, 5], [2, 5, 1, 5]],
+        Metal2: [[1, 3, 5, 4, 1, 2, 3, 4], [1, 3, 4, 5], [2, 5, 1, 5]],
+        Metal3: [[1, 3, 5, 3, 1, 2, 4, 5], [1, 3, 4, 5], [2, 5, 1, 5]],
+        Jazz: [[1,2,5,1], [2,5,1,4], [3,6,2,5]]
+    };
+    const ALL_GROOVES = [
+        { name: "Rock", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch bu"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 8] },
+        { name: "Rock2", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 5] },
+        { name: "Rock3", meter: "4/4", drumPattern: ["bch - ch bu cch bu ch - bch - ch - cch - ch -"], bassRhythm: ["bo - - bo - - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 1] },
+        { name: "Rock4", meter: "4/4", drumPattern: ["ba - co - cco - co - bco - co - cco bu bco bu"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 7, 8, 7, 5, 3] },
+        { name: "Rock5", meter: "4/4", drumPattern: ["bch ch ch ch cch ch ch ch bch ch ch ch cch ch ch -"], bassRhythm: ["bo - - bo - - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 1, 5] },
+        { name: "Rock6", meter: "4/4", drumPattern: ["bco co co co cco co co co bco co co co cco co co co"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [8, 8, 1, 1] },
+        { name: "Rock7", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - co - cco - co -"], bassRhythm: ["bo - - bo - - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 1] },
+        { name: "Rock_Progressivo", meter: "7/4", drumPattern: ["bch - ch -  cch - ch - bch - ch - cch - ch bu bch - ch - cch - ch - bch - ch bu"], bassRhythm: ["bo - - - - - - - bo - - - - - - bo - - bo bo bo bo bo bo bo bo bo bo"], bassScale: [1, 1, 1, 3, 5, 8, 3, 5, 8, 3, 5, 8, 5] },
+        { name: "Rock_Progressivo2", meter: "5/4", drumPattern: ["ba - ch - bch - ch - cch - ch - bch - ch - cch - ch bu"], bassRhythm: ["bo - x x bo - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 1, 3, 5, 8, 1, 3, 5, 8] },
+        { name: "Rock_Progressivo3", meter: "6/4", drumPattern: ["ba - - - ch - - bu cch - - - ch - - - bch - - - ch - - -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 3, 1, 1, 1, 3, 5, 5, 5, 1] },
+        { name: "Rock_Progressivo4", meter: "4/4", drumPattern: ["ba - ch bu cch - ch - bch - ch bu cch - ch bu"], bassRhythm: ["bo - - bo - - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 8] },
+        { name: "Rock_Progressivo5", meter: "7/4", drumPattern: ["ba - co - cco - co - bco - co bu cco - co bu bch bu co - cch - ch - bch - ch bu"], bassRhythm: ["bo - - bo bo - - - bo - - bo bo - - bo - - bo bo - - bo bo - - bo bo"], bassScale: [1, 3, 5, 8] },
+        { name: "Rock_Progressivo6", meter: "3/4", drumPattern: ["bch - - - ch - - bu cch - - -"], bassRhythm: ["bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 8, 8, 8]},
+        { name: "Rock_Progressivo7", meter: "4/4", drumPattern: ["bco co cch to1 cch - ch - bch - ch cch bu bu ch bu"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 1] },
+        { name: "Blues", meter: "4/4", drumPattern: ["bch - ch ch cch - ch ch bch - ch ch cch - ch ch"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 6, 8, 6, 5, 3] },
+        { name: "Blues2", meter: "4/4", drumPattern: ["bch - - - cch - - - bch - - - cch - - -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 6, 8, 6, 5, 3] },
+        { name: "Blues3", meter: "4/4", drumPattern: ["bch - - bu cch - ch - ch - - bu cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 6, 8, 6, 5, 3] },
+        { name: "Blues4", meter: "4/4", drumPattern: ["bch - - bu cch - ch - bch - - bu cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 6, 8, 6, 5, 3] },
+        { name: "Blues5", meter: "4/4", drumPattern: ["bch - - bu cch - ch - bch - - bu cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 6, 8, 6, 5, 3] },
+        { name: "Blues6", meter: "4/4", drumPattern: ["bch - - bu cch - ch - bch - - bu cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 6, 8, 6, 5, 3] },
+        { name: "Blues7", meter: "4/4", drumPattern: ["bch - - bu cch - ch - bch - - bu cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 6, 8, 6, 5, 3] },
+        { name: "Forró", meter: "2/4", drumPattern: ["bch - co - ch - ca -"], bassRhythm: ["bo - - - x - - -"], bassScale: [8, 1] },
+        { name: "Funk", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch -"], bassRhythm: ["bo - - - bo - bo x bo x bo x bo - x x"], bassScale: [1,8] },
+        { name: "Funk2", meter: "4/4", drumPattern: ["bch - - - cch - - - bch - - - cch - - -"], bassRhythm: ["bo bo bo bo bo x x x bo - x x bo - x x"], bassScale: [1,7,8,1] },
+        { name: "Disco", meter: "4/4", drumPattern: ["bu - ch ch bu - ch ch bu - ch ch bu - ch ch"], bassRhythm: ["bo - x x bo - x x bo - x x bo - x x"], bassScale: [1] },
+        { name: "Forró4", meter: "2/4", drumPattern: ["bch - co - ch - ca bu"], bassRhythm: ["bo - - - bo - - x"], bassScale: [8, 1] },
+        { name: "Metal", meter: "4/4", drumPattern: ["bch bu bch bu cch bu bch bu bch bu bch bu cch bu bch bu"], bassRhythm: ["bo bo bo bo bo bo bo bo bo bo bo bo bo bo bo bo"], guitarRhythm: ["ab ab ab ab so - - - ab - ab - so - - -"] },
+        { name: "Metal2", meter: "4/4", drumPattern: ["bch bu bch bu cch bu bch bu cch - ch bu cch bu bch bu"], bassRhythm: ["bo bo bo bo bo bo bo bo bo bo bo bo bo bo bo bo"], guitarRhythm: ["ab ab ab ab ab ab ab ab ab ab ab ab ab ab ab ab"] },
+        { name: "Metal3", meter: "4/4", drumPattern: ["bch bu bch - cch - ch - bch bu ch bu cch - ch -"], bassRhythm: ["bo bo bo - - - - - bo bo - bo - - - -"] },
+        { name: "Metal4", meter: "4/4", drumPattern: ["bch bu cch - bu bu cch - bu bu cch - bu bu cch -"], bassRhythm: ["bo bo bo - bo bo bo - bo bo bo - bo bo bo -"], guitarRhythm: ["ab - ab - so - - - ab - ab - so - - -"] },
+        { name: "Samba", meter: "2/4", drumPattern: ["bch - ch bu bch - ch bu"], bassRhythm: ["bo - x x bo - - x"], bassScale: [8, 5] },
+        { name: "Jazz", meter: "4/4", drumPattern: ["bch co co - co co co ca bch co co - bch co co cch"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: "chromatic" },
+    ];
+
+    /* ============================
+       ANIMAÇÕES
+       ============================ */
+    const HEAD_TOTAL_FRAMES = 100;
+
     function generateHeadFramePaths() {
       const paths = [];
-      for (let i = 1; i <= 100; i++) {
+      for (let i = 1; i <= HEAD_TOTAL_FRAMES; i++) {
         const num = String(i).padStart(4, "0");
         paths.push(`animacao/cabeca/cabeca${num}.png`);
       }
@@ -689,45 +649,13 @@
       }, 50);
     }
 
-    function startCoordinatedMovement() {
-      if (lateralMovementTimer) clearInterval(lateralMovementTimer);
-      
-      const layersToMove = [
-        'antebracoLayer', 'troncoLayer', 'bracoLayer', 
-        'cabecaLayer', 'cabecaTrasLayer'
-      ];
-      
-      let direction = 1;
-      let position = 0;
-      const maxOffset = 8;
-      const speed = 80;
-      
-      lateralMovementTimer = setInterval(() => {
-        position += direction;
-        if (Math.abs(position) >= maxOffset) direction *= -1;
-        
-        layersToMove.forEach(layerId => {
-          const layer = document.getElementById(layerId);
-          if (layer) {
-            const currentTransform = layer.style.transform;
-            const rotationMatch = currentTransform.match(/rotate\(([^)]+)\)/);
-            const rotation = rotationMatch ? `rotate(${rotationMatch[1]})` : '';
-            layer.style.transform = `${rotation} translateX(${position}px)`;
-          }
-        });
-      }, speed);
-    }
-
     function startTroncoBpm(bpm) {
       if (troncoTimer) clearInterval(troncoTimer);
       const tronco = document.getElementById("troncoLayer");
       let direction = 1;
       troncoTimer = setInterval(() => {
-        const currentTransform = tronco.style.transform;
-        const translateMatch = currentTransform.match(/translateX\(([^)]+)\)/);
-        const translate = translateMatch ? `translateX(${translateMatch[1]})` : '';
-        const angle = direction * 2;
-        tronco.style.transform = `${translate} rotate(${angle}deg)`;
+        const angle = direction * 3;
+        tronco.style.transform = `rotate(${angle}deg)`;
         direction *= -1;
       }, (60000 / bpm) / 2);
     }
@@ -738,26 +666,41 @@
       const cabecaTras = document.getElementById("cabecaTrasLayer");
       let dir = 1;
       tiltTimer = setInterval(() => {
-        const angle = dir * 3;
-        [cabeca, cabecaTras].forEach(layer => {
-          if (layer) {
-            const currentTransform = layer.style.transform;
-            const translateMatch = currentTransform.match(/translateX\(([^)]+)\)/);
-            const translate = translateMatch ? `translateX(${translateMatch[1]})` : '';
-            layer.style.transform = `${translate} rotate(${angle}deg)`;
-          }
-        });
+        const angle = dir * 5;
+        cabeca.style.transform = `rotate(${angle}deg)`;
+        if (cabecaTras) {
+          cabecaTras.style.transform = `rotate(${angle}deg)`;
+        }
         dir *= -1;
       }, 60000 / bpm);
     }
 
+    function startLateralMovement() {
+      if (lateralMovementTimer) clearInterval(lateralMovementTimer);
+      const layersToMove = [
+        'antebracoLayer', 'troncoLayer', 'bracoLayer', 
+        'cabecaLayer', 'cabecaTrasLayer'
+      ];
+      let direction = 1;
+      let position = 0;
+      const maxOffset = 10;
+      lateralMovementTimer = setInterval(() => {
+        position += direction;
+        if (Math.abs(position) >= maxOffset) {
+          direction *= -1;
+        }
+        layersToMove.forEach(layerId => {
+          const layer = document.getElementById(layerId);
+          if (layer) {
+            layer.style.transform = `translateX(${position}px)`;
+          }
+        });
+      }, 100);
+    }
+
     function trocarAntebraco(corda) {
       const ante = document.getElementById("antebracoLayer");
-      const currentTransform = ante.style.transform;
-      const translateMatch = currentTransform.match(/translateX\(([^)]+)\)/);
-      const translate = translateMatch ? `translateX(${translateMatch[1]})` : '';
       ante.src = `animacao/antebraco/antebraco${corda}.png`;
-      ante.style.transform = translate;
     }
 
     function animarBracoDireito(corda, duracaoMs) {
@@ -769,29 +712,17 @@
         `animacao/braco_direito/Corda_${corda}4.png`,
         `animacao/braco_direito/Corda_${corda}5.png`
       ];
-      
       const passo = duracaoMs / frames.length;
       let i = 0;
-      
       const id = setInterval(() => {
         if (i >= frames.length) {
           clearInterval(id);
-          const currentTransform = braco.style.transform;
-          const translateMatch = currentTransform.match(/translateX\(([^)]+)\)/);
-          const translate = translateMatch ? `translateX(${translateMatch[1]})` : '';
           braco.src = `animacao/braco_direito/Corda_${corda}1.png`;
-          braco.style.transform = translate;
           return;
         }
-        
-        const currentTransform = braco.style.transform;
-        const translateMatch = currentTransform.match(/translateX\(([^)]+)\)/);
-        const translate = translateMatch ? `translateX(${translateMatch[1]})` : '';
         braco.src = frames[i];
-        braco.style.transform = translate;
         i++;
       }, passo);
-
       animTimers.push(id);
     }
 
@@ -830,7 +761,6 @@
         pararAudioBaixo();
         return;
       }
-      
       tocarNotaAudioBaixo(nota, volume);
       trocarFrameTronco(nota);
       const corda = getCordaDaNota(nota);
@@ -838,15 +768,175 @@
       animarBracoDireito(corda, duracaoMs);
     }
 
+    /* ===== FUNÇÕES AUXILIARES ===== */
+    function expandRhythm(patternArray, totalSteps) {
+      const joined = patternArray.join(' ').replace(/\s+/g, ' ').trim();
+      const tokens = joined.split(/\s+/).filter(t => t);
+      const out = [];
+      let i = 0;
+      while (out.length < totalSteps) {
+        for (const token of tokens) {
+          if (out.length >= totalSteps) break;
+          out.push(token);
+        }
+        if (i++ > 1000) break;
+      }
+      return out.slice(0, totalSteps);
+    }
+
+    function parsePattern(patternText) {
+      const result = { intro: [], loop: [] };
+      const introMatch = patternText.match(/\[(.*?)\]/);
+      const loopMatch = patternText.match(/\((.*?)\)/);
+      if (introMatch) result.intro = introMatch[1].trim().split(/\s+/).filter(s => s);
+      if (loopMatch) result.loop = loopMatch[1].trim().split(/\s+/).filter(s => s);
+      if (!introMatch && !loopMatch) result.loop = patternText.trim().split(/\s+/).filter(s => s);
+      if (!result.loop.length) result.loop = result.intro.slice();
+      return result;
+    }
+
+    function meterToBeats(meter) {
+      return Number(meter.split('/')[0]) || 4;
+    }
+
+    /* ===== PLAYBACK ALEATÓRIO ===== */
+    async function gerarPlaybackAleatorio() {
+      const groove = ALL_GROOVES[Math.floor(Math.random() * ALL_GROOVES.length)];
+      const grooveName = groove.name;
+      let styleKey = "Rock";
+      if (grooveName.includes("Samba")) styleKey = "Samba";
+      else if (grooveName.includes("Jazz")) styleKey = "Jazz";
+      else if (grooveName.includes("Forró")) styleKey = "Forró";
+      else if (grooveName.includes("Metal")) styleKey = "Metal";
+      else if (grooveName.includes("Blues")) styleKey = "Blues";
+      const progressions = STYLE_PROGRESSIONS[styleKey] || STYLE_PROGRESSIONS.Rock;
+      let availableProgressions = progressions.filter(prog => !prog.includes(7));
+      if (availableProgressions.length === 0) availableProgressions = progressions;
+      const chordProgression = availableProgressions[Math.floor(Math.random() * availableProgressions.length)];
+      const totalBars = Math.min(chordProgression.length, 64);
+      const beats = meterToBeats(groove.meter);
+      const sixteenthsPerBar = beats * 4;
+      const totalSteps = sixteenthsPerBar * totalBars;
+
+      const rhythm = expandRhythm(groove.bassRhythm, totalSteps);
+      const bassPlan = [];
+      const keyIdx = Math.floor(Math.random() * PITCHES.length);
+      const key = PITCHES[keyIdx];
+
+      function getBassNotesFromScale(degree, scale, chordType) {
+        let isMinor = false;
+        if ([1, 4, 5].includes(degree)) {
+          isMinor = (Math.random() > 0.5);
+        } else {
+          isMinor = (
+            chordType.startsWith('m') ||
+            chordType.includes('dim') ||
+            ['5+', '75+', '95+'].includes(chordType)
+          );
+        }
+        if (scale === "chromatic") {
+          const rootIdx = (keyIdx + DEGREE_TO_ROOT[degree]) % 12;
+          const rootNote = PITCHES[rootIdx];
+          const octave = 8;
+          return Array(8).fill().map((_, i) => {
+            const noteIdx = (rootIdx - i + 12) % 12;
+            const p = PITCHES[noteIdx];
+            return p.endsWith('S') ? `${p.replace('S', '')}${octave}S` : `${p}${octave}`;
+          });
+        }
+        if (Array.isArray(scale)) {
+          const rootIdx = (keyIdx + DEGREE_TO_ROOT[degree]) % 12;
+          return scale.map(interval => {
+            let intervalOffset;
+            if (isMinor) {
+              const minorIntervals = { 1: 0, 2: 2, 3: 3, 4: 5, 5: 7, 6: 8, 7: 10, 8: 12 };
+              intervalOffset = minorIntervals[interval] || 0;
+            } else {
+              const majorIntervals = { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11, 8: 12 };
+              intervalOffset = majorIntervals[interval] || 0;
+            }
+            const noteIdx = (rootIdx + intervalOffset) % 12;
+            const octave = interval === 1 ? '' : '8';
+            const noteName = PITCHES[noteIdx];
+            if (interval === 1) {
+              return noteName;
+            } else {
+              return noteName.endsWith('S') ? `${noteName.replace('S', '')}${octave}S` : `${noteName}${octave}`;
+            }
+          });
+        }
+        return [PITCHES[(keyIdx + DEGREE_TO_ROOT[degree]) % 12]];
+      }
+
+      for (let bar = 0; bar < totalBars; bar++) {
+        const degree = chordProgression[bar];
+        const bassNotes = getBassNotesFromScale(degree, groove.bassScale, '');
+        const stepsInBar = sixteenthsPerBar;
+        const notesPerBar = Math.ceil(stepsInBar / bassNotes.length);
+        const fullBassNotes = Array(stepsInBar).fill().map((_, i) => bassNotes[Math.floor(i / notesPerBar)] || bassNotes[0]);
+        for (let stepInBar = 0; stepInBar < stepsInBar; stepInBar++) {
+          const step = bar * stepsInBar + stepInBar;
+          const sym = rhythm[step] || '-';
+          let bassNote = null;
+          if (sym === 'x') bassNote = 'x';
+          else if (sym === '-' || sym === 'sm') bassNote = '-';
+          else bassNote = fullBassNotes[stepInBar];
+          bassPlan.push(bassNote);
+        }
+      }
+
+      const filteredBassPlan = bassPlan.filter(note => note !== '-');
+      const formattedBassSeq = filteredBassPlan.map(note => {
+        if (note === 'x') return 'x';
+        const noteName = note.replace(/8/g, '');
+        const noteIndex = PITCHES.indexOf(noteName);
+        if (noteIndex !== -1) {
+          const matchingNote = notasValidas.find(n => {
+            const num = parseInt(n, 10);
+            const notePart = n.substring(String(num).length);
+            return notePart === noteName;
+          });
+          return matchingNote || 'x';
+        }
+        return 'x';
+      });
+
+      const drumParsed = parsePattern(groove.drumPattern.join(' '));
+      const drumSeq = [...drumParsed.intro, ...drumParsed.loop];
+      const drumExpanded = [];
+      while (drumExpanded.length < formattedBassSeq.length) {
+        for (const t of drumSeq) {
+          if (drumExpanded.length >= formattedBassSeq.length) break;
+          drumExpanded.push(t);
+        }
+      }
+
+      const formattedDrumSeq = {};
+      drumLines.forEach(line => {
+        formattedDrumSeq[line.id] = drumExpanded.slice(0, formattedBassSeq.length).map(token => {
+          if (token === line.id) return line.id;
+          if (['bu', 'bumbo'].includes(token) && line.id === 'bumbo') return 'bumbo';
+          if (['ca', 'caixa'].includes(token) && line.id === 'caixa') return 'caixa';
+          if (['ch', 'chimbal'].includes(token) && line.id === 'chimbal') return 'chimbal';
+          if (['co', 'conducao'].includes(token) && line.id === 'conducao') return 'conducao';
+          if (['ba', 'bumbo-ataque'].includes(token) && line.id === 'ataque') return 'ataque';
+          return 'x';
+        });
+      });
+
+      return {
+        bass: formattedBassSeq,
+        drums: formattedDrumSeq,
+        bpm: bpmAtual
+      };
+    }
+
+    /* ===== PLAYBACK ===== */
     function tocarPasso(passo) {
       const nota = (passo < baixoSeq.length) ? baixoSeq[passo] : "x";
       tocarNotaComAnimacao(nota, (60000 / bpmAtual) / 4, baixoVolumeGlobal);
       tocarBateriaNoStep(passo, bateriaVolumeGlobal);
-      
-      const totalSteps = Math.max(
-        baixoSeq.length,
-        ...(drumLines.map(line => bateriaSeq[line.id].length))
-      );
+      const totalSteps = Math.max(baixoSeq.length, ...(drumLines.map(line => bateriaSeq[line.id].length)));
       atualizarBarraProgresso((passo / totalSteps) * 100);
     }
 
@@ -855,17 +945,12 @@
       isPlaying = true;
       atualPasso = 0;
       const stepTime = (60000 / bpmAtual) / 4;
-
       playbackInterval = setInterval(() => {
         tocarPasso(atualPasso);
         atualPasso++;
-        const totalSteps = Math.max(
-          baixoSeq.length,
-          ...(drumLines.map(line => bateriaSeq[line.id].length))
-        );
+        const totalSteps = Math.max(baixoSeq.length, ...(drumLines.map(line => bateriaSeq[line.id].length)));
         if (atualPasso >= totalSteps) atualPasso = 0;
       }, stepTime);
-
       document.getElementById("playBtn").innerText = "⏸ Pause";
     }
 
@@ -883,28 +968,70 @@
       else pararPlayback();
     }
 
-    function atualizarBarraProgresso(perc) {
-      document.getElementById("progressBar").style.width = perc + "%";
+    /* ===== PAINEL LATERAL ===== */
+    const selectionOverlay = document.getElementById("selectionOverlay");
+    const selectionTitle = document.getElementById("selectionTitle");
+    const selectionOptions = document.getElementById("selectionOptions");
+    const painelSelecao = {
+      tipo: null, seqRef: null, idx: null, cell: null, drumLine: null
+    };
+
+    function abrirPainelSelecaoBaixo(seqRef, idx, cellEl) {
+      painelSelecao.tipo = "baixo";
+      painelSelecao.seqRef = seqRef;
+      painelSelecao.idx = idx;
+      painelSelecao.cell = cellEl;
+      const valorAtual = seqRef[idx];
+      const opcoes = ["x", ...notasValidas];
+      selectionTitle.textContent = "Selecione a nota do baixo";
+      selectionOptions.innerHTML = "";
+      opcoes.forEach(opt => {
+        const div = document.createElement("div");
+        div.className = "selection-option";
+        let label = opt;
+        if (opt === "x") {
+          div.classList.add("x-option");
+          label = "X";
+        } else {
+          label = opt.replace(/S/g,"#");
+        }
+        if (opt === valorAtual) div.classList.add("active");
+        div.textContent = label;
+        div.onclick = () => {
+          painelSelecao.seqRef[painelSelecao.idx] = opt;
+          const c = painelSelecao.cell;
+          c.textContent = label;
+          if (opt === "x") c.classList.remove("active");
+          else c.classList.add("active");
+          fecharPainelSelecao();
+        };
+        selectionOptions.appendChild(div);
+      });
+      selectionOverlay.classList.add("visible");
     }
 
-    // ===== INTERFACE =====
+    function fecharPainelSelecao() {
+      selectionOverlay.classList.remove("visible");
+      Object.keys(painelSelecao).forEach(k => painelSelecao[k] = null);
+    }
+
+    selectionOverlay.addEventListener("click", (ev) => {
+      if (ev.target === selectionOverlay) fecharPainelSelecao();
+    });
+
+    /* ===== GRIDS ===== */
     function construirGridBaixo(container, seq) {
       container.innerHTML = "";
       seq.forEach((nota, idx) => {
         const div = document.createElement("div");
         div.className = "cell";
-        div.dataset.idx = idx;
-
         if (nota === "x") {
           div.textContent = "X";
         } else {
           div.textContent = nota.replace(/S/g,"#");
           div.classList.add("active");
         }
-
-        div.onclick = () => {
-          abrirPainelSelecaoBaixo(seq, idx, div);
-        };
+        div.onclick = () => abrirPainelSelecaoBaixo(seq, idx, div);
         container.appendChild(div);
       });
     }
@@ -914,21 +1041,16 @@
       drumLines.forEach(line => {
         const rowDiv = document.createElement("div");
         rowDiv.className = "drumRow";
-
         const label = document.createElement("div");
         label.className = "drumLabel";
         label.textContent = line.label;
         rowDiv.appendChild(label);
-
         const rowGrid = document.createElement("div");
         rowGrid.className = "composicaoGrid";
         const seq = bateriaSeq[line.id];
-
         seq.forEach((item, idx) => {
           const cell = document.createElement("div");
           cell.className = "cell";
-          cell.dataset.idx = idx;
-
           if (item === "x") {
             cell.textContent = "X";
           } else if (item === line.id) {
@@ -937,7 +1059,6 @@
           } else {
             cell.textContent = "?";
           }
-
           cell.onclick = () => {
             if (seq[idx] === "x") {
               seq[idx] = line.id;
@@ -956,74 +1077,16 @@
       });
     }
 
-    const selectionOverlay = document.getElementById("selectionOverlay");
-    const selectionTitle = document.getElementById("selectionTitle");
-    const selectionOptions = document.getElementById("selectionOptions");
-
-    const painelSelecao = {
-      tipo: null, seqRef: null, idx: null, cell: null, drumLine: null
-    };
-
-    function abrirPainelSelecaoBaixo(seqRef, idx, cellEl) {
-      painelSelecao.tipo = "baixo";
-      painelSelecao.seqRef = seqRef;
-      painelSelecao.idx = idx;
-      painelSelecao.cell = cellEl;
-      painelSelecao.drumLine = null;
-
-      const valorAtual = seqRef[idx];
-      const opcoes = ["x", ...notasValidas];
-
-      selectionTitle.textContent = "Selecione a nota do baixo";
-      selectionOptions.innerHTML = "";
-
-      opcoes.forEach(opt => {
-        const div = document.createElement("div");
-        div.className = "selection-option";
-        let label = opt;
-
-        if (opt === "x") {
-          div.classList.add("x-option");
-          label = "X";
-        } else {
-          label = opt.replace(/S/g,"#");
-        }
-
-        if (opt === valorAtual) div.classList.add("active");
-
-        div.textContent = label;
-        div.onclick = () => {
-          painelSelecao.seqRef[painelSelecao.idx] = opt;
-          const c = painelSelecao.cell;
-          c.textContent = label;
-          if (opt === "x") c.classList.remove("active");
-          else c.classList.add("active");
-          fecharPainelSelecao();
-        };
-        selectionOptions.appendChild(div);
-      });
-      selectionOverlay.classList.add("visible");
+    function atualizarBarraProgresso(perc) {
+      document.getElementById("progressBar").style.width = perc + "%";
     }
-
-    function fecharPainelSelecao() {
-      selectionOverlay.classList.remove("visible");
-      painelSelecao.tipo = null;
-      painelSelecao.seqRef = null;
-      painelSelecao.idx = null;
-      painelSelecao.cell = null;
-      painelSelecao.drumLine = null;
-    }
-
-    selectionOverlay.addEventListener("click", (ev) => {
-      if (ev.target === selectionOverlay) fecharPainelSelecao();
-    });
 
     function tocarPlaybackCompleto(bpm) {
       pararPlayback();
       resetAnimTimers();
       startTroncoBpm(bpm);
       startHeadTiltBpm(bpm);
-      startCoordinatedMovement();
+      startLateralMovement();
       iniciarPlayback();
     }
 
@@ -1047,49 +1110,95 @@
       return obj;
     }
 
-    // ===== INICIALIZAÇÃO =====
+    function configurarPlaybackExportado() {
+      const btn = document.getElementById("playExportadoBtn");
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "application/json";
+      input.style.display = "none";
+      document.body.appendChild(input);
+      btn.onclick = () => input.click();
+      input.onchange = async (ev) => {
+        const file = ev.target.files[0];
+        if (!file) return;
+        try {
+          const txt = await file.text();
+          const obj = JSON.parse(txt);
+          if (!Array.isArray(obj.baixo) || typeof obj.bpm !== "number" || typeof obj.bateria !== "object") {
+            alert("JSON inválido. Esperado: { bpm, baixo[], bateria{bumbo[],...} }");
+            return;
+          }
+          baixoSeq = obj.baixo;
+          bpmAtual = obj.bpm;
+          drumLines.forEach(line => {
+            if (Array.isArray(obj.bateria[line.id])) {
+              bateriaSeq[line.id] = obj.bateria[line.id];
+            } else {
+              bateriaSeq[line.id] = Array(baixoSeq.length).fill("x");
+            }
+          });
+          document.getElementById("bpmSlider").value = bpmAtual;
+          document.getElementById("bpmDisplay").textContent = bpmAtual + " BPM";
+          construirGridBaixo(document.getElementById("baixoGrid"), baixoSeq);
+          construirGridBateria(document.getElementById("drumGrid"), bateriaSeq);
+          tocarPlaybackCompleto(bpmAtual);
+        } catch (e) {
+          console.error(e);
+          alert("Erro ao ler o arquivo JSON.");
+        }
+      };
+    }
+
+    function garantirPaisagem() {
+      const overlay = document.getElementById("orientationOverlay");
+      function checar() {
+        overlay.style.display = (window.innerWidth < window.innerHeight) ? "flex" : "none";
+      }
+      checar();
+      window.addEventListener("resize", checar);
+    }
+
     function iniciarInterface() {
       const baixoGrid = document.getElementById("baixoGrid");
       const drumGrid = document.getElementById("drumGrid");
       const passosIniciais = 16;
-
-      // Inicializar sequências
       baixoSeq = gerarSequenciaAleatoriaBaixo(passosIniciais);
       bateriaSeq = gerarSequenciasAleatoriasBateria(passosIniciais);
-
       construirGridBaixo(baixoGrid, baixoSeq);
       construirGridBateria(drumGrid, bateriaSeq);
 
-      // Configurar controles
-      const bpmSlider = document.getElementById("bpmSlider");
-      const bpmDisplay = document.getElementById("bpmDisplay");
-      bpmSlider.oninput = () => {
-        bpmAtual = parseInt(bpmSlider.value, 10);
-        bpmDisplay.textContent = bpmAtual + " BPM";
+      document.getElementById("bpmSlider").oninput = () => {
+        bpmAtual = parseInt(document.getElementById("bpmSlider").value, 10);
+        document.getElementById("bpmDisplay").textContent = bpmAtual + " BPM";
         startTroncoBpm(bpmAtual);
         startHeadTiltBpm(bpmAtual);
       };
 
-      document.getElementById("baixoVolume").oninput = (e) => {
-        baixoVolumeGlobal = parseFloat(e.target.value);
+      document.getElementById("baixoVolume").oninput = () => {
+        baixoVolumeGlobal = parseFloat(document.getElementById("baixoVolume").value);
       };
-      document.getElementById("drumVolume").oninput = (e) => {
-        bateriaVolumeGlobal = parseFloat(e.target.value);
-      };
-
-      // Botões
-      document.getElementById("playAleatorioBtn").onclick = () => {
-        baixoSeq = gerarSequenciaAleatoriaBaixo(passosIniciais);
-        bateriaSeq = gerarSequenciasAleatoriasBateria(passosIniciais);
-        construirGridBaixo(baixoGrid, baixoSeq);
-        construirGridBateria(drumGrid, bateriaSeq);
-        tocarPlaybackCompleto(bpmAtual);
+      document.getElementById("drumVolume").oninput = () => {
+        bateriaVolumeGlobal = parseFloat(document.getElementById("drumVolume").value);
       };
 
-      document.getElementById("playManualBtn").onclick = () => {
-        tocarPlaybackCompleto(bpmAtual);
+      document.getElementById("playAleatorioBtn").onclick = async () => {
+        try {
+          const playback = await gerarPlaybackAleatorio();
+          baixoSeq = playback.bass;
+          bateriaSeq = playback.drums;
+          bpmAtual = playback.bpm;
+          document.getElementById("bpmSlider").value = bpmAtual;
+          document.getElementById("bpmDisplay").textContent = bpmAtual + " BPM";
+          construirGridBaixo(baixoGrid, baixoSeq);
+          construirGridBateria(drumGrid, bateriaSeq);
+          tocarPlaybackCompleto(bpmAtual);
+        } catch (error) {
+          console.error("Erro ao gerar playback aleatório:", error);
+          alert("Erro ao gerar playback aleatório. Verifique o console.");
+        }
       };
 
+      document.getElementById("playManualBtn").onclick = () => tocarPlaybackCompleto(bpmAtual);
       document.getElementById("playBtn").onclick = togglePlay;
       document.getElementById("pauseBtn").onclick = pararPlayback;
 
@@ -1107,9 +1216,7 @@
 
       document.getElementById("clearAll").onclick = () => {
         baixoSeq = baixoSeq.map(() => "x");
-        drumLines.forEach(line => {
-          bateriaSeq[line.id] = bateriaSeq[line.id].map(() => "x");
-        });
+        drumLines.forEach(line => bateriaSeq[line.id] = bateriaSeq[line.id].map(() => "x"));
         construirGridBaixo(baixoGrid, baixoSeq);
         construirGridBateria(drumGrid, bateriaSeq);
       };
@@ -1138,32 +1245,17 @@
         construirGridBateria(drumGrid, bateriaSeq);
       };
 
-      // Iniciar automaticamente
-      tocarPlaybackCompleto(bpmAtual);
+      configurarPlaybackExportado();
     }
 
-    function garantirPaisagem() {
-      const overlay = document.getElementById("orientationOverlay");
-      function checar() {
-        overlay.style.display = window.innerWidth < window.innerHeight ? "flex" : "none";
-      }
-      checar();
-      window.addEventListener("resize", checar);
-    }
-
-    // ===== INÍCIO =====
     window.onload = async () => {
       garantirPaisagem();
-
-      // Pré-carregar frames da cabeça
       headFrames = generateHeadFramePaths();
       await preloadImages(headFrames);
       startHeadLoop();
       startTroncoBpm(bpmAtual);
       startHeadTiltBpm(bpmAtual);
-      startCoordinatedMovement();
-
-      // Iniciar interface
+      startLateralMovement();
       iniciarInterface();
     };
   </script>
