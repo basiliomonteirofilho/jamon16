@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Jam On – Baixista Animada com Playback Aleatório</title>
+  <title>Jam On – Baixista e Baterista Animadas</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
   <style>
@@ -411,7 +411,7 @@
          =============================== -->
     <div id="painel">
       <header>
-        <h1>Jam On – Baixista Animada</h1>
+        <h1>Jam On – Baixista e Baterista Animadas</h1>
         <div class="pill">Baixo + Bateria – 1 célula = 1/16</div>
       </header>
 
@@ -630,160 +630,26 @@
         { name: "Jazz", meter: "4/4", drumPattern: ["bch co co - co co co ca bch co co - bch co co cch"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: "chromatic" },
     ];
 
-    /*
-      Mapa de qual PASTA usar para cada nota.
-    */
-    const pastaMap = {
-  // Pasta_1F (1E-20B)
-  "1E": "Pasta_1F", "2F": "Pasta_1F", "3FS": "Pasta_1F", "4G": "Pasta_1F", "5GS": "Pasta_1F",
-  "6A": "Pasta_1F", "7AS": "Pasta_1F", "8B": "Pasta_1F", "9C": "Pasta_1F", "10CS": "Pasta_1F",
-  "11D": "Pasta_1F", "12DS": "Pasta_1F", "13E": "Pasta_1F", "14F": "Pasta_1F", "15FS": "Pasta_1F",
-  "16G": "Pasta_1F", "17GS": "Pasta_1F", "18A": "Pasta_1F", "19AS": "Pasta_1F", "20B": "Pasta_1F",
-  
-  // Pasta_2FS (3FS-21C)
-  "3FS": "Pasta_2FS", "4G": "Pasta_2FS", "5GS": "Pasta_2FS", "6A": "Pasta_2FS", "8B": "Pasta_2FS",
-  "9C": "Pasta_2FS", "10CS": "Pasta_2FS", "11D": "Pasta_2FS", "13E": "Pasta_2FS", "14F": "Pasta_2FS",
-  "15FS": "Pasta_2FS", "16G": "Pasta_2FS", "18A": "Pasta_2FS", "19AS": "Pasta_2FS", "20B": "Pasta_2FS",
-  "21C": "Pasta_2FS",
-  
-  // Pasta_3G (4G-22CS)
-  "4G": "Pasta_3G", "5GS": "Pasta_3G", "6A": "Pasta_3G", "7AS": "Pasta_3G", "9C": "Pasta_3G",
-  "10CS": "Pasta_3G", "11D": "Pasta_3G", "12DS": "Pasta_3G", "14F": "Pasta_3G", "15FS": "Pasta_3G",
-  "16G": "Pasta_3G", "17GS": "Pasta_3G", "19AS": "Pasta_3G", "20B": "Pasta_3G", "21C": "Pasta_3G",
-  "22CS": "Pasta_3G",
-  
-  // Pasta_4GS (5GS-23D)
-  "5GS": "Pasta_4GS", "6A": "Pasta_4GS", "7AS": "Pasta_4GS", "8B": "Pasta_4GS", "10CS": "Pasta_4GS",
-  "11D": "Pasta_4GS", "12DS": "Pasta_4GS", "13E": "Pasta_4GS", "15FS": "Pasta_4GS", "16G": "Pasta_4GS",
-  "17GS": "Pasta_4GS", "18A": "Pasta_4GS", "20B": "Pasta_4GS", "21C": "Pasta_4GS", "22CS": "Pasta_4GS",
-  "23D": "Pasta_4GS",
-  
-  // Pasta_5A (6A-24DS)
-  "6A": "Pasta_5A", "7AS": "Pasta_5A", "8B": "Pasta_5A", "9C": "Pasta_5A", "11D": "Pasta_5A",
-  "12DS": "Pasta_5A", "13E": "Pasta_5A", "14F": "Pasta_5A", "16G": "Pasta_5A", "17GS": "Pasta_5A",
-  "18A": "Pasta_5A", "19AS": "Pasta_5A", "21C": "Pasta_5A", "22CS": "Pasta_5A", "23D": "Pasta_5A",
-  "24DS": "Pasta_5A",
-  
-  // Pasta_6AS (7AS-25E)
-  "7AS": "Pasta_6AS", "8B": "Pasta_6AS", "9C": "Pasta_6AS", "10CS": "Pasta_6AS", "12DS": "Pasta_6AS",
-  "13E": "Pasta_6AS", "14F": "Pasta_6AS", "15FS": "Pasta_6AS", "17GS": "Pasta_6AS", "18A": "Pasta_6AS",
-  "19AS": "Pasta_6AS", "20B": "Pasta_6AS", "22CS": "Pasta_6AS", "23D": "Pasta_6AS", "24DS": "Pasta_6AS",
-  "25E": "Pasta_6AS",
-  
-  // Pasta_7B (8B-26F)
-  "8B": "Pasta_7B", "9C": "Pasta_7B", "10CS": "Pasta_7B", "11D": "Pasta_7B", "13E": "Pasta_7B",
-  "14F": "Pasta_7B", "15FS": "Pasta_7B", "16G": "Pasta_7B", "18A": "Pasta_7B", "19AS": "Pasta_7B",
-  "20B": "Pasta_7B", "21C": "Pasta_7B", "23D": "Pasta_7B", "24DS": "Pasta_7B", "25E": "Pasta_7B",
-  "26F": "Pasta_7B",
-  
-  // Pasta_8C (9C-27FS)
-  "9C": "Pasta_8C", "10CS": "Pasta_8C", "11D": "Pasta_8C", "12DS": "Pasta_8C", "14F": "Pasta_8C",
-  "15FS": "Pasta_8C", "16G": "Pasta_8C", "17GS": "Pasta_8C", "19AS": "Pasta_8C", "20B": "Pasta_8C",
-  "21C": "Pasta_8C", "22CS": "Pasta_8C", "24DS": "Pasta_8C", "25E": "Pasta_8C", "26F": "Pasta_8C",
-  "27FS": "Pasta_8C",
-  
-  // Pasta_9CS (10CS-28G)
-  "10CS": "Pasta_9CS", "11D": "Pasta_9CS", "12DS": "Pasta_9CS", "13E": "Pasta_9CS", "15FS": "Pasta_9CS",
-  "16G": "Pasta_9CS", "17GS": "Pasta_9CS", "18A": "Pasta_9CS", "20B": "Pasta_9CS", "21C": "Pasta_9CS",
-  "22CS": "Pasta_9CS", "23D": "Pasta_9CS", "25E": "Pasta_9CS", "26F": "Pasta_9CS", "27FS": "Pasta_9CS",
-  "28G": "Pasta_9CS",
-  
-  // Pasta_10D (11D-29GS)
-  "11D": "Pasta_10D", "12DS": "Pasta_10D", "13E": "Pasta_10D", "14F": "Pasta_10D", "16G": "Pasta_10D",
-  "17GS": "Pasta_10D", "18A": "Pasta_10D", "19AS": "Pasta_10D", "21C": "Pasta_10D", "22CS": "Pasta_10D",
-  "23D": "Pasta_10D", "24DS": "Pasta_10D", "26F": "Pasta_10D", "27FS": "Pasta_10D", "28G": "Pasta_10D",
-  "29GS": "Pasta_10D",
-  
-  // Pasta_11DS (12DS-30A)
-  "12DS": "Pasta_11DS", "13E": "Pasta_11DS", "14F": "Pasta_11DS", "15FS": "Pasta_11DS", "17GS": "Pasta_11DS",
-  "18A": "Pasta_11DS", "19AS": "Pasta_11DS", "20B": "Pasta_11DS", "22CS": "Pasta_11DS", "23D": "Pasta_11DS",
-  "24DS": "Pasta_11DS", "25E": "Pasta_11DS", "27FS": "Pasta_11DS", "28G": "Pasta_11DS", "29GS": "Pasta_11DS",
-  "30A": "Pasta_11DS",
-  
-  // Pasta_12E (13E-31B)
-  "13E": "Pasta_12E", "14F": "Pasta_12E", "15FS": "Pasta_12E", "16G": "Pasta_12E", "18A": "Pasta_12E",
-  "19AS": "Pasta_12E", "20B": "Pasta_12E", "21C": "Pasta_12E", "23D": "Pasta_12E", "24DS": "Pasta_12E",
-  "25E": "Pasta_12E", "26F": "Pasta_12E", "28G": "Pasta_12E", "29GS": "Pasta_12E", "30A": "Pasta_12E",
-  "31B": "Pasta_12E",
-  
-  // Pasta_13F (14F-32B)
-  "14F": "Pasta_13F", "15FS": "Pasta_13F", "16G": "Pasta_13F", "17GS": "Pasta_13F", "19AS": "Pasta_13F",
-  "20B": "Pasta_13F", "21C": "Pasta_13F", "22CS": "Pasta_13F", "24DS": "Pasta_13F", "25E": "Pasta_13F",
-  "26F": "Pasta_13F", "27FS": "Pasta_13F", "29GS": "Pasta_13F", "30A": "Pasta_13F", "31AS": "Pasta_13F",
-  "32B": "Pasta_13F",
-  
-  // Pasta_14FS (15FS-33C)
-  "15FS": "Pasta_14FS", "16G": "Pasta_14FS", "17GS": "Pasta_14FS", "18A": "Pasta_14FS", "20B": "Pasta_14FS",
-  "21C": "Pasta_14FS", "22CS": "Pasta_14FS", "23D": "Pasta_14FS", "25E": "Pasta_14FS", "26F": "Pasta_14FS",
-  "27FS": "Pasta_14FS", "28G": "Pasta_14FS", "30A": "Pasta_14FS", "31AS": "Pasta_14FS", "32B": "Pasta_14FS",
-  "33C": "Pasta_14FS",
-  
-  // Pasta_15G (16G-34CS)
-  "16G": "Pasta_15G", "17GS": "Pasta_15G", "18A": "Pasta_15G", "19AS": "Pasta_15G", "21C": "Pasta_15G",
-  "22CS": "Pasta_15G", "23D": "Pasta_15G", "24DS": "Pasta_15G", "26F": "Pasta_15G", "27FS": "Pasta_15G",
-  "28G": "Pasta_15G", "29GS": "Pasta_15G", "31AS": "Pasta_15G", "32B": "Pasta_15G", "33C": "Pasta_15G",
-  "34CS": "Pasta_15G",
-  
-  // Pasta_16GS (17GS-35D)
-  "17GS": "Pasta_16GS", "18A": "Pasta_16GS", "19AS": "Pasta_16GS", "20B": "Pasta_16GS", "22CS": "Pasta_16GS",
-  "23D": "Pasta_16GS", "24DS": "Pasta_16GS", "25E": "Pasta_16GS", "27FS": "Pasta_16GS", "28G": "Pasta_16GS",
-  "29GS": "Pasta_16GS", "30A": "Pasta_16GS", "32B": "Pasta_16GS", "33C": "Pasta_16GS", "34CS": "Pasta_16GS",
-  "35D": "Pasta_16GS",
-  
-  // Pasta_17A (18A-36DS)
-  "18A": "Pasta_17A", "19AS": "Pasta_17A", "20B": "Pasta_17A", "21C": "Pasta_17A", "23D": "Pasta_17A",
-  "24DS": "Pasta_17A", "25E": "Pasta_17A", "26F": "Pasta_17A", "28G": "Pasta_17A", "29GS": "Pasta_17A",
-  "30A": "Pasta_17A", "31AS": "Pasta_17A", "33C": "Pasta_17A", "34CS": "Pasta_17A", "35D": "Pasta_17A",
-  "36DS": "Pasta_17A",
-  
-  // Pasta_18AS (19AS-37E)
-  "19AS": "Pasta_18AS", "20B": "Pasta_18AS", "21C": "Pasta_18AS", "22CS": "Pasta_18AS", "24DS": "Pasta_18AS",
-  "25E": "Pasta_18AS", "26F": "Pasta_18AS", "27FS": "Pasta_18AS", "29GS": "Pasta_18AS", "30A": "Pasta_18AS",
-  "31AS": "Pasta_18AS", "32B": "Pasta_18AS", "34CS": "Pasta_18AS", "35D": "Pasta_18AS", "36DS": "Pasta_18AS",
-  "37E": "Pasta_18AS",
-  
-  // Pasta_19B (20B-38F)
-  "20B": "Pasta_19B", "21C": "Pasta_19B", "22CS": "Pasta_19B", "23D": "Pasta_19B", "25E": "Pasta_19B",
-  "26F": "Pasta_19B", "27FS": "Pasta_19B", "28G": "Pasta_19B", "30A": "Pasta_19B", "31AS": "Pasta_19B",
-  "32B": "Pasta_19B", "33C": "Pasta_19B", "35D": "Pasta_19B", "36DS": "Pasta_19B", "37E": "Pasta_19B",
-  "38F": "Pasta_19B",
-  
-  // Pasta_20C (21C-39FS)
-  "21C": "Pasta_20C", "22CS": "Pasta_20C", "23D": "Pasta_20C", "24DS": "Pasta_20C", "26F": "Pasta_20C",
-  "27FS": "Pasta_20C", "28G": "Pasta_20C", "29GS": "Pasta_20C", "31AS": "Pasta_20C", "32B": "Pasta_20C",
-  "33C": "Pasta_20C", "34CS": "Pasta_20C", "36DS": "Pasta_20C", "37E": "Pasta_20C", "38F": "Pasta_20C",
-  "39FS": "Pasta_20C",
-  
-  // Pasta_21CS (22CS-40G)
-  "22CS": "Pasta_21CS", "23D": "Pasta_21CS", "24DS": "Pasta_21CS", "25E": "Pasta_21CS", "27FS": "Pasta_21CS",
-  "28G": "Pasta_21CS", "29GS": "Pasta_21CS", "30A": "Pasta_21CS", "32B": "Pasta_21CS", "33C": "Pasta_21CS",
-  "34CS": "Pasta_21CS", "35D": "Pasta_21CS", "37E": "Pasta_21CS", "38F": "Pasta_21CS", "39FS": "Pasta_21CS",
-  "40G": "Pasta_21CS",
-  
-  // Pasta_22D (23D-41GS)
-  "23D": "Pasta_22D", "24DS": "Pasta_22D", "25E": "Pasta_22D", "26F": "Pasta_22D", "28G": "Pasta_22D",
-  "29GS": "Pasta_22D", "30A": "Pasta_22D", "31AS": "Pasta_22D", "33C": "Pasta_22D", "34CS": "Pasta_22D",
-  "35D": "Pasta_22D", "36DS": "Pasta_22D", "38F": "Pasta_22D", "39FS": "Pasta_22D", "40G": "Pasta_22D",
-  "41GS": "Pasta_22D",
-  
-  // Pasta_23DS (24DS-42A)
-  "24DS": "Pasta_23DS", "25E": "Pasta_23DS", "26F": "Pasta_23DS", "27FS": "Pasta_23DS", "29GS": "Pasta_23DS",
-  "30A": "Pasta_23DS", "31AS": "Pasta_23DS", "32B": "Pasta_23DS", "34CS": "Pasta_23DS", "35D": "Pasta_23DS",
-  "36DS": "Pasta_23DS", "37E": "Pasta_23DS", "39FS": "Pasta_23DS", "40G": "Pasta_23DS", "41GS": "Pasta_23DS",
-  "42A": "Pasta_23DS",
-  
-  // Pasta_24E (25E-43AS)
-  "25E": "Pasta_24E", "26F": "Pasta_24E", "27FS": "Pasta_24E", "28G": "Pasta_24E", "30A": "Pasta_24E",
-  "31AS": "Pasta_24E", "32B": "Pasta_24E", "33C": "Pasta_24E", "35D": "Pasta_24E", "36DS": "Pasta_24E",
-  "37E": "Pasta_24E", "38F": "Pasta_24E", "40G": "Pasta_24E", "41GS": "Pasta_24E", "42A": "Pasta_24E",
-  "43AS": "Pasta_24E"
-};
-
     /* ============================
        FUNÇÕES PRINCIPAIS CORRIGIDAS
        ============================ */
+    
+    // CORREÇÃO: Função simplificada para obter pasta baseada na nota
     function getPastaDaNota(nota) {
-      return pastaMap[nota] || "Pasta_1F";
+      if (!nota || nota === "x") return "Pasta_1F";
+      
+      const num = parseInt(nota, 10);
+      if (isNaN(num)) return "Pasta_1F";
+      
+      // Mapeamento simplificado baseado no número da nota
+      if (num <= 20) return "Pasta_1F";
+      if (num <= 26) return "Pasta_2FS";
+      if (num <= 32) return "Pasta_3G";
+      if (num <= 37) return "Pasta_4GS";
+      if (num <= 42) return "Pasta_5A";
+      if (num <= 49) return "Pasta_6AS";
+      
+      return "Pasta_1F";
     }
 
     function getCordaDaNota(nota) {
@@ -798,27 +664,55 @@
       return "G";                 // 33C-49E
     }
 
+    // CORREÇÃO: Função para converter nota para formato de arquivo
+    function formatarNotaParaArquivo(nota) {
+      if (!nota || nota === "x") return "1E"; // Fallback
+      
+      // Converter sustenidos: "3FS" -> "3F#"
+      return nota.replace("S", "#");
+    }
+
     function trocarFrameTronco(nota) {
+      if (nota === "x") {
+        // Se for pausa, manter frame atual ou usar frame neutro
+        return;
+      }
+      
       let pasta = getPastaDaNota(nota);
       const tronco = document.getElementById("troncoLayer");
       
-      // CORREÇÃO: Usar pasta diretamente do mapa (já com codificação para #)
-      const nomeArquivo = nota.replace("S","#");
-      tronco.src = `animacao/tronco_baixo/${pasta}/${nomeArquivo}.png`;
+      // CORREÇÃO: Usar função para formatar corretamente
+      const nomeArquivo = formatarNotaParaArquivo(nota);
+      const caminho = `animacao/tronco_baixo/${pasta}/${nomeArquivo}.png`;
       
-      console.log("Trocando frame tronco:", {
-        nota: nota,
-        pasta: pasta,
-        arquivo: nomeArquivo + '.png',
-        caminho: `animacao/tronco_baixo/${pasta}/${nomeArquivo}.png`
-      });
+      // Verificar se a imagem existe antes de tentar carregar
+      const img = new Image();
+      img.onload = function() {
+        tronco.src = caminho;
+      };
+      img.onerror = function() {
+        console.warn("Imagem não encontrada:", caminho);
+        // Tentar fallback para Pasta_1F
+        const fallbackCaminho = `animacao/tronco_baixo/Pasta_1F/${nomeArquivo}.png`;
+        const fallbackImg = new Image();
+        fallbackImg.onload = function() {
+          tronco.src = fallbackCaminho;
+        };
+        fallbackImg.onerror = function() {
+          console.error("Fallback também falhou:", fallbackCaminho);
+        };
+        fallbackImg.src = fallbackCaminho;
+      };
+      img.src = caminho;
     }
 
     function tocarNotaAudioBaixo(nota, volume) {
       pararAudioBaixo();
       
-      // CORRETO: Converter nota para formato de arquivo correto (ex: "10C#" → "10CS")
-      const notaArquivo = nota.replace(/#/g, "S");
+      if (nota === "x") return; // Não tocar áudio para pausa
+      
+      // CORREÇÃO: Converter nota para formato de arquivo correto
+      const notaArquivo = formatarNotaParaArquivo(nota);
       const a = new Audio("assets/BaixoMelodia/" + notaArquivo + ".mp3");
       a.volume = volume;
       
@@ -887,6 +781,44 @@
     }
 
     /* ============================
+       ANIMAÇÃO – MOVIMENTO COORDENADO DO CORPO
+       ============================ */
+    function startCoordinatedMovement() {
+      if (lateralMovementTimer) clearInterval(lateralMovementTimer);
+      
+      const layersToMove = [
+        'antebracoLayer', 'troncoLayer', 'bracoLayer', 
+        'cabecaLayer', 'cabecaTrasLayer'
+      ];
+      
+      let direction = 1;
+      let position = 0;
+      const maxOffset = 8; // Máximo deslocamento em pixels
+      const speed = 80; // Velocidade do movimento (ms)
+      
+      lateralMovementTimer = setInterval(() => {
+        position += direction;
+        
+        if (Math.abs(position) >= maxOffset) {
+          direction *= -1;
+        }
+        
+        // Aplicar movimento lateral coordenado
+        layersToMove.forEach(layerId => {
+          const layer = document.getElementById(layerId);
+          if (layer) {
+            // Preservar transformações existentes (rotação) e adicionar translação
+            const currentTransform = layer.style.transform;
+            const rotationMatch = currentTransform.match(/rotate\(([^)]+)\)/);
+            const rotation = rotationMatch ? `rotate(${rotationMatch[1]})` : '';
+            
+            layer.style.transform = `${rotation} translateX(${position}px)`;
+          }
+        });
+      }, speed);
+    }
+
+    /* ============================
        ANIMAÇÃO – TRONCO BALANÇANDO (no BPM)
        ============================ */
     function startTroncoBpm(bpm) {
@@ -894,8 +826,12 @@
       const tronco = document.getElementById("troncoLayer");
       let direction = 1;
       troncoTimer = setInterval(() => {
-        const angle = direction * 3; // 3 graus pra cada lado
-        tronco.style.transform = `rotate(${angle}deg)`;
+        const currentTransform = tronco.style.transform;
+        const translateMatch = currentTransform.match(/translateX\(([^)]+)\)/);
+        const translate = translateMatch ? `translateX(${translateMatch[1]})` : '';
+        
+        const angle = direction * 2; // 2 graus pra cada lado
+        tronco.style.transform = `${translate} rotate(${angle}deg)`;
         direction *= -1;
       }, (60000 / bpm) / 2); // colcheia
     }
@@ -909,44 +845,20 @@
       const cabecaTras = document.getElementById("cabecaTrasLayer");
       let dir = 1;
       tiltTimer = setInterval(() => {
-        const angle = dir * 5;
-        cabeca.style.transform = `rotate(${angle}deg)`;
-        if (cabecaTras) {
-          cabecaTras.style.transform = `rotate(${angle}deg)`;
-        }
-        dir *= -1;
-      }, 60000 / bpm); // um "vai e volta" por tempo (semínima)
-    }
-
-    /* ============================
-       ANIMAÇÃO – MOVIMENTO LATERAL
-       ============================ */
-    function startLateralMovement() {
-      if (lateralMovementTimer) clearInterval(lateralMovementTimer);
-      
-      const layersToMove = [
-        'antebracoLayer', 'troncoLayer', 'bracoLayer', 
-        'cabecaLayer', 'cabecaTrasLayer'
-      ];
-      
-      let direction = 1;
-      let position = 0;
-      const maxOffset = 10; // Máximo deslocamento em pixels
-      
-      lateralMovementTimer = setInterval(() => {
-        position += direction;
+        const angle = dir * 3;
         
-        if (Math.abs(position) >= maxOffset) {
-          direction *= -1;
-        }
-        
-        layersToMove.forEach(layerId => {
-          const layer = document.getElementById(layerId);
+        // Aplicar rotação preservando translação
+        [cabeca, cabecaTras].forEach(layer => {
           if (layer) {
-            layer.style.transform = `translateX(${position}px)`;
+            const currentTransform = layer.style.transform;
+            const translateMatch = currentTransform.match(/translateX\(([^)]+)\)/);
+            const translate = translateMatch ? `translateX(${translateMatch[1]})` : '';
+            layer.style.transform = `${translate} rotate(${angle}deg)`;
           }
         });
-      }, 100); // Velocidade do movimento lateral
+        
+        dir *= -1;
+      }, 60000 / bpm); // um "vai e volta" por tempo (semínima)
     }
 
     /* ============================
@@ -954,7 +866,13 @@
        ============================ */
     function trocarAntebraco(corda) {
       const ante = document.getElementById("antebracoLayer");
+      // Preservar transformação existente
+      const currentTransform = ante.style.transform;
+      const translateMatch = currentTransform.match(/translateX\(([^)]+)\)/);
+      const translate = translateMatch ? `translateX(${translateMatch[1]})` : '';
+      
       ante.src = `animacao/antebraco/antebraco${corda}.png`;
+      ante.style.transform = translate; // Manter apenas a translação
     }
 
     /* ============================
@@ -976,11 +894,23 @@
       const id = setInterval(() => {
         if (i >= frames.length) {
           clearInterval(id);
-          // Voltar para frame inicial
+          // Voltar para frame inicial preservando transformação
+          const currentTransform = braco.style.transform;
+          const translateMatch = currentTransform.match(/translateX\(([^)]+)\)/);
+          const translate = translateMatch ? `translateX(${translateMatch[1]})` : '';
+          
           braco.src = `animacao/braco_direito/Corda_${corda}1.png`;
+          braco.style.transform = translate;
           return;
         }
+        
+        // Preservar transformação existente
+        const currentTransform = braco.style.transform;
+        const translateMatch = currentTransform.match(/translateX\(([^)]+)\)/);
+        const translate = translateMatch ? `translateX(${translateMatch[1]})` : '';
+        
         braco.src = frames[i];
+        braco.style.transform = translate;
         i++;
       }, passo);
 
@@ -1325,6 +1255,7 @@
           div.classList.add("x-option");
           label = "X";
         } else {
+          // CORREÇÃO: Exibir sustenidos corretamente na interface
           label = opt.replace(/S/g,"#");
         }
 
@@ -1421,6 +1352,7 @@
         div.className = "cell";
         div.dataset.idx = idx;
 
+        // CORREÇÃO: Exibir sustenidos corretamente na interface
         if (nota === "x") {
           div.textContent = "X";
         } else {
@@ -1502,7 +1434,7 @@
       resetAnimTimers();
       startTroncoBpm(bpm);
       startHeadTiltBpm(bpm);
-      startLateralMovement();
+      startCoordinatedMovement(); // CORREÇÃO: Usar movimento coordenado
       
       // Iniciar playback
       iniciarPlayback();
@@ -1736,7 +1668,7 @@
       startHeadLoop();
       startTroncoBpm(bpmAtual);
       startHeadTiltBpm(bpmAtual);
-      startLateralMovement();
+      startCoordinatedMovement(); // CORREÇÃO: Usar movimento coordenado
 
       iniciarInterface();
     };
