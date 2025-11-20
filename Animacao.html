@@ -1,886 +1,1347 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<title>Jam On – Baixista Animada (Opção A)</title>
-<style>
-  body {
-    margin: 0;
-    padding: 0;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: #0b0b0f;
-    color: #f3f3f3;
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-  }
-
-  header {
-    padding: 12px 20px;
-    background: #111827;
-    border-bottom: 1px solid #1f2937;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  header h1 {
-    margin: 0;
-    font-size: 1.1rem;
-    color: #a5f3fc;
-  }
-
-  .pill {
-    font-size: 0.7rem;
-    padding: 4px 10px;
-    border-radius: 999px;
-    background: #1f2937;
-    color: #9ca3af;
-  }
-
-  main {
-    flex: 1;
-    display: grid;
-    grid-template-columns: minmax(280px, 520px) minmax(320px, 1fr);
-    gap: 16px;
-    padding: 16px;
-  }
-
-  /* === ÁREA DA ANIMAÇÃO === */
-  .animacao-container {
-    background: #020617;
-    border-radius: 16px;
-    border: 1px solid #1f2937;
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .animacao-inner {
-    position: relative;
-    width: 420px;
-    height: 480px;
-    transform-origin: 50% 80%;
-  }
-
-  .anim-layer {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 420px;
-    height: 480px;
-    object-fit: contain;
-    pointer-events: none;
-  }
-
-  #pernasLayer { z-index: 1; }
-  #troncoLayer { z-index: 2; }
-  #cabecaLayer { z-index: 3; }
-  #antebracoLayer { z-index: 4; }
-  #bracoDireitoLayer { z-index: 5; }
-
-  .anim-info {
-    position: absolute;
-    left: 8px;
-    bottom: 8px;
-    font-size: 0.75rem;
-    padding: 4px 8px;
-    border-radius: 999px;
-    background: rgba(15,23,42,0.9);
-    color: #a5b4fc;
-  }
-
-  /* Contagem regressiva */
-  #countdownOverlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(3,7,18,0.88);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    z-index: 50;
-  }
-
-  #countdownNumber {
-    font-size: 4rem;
-    font-weight: 800;
-    color: #fbbf24;
-    text-shadow: 0 0 16px rgba(250,204,21,0.6);
-  }
-
-  #countdownLabel {
-    margin-top: 8px;
-    font-size: 0.9rem;
-    color: #e5e7eb;
-  }
-
-  /* === ÁREA DE CONTROLES === */
-  .painel {
-    background: #020617;
-    border-radius: 16px;
-    border: 1px solid #1f2937;
-    padding: 14px 16px 18px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .painel h2 {
-    margin: 0;
-    font-size: 1rem;
-    color: #a5f3fc;
-  }
-
-  .sub {
-    font-size: 0.8rem;
-    color: #9ca3af;
-    margin-bottom: 4px;
-  }
-
-  .linha {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 6px;
-    flex-wrap: wrap;
-  }
-
-  .linha label {
-    font-size: 0.8rem;
-    width: 80px;
-    color: #e5e7eb;
-  }
-
-  input[type="number"], input[type="text"], select {
-    background: #020617;
-    border: 1px solid #374151;
-    border-radius: 8px;
-    padding: 6px 8px;
-    color: #e5e7eb;
-    font-size: 0.8rem;
-  }
-
-  input[type="number"] {
-    width: 70px;
-  }
-
-  input[type="text"] {
-    flex: 1;
-  }
-
-  input[type="range"] {
-    flex: 1;
-  }
-
-  .valor-range {
-    font-size: 0.8rem;
-    width: 36px;
-    text-align: right;
-    color: #9ca3af;
-  }
-
-  .botoes-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 6px;
-  }
-
-  button {
-    border: none;
-    border-radius: 999px;
-    padding: 7px 14px;
-    font-size: 0.8rem;
-    cursor: pointer;
-    background: #1f2937;
-    color: #e5e7eb;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  button.primary {
-    background: #22c55e;
-    color: #022c22;
-    font-weight: 600;
-  }
-
-  button.danger {
-    background: #ef4444;
-    color: #fee2e2;
-  }
-
-  button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .tag {
-    font-size: 0.75rem;
-    padding: 2px 6px;
-    border-radius: 999px;
-    background: #111827;
-    color: #9ca3af;
-  }
-
-  .status {
-    font-size: 0.8rem;
-    padding: 4px 8px;
-    border-radius: 999px;
-    background: #111827;
-    color: #e5e7eb;
-    align-self: flex-start;
-  }
-
-  .separador {
-    border-top: 1px solid #1f2937;
-    margin: 4px 0 8px;
-  }
-
-  .explicacao {
-    font-size: 0.7rem;
-    color: #6b7280;
-  }
-</style>
+  <script src="jamon-engine.js"></script>
+ 
+  <meta charset="UTF-8" />
+  <title>Jam On – Baixista Animada com Playback Aleatório</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: #101010;
+      color: #eee;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      overflow: hidden;
+    }
+    #orientationOverlay {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      color: #fff;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      z-index: 99999;
+      padding: 20px;
+      font-size: 1.1em;
+    }
+    .appRoot {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    /* ============================
+       TOPO: ANIMAÇÃO BAIXISTA
+       ============================ */
+    #animacaoArea {
+      width: 100%;
+      height: 60%;
+      background: #151515;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+      z-index: 10;
+    }
+    #animacaoContainer {
+      position: relative;
+      width: 420px;
+      height: 360px;
+      image-rendering: pixelated;
+      transform: scale(1.2);
+    }
+    .layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      image-rendering: pixelated;
+      transform-origin: center center;
+      transition: transform 0.3s ease;
+    }
+    #pernasLayer {
+      z-index: 1;
+      left: 80px;
+      top: 180px;
+    }
+    #troncoLayer {
+      z-index: 3;
+      left: 60px;
+      top: 40px;
+      transform-origin: 120px 140px;
+    }
+    #bracoLayer {
+      z-index: 4;
+      left: 120px;
+      top: 90px;
+      transform-origin: 18px 20px;
+    }
+    #antebracoLayer {
+      z-index: 2;
+      left: 140px;
+      top: 120px;
+      transform-origin: 15px 10px;
+    }
+    #cabecaLayer {
+      z-index: 5;
+      left: 90px;
+      top: -10px;
+      transform-origin: bottom center;
+    }
+    #cabecaTrasLayer {
+      z-index: 4;
+      left: 90px;
+      top: -10px;
+      transform-origin: bottom center;
+    }
+    /* =============================
+       BAIXO: CONTROLES
+       ============================ */
+    #painel {
+      width: 100%;
+      height: 40%;
+      overflow-y: auto;
+      padding: 16px;
+      background: #181818;
+      z-index: 5;
+    }
+    header {
+      margin-bottom: 10px;
+    }
+    header h1 {
+      font-size: 1.2em;
+      margin-bottom: 4px;
+      color: #5eead4;
+    }
+    .pill {
+      display: inline-block;
+      font-size: 0.75em;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #252525;
+      color: #aaa;
+    }
+    .card {
+      background: #202020;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+      border: 1px solid #2b2b2b;
+    }
+    .card h3 {
+      margin-bottom: 6px;
+      font-size: 1em;
+      color: #fafafa;
+    }
+    .bpm-display {
+      font-size: 1.4em;
+      font-weight: bold;
+      margin-bottom: 4px;
+      color: #5eead4;
+    }
+    #bpmSlider {
+      width: 100%;
+    }
+    button {
+      border: none;
+      padding: 6px 10px;
+      border-radius: 6px;
+      background: #5eead4;
+      color: #111;
+      font-weight: 600;
+      cursor: pointer;
+      margin: 4px 4px 4px 0;
+      font-size: 0.85em;
+    }
+    button.secondary {
+      background: #333;
+      color: #eee;
+    }
+    button:hover {
+      opacity: 0.9;
+    }
+    .progressContainer {
+      margin-top: 6px;
+      width: 100%;
+      height: 6px;
+      border-radius: 999px;
+      background: #333;
+      overflow: hidden;
+    }
+    .progressBar {
+      width: 0%;
+      height: 100%;
+      background: #5eead4;
+      transition: width 0.15s linear;
+    }
+    .sequencerWrapper {
+      max-width: 100%;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .sequencerInner {
+      display: inline-block;
+    }
+    .composicaoGrid {
+      display: flex;
+      gap: 2px;
+      overflow-x: visible;
+      margin: 4px 0;
+      padding-bottom: 2px;
+    }
+    .cell {
+      width: 30px;
+      height: 30px;
+      background: #333;
+      border: 1px solid #555;
+      border-radius: 4px;
+      font-size: 0.7em;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      color: #ccc;
+    }
+    .cell.active {
+      background: #5eead4;
+      color: #111;
+    }
+    .volumeSlider {
+      width: 100%;
+      margin-top: 6px;
+    }
+    .labelPequena {
+      font-size: 0.8em;
+      color: #aaa;
+      margin-top: 4px;
+    }
+    .drumRow {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 4px;
+    }
+    .drumLabel {
+      width: 70px;
+      font-size: 0.75em;
+      padding: 4px 6px;
+      background: #2a2a2a;
+      border-radius: 4px;
+      margin-right: 4px;
+      color: #ddd;
+      text-align: left;
+      flex-shrink: 0;
+    }
+    .drumRow .composicaoGrid {
+      flex: 0 0 auto;
+    }
+    @media (orientation: portrait) {
+      #orientationOverlay { display: flex; }
+      .appRoot { display: none; }
+    }
+    @media (orientation: landscape) {
+      #orientationOverlay { display: none; }
+      .appRoot { display: flex; }
+    }
+    .selection-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: stretch;
+      justify-content: flex-end;
+      z-index: 9999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .selection-overlay.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .selection-panel {
+      width: 280px;
+      max-width: 90%;
+      background: #1f1f1f;
+      border-left: 2px solid #5eead4;
+      box-shadow: -6px 0 25px rgba(0, 0, 0, 0.7);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.25s ease-out;
+    }
+    .selection-overlay.visible .selection-panel {
+      transform: translateX(0);
+    }
+    .selection-title {
+      font-size: 0.95em;
+      font-weight: bold;
+      color: #5eead4;
+      margin-bottom: 10px;
+      text-align: left;
+    }
+    .selection-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      overflow-y: auto;
+      max-height: 70vh;
+    }
+    .selection-option {
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid #444;
+      background: #292929;
+      font-size: 0.8em;
+      cursor: pointer;
+      min-width: 48px;
+      text-align: center;
+      color: #ddd;
+      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+    .selection-option:hover {
+      background: #333;
+      border-color: #5eead4;
+    }
+    .selection-option.x-option {
+      background: #333;
+      color: #888;
+      font-style: italic;
+    }
+    .selection-option.active {
+      background: #5eead4;
+      color: #111;
+      border-color: #5eead4;
+      font-weight: bold;
+    }
+    /* ============================
+       CONTAGEM REGRESSIVA
+       ============================ */
+    #countdownOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      font-size: 8em;
+      color: #5eead4;
+      font-weight: bold;
+      text-shadow: 0 0 20px rgba(94, 234, 212, 0.7);
+    }
+    #countdownOverlay.visible {
+      display: flex;
+    }
+  </style>
 </head>
 <body>
-<header>
-  <h1>Jam On – Baixista Animada (Opção A)</h1>
-  <div class="pill">Playback aleatório + composição manual • Baixo & Bateria</div>
-</header>
-
-<main>
-  <!-- COLUNA ESQUERDA – ANIMAÇÃO -->
-  <section class="animacao-container">
-    <div id="countdownOverlay">
-      <div id="countdownNumber">3</div>
-      <div id="countdownLabel">Preparando notas & imagens…</div>
+  <div id="orientationOverlay">
+    <div>
+      <h2>📱 Gire o aparelho</h2>
+      <p>Use o Jam On em modo paisagem (horizontal) para ver a baixista e os controles.</p>
     </div>
-
-    <div class="animacao-inner" id="animacaoInner">
-      <img id="pernasLayer" class="anim-layer" src="animacao/pernas/Pernas.png" alt="pernas">
-      <img id="troncoLayer" class="anim-layer" src="animacao/tronco_baixo/Pasta_1F/1E.png" alt="tronco e baixo">
-      <img id="cabecaLayer" class="anim-layer" src="animacao/cabeca/cabeca0001.png" alt="cabeça">
-      <img id="antebracoLayer" class="anim-layer" src="animacao/antebraco/antebracoE.png" alt="antebraço">
-      <img id="bracoDireitoLayer" class="anim-layer" src="animacao/braco_direito/Corda_E1.png" alt="braço direito">
-      <div class="anim-info" id="animInfo">Aguardando…</div>
+  </div>
+  <div id="countdownOverlay"></div>
+  <div class="appRoot">
+    <div id="animacaoArea">
+      <div id="animacaoContainer">
+        <img id="pernasLayer" class="layer" src="animacao/pernas/pernas.png" alt="pernas">
+        <img id="antebracoLayer" class="layer" src="animacao/antebraco/antebracoE.png" alt="antebraco">
+        <img id="troncoLayer" class="layer" src="animacao/tronco_baixo/Pasta_1F/1E.png" alt="tronco-baixo">
+        <img id="bracoLayer" class="layer" src="animacao/braco_direito/Corda_E1.png" alt="braco-direito">
+        <img id="cabecaTrasLayer" class="layer" src="animacao/cabeca_tras/cabeca-parte-de-tras.png" alt="cabeca-tras">
+        <img id="cabecaLayer" class="layer" src="animacao/cabeca/cabeca0001.png" alt="cabeca">
+      </div>
     </div>
-  </section>
-
-  <!-- COLUNA DIREITA – CONTROLES -->
-  <section class="painel">
-    <h2>Controle de Playback & Composição</h2>
-    <div class="sub">A baixista acompanha o playback aleatório e a sequência manual.</div>
-
-    <div class="linha">
-      <label for="bpmInput">BPM</label>
-      <input type="number" id="bpmInput" min="40" max="220" value="100">
+    <div id="painel">
+      <header>
+        <h1>Jam On – Baixista Animada</h1>
+        <div class="pill">Baixo + Bateria – 1 célula = 1/16</div>
+      </header>
+      <div class="card">
+        <h3>🎚 BPM</h3>
+        <div class="bpm-display" id="bpmDisplay">100 BPM</div>
+        <input id="bpmSlider" type="range" min="60" max="180" value="100">
+      </div>
+      <div class="card">
+        <h3>🎵 Playback</h3>
+        <button id="playAleatorioBtn">Playback aleatório</button>
+        <button id="playManualBtn" class="secondary">Tocar composição manual</button>
+        <button id="playExportadoBtn" class="secondary">Carregar playback (.json)</button>
+        <button id="pauseBtn">⏸ Pausar</button>
+        <button id="playBtn">▶ Play</button>
+        <div class="progressContainer">
+          <div class="progressBar" id="progressBar"></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>🎸 Baixo – composição manual</h3>
+        <div class="labelPequena">
+          Clique em cada célula na linha "Baixo" para escolher a nota (X, 1E, 2F, 3F#...).
+        </div>
+        <button id="addBaixoCol">+ Coluna</button>
+        <button id="clearBaixo">Limpar baixo</button>
+        <div class="labelPequena">Volume do baixo</div>
+        <input type="range" id="baixoVolume" class="volumeSlider" min="0" max="1" step="0.01" value="0.8">
+      </div>
+      <div class="card">
+        <h3>🥁 Bateria – composição manual</h3>
+        <div class="labelPequena">
+          Linha "Baixo" + linhas da bateria. Cada célula = 1/16.
+        </div>
+        <div class="sequencerWrapper">
+          <div class="sequencerInner">
+            <div class="drumRow">
+              <div class="drumLabel">Baixo</div>
+              <div id="baixoGrid" class="composicaoGrid"></div>
+            </div>
+            <div id="drumGrid"></div>
+          </div>
+        </div>
+        <button id="addCol">+ Coluna</button>
+        <button id="duplicateSeq">Duplicar 16 células</button>
+        <button id="clearAll">Limpar tudo</button>
+        <div class="labelPequena">Volume global da bateria</div>
+        <input type="range" id="drumVolume" class="volumeSlider" min="0" max="1" step="0.01" value="0.8">
+      </div>
     </div>
-
-    <div class="linha">
-      <label>Volume Baixo</label>
-      <input type="range" id="volBass" min="0" max="1" step="0.01" value="0.55">
-      <span class="valor-range" id="volBassLabel">55%</span>
+  </div>
+  <div id="selectionOverlay" class="selection-overlay">
+    <div class="selection-panel" id="selectionPanel">
+      <div id="selectionTitle" class="selection-title">Selecione</div>
+      <div id="selectionOptions" class="selection-options"></div>
     </div>
+  </div>
+  <script src="jamon-engine.js"></script>
+  <script>
+    /* ============================
+       ESTADO GLOBAL
+       ============================ */
+    let headFrames = [];
+    let headFrameIndex = 0;
+    let headTimer = null;
+    let tiltTimer = null;
+    let troncoTimer = null;
+    let lateralMovementTimer = null;
+    let baixoSeq = [];
+    const drumLines = [
+      { id: "bumbo", label: "Bumbo", file: "bumbo.mp3" },
+      { id: "caixa", label: "Caixa", file: "caixa.mp3" },
+      { id: "chimbal", label: "Chimbal", file: "chimbal.mp3" },
+      { id: "chimbalaberto", label: "Chimbal Aberto", file: "chimbal-aberto.mp3" },
+      { id: "conducao", label: "Condução", file: "conducao.mp3" },
+      { id: "ataque", label: "Ataque", file: "ataque.mp3" },
+      { id: "tom1", label: "Tom 1", file: "tom-1.mp3" },
+      { id: "tom2", label: "Tom 2", file: "tom-2.mp3" },
+      { id: "surdo", label: "Surdo", file: "surdo.mp3" }
+    ];
+    let bateriaSeq = {};
+    let bpmAtual = 100;
+    let baixoVolumeGlobal = 0.8;
+    let bateriaVolumeGlobal = 0.8;
+    let animTimers = [];
+    let isPlaying = false;
+    let playbackInterval = null;
+    let atualPasso = 0;
+    let audioBaixoAtual = null;
+    let audioBaixoTimer = null;
+    let countdownTimer = null;
+    let ultimaNotaTocada = null; // <<< NOVO: guarda a última nota não "x"
 
-    <div class="linha">
-      <label>Volume Bateria</label>
-      <input type="range" id="volDrums" min="0" max="1" step="0.01" value="0.65">
-      <span class="valor-range" id="volDrumsLabel">65%</span>
-    </div>
+        // Caminhos de samples do baixo (inclui ghost-note "x")
+    const BASS_SAMPLES = {
+      x: "assets/bass-muted.mp3",        // ghost-note
+      normalPath: "assets/BaixoMelodia"  // notas normais (1E, 2F, 3FS...)
+    };
 
-    <div class="linha">
-      <span class="tag">Composição Manual – Baixo</span>
-    </div>
-    <div class="linha">
-      <label for="manualBassSeq">Notas</label>
-      <input type="text" id="manualBassSeq"
-             placeholder="Ex.: 1 4 6 8 x 9 11 x 13… (1–43 ou x)">
-    </div>
-    <div class="explicacao">
-      • Use números de 1 a 43 para as notas (1E, 2F, 3FS, …) e
-      <strong>x</strong> como ghost note / pausa.  
-      • A bateria manual, por enquanto, usa um padrão simples em 4/4.
-    </div>
+    // Para saber qual corda foi usada por último (útil para animar ghost-notes)
+    let ultimaCordaUsada = "E";
 
-    <div class="separador"></div>
+    
 
-    <div class="linha">
-      <span class="tag">Playback Aleatório – Baixo & Bateria</span>
-    </div>
-    <div class="explicacao">
-      O playback usa os grooves do Jam On (ALL_GROOVES) apenas para
-      baixo e bateria. A baixista anima tudo em tempo real.
-    </div>
+    const notasValidas = [
+      "1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS",
+      "18A","19AS","20B","21C","22CS","23D","24DS","25E","26F","27FS","28G","29GS","30A","31AS","32B",
+      "33C","34CS","35D","36DS","37E","38F","39FS","40G","41GS","42A","43AS","44B","45C","46CS","47D",
+      "48DS","49E"
+    ];
 
-    <div class="botoes-row">
-      <button id="btnPlayRandom" class="primary">▶ Play Playback Aleatório</button>
-      <button id="btnPlayManual" class="primary">🎧 Play Composição Manual</button>
-      <button id="btnPause">⏸ Pausar</button>
-      <button id="btnStop" class="danger">⏹ Parar</button>
-    </div>
+    // Mapeamento de pastas para notas (listas completas)
+    const pastaNotas = {
+      "Pasta_1F": [
+        "1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS",
+        "16G","17GS","18A","19AS","20B"
+      ],
+      "Pasta_2FS": [
+        "3FS","4G","5GS","6A","8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C"
+      ],
+      "Pasta_3G": [
+        "4G","5GS","6A","7AS","9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS"
+      ],
+      "Pasta_4GS": [
+        "5GS","6A","7AS","8B","10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D"
+      ],
+      "Pasta_5A": [
+        "6A","7AS","8B","9C","11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS"
+      ],
+      "Pasta_6AS": [
+        "7AS","8B","9C","10CS","12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E"
+      ],
+      "Pasta_7B": [
+        "8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F"
+      ],
+      "Pasta_8C": [
+        "9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS"
+      ],
+      "Pasta_9CS": [
+        "10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G"
+      ],
+      "Pasta_10D": [
+        "11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS"
+      ],
+      "Pasta_11DS": [
+        "12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A"
+      ],
+      "Pasta_12E": [
+        "13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31B"
+      ],
+      "Pasta_13F": [
+        "14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B"
+      ],
+      "Pasta_14FS": [
+        "15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C"
+      ],
+      "Pasta_15G": [
+        "16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS"
+      ],
+      "Pasta_16GS": [
+        "17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D"
+      ],
+      "Pasta_17A": [
+        "18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS"
+      ],
+      "Pasta_18AS": [
+        "19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E"
+      ],
+      "Pasta_19B": [
+        "20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F"
+      ],
+      "Pasta_20C": [
+        "21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS","36DS","37E","38F","39FS"
+      ],
+      "Pasta_21CS": [
+        "22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D","37E","38F","39FS","40G"
+      ],
+      "Pasta_22D": [
+        "23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS","38F","39FS","40G","41GS"
+      ],
+      "Pasta_23DS": [
+        "24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E","39FS","40G","41GS","42A"
+      ],
+      "Pasta_24E": [
+        "25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F","40G","41GS","42A","43AS"
+      ]
+    };
 
-    <div class="linha">
-      <span class="tag">Mutes</span>
-    </div>
-    <div class="botoes-row">
-      <button id="muteBass" data-mute="off">🎸 Baixo ON</button>
-      <button id="muteDrums" data-mute="off">🥁 Bateria ON</button>
-    </div>
+    // Mapeamento de pastas por "nota de início"
+    const pastasOrdenadas = [
+      { start: 1,  name: "Pasta_1F" },
+      { start: 3,  name: "Pasta_2FS" },
+      { start: 4,  name: "Pasta_3G" },
+      { start: 5,  name: "Pasta_4GS" },
+      { start: 6,  name: "Pasta_5A" },
+      { start: 7,  name: "Pasta_6AS" },
+      { start: 8,  name: "Pasta_7B" },
+      { start: 9,  name: "Pasta_8C" },
+      { start: 10, name: "Pasta_9CS" },
+      { start: 11, name: "Pasta_10D" },
+      { start: 12, name: "Pasta_11DS" },
+      { start: 13, name: "Pasta_12E" },
+      { start: 14, name: "Pasta_13F" },
+      { start: 15, name: "Pasta_14FS" },
+      { start: 16, name: "Pasta_15G" },
+      { start: 17, name: "Pasta_16GS" },
+      { start: 18, name: "Pasta_17A" },
+      { start: 19, name: "Pasta_18AS" },
+      { start: 20, name: "Pasta_19B" },
+      { start: 21, name: "Pasta_20C" },
+      { start: 22, name: "Pasta_21CS" },
+      { start: 23, name: "Pasta_22D" },
+      { start: 24, name: "Pasta_23DS" },
+      { start: 25, name: "Pasta_24E" }
+    ];
 
-    <div class="linha">
-      <div class="status" id="statusLabel">Parado</div>
-    </div>
+    /* ============================
+       CONTAGEM REGRESSIVA
+       ============================ */
+    function iniciarContagemRegressiva(callback) {
+      const countdownOverlay = document.getElementById("countdownOverlay");
+      let count = 4; // 4, 3, 2, 1, VAI!
 
-    <div class="explicacao">
-      • Antes de cada play há uma contagem regressiva (3-2-1) para
-      pré-calcular as imagens mais próximas e carregar os áudios.  
-      • As notas de baixo não se sobrepõem: quando uma começa, a
-      anterior é parada (efeito de “mute”).  
-      • O sample <strong>x</strong> usa o arquivo
-      <code>assets/bass-muted.mp3</code> (ghost note).
-    </div>
-  </section>
-</main>
+      countdownOverlay.classList.add("visible");
 
-<script>
-/* ============================================================
- *  CONFIGURAÇÃO MUSICAL BÁSICA
- * ============================================================ */
+      const updateCountdown = () => {
+        if (count > 1) {
+          countdownOverlay.textContent = (count - 1).toString();
+          count--;
+        } else if (count === 1) {
+          countdownOverlay.textContent = "VAI!";
+          count--;
+        } else {
+          clearInterval(countdownTimer);
+          countdownOverlay.classList.remove("visible");
+          if (callback) callback();
+        }
+      };
 
-// Notas usadas no Jam On principal
-const PITCHES = ['E','F','FS','G','GS','A','AS','B','C','CS','D','DS'];
-
-// Grooves (copiado/simplificado do Index – só o que interessa aqui)
-const ALL_GROOVES = [
-  { name: "Rock", meter: "4/4",
-    drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch bu"],
-    bassRhythm:  ["bo - bo - bo - bo - bo - bo - bo - bo -"] },
-  { name: "Rock2", meter: "4/4",
-    drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch -"],
-    bassRhythm:  ["bo - bo - bo - bo - bo - bo - bo - bo -"] },
-  { name: "Rock3", meter: "4/4",
-    drumPattern: ["bch - ch bu cch bu ch - bch - ch - cch - ch -"],
-    bassRhythm:  ["bo - - bo - - bo - bo - bo - bo - bo -"] },
-  { name: "Blues", meter: "4/4",
-    drumPattern: ["bch - ch ch cch - ch ch bch - ch ch cch - ch ch"],
-    bassRhythm:  ["bo - bo - bo - bo - bo - bo - bo - bo -"] },
-  { name: "Forró", meter: "2/4",
-    drumPattern: ["bch - co - ch - ca -"],
-    bassRhythm:  ["bo - - - x - - -"] },
-  { name: "Jazz", meter: "4/4",
-    drumPattern: ["bch co co - co co co ca bch co co - bch co co cch"],
-    bassRhythm:  ["bo - bo - bo - bo - bo - bo - bo - bo - bo - bo - bo - bo -"] }
-];
-
-// Map de baterias (mesmo esquema do Index)
-const DRUMS = {
-  bu: 'bumbo',
-  ca: 'caixa',
-  ch: 'chimbal',
-  ba: 'bumbo-ataque',
-  cch: 'caixa-chimbal',
-  co: 'conducao',
-  bco: 'bumbo-conducao',
-  cco: 'caixa-conducao',
-  to1: 'tom-1',
-  to2: 'tom-2',
-  su: 'surdo',
-  bch: 'bumbo-chimbal'
-};
-
-// Bass samples (apenas para construir caminhos – aqui usamos
-// um sistema numérico para casar com seus 1E…43AS)
-const BASS_SAMPLES = {};
-
-// Ghost note
-BASS_SAMPLES['x'] = 'assets/bass-muted.mp3';
-
-// Mapeia nome da nota (E,FS,G, etc) para índice 1..12
-const NOTE_TO_INDEX = {
-  'E': 1, 'F': 2, 'FS': 3, 'G': 4, 'GS': 5,
-  'A': 6, 'AS': 7, 'B': 8, 'C': 9, 'CS': 10,
-  'D': 11, 'DS': 12
-};
-
-/**
- * Converte um "pitch" simples (E, FS, etc) para número 1..24
- * (1–12 = registro grave, 13–24 = +12 semitons)
- */
-function pitchToNumeric(pitch, octaveUp = false) {
-  const base = pitch.replace('8','').replace('S','S'); // só pra garantir
-  const idx = NOTE_TO_INDEX[base];
-  if (!idx) return 1;
-  return idx + (octaveUp ? 12 : 0);
-}
-
-/* ============================================================
- *  ÁUDIO – WEB AUDIO API
- * ============================================================ */
-
-let audioCtx = null;
-let masterGain, bassGain, drumGain;
-
-// cache de buffers
-const bufferCache = new Map();
-
-async function ensureAudioCtx() {
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    masterGain = audioCtx.createGain();
-    masterGain.gain.value = 1.0;
-    masterGain.connect(audioCtx.destination);
-
-    bassGain = audioCtx.createGain();
-    drumGain = audioCtx.createGain();
-    bassGain.connect(masterGain);
-    drumGain.connect(masterGain);
-
-    atualizarVolumes();
-  }
-}
-
-async function loadBuffer(url) {
-  if (bufferCache.has(url)) return bufferCache.get(url);
-  const res = await fetch(url);
-  const arr = await res.arrayBuffer();
-  const buf = await audioCtx.decodeAudioData(arr);
-  bufferCache.set(url, buf);
-  return buf;
-}
-
-// Nota de baixo atual (pra "mutar" quando entra outra)
-let currentBassSource = null;
-
-/**
- * Toca uma nota de baixo (numérica 1..43 ou 'x')
- * com duração em segundos.
- * Se outra nota estava tocando, ela é parada (mute).
- */
-async function playBassNote(nota, when, dur) {
-  await ensureAudioCtx();
-
-  // sempre para a nota anterior se existir
-  if (currentBassSource) {
-    try { currentBassSource.stop(when); } catch(e) {}
-    currentBassSource = null;
-  }
-
-  let url;
-  if (nota === 'x') {
-    url = BASS_SAMPLES['x']; // ghost note
-  } else {
-    // aqui assumo que seus arquivos são numerados: 1.mp3, 2.mp3, ...
-    // ajuste o caminho se for "1E.mp3" ou similar
-    url = `assets/bass-notas/${nota}.mp3`;
-  }
-
-  const buf = await loadBuffer(url);
-  const src = audioCtx.createBufferSource();
-  src.buffer = buf;
-  src.connect(bassGain);
-  src.start(when);
-  // garante que termina antes da próxima
-  src.stop(when + dur * 0.98);
-  currentBassSource = src;
-}
-
-/**
- * Toca um som de bateria (token DRUMS) em certo instante.
- */
-async function playDrumHit(token, when) {
-  await ensureAudioCtx();
-  const fileKey = DRUMS[token];
-  if (!fileKey) return;
-  const url = `assets/bateria/${fileKey}.mp3`;
-  const buf = await loadBuffer(url);
-  const src = audioCtx.createBufferSource();
-  src.buffer = buf;
-  src.connect(drumGain);
-  src.start(when);
-}
-
-/* ============================================================
- *  SEQUÊNCIAS DE NOTAS
- * ============================================================ */
-
-let baixoSeq = [];   // ex.: [1,4,6,'x',9,...]
-let bateriaSeq = []; // ex.: ['bch', '-', 'cch', ...]
-let passoDuracao = 0; // em segundos
-
-function gerarPlaybackAleatorio() {
-  const groove = ALL_GROOVES[Math.floor(Math.random() * ALL_GROOVES.length)];
-  const drumTokens = groove.drumPattern[0].trim().split(/\s+/);
-  const bassTokens = groove.bassRhythm[0].trim().split(/\s+/);
-
-  // garantir mesmo tamanho
-  const maxLen = Math.max(drumTokens.length, bassTokens.length);
-
-  baixoSeq = [];
-  bateriaSeq = [];
-
-  for (let i = 0; i < maxLen; i++) {
-    const bt = bassTokens[i] || '-';
-    const dt = drumTokens[i] || '-';
-
-    // baixo
-    if (bt === 'bo') {
-      // escolhe um pitch aleatório e converte para número 1..24
-      const pitch = PITCHES[Math.floor(Math.random() * PITCHES.length)];
-      const octaveUp = Math.random() < 0.35; // de vez em quando sobe 1 oitava
-      const num = pitchToNumeric(pitch, octaveUp);
-      baixoSeq.push(num);
-    } else if (bt === 'x') {
-      baixoSeq.push('x'); // ghost note
-    } else {
-      baixoSeq.push('x'); // silêncio
+      updateCountdown();
+      countdownTimer = setInterval(updateCountdown, 1000);
     }
 
-    // bateria
-    if (dt === '-' || !dt) {
-      bateriaSeq.push('-');
-    } else {
-      bateriaSeq.push(dt);
-    }
-  }
-}
+    // Determinar pasta pela nota sozinha (lógica antiga – fallback)
+    function determinarPastaPorNota(nota) {
+      if (nota === "x") return "Pasta_1F";
 
-/**
- * Lê a string do campo manualBassSeq e monta baixoSeq.
- * Bateria manual, por enquanto, é um padrão fixo de bumbo/caixa/chimbal.
- */
-function lerComposicaoManual() {
-  const inputStr = document.getElementById('manualBassSeq').value.trim();
-  baixoSeq = [];
-  if (!inputStr) return;
-  const tokens = inputStr.split(/\s+/);
-  for (const tk of tokens) {
-    if (tk.toLowerCase() === 'x') {
-      baixoSeq.push('x');
-    } else {
-      const n = parseInt(tk, 10);
-      if (!isNaN(n) && n >= 1 && n <= 43) {
-        baixoSeq.push(n);
+      const numMatch = nota.match(/^(\d+)/);
+      if (!numMatch) return "Pasta_1F";
+
+      const num = parseInt(numMatch[1], 10);
+      if (isNaN(num)) return "Pasta_1F";
+
+      if (num <= 20) return "Pasta_1F";
+
+      for (let i = pastasOrdenadas.length - 1; i >= 0; i--) {
+        if (num >= pastasOrdenadas[i].start) {
+          return pastasOrdenadas[i].name;
+        }
+      }
+      return "Pasta_1F";
+    }
+
+    // Escolher pasta considerando nota anterior -> nota atual
+    function escolherPastaTransicao(notaAnterior, notaAtual) {
+      if (!notaAnterior || notaAnterior === "x" || !notaAtual || notaAtual === "x") {
+        return null;
+      }
+
+      // Verifica quais pastas contêm as DUAS notas
+      const candidatos = [];
+      for (const [pasta, listaNotas] of Object.entries(pastaNotas)) {
+        if (listaNotas.includes(notaAnterior) && listaNotas.includes(notaAtual)) {
+          const m = pasta.match(/^Pasta_(\d+)/);
+          const startNum = m ? parseInt(m[1], 10) : 0;
+          candidatos.push({ pasta, startNum });
+        }
+      }
+
+      if (!candidatos.length) return null;
+
+      // Heurística simples: pega a pasta com menor startNum (posição mais "baixa")
+      candidatos.sort((a, b) => a.startNum - b.startNum);
+      return candidatos[0].pasta;
+    }
+
+    // Função para obter a corda da nota
+    function getCordaDaNota(nota) {
+      if (!nota || nota === "x") return "E";
+
+      const numMatch = nota.match(/^(\d+)/);
+      if (!numMatch) return "E";
+
+      const n = parseInt(numMatch[1], 10);
+      if (isNaN(n)) return "E";
+
+      if (n <= 20) return "E";  // Corda E (Mi)
+      if (n <= 26) return "A";  // Corda A (Lá)
+      if (n <= 32) return "D";  // Corda D (Ré)
+      return "G";               // Corda G (Sol)
+    }
+
+    // Trocar frame do tronco/baixo usando transição
+    function trocarFrameTronco(notaAtual, notaAnterior) {
+      const tronco = document.getElementById("troncoLayer");
+      if (notaAtual === "x") {
+        tronco.src = "animacao/tronco_baixo/Pasta_1F/1E.png";
+        return;
+      }
+
+      // 1) tenta pasta que contem notaAnterior e notaAtual
+      let pasta = escolherPastaTransicao(notaAnterior, notaAtual);
+
+      // 2) se não achar, usa lógica antiga por nota isolada
+      if (!pasta) {
+        pasta = determinarPastaPorNota(notaAtual);
+      }
+
+      const nomeArquivo = notaAtual; // com S
+      const caminho = `animacao/tronco_baixo/${pasta}/${nomeArquivo}.png`;
+
+      console.log(`Tentando carregar tronco: ${caminho} (anterior=${notaAnterior})`);
+
+      const img = new Image();
+      img.onload = () => {
+        tronco.src = caminho;
+      };
+      img.onerror = () => {
+        console.warn(`Imagem não encontrada: ${caminho}`);
+        const caminhoAlternativo = `animacao/tronco_baixo/${pasta}/${notaAtual.replace(/S/g, "#")}.png`;
+        console.log(`Tentando alternativa: ${caminhoAlternativo}`);
+
+        const img2 = new Image();
+        img2.onload = () => {
+          tronco.src = caminhoAlternativo;
+        };
+        img2.onerror = () => {
+          console.warn(`Alternativa também falhou: ${caminhoAlternativo}`);
+          tronco.src = "animacao/tronco_baixo/Pasta_1F/1E.png";
+        };
+        img2.src = caminhoAlternativo;
+      };
+      img.src = caminho;
+    }
+
+    // Tocar áudio do baixo
+        // Função para tocar áudio do baixo (inclui ghost-note "x")
+    function tocarNotaAudioBaixo(nota, volume) {
+      // Sempre para o som anterior antes de qualquer coisa
+      pararAudioBaixo();
+
+      let url;
+      if (nota === "x") {
+        // Ghost-note: usa sample abafado
+        url = BASS_SAMPLES.x;
+      } else {
+        const notaArquivo = nota; // mantém o "S" do nome do arquivo
+        url = `${BASS_SAMPLES.normalPath}/${notaArquivo}.mp3`;
+      }
+
+      console.log(`Tentando tocar áudio do baixo: ${url}`);
+
+      const a = new Audio(url);
+      a.volume = volume;
+
+      const stepTime = (60000 / bpmAtual) / 4;    // cada célula = 1/16
+      const fadeOutTime = stepTime * 0.8;
+
+      a.play().catch(e => console.warn("Erro ao tocar áudio do baixo:", nota, e));
+      audioBaixoAtual = a;
+
+      // Fade-out automático próximo ao fim do step
+      audioBaixoTimer = setTimeout(() => {
+        if (audioBaixoAtual === a) {
+          const fadeDuration = 50;
+          const initialVol = a.volume;
+          const step = initialVol / (fadeDuration / 10);
+          let vol = initialVol;
+          const fadeInt = setInterval(() => {
+            vol -= step;
+            if (vol <= 0) {
+              a.pause();
+              a.currentTime = 0;
+              clearInterval(fadeInt);
+              if (audioBaixoAtual === a) audioBaixoAtual = null;
+            } else {
+              a.volume = vol;
+            }
+          }, 10);
+        }
+      }, fadeOutTime);
+    }
+
+
+    /* ============================
+       ANIMAÇÕES
+       ============================ */
+    const HEAD_TOTAL_FRAMES = 100;
+
+    function generateHeadFramePaths() {
+      const paths = [];
+      for (let i = 1; i <= HEAD_TOTAL_FRAMES; i++) {
+        const num = String(i).padStart(4, "0");
+        paths.push(`animacao/cabeca/cabeca${num}.png`);
+      }
+      return paths;
+    }
+
+    async function preloadImages(srcArray) {
+      const promises = srcArray.map(src => {
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve();
+          img.onerror = () => {
+            console.warn(`Falha ao carregar: ${src}`);
+            resolve();
+          };
+          img.src = src;
+        });
+      });
+      await Promise.all(promises);
+    }
+
+    function startHeadLoop() {
+      if (headTimer) clearInterval(headTimer);
+      const cabeca = document.getElementById("cabecaLayer");
+      headTimer = setInterval(() => {
+        headFrameIndex = (headFrameIndex + 1) % headFrames.length;
+        cabeca.src = headFrames[headFrameIndex];
+      }, 50);
+    }
+
+    function startTroncoBpm(bpm) {
+      if (troncoTimer) clearInterval(troncoTimer);
+      const tronco = document.getElementById("troncoLayer");
+      let direction = 1;
+      troncoTimer = setInterval(() => {
+        const angle = direction * 3;
+        tronco.style.transform = `rotate(${angle}deg)`;
+        direction *= -1;
+      }, (60000 / bpm) / 2);
+    }
+
+    function startHeadTiltBpm(bpm) {
+      if (tiltTimer) clearInterval(tiltTimer);
+      const cabeca = document.getElementById("cabecaLayer");
+      const cabecaTras = document.getElementById("cabecaTrasLayer");
+      let dir = 1;
+      tiltTimer = setInterval(() => {
+        const angle = dir * 5;
+        cabeca.style.transform = `rotate(${angle}deg)`;
+        if (cabecaTras) {
+          cabecaTras.style.transform = `rotate(${angle}deg)`;
+        }
+        dir *= -1;
+      }, 60000 / bpm);
+    }
+
+    // Movimento lateral suave aplicado no container inteiro
+    function startLateralMovement() {
+      if (lateralMovementTimer) clearInterval(lateralMovementTimer);
+      const container = document.getElementById("animacaoContainer");
+      let direction = 1;
+      let position = 0;
+      const maxOffset = 10;
+      lateralMovementTimer = setInterval(() => {
+        position += direction;
+        if (Math.abs(position) >= maxOffset) {
+          direction *= -1;
+        }
+        container.style.transform = `scale(1.2) translateX(${position}px)`;
+      }, 100);
+    }
+
+    // Pré-carregar imagens do tronco/baixo e braços de acordo com as notas usadas
+    async function preScanAnimacao() {
+      // Notas únicas, ignorando "x"
+      const notasUnicas = new Set(
+        baixoSeq.filter(n => n && n !== "x")
+      );
+
+      const imagensParaCarregar = [];
+
+      // Tronco + baixo (mão esquerda)
+      notasUnicas.forEach(nota => {
+        const pasta = determinarPastaPorNota(nota);
+        const arquivoNormal = `animacao/tronco_baixo/${pasta}/${nota}.png`;
+        const arquivoComHash = `animacao/tronco_baixo/${pasta}/${nota.replace(/S/g, "#")}.png`;
+        imagensParaCarregar.push(arquivoNormal, arquivoComHash);
+      });
+
+      // Antebraço – 4 possibilidades
+      ["E", "A", "D", "G"].forEach(c => {
+        imagensParaCarregar.push(`animacao/antebraco/antebraco${c}.png`);
+      });
+
+      // Braço direito – 5 frames por corda
+      ["E", "A", "D", "G"].forEach(corda => {
+        for (let i = 1; i <= 5; i++) {
+          imagensParaCarregar.push(`animacao/braco_direito/Corda_${corda}${i}.png`);
+        }
+      });
+
+      // Usa o mesmo preload genérico que você já tem
+      await preloadImages(imagensParaCarregar);
+      console.log("Pré-carregamento de imagens da animação concluído.");
+    }
+
+
+    function trocarAntebraco(corda) {
+      const ante = document.getElementById("antebracoLayer");
+
+      const img = new Image();
+      img.onload = () => {
+        ante.src = `animacao/antebraco/antebraco${corda}.png`;
+      };
+      img.onerror = () => {
+        console.warn(`Imagem de antebraço não encontrada: animacao/antebraco/antebraco${corda}.png`);
+        ante.src = "animacao/antebraco/antebracoE.png";
+      };
+      img.src = `animacao/antebraco/antebraco${corda}.png`;
+    }
+
+    function animarBracoDireito(corda, duracaoMs) {
+      const braco = document.getElementById("bracoLayer");
+
+      const frames = [];
+      for (let i = 1; i <= 5; i++) {
+        frames.push(`animacao/braco_direito/Corda_${corda}${i}.png`);
+      }
+
+      const passo = duracaoMs / frames.length;
+      let i = 0;
+
+      const id = setInterval(() => {
+        if (i >= frames.length) {
+          clearInterval(id);
+          const img = new Image();
+          img.onload = () => {
+            braco.src = `animacao/braco_direito/Corda_${corda}1.png`;
+          };
+          img.onerror = () => {
+            console.warn(`Imagem de braço não encontrada: animacao/braco_direito/Corda_${corda}1.png`);
+          };
+          img.src = `animacao/braco_direito/Corda_${corda}1.png`;
+          return;
+        }
+
+        const img = new Image();
+        img.onload = () => {
+          braco.src = frames[i];
+        };
+        img.onerror = () => {
+          console.warn(`Imagem de braço não encontrada: ${frames[i]}`);
+        };
+        img.src = frames[i];
+        i++;
+      }, passo);
+
+      animTimers.push(id);
+    }
+
+    function resetAnimTimers() {
+      animTimers.forEach(id => clearInterval(id));
+      animTimers = [];
+    }
+
+    function pararAudioBaixo() {
+      if (audioBaixoAtual) {
+        audioBaixoAtual.pause();
+        audioBaixoAtual.currentTime = 0;
+        audioBaixoAtual = null;
+      }
+      if (audioBaixoTimer) {
+        clearTimeout(audioBaixoTimer);
+        audioBaixoTimer = null;
       }
     }
-  }
 
-  // bateria: pattern simples do comprimento de baixoSeq
-  bateriaSeq = [];
-  for (let i = 0; i < baixoSeq.length; i++) {
-    const pos = i % 8;
-    if (pos === 0) bateriaSeq.push('bch');     // bumbo+chimbal
-    else if (pos === 4) bateriaSeq.push('cch'); // caixa+chimbal
-    else bateriaSeq.push('ch');                // só chimbal
-  }
-}
-
-/* ============================================================
- *  ANIMAÇÃO DA BAIXISTA
- * ============================================================ */
-
-const pernasLayer = document.getElementById('pernasLayer');
-const troncoLayer = document.getElementById('troncoLayer');
-const cabecaLayer = document.getElementById('cabecaLayer');
-const antebracoLayer = document.getElementById('antebracoLayer');
-const bracoDireitoLayer = document.getElementById('bracoDireitoLayer');
-const animacaoInner = document.getElementById('animacaoInner');
-const animInfo = document.getElementById('animInfo');
-
-// estados de animação
-let headFrame = 1;
-const HEAD_MAX = 100; // você tem 809, mas 100 já dá fluidez; ajuste se quiser
-let globalSwingPhase = 0;
-
-// braço direito – 5 frames por nota
-const RIGHT_ARM_FRAMES = 5;
-
-// animação contínua (cabeça + balanço do corpo)
-function loopAnimacaoLivre(timestamp) {
-  requestAnimationFrame(loopAnimacaoLivre);
-
-  // Balanço suave
-  globalSwingPhase += 0.02;
-  const angle = Math.sin(globalSwingPhase) * 1.5; // graus
-  animacaoInner.style.transform = `rotate(${angle}deg)`;
-
-  // Cabeça loop
-  headFrame++;
-  if (headFrame > HEAD_MAX) headFrame = 1;
-  const headStr = headFrame.toString().padStart(4, '0');
-  cabecaLayer.src = `animacao/cabeca/cabeca${headStr}.png`;
-}
-requestAnimationFrame(loopAnimacaoLivre);
-
-/**
- * Escolhe a pasta de tronco/baixo para a transição
- * notaAtual -> proximaNota.
- *
- * Por enquanto retorna sempre "Pasta_1F" para simplificar.
- * Depois dá pra implementar as regras:
- *  - Sol (E) -> Lá (G) usa Pasta_1F
- *  - Dó (G) -> Dó# (G) usa Pasta_3G
- *  etc.
- */
-function escolherPastaParaTransicao(notaAtual, proximaNota) {
-  return "Pasta_1F";
-}
-
-/**
- * Atualiza a imagem de tronco+baixo para uma nota numérica.
- */
-function atualizarTroncoParaNota(indexNota, idxSeq) {
-  if (typeof indexNota !== 'number') return;
-  const prox = baixoSeq[(idxSeq + 1) % baixoSeq.length] ?? null;
-  const pasta = escolherPastaParaTransicao(indexNota, prox);
-  // nome de arquivo: 1E.png, 2F.png, 3FS.png, ...
-  // aqui assumo que o arquivo é "N.png" (sem a letra),
-  // se for "1E.png", basta trocar para `${indexNota}E.png` etc.
-  troncoLayer.src = `animacao/tronco_baixo/${pasta}/${indexNota}.png`;
-}
-
-/**
- * Atualiza antebraço (braço grande) pela corda.
- */
-function atualizarAntebracoParaNota(indexNota) {
-  if (typeof indexNota !== 'number') {
-    return;
-  }
-  // heurística simples: 1–5 = corda E, 6–11 = A, 12–17 = D, 18+ = G
-  let corda = 'E';
-  if (indexNota >= 6 && indexNota <= 11) corda = 'A';
-  else if (indexNota >= 12 && indexNota <= 17) corda = 'D';
-  else if (indexNota >= 18) corda = 'G';
-
-  antebracoLayer.src = `animacao/antebraco/antebraco${corda}.png`;
-}
-
-/**
- * Anima o braço direito (5 frames por nota) de acordo com a corda.
- */
-function animarBracoDireito(indexNota, startTime, dur) {
-  if (typeof indexNota !== 'number') {
-    // ghost note / pausa pode usar corda E padrão
-    indexNota = 1;
-  }
-  let corda = 'E';
-  if (indexNota >= 6 && indexNota <= 11) corda = 'A';
-  else if (indexNota >= 12 && indexNota <= 17) corda = 'D';
-  else if (indexNota >= 18) corda = 'G';
-
-  const frames = [];
-  for (let i = 1; i <= RIGHT_ARM_FRAMES; i++) {
-    frames.push(`animacao/braco_direito/Corda_${corda}${i}.png`);
-  }
-
-  const frameDur = (dur * 0.9) / RIGHT_ARM_FRAMES;
-  frames.forEach((src, idx) => {
-    const when = startTime + idx * frameDur;
-    setTimeout(() => {
-      bracoDireitoLayer.src = src;
-    }, (when - audioCtx.currentTime) * 1000);
-  });
-}
-
-/* ============================================================
- *  ENGINE DE PLAYBACK (BAIXO + BATERIA + ANIMAÇÃO)
- * ============================================================ */
-
-let isPlaying = false;
-let playStartTime = 0;
-let scheduledTimeout = null;
-
-const statusLabel = document.getElementById('statusLabel');
-const countdownOverlay = document.getElementById('countdownOverlay');
-const countdownNumber = document.getElementById('countdownNumber');
-
-function atualizarStatus(texto) {
-  statusLabel.textContent = texto;
-}
-
-/**
- * Contagem regressiva 3-2-1 antes do playback.
- */
-function iniciarContagemRegressiva(callback) {
-  countdownOverlay.style.display = 'flex';
-  let count = 3;
-  countdownNumber.textContent = count;
-
-  const iv = setInterval(() => {
-    count--;
-    if (count <= 0) {
-      clearInterval(iv);
-      countdownOverlay.style.display = 'none';
-      callback();
-    } else {
-      countdownNumber.textContent = count;
-    }
-  }, 1000);
-}
-
-/**
- * Pré-processa a sequência para:
- *  - escolher pastas de tronco por passo
- *  - (futuramente) carregar imagens específicas
- * Por enquanto a escolha de pasta é feita on the fly, mas deixo
- * a função preparada para evoluir.
- */
-function preprocessarAnimacao() {
-  // Aqui, só atualizamos o texto de debug
-  animInfo.textContent = `Sequência de ${baixoSeq.length} notas preparada.`;
-}
-
-/**
- * Agenda todo o playback (baixo + bateria + animação).
- */
-async function iniciarPlayback() {
-  if (!baixoSeq.length) {
-    alert('Não há notas de baixo para tocar.');
-    return;
-  }
-  await ensureAudioCtx();
-
-  isPlaying = true;
-  playStartTime = audioCtx.currentTime + 0.1;
-
-  const bpm = parseInt(document.getElementById('bpmInput').value, 10) || 100;
-  // passo = colcheia (por exemplo) – ajuste como preferir
-  passoDuracao = 60 / bpm / 2;
-
-  atualizarStatus('Tocando…');
-
-  const totalPassos = baixoSeq.length;
-  const durTotal = totalPassos * passoDuracao;
-
-  for (let i = 0; i < totalPassos; i++) {
-    const t = playStartTime + i * passoDuracao;
-    const nota = baixoSeq[i];
-    const drumToken = bateriaSeq[i];
-
-    // áudio de baixo
-    playBassNote(nota, t, passoDuracao);
-
-    // áudio de bateria
-    if (drumToken && drumToken !== '-') {
-      playDrumHit(drumToken, t);
+    function tocarBateriaNoStep(step, volume) {
+      drumLines.forEach(line => {
+        const seq = bateriaSeq[line.id];
+        if (!seq || step >= seq.length) return;
+        const val = seq[step];
+        if (val === line.id) {
+          const a = new Audio("assets/" + line.file);
+          a.volume = volume;
+          a.play().catch(e => console.log("Erro ao tocar bateria:", e));
+        }
+      });
     }
 
-    // animação de tronco/antebraço/braço direito
-    atualizarTroncoParaNota(nota, i);
-    atualizarAntebracoParaNota(nota);
-    animarBracoDireito(nota, t, passoDuracao);
+    // Toca nota + decide pasta pela transição
+      // Tocar nota com animação completa (inclui ghost-note "x")
+    function tocarNotaComAnimacao(nota, duracaoMs, volume) {
+      // Sempre toca o áudio (inclusive ghost-note)
+      tocarNotaAudioBaixo(nota, volume);
+
+      // Se for ghost-note "x": não mexe na mão esquerda, só dá uma batida com a direita
+      if (nota === "x") {
+        const cordaGhost = ultimaCordaUsada || "E";
+        animarBracoDireito(cordaGhost, duracaoMs);
+        return;
+      }
+
+      console.log(`Tocando nota: ${nota}`);
+
+      // Atualiza tronco/baixo (mão esquerda)
+      trocarFrameTronco(nota);
+
+      // Define corda, guarda como última para futuras ghost-notes
+      const corda = getCordaDaNota(nota);
+      ultimaCordaUsada = corda;
+
+      // Muda antebraço e anima braço direito
+      trocarAntebraco(corda);
+      animarBracoDireito(corda, duracaoMs);
+    }
+
+    /* ===== PLAYBACK ===== */
+    function tocarPasso(passo) {
+      const nota = (passo < baixoSeq.length) ? baixoSeq[passo] : "x";
+      tocarNotaComAnimacao(nota, (60000 / bpmAtual) / 4, baixoVolumeGlobal);
+      tocarBateriaNoStep(passo, bateriaVolumeGlobal);
+      const totalSteps = Math.max(
+        baixoSeq.length,
+        ...(drumLines.map(line => bateriaSeq[line.id].length))
+      );
+      atualizarBarraProgresso((passo / totalSteps) * 100);
+    }
+
+    function iniciarPlayback() {
+      if (isPlaying) return;
+      isPlaying = true;
+      atualPasso = 0;
+      const stepTime = (60000 / bpmAtual) / 4;
+      playbackInterval = setInterval(() => {
+        tocarPasso(atualPasso);
+        atualPasso++;
+        const totalSteps = Math.max(
+          baixoSeq.length,
+          ...(drumLines.map(line => bateriaSeq[line.id].length))
+        );
+        if (atualPasso >= totalSteps) atualPasso = 0;
+      }, stepTime);
+      document.getElementById("playBtn").innerText = "⏸ Pause";
+    }
+
+    function pararPlayback() {
+      if (!isPlaying) return;
+      isPlaying = false;
+      clearInterval(playbackInterval);
+      playbackInterval = null;
+      pararAudioBaixo();
+      document.getElementById("playBtn").innerText = "▶ Play";
+    }
+
+    function togglePlay() {
+      if (!isPlaying) iniciarPlayback();
+      else pararPlayback();
+    }
+
+       // Função modificada para incluir contagem regressiva + pré-leitura das imagens
+    function tocarPlaybackCompleto(bpm) {
+      pararPlayback();
+      resetAnimTimers();
+
+      // Animações de "balanço" sincronizadas com o BPM
+      startTroncoBpm(bpm);
+      startHeadTiltBpm(bpm);
+      startLateralMovement();
+
+      // Inicia contagem regressiva
+      iniciarContagemRegressiva(async () => {
+        // Antes de começar de fato, pré-carrega os PNGs necessários
+        try {
+          await preScanAnimacao();
+        } catch (e) {
+          console.warn("Falha ao pré-carregar imagens da animação:", e);
+        }
+        // Depois da pré-carga, começa o playback em loop
+        iniciarPlayback();
+      });
+    }
+
+
+    /* ===== PAINEL LATERAL ===== */
+    const selectionOverlay = document.getElementById("selectionOverlay");
+    const selectionTitle = document.getElementById("selectionTitle");
+    const selectionOptions = document.getElementById("selectionOptions");
+    const painelSelecao = { tipo: null, seqRef: null, idx: null, cell: null, drumLine: null };
+
+    function abrirPainelSelecaoBaixo(seqRef, idx, cellEl) {
+      painelSelecao.tipo = "baixo";
+      painelSelecao.seqRef = seqRef;
+      painelSelecao.idx = idx;
+      painelSelecao.cell = cellEl;
+      const valorAtual = seqRef[idx];
+      const opcoes = ["x", ...notasValidas];
+      selectionTitle.textContent = "Selecione a nota do baixo";
+      selectionOptions.innerHTML = "";
+      opcoes.forEach(opt => {
+        const div = document.createElement("div");
+        div.className = "selection-option";
+        let label = opt;
+        if (opt === "x") {
+          div.classList.add("x-option");
+          label = "X";
+        } else {
+          label = opt.replace(/S/g,"#");
+        }
+        if (opt === valorAtual) div.classList.add("active");
+        div.textContent = label;
+        div.onclick = () => {
+          painelSelecao.seqRef[painelSelecao.idx] = opt;
+          const c = painelSelecao.cell;
+          c.textContent = label;
+          if (opt === "x") c.classList.remove("active");
+          else c.classList.add("active");
+          fecharPainelSelecao();
+        };
+        selectionOptions.appendChild(div);
+      });
+      selectionOverlay.classList.add("visible");
+    }
+
+    function fecharPainelSelecao() {
+      selectionOverlay.classList.remove("visible");
+      Object.keys(painelSelecao).forEach(k => painelSelecao[k] = null);
+    }
+
+    selectionOverlay.addEventListener("click", (ev) => {
+      if (ev.target === selectionOverlay) fecharPainelSelecao();
+    });
+
+    /* ===== GRIDS ===== */
+    function construirGridBaixo(container, seq) {
+      container.innerHTML = "";
+      seq.forEach((nota, idx) => {
+        const div = document.createElement("div");
+        div.className = "cell";
+        if (nota === "x") {
+          div.textContent = "X";
+        } else {
+          div.textContent = nota.replace(/S/g,"#");
+          div.classList.add("active");
+        }
+        div.onclick = () => abrirPainelSelecaoBaixo(seq, idx, div);
+        container.appendChild(div);
+      });
+    }
+
+    function construirGridBateria(container, bateriaSeq) {
+      container.innerHTML = "";
+      drumLines.forEach(line => {
+        const rowDiv = document.createElement("div");
+        rowDiv.className = "drumRow";
+        const label = document.createElement("div");
+        label.className = "drumLabel";
+        label.textContent = line.label;
+        rowDiv.appendChild(label);
+        const rowGrid = document.createElement("div");
+        rowGrid.className = "composicaoGrid";
+        const seq = bateriaSeq[line.id];
+        seq.forEach((item, idx) => {
+          const cell = document.createElement("div");
+          cell.className = "cell";
+          if (item === "x") {
+            cell.textContent = "X";
+          } else if (item === line.id) {
+            cell.textContent = line.label.toUpperCase();
+            cell.classList.add("active");
+          } else {
+            cell.textContent = "?";
+          }
+          cell.onclick = () => {
+            if (seq[idx] === "x") {
+              seq[idx] = line.id;
+              cell.classList.add("active");
+              cell.textContent = line.label.toUpperCase();
+            } else {
+              seq[idx] = "x";
+              cell.classList.remove("active");
+              cell.textContent = "X";
+            }
+          };
+          rowGrid.appendChild(cell);
+        });
+        rowDiv.appendChild(rowGrid);
+        container.appendChild(rowDiv);
+      });
+    }
+
+    function atualizarBarraProgresso(perc) {
+      document.getElementById("progressBar").style.width = perc + "%";
+    }
+
+    function gerarSequenciaAleatoriaBaixo(tam) {
+      const seq = [];
+      for (let i = 0; i < tam; i++) {
+        if (Math.random() < 0.6) seq.push("x");
+        else seq.push(notasValidas[Math.floor(Math.random() * notasValidas.length)]);
+      }
+      return seq;
+    }
+
+    function gerarSequenciasAleatoriasBateria(tam) {
+      const obj = {};
+      drumLines.forEach(line => {
+        obj[line.id] = [];
+        for (let i = 0; i < tam; i++) {
+          obj[line.id].push(Math.random() < 0.75 ? "x" : line.id);
+        }
+      });
+      return obj;
+    }
+
+    function configurarPlaybackExportado() {
+      const btn = document.getElementById("playExportadoBtn");
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "application/json";
+      input.style.display = "none";
+      document.body.appendChild(input);
+      btn.onclick = () => input.click();
+      input.onchange = async (ev) => {
+        const file = ev.target.files[0];
+        if (!file) return;
+        try {
+          const txt = await file.text();
+          const obj = JSON.parse(txt);
+          if (!Array.isArray(obj.baixo) || typeof obj.bpm !== "number" || typeof obj.bateria !== "object") {
+            alert("JSON inválido. Esperado: { bpm, baixo[], bateria{bumbo[],...} }");
+            return;
+          }
+          baixoSeq = obj.baixo;
+          bpmAtual = obj.bpm;
+          drumLines.forEach(line => {
+            if (Array.isArray(obj.bateria[line.id])) {
+              bateriaSeq[line.id] = obj.bateria[line.id];
+            } else {
+              bateriaSeq[line.id] = Array(baixoSeq.length).fill("x");
+            }
+          });
+          document.getElementById("bpmSlider").value = bpmAtual;
+          document.getElementById("bpmDisplay").textContent = bpmAtual + " BPM";
+          construirGridBaixo(document.getElementById("baixoGrid"), baixoSeq);
+          construirGridBateria(document.getElementById("drumGrid"), bateriaSeq);
+          tocarPlaybackCompleto(bpmAtual);
+        } catch (e) {
+          console.error(e);
+          alert("Erro ao ler o arquivo JSON.");
+        }
+      };
+    }
+
+    function garantirPaisagem() {
+      const overlay = document.getElementById("orientationOverlay");
+      function checar() {
+        overlay.style.display = (window.innerWidth < window.innerHeight) ? "flex" : "none";
+      }
+      checar();
+      window.addEventListener("resize", checar);
+    }
+
+    function iniciarInterface() {
+      const baixoGrid = document.getElementById("baixoGrid");
+      const drumGrid = document.getElementById("drumGrid");
+      const passosIniciais = 16;
+      baixoSeq = gerarSequenciaAleatoriaBaixo(passosIniciais);
+      bateriaSeq = gerarSequenciasAleatoriasBateria(passosIniciais);
+      construirGridBaixo(baixoGrid, baixoSeq);
+      construirGridBateria(drumGrid, bateriaSeq);
+
+      document.getElementById("bpmSlider").oninput = () => {
+        bpmAtual = parseInt(document.getElementById("bpmSlider").value, 10);
+        document.getElementById("bpmDisplay").textContent = bpmAtual + " BPM";
+        startTroncoBpm(bpmAtual);
+        startHeadTiltBpm(bpmAtual);
+      };
+
+      document.getElementById("baixoVolume").oninput = () => {
+        baixoVolumeGlobal = parseFloat(document.getElementById("baixoVolume").value);
+      };
+      document.getElementById("drumVolume").oninput = () => {
+        bateriaVolumeGlobal = parseFloat(document.getElementById("drumVolume").value);
+      };
+
+     playAleatorioBtn
+      document.getElementById("addBaixoCol").onclick = () => {
+        baixoSeq.push("x");
+        drumLines.forEach(line => bateriaSeq[line.id].push("x"));
+        construirGridBaixo(baixoGrid, baixoSeq);
+        construirGridBateria(drumGrid, bateriaSeq);
+      };
+
+      document.getElementById("clearBaixo").onclick = () => {
+        baixoSeq = baixoSeq.map(() => "x");
+        construirGridBaixo(baixoGrid, baixoSeq);
+      };
+
+      document.getElementById("clearAll").onclick = () => {
+        baixoSeq = baixoSeq.map(() => "x");
+        drumLines.forEach(line => bateriaSeq[line.id] = bateriaSeq[line.id].map(() => "x"));
+        construirGridBaixo(baixoGrid, baixoSeq);
+        construirGridBateria(drumGrid, bateriaSeq);
+      };
+
+      document.getElementById("addCol").onclick = () => {
+        baixoSeq.push("x");
+        drumLines.forEach(line => bateriaSeq[line.id].push("x"));
+        construirGridBaixo(baixoGrid, baixoSeq);
+        construirGridBateria(drumGrid, bateriaSeq);
+      };
+
+      document.getElementById("duplicateSeq").onclick = () => {
+        const bloco = 16;
+        if (baixoSeq.length >= bloco) {
+          const ultimas = baixoSeq.slice(-bloco);
+          baixoSeq = baixoSeq.concat(ultimas);
+        }
+        drumLines.forEach(line => {
+          const arr = bateriaSeq[line.id];
+          if (arr.length >= bloco) {
+            const ultimas = arr.slice(-bloco);
+            bateriaSeq[line.id] = arr.concat(ultimas);
+          }
+        });
+        construirGridBaixo(baixoGrid, baixoSeq);
+        construirGridBateria(drumGrid, bateriaSeq);
+      };
+
+      configurarPlaybackExportado();
+    }
+
+    window.onload = async () => {
+      garantirPaisagem();
+      headFrames = generateHeadFramePaths();
+      await preloadImages(headFrames);
+      startHeadLoop();
+      startTroncoBpm(bpmAtual);
+      startHeadTiltBpm(bpmAtual);
+      startLateralMovement();
+      iniciarInterface();
+      document.getElementById("playAleatorioBtn").onclick = async () => {
+  try {
+    // Gera playback usando o engine do INDEX (baixista + bateria)
+    JamOnPlayback.startRandom(
+      (baixo, bateria) => {
+        baixoSeq = baixo;
+        bateriaSeq = bateria;
+        construirGridBaixo(document.getElementById("baixoGrid"), baixoSeq);
+        construirGridBateria(document.getElementById("drumGrid"), bateriaSeq);
+      },
+      () => tocarPlaybackCompleto(bpmAtual)
+    );
+  } catch (e) {
+    console.error("Erro no playback aleatório:", e);
   }
+};
 
-  // após terminar
-  if (scheduledTimeout) clearTimeout(scheduledTimeout);
-  scheduledTimeout = setTimeout(() => {
-    isPlaying = false;
-    atualizarStatus('Parado');
-    animInfo.textContent = 'Playback concluído.';
-  }, (durTotal + 0.5) * 1000);
-}
+    };
+          async function gerarPlaybackAleatorioAvancado(tamanho, bpm) {
+        if (window.JamOnEngine && typeof JamOnEngine.generateRandomPlayback === "function") {
+          const res = JamOnEngine.generateRandomPlayback(tamanho, bpm);
+          return {
+            baixo: res.bassSeq || res.baixo || [],
+            bateria: res.bateriaSeq || res.bateria || {}
+          };
+        } else {
+          // Fallback: usa o gerador simples que você já tinha
+          const baixo = gerarSequenciaAleatoriaBaixo(tamanho);
+          const bateria = gerarSequenciasAleatoriasBateria(tamanho);
+          return { baixo, bateria };
+        }
+      }
 
-function stopPlayback() {
-  isPlaying = false;
-  if (audioCtx) {
-    try {
-      audioCtx.close();
-    } catch(e) {}
-    audioCtx = null;
-  }
-  if (scheduledTimeout) clearTimeout(scheduledTimeout);
-  scheduledTimeout = null;
-  currentBassSource = null;
-  atualizarStatus('Parado');
-  animInfo.textContent = 'Parado.';
-}
-
-function pausePlayback() {
-  if (!audioCtx) return;
-  if (audioCtx.state === 'running') {
-    audioCtx.suspend();
-    atualizarStatus('Pausado');
-  } else if (audioCtx.state === 'suspended') {
-    audioCtx.resume();
-    atualizarStatus('Tocando…');
-  }
-}
-
-/* ============================================================
- *  UI – EVENTOS DOS BOTÕES E SLIDERS
- * ============================================================ */
-
-const btnPlayRandom = document.getElementById('btnPlayRandom');
-const btnPlayManual = document.getElementById('btnPlayManual');
-const btnPause = document.getElementById('btnPause');
-const btnStop = document.getElementById('btnStop');
-const muteBassBtn = document.getElementById('muteBass');
-const muteDrumsBtn = document.getElementById('muteDrums');
-const volBassSlider = document.getElementById('volBass');
-const volDrumsSlider = document.getElementById('volDrums');
-const volBassLabel = document.getElementById('volBassLabel');
-const volDrumsLabel = document.getElementById('volDrumsLabel');
-
-function atualizarVolumes() {
-  if (!bassGain || !drumGain) return;
-  const vb = parseFloat(volBassSlider.value);
-  const vd = parseFloat(volDrumsSlider.value);
-  bassGain.gain.value = vb;
-  drumGain.gain.value = vd;
-  volBassLabel.textContent = Math.round(vb * 100) + '%';
-  volDrumsLabel.textContent = Math.round(vd * 100) + '%';
-}
-
-volBassSlider.addEventListener('input', atualizarVolumes);
-volDrumsSlider.addEventListener('input', atualizarVolumes);
-
-muteBassBtn.addEventListener('click', () => {
-  const mute = muteBassBtn.getAttribute('data-mute') === 'off';
-  muteBassBtn.setAttribute('data-mute', mute ? 'on' : 'off');
-  muteBassBtn.textContent = mute ? '🎸 Baixo OFF' : '🎸 Baixo ON';
-  if (bassGain) bassGain.gain.value = mute ? 0 : parseFloat(volBassSlider.value);
-});
-
-muteDrumsBtn.addEventListener('click', () => {
-  const mute = muteDrumsBtn.getAttribute('data-mute') === 'off';
-  muteDrumsBtn.setAttribute('data-mute', mute ? 'on' : 'off');
-  muteDrumsBtn.textContent = mute ? '🥁 Bateria OFF' : '🥁 Bateria ON';
-  if (drumGain) drumGain.gain.value = mute ? 0 : parseFloat(volDrumsSlider.value);
-});
-
-btnPlayRandom.addEventListener('click', () => {
-  if (isPlaying) return;
-  gerarPlaybackAleatorio();
-  preprocessarAnimacao();
-  iniciarContagemRegressiva(() => {
-    iniciarPlayback().catch(console.error);
-  });
-});
-
-btnPlayManual.addEventListener('click', () => {
-  if (isPlaying) return;
-  lerComposicaoManual();
-  if (!baixoSeq.length) {
-    alert('Digite ao menos uma nota na composição manual.');
-    return;
-  }
-  preprocessarAnimacao();
-  iniciarContagemRegressiva(() => {
-    iniciarPlayback().catch(console.error);
-  });
-});
-
-btnStop.addEventListener('click', () => {
-  stopPlayback();
-});
-
-btnPause.addEventListener('click', () => {
-  pausePlayback();
-});
-
-</script>
+  </script>
 </body>
 </html>
+
