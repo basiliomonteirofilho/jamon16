@@ -1,836 +1,827 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <script src="jamon-engine.js"></script>
+ 
   <meta charset="UTF-8" />
-  <title>JamOn – Animação Baixista (Animacao5)</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jam On – Baixista Animada com Playback Aleatório</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <style>
-    body {
+    * {
       margin: 0;
       padding: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #111;
+      box-sizing: border-box;
+    }
+    body {
+      background: #101010;
       color: #f5f5f5;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       overflow: hidden;
     }
-
-    header {
-      padding: 8px 16px;
-      background: #181818;
-      border-bottom: 1px solid #333;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 14px;
+    h1, h2, h3 {
+      font-weight: 600;
+    }
+    button {
+      cursor: pointer;
     }
 
-    header h1 {
-      font-size: 16px;
-      margin: 0;
-    }
-
-    header .info {
-      opacity: 0.8;
-      font-size: 12px;
-    }
-
-    main {
-      flex: 1;
-      display: flex;
-      overflow: hidden;
-    }
-
-    /* Lado esquerdo – animação */
-    #leftPanel {
-      flex: 0 0 45%;
-      background: radial-gradient(circle at top, #333 0, #111 55%, #000 100%);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      position: relative;
-      overflow: hidden;
-      border-right: 1px solid #333;
-    }
-
-    #stage {
-      position: relative;
-      width: 360px;
-      height: 480px;
-      transform-origin: center bottom;
-    }
-
-    #stage img {
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      image-rendering: auto;
-      max-width: none;
-      pointer-events: none;
-    }
-
-    #pernasLayer {
-      bottom: 0;
-      z-index: 1;
-    }
-
-    #troncoLayer {
-      bottom: 80px;
-      z-index: 2;
-    }
-
-    #antebracoLayer {
-      bottom: 140px;
-      z-index: 3;
-      transform-origin: top left;
-    }
-
-    #bracoLayer {
-      bottom: 150px;
-      z-index: 4;
-      transform-origin: top left;
-    }
-
-    #headLayer {
-      bottom: 250px;
-      z-index: 5;
-      transform-origin: center bottom;
-    }
-
-    /* Contagem regressiva */
-    #countdownOverlay {
-      position: absolute;
+    /* Overlay de orientação (paisagem) */
+    #orientationOverlay {
+      position: fixed;
       inset: 0;
+      background: rgba(0,0,0,0.9);
+      color: #fff;
       display: none;
       align-items: center;
       justify-content: center;
-      font-size: 80px;
-      font-weight: 700;
-      background: rgba(0,0,0,0.6);
-      z-index: 10;
+      z-index: 9999;
+      text-align: center;
+      padding: 2rem;
     }
-    #countdownOverlay.visible {
-      display: flex;
+    #orientationOverlay h2 {
+      font-size: 1.7rem;
+      margin-bottom: 0.8rem;
+    }
+    #orientationOverlay p {
+      opacity: 0.85;
     }
 
-    /* Right panel – controles */
-    #rightPanel {
-      flex: 0 0 55%;
+    /* Overlay de contagem regressiva */
+    #countdownOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9998;
+    }
+    #countdownOverlay span {
+      font-size: 5rem;
+      font-weight: 800;
+      color: #00e0ff;
+      text-shadow: 0 0 18px #00e0ff;
+    }
+
+    /* Container raiz */
+    .appRoot {
+      width: 100vw;
+      height: 100vh;
       display: flex;
       flex-direction: column;
-      padding: 10px;
-      box-sizing: border-box;
+    }
+
+    /* ============================
+       TOPO: ANIMAÇÃO BAIXISTA
+       ============================ */
+    #animacaoArea {
+      width: 100%;
+      height: 60%;
+      background: #151515;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      border-bottom: 1px solid #222;
+      overflow: hidden;
+    }
+    #animacaoInner {
+      position: relative;
+      width: min(480px, 60vw);
+      height: min(420px, 55vh);
+    }
+    #animacaoInner img {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      user-select: none;
+      pointer-events: none;
+      image-rendering: auto;
+    }
+    #pernasLayer {
+      bottom: 0;
+      width: 68%;
+    }
+    #troncoLayer {
+      bottom: 0;
+      width: 70%;
+    }
+    #cabecaLayer {
+      bottom: 38%;
+      width: 48%;
+      transform-origin: 50% 85%;
+    }
+    #bracoDireitoLayer {
+      bottom: 20%;
+      width: 52%;
+      transform-origin: 15% 10%;
+    }
+    #antebracoLayer {
+      bottom: 24%;
+      width: 52%;
+      transform-origin: 15% 5%;
+    }
+
+    /* Suave balanço lateral do grupo (tronco+pernas) */
+    .grupoBalanço {
+      animation: sway 4s ease-in-out infinite;
+    }
+    @keyframes sway {
+      0%   { transform: translateX(-50%) rotate(-1.5deg); }
+      50%  { transform: translateX(-50%) rotate(1.5deg); }
+      100% { transform: translateX(-50%) rotate(-1.5deg); }
+    }
+
+    /* ============================
+       BASE: CONTROLES E COMPOSIÇÃO
+       ============================ */
+    #painel {
+      width: 100%;
+      height: 40%;
+      background: #111;
+      display: flex;
+      flex-direction: column;
+      padding: 10px 12px 8px;
       gap: 8px;
+      overflow: hidden;
     }
 
-    .section {
-      background: #181818;
+    #topControls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
       border-radius: 8px;
-      padding: 8px;
-      border: 1px solid #333;
+      padding: 6px 10px;
+      background: linear-gradient(90deg, #181818, #181822);
+      box-shadow: 0 0 0 1px #222 inset;
+      font-size: 0.9rem;
     }
-
-    .section h2 {
-      margin: 0 0 6px 0;
-      font-size: 14px;
+    #topControls-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
     }
-
-    .flexRow {
+    #topControls-right {
       display: flex;
       align-items: center;
       gap: 8px;
       flex-wrap: wrap;
     }
 
-    .labelSmall {
-      font-size: 12px;
+    .sliderGroup {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .sliderGroup label {
+      font-size: 0.8rem;
       opacity: 0.9;
     }
-
-    input[type="range"] {
-      width: 160px;
+    .sliderGroup input[type="range"] {
+      width: 120px;
     }
 
-    button {
-      background: #2b7cff;
+    .btn {
+      padding: 4px 10px;
+      border-radius: 999px;
       border: none;
+      font-size: 0.8rem;
+      font-weight: 500;
+      background: #00a8ff;
       color: #fff;
-      padding: 5px 10px;
-      border-radius: 6px;
-      font-size: 12px;
-      cursor: pointer;
+      box-shadow: 0 0 0 1px #0077b6 inset;
+      transition: background 0.2s, transform 0.08s;
+      white-space: nowrap;
     }
-    button.secondary {
+    .btn:hover {
+      background: #00c4ff;
+      transform: translateY(-1px);
+    }
+    .btn.secondary {
       background: #333;
+      color: #eee;
+      box-shadow: 0 0 0 1px #555 inset;
     }
-    button.danger {
-      background: #aa2244;
-    }
-    button:disabled {
+    .btn.secondary:hover {
       background: #444;
-      cursor: not-allowed;
+    }
+    .btn.danger {
+      background: #bb2d3b;
+      box-shadow: 0 0 0 1px #7a1c25 inset;
+    }
+    .btn.danger:hover {
+      background: #d63348;
     }
 
+    #descricaoModo {
+      font-size: 0.75rem;
+      opacity: 0.75;
+    }
+
+    /* Barra de progresso */
     #progressContainer {
       width: 100%;
-      height: 6px;
-      background: #333;
-      border-radius: 3px;
+      height: 5px;
+      background: #222;
+      border-radius: 999px;
       overflow: hidden;
-      margin-top: 4px;
+      box-shadow: 0 0 0 1px #000 inset;
     }
     #progressBar {
-      height: 100%;
       width: 0%;
-      background: #2b7cff;
+      height: 100%;
+      background: linear-gradient(90deg, #00e0ff, #00ff85);
       transition: width 0.08s linear;
     }
 
-    #gridsWrapper {
-      display: flex;
-      gap: 8px;
-      height: 100%;
-      min-height: 0;
-    }
-
-    #baixoGrid,
-    #drumGrid {
+    /* Área de composição (baixo + bateria) */
+    #composicaoSection {
       flex: 1;
-      background: #101010;
-      border-radius: 8px;
-      border: 1px solid #333;
-      padding: 6px;
-      overflow: auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
 
-    #baixoGridTitle,
-    #drumGridTitle {
-      font-size: 12px;
-      opacity: 0.9;
+    #sequencerCard {
+      flex: 1;
+      min-height: 0;
+      background: #151515;
+      border-radius: 10px;
+      box-shadow: 0 0 0 1px #222 inset;
+      padding: 6px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      overflow: hidden;
+    }
+
+    #sequencerHeader {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+    }
+    #sequencerHeaderLeft span {
+      font-weight: 500;
+    }
+    #sequencerHeaderRight {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    #sequencerInner {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding-top: 4px;
+    }
+
+    .gridTitulo {
+      font-size: 0.78rem;
+      margin-bottom: 2px;
+      color: #ddd;
+    }
+
+    .baixoRowContainer {
       margin-bottom: 4px;
     }
-
-    .composicaoGrid {
-      display: grid;
-      grid-auto-flow: column;
-      grid-auto-columns: 24px;
-      grid-template-rows: 24px;
-      gap: 2px;
-      width: max-content;
-    }
-
-    .cell {
-      width: 24px;
-      height: 24px;
-      border-radius: 4px;
-      border: 1px solid #333;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 11px;
-      cursor: pointer;
-      user-select: none;
-      background: #181818;
-      color: #aaa;
-    }
-    .cell.active {
-      background: #2b7cff;
-      color: #fff;
-      border-color: #2b7cff;
-    }
-    .cell.xCell {
-      color: #555;
+    .baixoLabel {
+      font-size: 0.75rem;
+      opacity: 0.85;
+      margin-bottom: 1px;
     }
 
     .drumRow {
       display: flex;
       align-items: center;
-      gap: 4px;
-      margin-bottom: 4px;
+      margin: 1px 0;
     }
-
     .drumLabel {
-      width: 56px;
-      font-size: 11px;
-      text-align: right;
+      width: 60px;
+      font-size: 0.7rem;
       opacity: 0.8;
     }
 
-    /* Painel seleção nota */
+    .composicaoGrid {
+      display: flex;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      border-radius: 6px;
+      background: #101010;
+      box-shadow: 0 0 0 1px #222 inset;
+      padding: 2px;
+    }
+
+    .cell {
+      min-width: 24px;
+      height: 22px;
+      border-radius: 4px;
+      margin: 1px;
+      font-size: 0.7rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #181818;
+      color: #888;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.1s, transform 0.06s, color 0.1s;
+    }
+    .cell.active {
+      background: #0077ff;
+      color: #fff;
+      box-shadow: 0 0 0 1px #0050b3 inset;
+    }
+    .cell:hover {
+      transform: translateY(-1px);
+      background: #222;
+      color: #fff;
+    }
+
+    /* Overlay de seleção de nota / peça */
     #selectionOverlay {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.6);
+      background: rgba(0,0,0,0.75);
       display: none;
       align-items: center;
       justify-content: center;
-      z-index: 20;
+      z-index: 6000;
     }
     #selectionOverlay.visible {
       display: flex;
     }
     #selectionPanel {
       background: #181818;
-      border-radius: 8px;
-      border: 1px solid #444;
-      padding: 10px;
-      max-width: 520px;
-      max-height: 80vh;
-      overflow: auto;
+      border-radius: 10px;
+      box-shadow: 0 0 0 1px #333 inset;
+      padding: 10px 12px;
+      max-width: 480px;
+      width: 90vw;
+      max-height: 70vh;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
     #selectionTitle {
-      font-size: 13px;
-      margin-bottom: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
     }
     #selectionOptions {
       display: flex;
       flex-wrap: wrap;
-      gap: 4px;
+      gap: 6px;
+      overflow-y: auto;
+      padding-right: 4px;
     }
     .selection-option {
-      padding: 4px 6px;
-      border-radius: 4px;
-      border: 1px solid #333;
-      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: #222;
+      font-size: 0.8rem;
       cursor: pointer;
-      background: #101010;
     }
     .selection-option.active {
-      background: #2b7cff;
-      border-color: #2b7cff;
-      color: #fff;
+      background: #0077ff;
     }
     .selection-option.x-option {
-      background: #222;
-      color: #999;
-    }
-
-    /* Aviso orientação */
-    #orientationOverlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.85);
-      color: #fff;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      z-index: 9999;
-      padding: 20px;
-      box-sizing: border-box;
-    }
-    #orientationOverlay.visible {
-      display: flex;
+      background: #333;
+      color: #ffb3b3;
     }
 
     @media (max-width: 900px) {
-      main {
-        flex-direction: column;
+      #animacaoInner {
+        width: min(420px, 90vw);
       }
-      #leftPanel, #rightPanel {
-        flex: 1 1 auto;
+      .cell {
+        min-width: 22px;
+        height: 20px;
+      }
+      .drumLabel {
+        width: 52px;
       }
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>JamOn – Baixista Animada (Animacao5)</h1>
-    <div class="info">Baixista toca composição manual e playback aleatório (baixo + bateria)</div>
-  </header>
-
-  <main>
-    <div id="leftPanel">
-      <div id="stage">
-        <img id="pernasLayer" src="animacao/pernas/Pernas.png" alt="Pernas" />
-        <img id="troncoLayer" src="animacao/tronco_baixo/Pasta_1F/1E.png" alt="Tronco" />
-        <img id="antebracoLayer" src="animacao/antebraco/antebracoE.png" alt="Antebraço" />
-        <img id="bracoLayer" src="animacao/braco_direito/Corda_E1.png" alt="Braço direito" />
-        <img id="headLayer" src="animacao/cabeca/cabeca0001.png" alt="Cabeça" />
-        <div id="countdownOverlay"></div>
-      </div>
-    </div>
-
-    <div id="rightPanel">
-      <div class="section">
-        <div class="flexRow">
-          <div class="labelSmall">BPM:</div>
-          <input id="bpmSlider" type="range" min="40" max="220" value="110" />
-          <span id="bpmDisplay" class="labelSmall">110 BPM</span>
-
-          <div class="labelSmall">Baixo:</div>
-          <input id="baixoVolume" type="range" min="0" max="1" step="0.01" value="0.9" />
-
-          <div class="labelSmall">Bateria:</div>
-          <input id="drumVolume" type="range" min="0" max="1" step="0.01" value="0.7" />
-        </div>
-
-        <div class="flexRow" style="margin-top:6px;">
-          <button id="playManualBtn">▶ Tocar composição manual</button>
-          <button id="playAleatorioBtn" class="secondary">🎲 Playback aleatório (baixo+bateria)</button>
-          <button id="playBtn" class="secondary">▶ Play / Pause</button>
-          <button id="pauseBtn" class="secondary">⏸ Parar</button>
-        </div>
-
-        <div class="flexRow" style="margin-top:6px;">
-          <button id="addCol" class="secondary">+ Coluna</button>
-          <button id="duplicateSeq" class="secondary">×2 Duplicar últimas 16</button>
-          <button id="clearBaixo" class="secondary">Limpar Baixo</button>
-          <button id="clearAll" class="danger">Limpar Tudo</button>
-        </div>
-
-        <div id="progressContainer">
-          <div id="progressBar"></div>
-        </div>
-      </div>
-
-      <div id="gridsWrapper">
-        <div id="baixoGrid">
-          <div id="baixoGridTitle">Baixo (clique para editar notas – X = ghost / silêncio)</div>
-        </div>
-        <div id="drumGrid">
-          <div id="drumGridTitle">Bateria (clique para ativar/desativar peças)</div>
-        </div>
-      </div>
-    </div>
-  </main>
-
-  <!-- Painel de seleção de nota -->
-  <div id="selectionOverlay">
-    <div id="selectionPanel">
-      <div id="selectionTitle">Selecione a nota</div>
-      <div id="selectionOptions"></div>
-    </div>
-  </div>
-
-  <!-- Overlay orientação -->
+  <!-- Overlay para orientar a usar paisagem -->
   <div id="orientationOverlay">
     <div>
-      <h2>Gire o dispositivo</h2>
-      <p>Para uma experiência melhor, use o aparelho na horizontal (paisagem).</p>
+      <h2>Gire o aparelho</h2>
+      <p>Use o modo paisagem (horizontal) para ver a baixista e o painel de edição.</p>
     </div>
   </div>
 
-  <!-- Engine de playback (apenas baixo+bateria) -->
-  <script src="jamon-engine.js"></script>
+  <!-- Overlay de contagem regressiva -->
+  <div id="countdownOverlay">
+    <span id="countdownNumber">3</span>
+  </div>
+
+  <div class="appRoot">
+    <!-- TOPO: ANIMAÇÃO -->
+    <section id="animacaoArea">
+      <div id="animacaoInner">
+        <!-- Pernas estáticas -->
+        <img id="pernasLayer" class="grupoBalanço" src="animacao/pernas/Pernas.png" alt="Pernas" />
+        <!-- Tronco + baixo (mão esquerda) -->
+        <img id="troncoLayer" class="grupoBalanço" src="animacao/tronco_baixo/Pasta_1F/1E.png" alt="Tronco e baixo" />
+        <!-- Cabeça (809 frames possíveis, aqui começando por 0001) -->
+        <img id="cabecaLayer" src="animacao/cabeca/cabeca0001.png" alt="Cabeça" />
+        <!-- Braço direito (ombro/bíceps – 4 cordas) -->
+        <img id="antebracoLayer" src="animacao/antebraco/antebracoE.png" alt="Antebraço/ombro" />
+        <!-- Mão direita / antebraço (5 frames por corda) -->
+        <img id="bracoDireitoLayer" src="animacao/braco_direito/Corda_E1.png" alt="Braço direito" />
+      </div>
+    </section>
+
+    <!-- BASE: CONTROLES + COMPOSIÇÃO -->
+    <section id="painel">
+      <div id="topControls">
+        <div id="topControls-left">
+          <strong>JamOn – Baixista Animada (Animacao5)</strong>
+          <span id="descricaoModo">Baixista toca composição manual e playback aleatório (baixo + bateria)</span>
+        </div>
+        <div id="topControls-right">
+          <div class="sliderGroup">
+            <label for="bpmSlider">BPM:</label>
+            <input id="bpmSlider" type="range" min="60" max="180" value="110">
+            <span id="bpmDisplay">110 BPM</span>
+          </div>
+          <div class="sliderGroup">
+            <label for="baixoVolume">Baixo:</label>
+            <input id="baixoVolume" type="range" min="0" max="1" step="0.01" value="0.9">
+          </div>
+          <div class="sliderGroup">
+            <label for="drumVolume">Bateria:</label>
+            <input id="drumVolume" type="range" min="0" max="1" step="0.01" value="0.8">
+          </div>
+
+          <button id="playComposicaoBtn" class="btn secondary">▶ Tocar composição manual</button>
+          <button id="playAleatorioBtn" class="btn secondary">🔀 Playback aleatório (baixo+bateria)</button>
+          <button id="playBtn" class="btn">▶ Play / Pause</button>
+          <button id="stopBtn" class="btn secondary">⏹ Parar</button>
+        </div>
+      </div>
+
+      <div id="progressContainer">
+        <div id="progressBar"></div>
+      </div>
+
+      <section id="composicaoSection">
+        <div id="sequencerCard">
+          <div id="sequencerHeader">
+            <div id="sequencerHeaderLeft">
+              <span>Baixo (clique para editar notas – X = ghost / silêncio)</span>
+            </div>
+            <div id="sequencerHeaderRight">
+              <button id="addCol" class="btn secondary">+ Coluna</button>
+              <button id="duplicateSeq" class="btn secondary">×2 Duplicar últimas 16</button>
+              <button id="clearBaixo" class="btn secondary">Limpar Baixo</button>
+              <button id="clearAll" class="btn danger">Limpar Tudo</button>
+            </div>
+          </div>
+          <div id="sequencerInner">
+            <!-- Baixo -->
+            <div class="baixoRowContainer">
+              <div class="baixoLabel">Baixo</div>
+              <div id="baixoGrid" class="composicaoGrid"></div>
+            </div>
+            <!-- Bateria -->
+            <div class="gridTitulo">Bateria (clique para ativar/desativar peças)</div>
+            <div id="drumGrid"></div>
+          </div>
+        </div>
+      </section>
+    </section>
+  </div>
+
+  <!-- Painel de seleção (nota / peça de bateria) -->
+  <div id="selectionOverlay">
+    <div id="selectionPanel">
+      <div id="selectionTitle">Selecione</div>
+      <div id="selectionOptions"></div>
+      <div style="text-align:right;margin-top:6px;">
+        <button class="btn secondary" onclick="fecharPainelSelecao()">Fechar</button>
+      </div>
+    </div>
+  </div>
 
   <script>
-    /* ===== ESTADO GLOBAL ===== */
-    let bpmAtual = 110;
+    /* ===========================================
+       CONSTANTES / ESTADO GLOBAL
+       =========================================== */
+    const BASS_SAMPLES = {
+      '1E': 'assets/BaixoMelodia/1E.mp3',
+      '2F': 'assets/BaixoMelodia/2F.mp3',
+      '3FS': 'assets/BaixoMelodia/3FS.mp3',
+      '4G': 'assets/BaixoMelodia/4G.mp3',
+      '5GS': 'assets/BaixoMelodia/5GS.mp3',
+      '6A': 'assets/BaixoMelodia/6A.mp3',
+      '7AS': 'assets/BaixoMelodia/7AS.mp3',
+      '8B': 'assets/BaixoMelodia/8B.mp3',
+      '9C': 'assets/BaixoMelodia/9C.mp3',
+      '10CS': 'assets/BaixoMelodia/10CS.mp3',
+      '11D': 'assets/BaixoMelodia/11D.mp3',
+      '12DS': 'assets/BaixoMelodia/12DS.mp3',
+      '13E': 'assets/BaixoMelodia/13E.mp3',
+      '14F': 'assets/BaixoMelodia/14F.mp3',
+      '15FS': 'assets/BaixoMelodia/15FS.mp3',
+      '16G': 'assets/BaixoMelodia/16G.mp3',
+      '17GS': 'assets/BaixoMelodia/17GS.mp3',
+      '18A': 'assets/BaixoMelodia/18A.mp3',
+      '19AS': 'assets/BaixoMelodia/19AS.mp3',
+      '20B': 'assets/BaixoMelodia/20B.mp3',
+      '21C': 'assets/BaixoMelodia/21C.mp3',
+      '22CS': 'assets/BaixoMelodia/22CS.mp3',
+      '23D': 'assets/BaixoMelodia/23D.mp3',
+      '24DS': 'assets/BaixoMelodia/24DS.mp3',
+      '25E': 'assets/BaixoMelodia/25E.mp3',
+      '26F': 'assets/BaixoMelodia/26F.mp3',
+      '27FS': 'assets/BaixoMelodia/27FS.mp3',
+      '28G': 'assets/BaixoMelodia/28G.mp3',
+      '29GS': 'assets/BaixoMelodia/29GS.mp3',
+      '30A': 'assets/BaixoMelodia/30A.mp3',
+      '31AS': 'assets/BaixoMelodia/31AS.mp3',
+      '32B': 'assets/BaixoMelodia/32B.mp3',
+      '33C': 'assets/BaixoMelodia/33C.mp3',
+      '34CS': 'assets/BaixoMelodia/34CS.mp3',
+      '35D': 'assets/BaixoMelodia/35D.mp3',
+      '36DS': 'assets/BaixoMelodia/36DS.mp3',
+      '37E': 'assets/BaixoMelodia/37E.mp3',
+      '38F': 'assets/BaixoMelodia/38F.mp3',
+      '39FS': 'assets/BaixoMelodia/39FS.mp3',
+      '40G': 'assets/BaixoMelodia/40G.mp3',
+      '41GS': 'assets/BaixoMelodia/41GS.mp3',
+      '42A': 'assets/BaixoMelodia/42A.mp3',
+      '43AS': 'assets/BaixoMelodia/43AS.mp3',
+      'x': 'assets/bass-muted.mp3'
+    };
+
+    const drumLines = [
+      { id: "bumbo",    label: "Bumbo",    file: "Bateria/bumbo.mp3" },
+      { id: "caixa",    label: "Caixa",    file: "Bateria/caixa.mp3" },
+      { id: "chimbal",  label: "Chimbal",  file: "Bateria/chimbal.mp3" },
+      { id: "conducao", label: "Condução", file: "Bateria/conducao.mp3" },
+      { id: "ataque",   label: "Ataque",   file: "Bateria/ataque.mp3" }
+    ];
+
+    const notasValidas = [
+      "1E","2F","3FS","4G","5GS",
+      "6A","7AS","8B","9C","10CS",
+      "11D","12DS","13E","14F","15FS",
+      "16G","17GS","18A","19AS","20B",
+      "21C","22CS","23D","24DS","25E","26F",
+      "27FS","28G","29GS","30A","31AS","32B",
+      "33C","34CS","35D","36DS","37E","38F","39FS",
+      "40G","41GS","42A","43AS"
+    ];
+
     let baixoSeq = [];
     let bateriaSeq = {};
+
+    let bpmAtual = 110;
     let isPlaying = false;
     let playbackInterval = null;
     let atualPasso = 0;
 
     let baixoVolumeGlobal = 0.9;
-    let bateriaVolumeGlobal = 0.7;
+    let bateriaVolumeGlobal = 0.8;
 
     let audioBaixoAtual = null;
     let audioBaixoTimer = null;
-    let ultimaCordaUsada = "E";
-    let notaAnterior = null;
 
     let headFrames = [];
     let headFrameIndex = 0;
-    let headLoopTimer = null;
-    let headTiltTimer = null;
-    let troncoBpmTimer = null;
-    let lateralTimer = null;
-    let countdownTimer = null;
+    let headInterval = null;
+    let headTiltInterval = null;
+    let troncoBpmInterval = null;
+    let lateralInterval = null;
 
-    let animTimers = [];
+    let ultimaCordaUsada = "E";
 
-    /* ===== ELEMENTOS DOM ===== */
-    const headLayer = document.getElementById("headLayer");
-    const troncoLayer = document.getElementById("troncoLayer");
-    const antebracoLayer = document.getElementById("antebracoLayer");
-    const bracoLayer = document.getElementById("bracoLayer");
-    const pernasLayer = document.getElementById("pernasLayer");
-
-    /* ===== NOTAS VÁLIDAS (BAIXO) ===== */
-    const notasValidas = [
-      "1E","2F","3FS","4G","5GS","6A","7AS","8B","9C",
-      "10CS","11D","12DS","13E","14F","15FS","16G","17GS",
-      "18A","19AS","20B","21C","22CS","23D","24DS","25E",
-      "26F","27FS","28G","29GS","30A","31AS","32B","33C",
-      "34CS","35D","36DS","37E","38F","39FS","40G","41GS",
-      "42A","43AS"
-    ];
-
-    /* ===== MAPEAMENTO PASTAS -> ARQUIVOS =====
-       (copiado da sua lógica: Pasta_1F ... Pasta_24E)
-    */
-    const pastaNotas = {
-      "Pasta_1F": [
-        "1E","2F","3FS","4G","5GS","6A","7AS","8B","9C",
-        "10CS","11D","12DS","13E","14F","15FS","16G","17GS",
-        "18A","19AS","20B"
-      ],
-      "Pasta_2FS": [
-        "3FS","4G","5GS","6A","8B","9C","10CS","11D",
-        "13E","14F","15FS","16G","18A","19AS","20B","21C"
-      ],
-      "Pasta_3G": [
-        "4G","5GS","6A","7AS","9C","10CS","11D","12DS",
-        "14F","15FS","16G","17GS","19AS","20B","21C","22CS"
-      ],
-      "Pasta_4GS": [
-        "5GS","6A","7AS","8B","10CS","11D","12DS","13E",
-        "15FS","16G","17GS","18A","20B","21C","22CS","23D"
-      ],
-      "Pasta_5A": [
-        "6A","7AS","8B","9C","11D","12DS","13E","14F",
-        "16G","17GS","18A","19AS","21C","22CS","23D","24DS"
-      ],
-      "Pasta_6AS": [
-        "7AS","8B","9C","10CS","12DS","13E","14F","15FS",
-        "17GS","18A","19AS","20B","22CS","23D","24DS","25E"
-      ],
-      "Pasta_7B": [
-        "8B","9C","10CS","11D","13E","14F","15FS","16G",
-        "18A","19AS","20B","21C","23D","24DS","25E","26F"
-      ],
-      "Pasta_8C": [
-        "9C","10CS","11D","12DS","14F","15FS","16G","17GS",
-        "19AS","20B","21C","22CS","24DS","25E","26F","27FS"
-      ],
-      "Pasta_9CS": [
-        "10CS","11D","12DS","13E","15FS","16G","17GS","18A",
-        "20B","21C","22CS","23D","25E","26F","27FS","28G"
-      ],
-      "Pasta_10D": [
-        "11D","12DS","13E","14F","16G","17GS","18A","19AS",
-        "21C","22CS","23D","24DS","26F","27FS","28G","29GS"
-      ],
-      "Pasta_11DS": [
-        "12DS","13E","14F","15FS","17GS","18A","19AS","20B",
-        "22CS","23D","24DS","25E","27FS","28G","29GS","30A"
-      ],
-      "Pasta_12E": [
-        "13E","14F","15FS","16G","18A","19AS","20B","21C",
-        "23D","24DS","25E","26F","28G","29GS","30A","31B"
-      ],
-      "Pasta_13F": [
-        "14F","15FS","16G","17GS","19AS","20B","21C","22CS",
-        "24DS","25E","26F","27FS","29GS","30A","31AS","32B"
-      ],
-      "Pasta_14FS": [
-        "15FS","16G","17GS","18A","20B","21C","22CS","23D",
-        "25E","26F","27FS","28G","30A","31AS","32B","33C"
-      ],
-      "Pasta_15G": [
-        "16G","17GS","18A","19AS","21C","22CS","23D","24DS",
-        "26F","27FS","28G","29GS","31AS","32B","33C","34CS"
-      ],
-      "Pasta_16GS": [
-        "17GS","18A","19AS","20B","22CS","23D","24DS","25E",
-        "27FS","28G","29GS","30A","32B","33C","34CS","35D"
-      ],
-      "Pasta_17A": [
-        "18A","19AS","20B","21C","23D","24DS","25E","26F",
-        "28G","29GS","30A","31AS","33C","34CS","35D","36DS"
-      ],
-      "Pasta_18AS": [
-        "19AS","20B","21C","22CS","24DS","25E","26F","27FS",
-        "29GS","30A","31AS","32B","34CS","35D","36DS","37E"
-      ],
-      "Pasta_19B": [
-        "20B","21C","22CS","23D","25E","26F","27FS","28G",
-        "30A","31AS","32B","33C","35D","36DS","37E","38F"
-      ],
-      "Pasta_20C": [
-        "21C","22CS","23D","24DS","26F","27FS","28G","29GS",
-        "31AS","32B","33C","34CS","36DS","37E","38F","39FS"
-      ],
-      "Pasta_21CS": [
-        "22CS","23D","24DS","25E","27FS","28G","29GS","30A",
-        "32B","33C","34CS","35D","37E","38F","39FS","40G"
-      ],
-      "Pasta_22D": [
-        "23D","24DS","25E","26F","28G","29GS","30A","31AS",
-        "33C","34CS","35D","36DS","38F","39FS","40G","41GS"
-      ],
-      "Pasta_23DS": [
-        "24DS","25E","26F","27FS","29GS","30A","31AS","32B",
-        "34CS","35D","36DS","37E","39FS","40G","41GS","42A"
-      ],
-      "Pasta_24E": [
-        "25E","26F","27FS","28G","30A","31AS","32B","33C",
-        "35D","36DS","37E","38F","40G","41GS","42A","43AS"
-      ]
-    };
-
-    const pastasOrdenadas = Object.keys(pastaNotas);
-
-    /* ===== BASS SAMPLES ===== */
-    const BASS_SAMPLES = {
-      1: "assets/BaixoMelodia/1E.mp3",
-      2: "assets/BaixoMelodia/2F.mp3",
-      3: "assets/BaixoMelodia/3FS.mp3",
-      4: "assets/BaixoMelodia/4G.mp3",
-      5: "assets/BaixoMelodia/5GS.mp3",
-      6: "assets/BaixoMelodia/6A.mp3",
-      7: "assets/BaixoMelodia/7AS.mp3",
-      8: "assets/BaixoMelodia/8B.mp3",
-      9: "assets/BaixoMelodia/9C.mp3",
-      10: "assets/BaixoMelodia/10CS.mp3",
-      11: "assets/BaixoMelodia/11D.mp3",
-      12: "assets/BaixoMelodia/12DS.mp3",
-      13: "assets/BaixoMelodia/13E.mp3",
-      14: "assets/BaixoMelodia/14F.mp3",
-      15: "assets/BaixoMelodia/15FS.mp3",
-      16: "assets/BaixoMelodia/16G.mp3",
-      17: "assets/BaixoMelodia/17GS.mp3",
-      18: "assets/BaixoMelodia/18A.mp3",
-      19: "assets/BaixoMelodia/19AS.mp3",
-      20: "assets/BaixoMelodia/20B.mp3",
-      21: "assets/BaixoMelodia/21C.mp3",
-      22: "assets/BaixoMelodia/22CS.mp3",
-      23: "assets/BaixoMelodia/23D.mp3",
-      24: "assets/BaixoMelodia/24DS.mp3",
-      25: "assets/BaixoMelodia/25E.mp3",
-      26: "assets/BaixoMelodia/26F.mp3",
-      27: "assets/BaixoMelodia/27FS.mp3",
-      28: "assets/BaixoMelodia/28G.mp3",
-      29: "assets/BaixoMelodia/29GS.mp3",
-      30: "assets/BaixoMelodia/30A.mp3",
-      31: "assets/BaixoMelodia/31AS.mp3",
-      32: "assets/BaixoMelodia/32B.mp3",
-      33: "assets/BaixoMelodia/33C.mp3",
-      34: "assets/BaixoMelodia/34CS.mp3",
-      35: "assets/BaixoMelodia/35D.mp3",
-      36: "assets/BaixoMelodia/36DS.mp3",
-      37: "assets/BaixoMelodia/37E.mp3",
-      38: "assets/BaixoMelodia/38F.mp3",
-      39: "assets/BaixoMelodia/39FS.mp3",
-      40: "assets/BaixoMelodia/40G.mp3",
-      41: "assets/BaixoMelodia/41GS.mp3",
-      42: "assets/BaixoMelodia/42A.mp3",
-      43: "assets/BaixoMelodia/43AS.mp3",
-      x: "assets/bass-muted.mp3"   // ghost-note
-    };
-
-    /* ===== BATERIA – LINHAS ===== */
-    const drumLines = [
-      { id: "bumbo",   label: "Bumbo",    file: "bumbo.mp3" },
-      { id: "caixa",   label: "Caixa",    file: "caixa.mp3" },
-      { id: "chimbal", label: "Chimbal",  file: "chimbal.mp3" },
-      { id: "conducao", label: "Condução", file: "conducao.mp3" },
-      { id: "ataque",  label: "Ataque",   file: "ataque.mp3" }
-    ];
-
-    /* ===== FUNÇÕES GERAIS ===== */
-    function garantirPaisagem() {
-      const overlay = document.getElementById("orientationOverlay");
-      function checar() {
-        if (window.innerWidth < window.innerHeight) {
-          overlay.classList.add("visible");
-        } else {
-          overlay.classList.remove("visible");
-        }
-      }
-      checar();
-      window.addEventListener("resize", checar);
-    }
+    /* ===========================================
+       FUNÇÕES DE AJUDA
+       =========================================== */
 
     function generateHeadFramePaths() {
       const arr = [];
-      // você tem 809 frames, mas podemos usar uma faixa menor para loop suave
-      const TOTAL = 100;
-      for (let i = 1; i <= TOTAL; i++) {
+      for (let i = 1; i <= 100; i++) {
         const num = i.toString().padStart(4, "0");
-        arr.push("animacao/cabeca/cabeca" + num + ".png");
+        arr.push(`animacao/cabeca/cabeca${num}.png`);
       }
       return arr;
     }
 
-    async function preloadImages(urls) {
-      const uniq = Array.from(new Set(urls));
-      const promises = uniq.map(url => new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => resolve(url);
-        img.onerror = () => {
-          console.warn("Falha ao carregar:", url);
-          resolve(url); // não rejeita, só segue
-        };
-        img.src = url;
+    function preloadImages(urls) {
+      return Promise.all(urls.map(url => {
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve(url);
+          img.onerror = () => {
+            console.warn("Falha ao carregar:", url);
+            resolve(url);
+          };
+          img.src = url;
+        });
       }));
-      await Promise.all(promises);
-      console.log("Pré-carregamento concluído.");
     }
 
+    /* Animação da cabeça – laço longo */
     function startHeadLoop() {
-      if (!headFrames.length) return;
-      if (headLoopTimer) clearInterval(headLoopTimer);
-      headLoopTimer = setInterval(() => {
+      const cabeca = document.getElementById("cabecaLayer");
+      if (headInterval) clearInterval(headInterval);
+      headInterval = setInterval(() => {
         headFrameIndex = (headFrameIndex + 1) % headFrames.length;
-        headLayer.src = headFrames[headFrameIndex];
+        cabeca.src = headFrames[headFrameIndex];
       }, 80);
     }
 
     function startHeadTiltBpm(bpm) {
-      if (headTiltTimer) clearInterval(headTiltTimer);
-      const ms = (60000 / bpm) * 2;
-      let dir = 1;
-      headTiltTimer = setInterval(() => {
-        const ang = dir * 5;
-        headLayer.style.transform = `translateX(-50%) rotate(${ang}deg)`;
-        dir *= -1;
-      }, ms);
+      const cabeca = document.getElementById("cabecaLayer");
+      if (headTiltInterval) clearInterval(headTiltInterval);
+      const msBeat = 60000 / bpm;
+      let toggle = false;
+      headTiltInterval = setInterval(() => {
+        toggle = !toggle;
+        const deg = toggle ? -6 : 6;
+        cabeca.style.transform = `translateX(-50%) rotate(${deg}deg)`;
+      }, msBeat * 4);
     }
 
     function startTroncoBpm(bpm) {
-      if (troncoBpmTimer) clearInterval(troncoBpmTimer);
-      const ms = (60000 / bpm) * 2;
-      let dir = 1;
-      troncoBpmTimer = setInterval(() => {
-        const scale = 1 + dir * 0.02;
-        troncoLayer.style.transform = `translateX(-50%) scale(${scale})`;
-        dir *= -1;
-      }, ms);
+      const tronco = document.getElementById("troncoLayer");
+      if (troncoBpmInterval) clearInterval(troncoBpmInterval);
+      const msBeat = 60000 / bpm;
+      let toggle = false;
+      troncoBpmInterval = setInterval(() => {
+        toggle = !toggle;
+        const scale = toggle ? 1.01 : 1;
+        tronco.style.transform = `translateX(-50%) scale(${scale})`;
+      }, msBeat * 4);
     }
 
     function startLateralMovement() {
-      if (lateralTimer) clearInterval(lateralTimer);
-      const stage = document.getElementById("stage");
-      let t = 0;
-      lateralTimer = setInterval(() => {
-        t += 0.04;
-        const dx = Math.sin(t) * 5;
-        stage.style.transform = `translateX(${dx}px)`;
+      const inner = document.getElementById("animacaoInner");
+      if (lateralInterval) clearInterval(lateralInterval);
+      let dir = 1;
+      let pos = 0;
+      lateralInterval = setInterval(() => {
+        pos += dir * 0.15;
+        if (pos > 1.2) dir = -1;
+        if (pos < -1.2) dir = 1;
+        inner.style.transform = `translateX(${pos}%)`;
       }, 40);
     }
 
     function resetAnimTimers() {
-      animTimers.forEach(id => clearInterval(id));
-      animTimers = [];
+      if (headInterval) clearInterval(headInterval);
+      if (headTiltInterval) clearInterval(headTiltInterval);
+      if (troncoBpmInterval) clearInterval(troncoBpmInterval);
+      if (lateralInterval) clearInterval(lateralInterval);
     }
 
-    /* ===== MAPEAMENTO NOTA -> CORDA ===== */
+    /* ===========================================
+       TRONCO / MÃO ESQUERDA – TRANSIÇÕES
+       =========================================== */
+
+    const transicoesPasta = {
+      "1F": ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B"],
+      "2FS": ["3FS","4G","5GS","6A","8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C"],
+      "3G": ["4G","5GS","6A","7AS","9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS"],
+      "4GS": ["5GS","6A","7AS","8B","10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D"],
+      "5A": ["6A","7AS","8B","9C","11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS"],
+      "6AS": ["7AS","8B","9C","10CS","12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E"],
+      "7B": ["8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F"],
+      "8C": ["9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS"],
+      "9CS": ["10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G"],
+      "10D": ["11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS"],
+      "11DS": ["12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A"],
+      "12E": ["13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31B"],
+      "13F": ["14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B"],
+      "14FS": ["15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C"],
+      "15G": ["16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS"],
+      "16GS": ["17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D"],
+      "17A": ["18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS"],
+      "18AS": ["19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E"],
+      "19B": ["20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F"],
+      "20C": ["21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS","36DS","37E","38F","39FS"],
+      "21CS": ["22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D","37E","38F","39FS","40G"],
+      "22D": ["23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS","38F","39FS","40G","41GS"],
+      "23DS": ["24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E","39FS","40G","41GS","42A"],
+      "24E": ["25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F","40G","41GS","42A","43AS"]
+    };
+
+    function escolherPastaTransicao(notaAnterior, notaAtual) {
+      if (!notaAnterior) return "1F";
+
+      const idxAnt = notasValidas.indexOf(notaAnterior);
+      const idxAtual = notasValidas.indexOf(notaAtual);
+      if (idxAnt === -1 || idxAtual === -1) return "1F";
+
+      if (idxAtual < idxAnt - 1) return "1F";
+
+      const desloc = idxAtual - idxAnt;
+      const pastaIdx = Math.min(24, Math.max(1, desloc));
+      return pastaIdx === 1 ? "1F" : `${pastaIdx+0}${["F","FS","G","GS","A","AS","B","C","CS","D","DS","E","F","FS","G","GS","A","AS","B","C","CS","D","DS","E"][pastaIdx-1]}`;
+    }
+
+    function trocarFrameTronco(nota) {
+      const tronco = document.getElementById("troncoLayer");
+
+      const notaAnterior = tronco.dataset.notaAtual || "1E";
+      const pasta = escolherPastaTransicao(notaAnterior, nota);
+
+      tronco.dataset.notaAtual = nota;
+
+      const src = `animacao/tronco_baixo/Pasta_${pasta}/${nota}.png`;
+      tronco.src = src;
+    }
+
+    /* ===========================================
+       CORDA / BRAÇO DIREITO / ANTEBRAÇO
+       =========================================== */
+
     function getCordaDaNota(nota) {
-      if (!nota || nota === "x") return ultimaCordaUsada || "E";
-      const num = parseInt(nota.match(/^(\d+)/)[1], 10);
-      if (num <= 20) return "E";        // corda Mi
-      if (num <= 26) return "A";        // corda Lá
-      if (num <= 32) return "D";        // corda Ré
-      return "G";                       // corda Sol
-    }
+      if (!nota || nota === "x") return "E";
 
-    /* ===== ESCOLHA DE PASTA / FRAME (ECONOMIA) ===== */
-    function determinarPastaPorNota(nota) {
-      if (!nota || nota === "x") return "Pasta_1F";
-      for (const pasta of pastasOrdenadas) {
-        if (pastaNotas[pasta].includes(nota)) return pasta;
-      }
-      return "Pasta_1F";
-    }
+      const numMatch = nota.match(/^(\d+)/);
+      if (!numMatch) return "E";
 
-    function escolherPastaTransicao(notaAnt, notaAtual) {
-      if (!notaAnt || !notaAtual || notaAnt === "x" || notaAtual === "x") return null;
-      let melhorPasta = null;
-      let menorSpan = Infinity;
+      const n = parseInt(numMatch[1], 10);
+      if (isNaN(n)) return "E";
 
-      for (const pasta of pastasOrdenadas) {
-        const lista = pastaNotas[pasta];
-        const idx1 = lista.indexOf(notaAnt);
-        const idx2 = lista.indexOf(notaAtual);
-        if (idx1 === -1 || idx2 === -1) continue;
-        const span = Math.abs(idx2 - idx1);
-        if (span < menorSpan) {
-          menorSpan = span;
-          melhorPasta = pasta;
-        }
-      }
-      return melhorPasta;
-    }
-
-    function escolherArquivoMaisProximo(pasta, nota) {
-      const lista = pastaNotas[pasta];
-      const alvoNum = parseInt(nota.match(/^(\d+)/)[1], 10);
-      let melhor = lista[0];
-      let menorDiff = Infinity;
-      for (const n of lista) {
-        const num = parseInt(n.match(/^(\d+)/)[1], 10);
-        const diff = Math.abs(num - alvoNum);
-        if (diff < menorDiff) {
-          menorDiff = diff;
-          melhor = n;
-        }
-      }
-      return melhor;
-    }
-
-    function trocarFrameTronco(notaAtual) {
-      if (!notaAtual || notaAtual === "x") return;
-
-      let pastaTransicao = escolherPastaTransicao(notaAnterior, notaAtual);
-      let pasta;
-      if (pastaTransicao) {
-        pasta = pastaTransicao;
-      } else {
-        pasta = determinarPastaPorNota(notaAtual);
-      }
-      const arquivo = escolherArquivoMaisProximo(pasta, notaAtual);
-      const caminho = `animacao/tronco_baixo/${pasta}/${arquivo}.png`;
-
-      const img = new Image();
-      img.onload = () => {
-        troncoLayer.src = caminho;
-      };
-      img.onerror = () => {
-        console.warn("Falha ao carregar tronco:", caminho);
-        troncoLayer.src = "animacao/tronco_baixo/Pasta_1F/1E.png";
-      };
-      img.src = caminho;
-
-      notaAnterior = notaAtual;
+      // 1–5  = corda E (Mi)
+      // 6–10 = corda A (Lá)
+      // 11–15 = corda D (Ré)
+      // 16+  = corda G (Sol)
+      if (n <= 5) return "E";
+      if (n <= 10) return "A";
+      if (n <= 15) return "D";
+      return "G";
     }
 
     function trocarAntebraco(corda) {
-      const mapa = {
-        "E": "animacao/antebraco/antebracoE.png",
-        "A": "animacao/antebraco/antebracoA.png",
-        "D": "animacao/antebraco/antebracoD.png",
-        "G": "animacao/antebraco/antebracoG.png"
-      };
-      const caminho = mapa[corda] || mapa["E"];
-      antebracoLayer.src = caminho;
+      const ante = document.getElementById("antebracoLayer");
+      let nome = "antebracoE";
+      if (corda === "A") nome = "antebracoA";
+      else if (corda === "D") nome = "antebracoD";
+      else if (corda === "G") nome = "antebracoG";
+      ante.src = `animacao/antebraco/${nome}.png`;
     }
 
     function animarBracoDireito(corda, duracaoMs) {
-      const prefix = {
-        "E": "Corda_E",
-        "A": "Corda_A",
-        "D": "Corda_D",
-        "G": "Corda_G"
-      }[corda] || "Corda_E";
+      const braco = document.getElementById("bracoDireitoLayer");
+      const totalFrames = 5;
+      const frameDuration = Math.max(30, duracaoMs / totalFrames);
 
-      const frames = [1,2,3,4,5].map(i => `animacao/braco_direito/${prefix}${i}.png`);
-      const tempoPorFrame = duracaoMs / frames.length;
-      let idx = 0;
+      let frame = 1;
+      let contador = 0;
 
-      if (!frames.length) return;
-
-      bracoLayer.src = frames[0];
+      braco.dataset.cordaAtual = corda;
 
       const id = setInterval(() => {
-        idx++;
-        if (idx >= frames.length) {
+        frame++;
+        if (frame > totalFrames) frame = totalFrames;
+        braco.src = `animacao/braco_direito/Corda_${corda}${frame}.png`;
+        contador += frameDuration;
+        if (contador >= duracaoMs) {
           clearInterval(id);
-          // volta para frame 1 parado na corda
-          bracoLayer.src = frames[0];
-        } else {
-          bracoLayer.src = frames[idx];
+          braco.src = `animacao/braco_direito/Corda_${corda}1.png`;
         }
-      }, tempoPorFrame);
-
-      animTimers.push(id);
+      }, frameDuration);
     }
 
-    /* ===== ÁUDIO DO BAIXO ===== */
+    /* ===========================================
+       ÁUDIO – BAIXO E BATERIA
+       =========================================== */
+
+    function tocarNotaAudioBaixo(nota, volume) {
+      if (audioBaixoAtual) {
+        audioBaixoAtual.pause();
+        audioBaixoAtual = null;
+      }
+      if (audioBaixoTimer) {
+        clearTimeout(audioBaixoTimer);
+        audioBaixoTimer = null;
+      }
+
+      const arquivo = BASS_SAMPLES[nota] || BASS_SAMPLES['x'];
+      console.log("Tentando tocar áudio do baixo:", arquivo);
+
+      const audio = new Audio(arquivo);
+      audio.volume = volume;
+      audioBaixoAtual = audio;
+
+      audio.play().catch(err => {
+        console.error("Erro ao tocar áudio do baixo:", nota, err);
+      });
+    }
+
     function pararAudioBaixo() {
       if (audioBaixoAtual) {
         audioBaixoAtual.pause();
@@ -843,40 +834,33 @@
       }
     }
 
-    function tocarNotaAudioBaixo(nota, volume) {
-      pararAudioBaixo();
-
-      let src;
-      if (nota === "x") {
-        src = BASS_SAMPLES["x"];
-      } else {
-        const num = parseInt(nota.match(/^(\d+)/)[1], 10);
-        src = BASS_SAMPLES[num] || BASS_SAMPLES["x"];
-      }
-
-      console.log("Tentando tocar áudio do baixo:", src);
-      const a = new Audio(src);
-      a.volume = volume;
-      audioBaixoAtual = a;
-
-      a.play().catch(err => {
-        console.error("Erro ao tocar áudio do baixo:", nota, err);
+    function tocarBateriaNoStep(step, volume) {
+      drumLines.forEach(line => {
+        const seq = bateriaSeq[line.id];
+        if (!seq || step >= seq.length) return;
+        const val = seq[step];
+        if (val === line.id) {
+          const a = new Audio("assets/" + line.file);
+          a.volume = volume;
+          a.play().catch(e => console.log("Erro ao tocar bateria:", e));
+        }
       });
     }
 
-    /* ===== TOCAR NOTA + ANIMAÇÃO COMPLETA ===== */
+    /* ===========================================
+       NOTA + ANIMAÇÃO COMPLETA
+       =========================================== */
+
     function tocarNotaComAnimacao(nota, duracaoMs, volume) {
-      // toca áudio sempre (inclui ghost-note)
       tocarNotaAudioBaixo(nota, volume);
 
       if (nota === "x") {
         const cordaGhost = ultimaCordaUsada || "E";
         animarBracoDireito(cordaGhost, duracaoMs);
-        // não mexe na mão esquerda
         return;
       }
 
-      console.log("Tocando nota:", nota);
+      console.log(`Tocando nota: ${nota}`);
 
       trocarFrameTronco(nota);
 
@@ -887,35 +871,24 @@
       animarBracoDireito(corda, duracaoMs);
     }
 
-    /* ===== BATERIA ===== */
-    function tocarBateriaNoStep(step, volume) {
-      drumLines.forEach(line => {
-        const seq = bateriaSeq[line.id];
-        if (!seq || step >= seq.length) return;
-        const val = seq[step];
-        if (val === line.id) {
-          const a = new Audio("assets/" + line.file);
-          a.volume = volume;
-          a.play().catch(e => console.log("Erro bateria:", e));
-        }
-      });
-    }
+    /* ===========================================
+       PLAYBACK EM LOOP
+       =========================================== */
 
-    /* ===== PLAYBACK EM LOOP ===== */
     function atualizarBarraProgresso(perc) {
       document.getElementById("progressBar").style.width = perc + "%";
     }
 
     function tocarPasso(passo) {
-      const stepTime = (60000 / bpmAtual) / 4;
       const nota = (passo < baixoSeq.length) ? baixoSeq[passo] : "x";
+      const stepTime = (60000 / bpmAtual) / 4;
       tocarNotaComAnimacao(nota, stepTime, baixoVolumeGlobal);
       tocarBateriaNoStep(passo, bateriaVolumeGlobal);
 
       const totalSteps = Math.max(
-        baixoSeq.length || 0,
-        ...drumLines.map(line => (bateriaSeq[line.id] || []).length)
-      ) || 1;
+        baixoSeq.length,
+        ...(drumLines.map(line => bateriaSeq[line.id].length))
+      );
       atualizarBarraProgresso((passo / totalSteps) * 100);
     }
 
@@ -924,17 +897,15 @@
       isPlaying = true;
       atualPasso = 0;
       const stepTime = (60000 / bpmAtual) / 4;
-
       playbackInterval = setInterval(() => {
         tocarPasso(atualPasso);
         atualPasso++;
         const totalSteps = Math.max(
-          baixoSeq.length || 0,
-          ...drumLines.map(line => (bateriaSeq[line.id] || []).length)
-        ) || 1;
+          baixoSeq.length,
+          ...(drumLines.map(line => bateriaSeq[line.id].length))
+        );
         if (atualPasso >= totalSteps) atualPasso = 0;
       }, stepTime);
-
       document.getElementById("playBtn").innerText = "⏸ Pause";
     }
 
@@ -944,105 +915,97 @@
       clearInterval(playbackInterval);
       playbackInterval = null;
       pararAudioBaixo();
-      atualizarBarraProgresso(0);
-      document.getElementById("playBtn").innerText = "▶ Play / Pause";
+      document.getElementById("playBtn").innerText = "▶ Play";
     }
 
     function togglePlay() {
-      if (isPlaying) pararPlayback();
-      else iniciarPlayback();
+      if (!isPlaying) iniciarPlayback();
+      else pararPlayback();
     }
 
-    /* ===== CONTAGEM REGRESSIVA + PRÉ-SCAN ===== */
     function iniciarContagemRegressiva(callback) {
       const overlay = document.getElementById("countdownOverlay");
-      let count = 4; // 4,3,2,1,VAI
+      const numero = document.getElementById("countdownNumber");
 
-      overlay.classList.add("visible");
+      let valor = 3;
+      numero.textContent = valor.toString();
+      overlay.style.display = "flex";
 
-      const update = () => {
-        if (count > 1) {
-          overlay.textContent = (count - 1).toString();
-          count--;
-        } else if (count === 1) {
-          overlay.textContent = "VAI!";
-          count--;
+      const id = setInterval(async () => {
+        valor--;
+        if (valor <= 0) {
+          clearInterval(id);
+          overlay.style.display = "none";
+          await callback();
         } else {
-          clearInterval(countdownTimer);
-          overlay.classList.remove("visible");
-          if (callback) callback();
+          numero.textContent = valor.toString();
         }
-      };
-
-      update();
-      countdownTimer = setInterval(update, 1000);
+      }, 600);
     }
 
     async function preScanAnimacao() {
-      const caminhos = [];
-      const notas = baixoSeq.filter(n => n && n !== "x");
-      if (!notas.length) return;
+      const imagens = [];
+      baixoSeq.forEach((nota, idx) => {
+        if (nota === "x") return;
+        const notaAnterior = idx > 0 ? baixoSeq[idx - 1] : null;
+        const pasta = escolherPastaTransicao(notaAnterior, nota);
+        imagens.push(`animacao/tronco_baixo/Pasta_${pasta}/${nota}.png`);
+      });
 
-      notas.forEach(nota => {
-        const pasta = determinarPastaPorNota(nota);
-        const arquivo = escolherArquivoMaisProximo(pasta, nota);
-        caminhos.push(`animacao/tronco_baixo/${pasta}/${arquivo}.png`);
-
-        const corda = getCordaDaNota(nota);
-        if (corda === "E") {
-          caminhos.push("animacao/antebraco/antebracoE.png");
-          for (let i=1;i<=5;i++) caminhos.push(`animacao/braco_direito/Corda_E${i}.png`);
-        } else if (corda === "A") {
-          caminhos.push("animacao/antebraco/antebracoA.png");
-          for (let i=1;i<=5;i++) caminhos.push(`animacao/braco_direito/Corda_A${i}.png`);
-        } else if (corda === "D") {
-          caminhos.push("animacao/antebraco/antebracoD.png");
-          for (let i=1;i<=5;i++) caminhos.push(`animacao/braco_direito/Corda_D${i}.png`);
-        } else if (corda === "G") {
-          caminhos.push("animacao/antebraco/antebracoG.png");
-          for (let i=1;i<=5;i++) caminhos.push(`animacao/braco_direito/Corda_G${i}.png`);
+      const cordasUsadas = new Set();
+      baixoSeq.forEach(nota => {
+        if (nota && nota !== "x") {
+          cordasUsadas.add(getCordaDaNota(nota));
+        }
+      });
+      ["E","A","D","G"].forEach(c => {
+        if (cordasUsadas.has(c)) {
+          for (let i = 1; i <= 5; i++) {
+            imagens.push(`animacao/braco_direito/Corda_${c}${i}.png`);
+          }
         }
       });
 
-      await preloadImages(caminhos);
+      await preloadImages(imagens);
+      console.log("Pré-carregamento de imagens da animação concluído.");
     }
 
-    function tocarPlaybackCompleto() {
+    function tocarPlaybackCompleto(bpm) {
       pararPlayback();
       resetAnimTimers();
 
-      startTroncoBpm(bpmAtual);
-      startHeadTiltBpm(bpmAtual);
+      startTroncoBpm(bpm);
+      startHeadTiltBpm(bpm);
       startLateralMovement();
 
       iniciarContagemRegressiva(async () => {
         try {
           await preScanAnimacao();
         } catch (e) {
-          console.warn("Falha no pré-scan:", e);
+          console.warn("Falha ao pré-carregar imagens da animação:", e);
         }
         iniciarPlayback();
       });
     }
 
-    /* ===== PAINEL DE SELEÇÃO DE NOTA ===== */
+    /* ===========================================
+       GRID / UI – BAIXO E BATERIA
+       =========================================== */
+
     const selectionOverlay = document.getElementById("selectionOverlay");
     const selectionTitle = document.getElementById("selectionTitle");
     const selectionOptions = document.getElementById("selectionOptions");
-    const painelSelecao = { tipo: null, seqRef: null, idx: null, cell: null };
+    const painelSelecao = { tipo: null, seqRef: null, idx: null, cell: null, drumLine: null };
 
     function abrirPainelSelecaoBaixo(seqRef, idx, cellEl) {
       painelSelecao.tipo = "baixo";
       painelSelecao.seqRef = seqRef;
       painelSelecao.idx = idx;
       painelSelecao.cell = cellEl;
-
       const valorAtual = seqRef[idx];
       const opcoes = ["x", ...notasValidas];
-
       selectionTitle.textContent = "Selecione a nota do baixo";
       selectionOptions.innerHTML = "";
-
       opcoes.forEach(opt => {
         const div = document.createElement("div");
         div.className = "selection-option";
@@ -1059,18 +1022,12 @@
           painelSelecao.seqRef[painelSelecao.idx] = opt;
           const c = painelSelecao.cell;
           c.textContent = label;
-          if (opt === "x") {
-            c.classList.remove("active");
-            c.classList.add("xCell");
-          } else {
-            c.classList.add("active");
-            c.classList.remove("xCell");
-          }
+          if (opt === "x") c.classList.remove("active");
+          else c.classList.add("active");
           fecharPainelSelecao();
         };
         selectionOptions.appendChild(div);
       });
-
       selectionOverlay.classList.add("visible");
     }
 
@@ -1079,85 +1036,67 @@
       Object.keys(painelSelecao).forEach(k => painelSelecao[k] = null);
     }
 
-    selectionOverlay.addEventListener("click", ev => {
+    selectionOverlay.addEventListener("click", (ev) => {
       if (ev.target === selectionOverlay) fecharPainelSelecao();
     });
 
-    /* ===== GRIDS ===== */
     function construirGridBaixo(container, seq) {
-      container.innerHTML = '<div id="baixoGridTitle">Baixo (clique para editar notas – X = ghost / silêncio)</div>';
-      const grid = document.createElement("div");
-      grid.className = "composicaoGrid";
-
+      container.innerHTML = "";
       seq.forEach((nota, idx) => {
         const div = document.createElement("div");
         div.className = "cell";
         if (nota === "x") {
           div.textContent = "X";
-          div.classList.add("xCell");
         } else {
           div.textContent = nota.replace(/S/g,"#");
           div.classList.add("active");
         }
         div.onclick = () => abrirPainelSelecaoBaixo(seq, idx, div);
-        grid.appendChild(div);
+        container.appendChild(div);
       });
-
-      container.appendChild(grid);
     }
 
-    function construirGridBateria(container, bateriaSeqLocal) {
-      container.innerHTML = '<div id="drumGridTitle">Bateria (clique para ativar/desativar peças)</div>';
-
+    function construirGridBateria(container, bateriaSeqObj) {
+      container.innerHTML = "";
       drumLines.forEach(line => {
         const rowDiv = document.createElement("div");
         rowDiv.className = "drumRow";
-
         const label = document.createElement("div");
         label.className = "drumLabel";
         label.textContent = line.label;
         rowDiv.appendChild(label);
-
         const rowGrid = document.createElement("div");
         rowGrid.className = "composicaoGrid";
-
-        const seq = bateriaSeqLocal[line.id] || [];
+        const seq = bateriaSeqObj[line.id];
         seq.forEach((item, idx) => {
           const cell = document.createElement("div");
           cell.className = "cell";
           if (item === "x") {
             cell.textContent = "X";
-            cell.classList.add("xCell");
           } else if (item === line.id) {
             cell.textContent = line.label.toUpperCase()[0];
             cell.classList.add("active");
           } else {
             cell.textContent = "?";
           }
-
           cell.onclick = () => {
             if (seq[idx] === "x") {
               seq[idx] = line.id;
               cell.classList.add("active");
-              cell.classList.remove("xCell");
               cell.textContent = line.label.toUpperCase()[0];
             } else {
               seq[idx] = "x";
               cell.classList.remove("active");
-              cell.classList.add("xCell");
               cell.textContent = "X";
             }
           };
-
           rowGrid.appendChild(cell);
         });
-
         rowDiv.appendChild(rowGrid);
         container.appendChild(rowDiv);
       });
     }
 
-    /* ===== GERADORES ALEATÓRIOS SIMPLES (fallback) ===== */
     function gerarSequenciaAleatoriaBaixo(tam) {
       const seq = [];
       for (let i = 0; i < tam; i++) {
@@ -1178,28 +1117,27 @@
       return obj;
     }
 
-    /* ===== INTEGRAÇÃO COM jamon-engine.js ===== */
-    async function gerarPlaybackAleatorioAvancado(tamanho, bpm) {
-      if (window.JamOnEngine && typeof JamOnEngine.generateRandomPlayback === "function") {
-        const res = JamOnEngine.generateRandomPlayback(tamanho, bpm);
-        return {
-          baixo: res.bassSeq || res.baixo || [],
-          bateria: res.bateriaSeq || res.bateria || {}
-        };
-      } else {
-        // fallback – usa geradores simples
-        const baixo = gerarSequenciaAleatoriaBaixo(tamanho);
-        const bateria = gerarSequenciasAleatoriasBateria(tamanho);
-        return { baixo, bateria };
-      }
+    function configurarPlaybackExportado() {
+      const btn = document.getElementById("playComposicaoBtn");
+      btn.onclick = () => {
+        tocarPlaybackCompleto(bpmAtual);
+      };
     }
 
-    /* ===== INICIALIZAÇÃO / EVENTOS ===== */
+    function garantirPaisagem() {
+      const overlay = document.getElementById("orientationOverlay");
+      function checar() {
+        overlay.style.display = (window.innerWidth < window.innerHeight) ? "flex" : "none";
+      }
+      checar();
+      window.addEventListener("resize", checar);
+    }
+
     function iniciarInterface() {
       const baixoGrid = document.getElementById("baixoGrid");
       const drumGrid = document.getElementById("drumGrid");
-
       const passosIniciais = 16;
+
       baixoSeq = gerarSequenciaAleatoriaBaixo(passosIniciais);
       bateriaSeq = gerarSequenciasAleatoriasBateria(passosIniciais);
 
@@ -1222,26 +1160,7 @@
 
       document.getElementById("addCol").onclick = () => {
         baixoSeq.push("x");
-        drumLines.forEach(line => {
-          bateriaSeq[line.id].push("x");
-        });
-        construirGridBaixo(baixoGrid, baixoSeq);
-        construirGridBateria(drumGrid, bateriaSeq);
-      };
-
-      document.getElementById("duplicateSeq").onclick = () => {
-        const bloco = 16;
-        if (baixoSeq.length >= bloco) {
-          const ult = baixoSeq.slice(-bloco);
-          baixoSeq = baixoSeq.concat(ult);
-        }
-        drumLines.forEach(line => {
-          const arr = bateriaSeq[line.id];
-          if (arr.length >= bloco) {
-            const ult = arr.slice(-bloco);
-            bateriaSeq[line.id] = arr.concat(ult);
-          }
-        });
+        drumLines.forEach(line => bateriaSeq[line.id].push("x"));
         construirGridBaixo(baixoGrid, baixoSeq);
         construirGridBateria(drumGrid, bateriaSeq);
       };
@@ -1253,58 +1172,29 @@
 
       document.getElementById("clearAll").onclick = () => {
         baixoSeq = baixoSeq.map(() => "x");
+        drumLines.forEach(line => bateriaSeq[line.id] = bateriaSeq[line.id].map(() => "x"));
+        construirGridBaixo(baixoGrid, baixoSeq);
+        construirGridBateria(drumGrid, bateriaSeq);
+      };
+
+      document.getElementById("duplicateSeq").onclick = () => {
+        const bloco = 16;
+        if (baixoSeq.length >= bloco) {
+          const ultimas = baixoSeq.slice(-bloco);
+          baixoSeq = baixoSeq.concat(ultimas);
+        }
         drumLines.forEach(line => {
-          bateriaSeq[line.id] = bateriaSeq[line.id].map(() => "x");
+          const arr = bateriaSeq[line.id];
+          if (arr.length >= bloco) {
+            const ultimas = arr.slice(-bloco);
+            bateriaSeq[line.id] = arr.concat(ultimas);
+          }
         });
         construirGridBaixo(baixoGrid, baixoSeq);
         construirGridBateria(drumGrid, bateriaSeq);
       };
 
-      // Play / Pause geral (usa sequência atual – manual ou aleatória)
-      document.getElementById("playBtn").onclick = () => {
-        togglePlay();
-      };
-
-      // Tocar composição manual (usa baixoSeq/bateriaSeq atuais)
-      document.getElementById("playManualBtn").onclick = () => {
-        tocarPlaybackCompleto();
-      };
-
-      // Parar tudo
-      document.getElementById("pauseBtn").onclick = () => {
-        pararPlayback();
-      };
-
-      // Playback aleatório via jamon-engine (baixo + bateria)
-      document.getElementById("playAleatorioBtn").onclick = async () => {
-        try {
-          const { baixo, bateria } = await gerarPlaybackAleatorioAvancado(16, bpmAtual);
-          baixoSeq = baixo.length ? baixo : gerarSequenciaAleatoriaBaixo(16);
-
-          const total = baixoSeq.length || 16;
-          bateriaSeq = {};
-          drumLines.forEach(line => {
-            const arr = bateria[line.id] || [];
-            if (!arr.length) {
-              bateriaSeq[line.id] = Array(total).fill("x");
-            } else if (arr.length >= total) {
-              bateriaSeq[line.id] = arr.slice(0, total);
-            } else {
-              const tmp = arr.slice();
-              while (tmp.length < total) tmp.push("x");
-              bateriaSeq[line.id] = tmp;
-            }
-          });
-
-          construirGridBaixo(baixoGrid, baixoSeq);
-          construirGridBateria(drumGrid, bateriaSeq);
-
-          tocarPlaybackCompleto();
-        } catch (error) {
-          console.error("Erro ao gerar playback aleatório:", error);
-          alert("Erro ao gerar playback aleatório. Veja o console.");
-        }
-      };
+      configurarPlaybackExportado();
     }
 
     window.onload = async () => {
@@ -1316,6 +1206,26 @@
       startHeadTiltBpm(bpmAtual);
       startLateralMovement();
       iniciarInterface();
+
+      document.getElementById("playAleatorioBtn").onclick = () => {
+        try {
+          const playback = JamOnEngine.generateRandomPlayback(bpmAtual, 16);
+          baixoSeq = playback.baixo;
+          bateriaSeq = playback.bateria;
+          construirGridBaixo(document.getElementById("baixoGrid"), baixoSeq);
+          construirGridBateria(document.getElementById("drumGrid"), bateriaSeq);
+          tocarPlaybackCompleto(bpmAtual);
+        } catch (error) {
+          console.error("Erro ao gerar playback aleatório:", error);
+          alert("Erro ao gerar playback aleatório. Veja o console.");
+        }
+      };
+
+      document.getElementById("playBtn").onclick = togglePlay;
+      document.getElementById("stopBtn").onclick = () => {
+        pararPlayback();
+        atualizarBarraProgresso(0);
+      };
     };
   </script>
 </body>
