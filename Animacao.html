@@ -439,7 +439,7 @@
       "48DS","49E"
     ];
 
-    // Mapeamento de pastas para notas - corrigido para lidar com sustenidos
+    // Mapeamento de pastas para notas - CORRIGIDO
     const pastasOrdenadas = [
       { start: 1,  name: "Pasta_1F" },
       { start: 3,  name: "Pasta_2FS" },
@@ -467,10 +467,15 @@
       { start: 25, name: "Pasta_24E" }
     ];
 
-    // Função corrigida para determinar pasta por nota
+    // Função para determinar pasta por nota - CORRIGIDA
     function determinarPastaPorNota(nota) {
       if (nota === "x") return "Pasta_1F";
-      const num = parseInt(nota, 10);
+      
+      // Extrair número da nota
+      const numMatch = nota.match(/^(\d+)/);
+      if (!numMatch) return "Pasta_1F";
+      
+      const num = parseInt(numMatch[1], 10);
       if (isNaN(num)) return "Pasta_1F";
       
       // Para as primeiras 20 notas, usar Pasta_1F
@@ -485,18 +490,24 @@
       return "Pasta_1F";
     }
 
-    // Função corrigida para obter a corda da nota
+    // Função para obter a corda da nota - CORRIGIDA
     function getCordaDaNota(nota) {
       if (!nota || nota === "x") return "E";
-      const n = parseInt(nota, 10);
+      
+      // Extrair número da nota
+      const numMatch = nota.match(/^(\d+)/);
+      if (!numMatch) return "E";
+      
+      const n = parseInt(numMatch[1], 10);
       if (isNaN(n)) return "E";
+      
       if (n <= 20) return "E";  // Corda E (Mi)
       if (n <= 26) return "A";  // Corda A (Lá)
       if (n <= 32) return "D";  // Corda D (Ré)
       return "G";               // Corda G (Sol)
     }
 
-    // Função corrigida para trocar o frame do tronco
+    // Função para trocar o frame do tronco - CORRIGIDA
     function trocarFrameTronco(nota) {
       const tronco = document.getElementById("troncoLayer");
       if (nota === "x") {
@@ -505,31 +516,49 @@
       }
       
       const pasta = determinarPastaPorNota(nota);
-      // Converter "S" para "#" no nome do arquivo
-      const nomeArquivo = nota.replace(/S/g, "#");
+      // NÃO converter "S" para "#" - usar o nome exato do arquivo
+      const nomeArquivo = nota; // Usar o nome original da nota
       const caminho = `animacao/tronco_baixo/${pasta}/${nomeArquivo}.png`;
+      
+      console.log(`Tentando carregar: ${caminho}`);
       
       // Verificar se a imagem existe antes de tentar carregar
       const img = new Image();
       img.onload = () => {
+        console.log(`Imagem carregada: ${caminho}`);
         tronco.src = caminho;
       };
       img.onerror = () => {
         console.warn(`Imagem não encontrada: ${caminho}`);
-        // Fallback para uma imagem padrão
-        tronco.src = "animacao/tronco_baixo/Pasta_1F/1E.png";
+        // Tentar alternativa com sustenido
+        const caminhoAlternativo = `animacao/tronco_baixo/${pasta}/${nota.replace(/S/g, "#")}.png`;
+        console.log(`Tentando alternativa: ${caminhoAlternativo}`);
+        
+        const img2 = new Image();
+        img2.onload = () => {
+          console.log(`Imagem carregada (alternativa): ${caminhoAlternativo}`);
+          tronco.src = caminhoAlternativo;
+        };
+        img2.onerror = () => {
+          console.warn(`Alternativa também falhou: ${caminhoAlternativo}`);
+          // Fallback para uma imagem padrão
+          tronco.src = "animacao/tronco_baixo/Pasta_1F/1E.png";
+        };
+        img2.src = caminhoAlternativo;
       };
       img.src = caminho;
     }
 
-    // Função para tocar áudio do baixo
+    // Função para tocar áudio do baixo - CORRIGIDA
     function tocarNotaAudioBaixo(nota, volume) {
       pararAudioBaixo();
       if (nota === "x") return;
       
-      // Converter "S" para "#" no nome do arquivo
-      const notaArquivo = nota.replace(/#/g, "S");
+      // Usar o nome original da nota (com S)
+      const notaArquivo = nota;
       const url = "assets/BaixoMelodia/" + notaArquivo + ".mp3";
+      
+      console.log(`Tentando tocar áudio: ${url}`);
       
       const a = new Audio(url);
       a.volume = volume;
@@ -653,9 +682,10 @@
       }, 100);
     }
 
-    // Trocar antebraço baseado na corda
+    // Trocar antebraço baseado na corda - CORRIGIDA
     function trocarAntebraco(corda) {
       const ante = document.getElementById("antebracoLayer");
+      
       // Verificar se a imagem existe
       const img = new Image();
       img.onload = () => {
@@ -663,29 +693,29 @@
       };
       img.onerror = () => {
         console.warn(`Imagem de antebraço não encontrada: animacao/antebraco/antebraco${corda}.png`);
-        // Fallback para E
+        // Tentar carregar uma imagem genérica
         ante.src = "animacao/antebraco/antebracoE.png";
       };
       img.src = `animacao/antebraco/antebraco${corda}.png`;
     }
 
-    // Animar braço direito
+    // Animar braço direito - CORRIGIDA
     function animarBracoDireito(corda, duracaoMs) {
       const braco = document.getElementById("bracoLayer");
-      const frames = [
-        `animacao/braco_direito/Corda_${corda}1.png`,
-        `animacao/braco_direito/Corda_${corda}2.png`,
-        `animacao/braco_direito/Corda_${corda}3.png`,
-        `animacao/braco_direito/Corda_${corda}4.png`,
-        `animacao/braco_direito/Corda_${corda}5.png`
-      ];
+      
+      // Gerar frames disponíveis
+      const frames = [];
+      for (let i = 1; i <= 5; i++) {
+        frames.push(`animacao/braco_direito/Corda_${corda}${i}.png`);
+      }
       
       const passo = duracaoMs / frames.length;
       let i = 0;
+      
       const id = setInterval(() => {
         if (i >= frames.length) {
           clearInterval(id);
-          // Verificar se a imagem existe antes de definir
+          // Voltar para a primeira posição
           const img = new Image();
           img.onload = () => {
             braco.src = `animacao/braco_direito/Corda_${corda}1.png`;
@@ -708,6 +738,7 @@
         img.src = frames[i];
         i++;
       }, passo);
+      
       animTimers.push(id);
     }
 
@@ -744,12 +775,14 @@
       });
     }
 
-    // Tocar nota com animação completa
+    // Tocar nota com animação completa - CORRIGIDA
     function tocarNotaComAnimacao(nota, duracaoMs, volume) {
       if (nota === "x") {
         pararAudioBaixo();
         return;
       }
+      
+      console.log(`Tocando nota: ${nota}`);
       
       tocarNotaAudioBaixo(nota, volume);
       trocarFrameTronco(nota);
