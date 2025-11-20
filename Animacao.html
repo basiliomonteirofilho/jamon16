@@ -421,7 +421,7 @@
       <div id="selectionOptions" class="selection-options"></div>
     </div>
   </div>
-  <script src="jamon-engine.js"></script>
+  
   <script>
     /* ============================
        ESTADO GLOBAL
@@ -1252,7 +1252,7 @@
         bateriaVolumeGlobal = parseFloat(document.getElementById("drumVolume").value);
       };
 
-     playAleatorioBtn
+    
       document.getElementById("addBaixoCol").onclick = () => {
         baixoSeq.push("x");
         drumLines.forEach(line => bateriaSeq[line.id].push("x"));
@@ -1308,38 +1308,27 @@
       startHeadTiltBpm(bpmAtual);
       startLateralMovement();
       iniciarInterface();
-      document.getElementById("playAleatorioBtn").onclick = async () => {
-  try {
-    // Gera playback usando o engine do INDEX (baixista + bateria)
-    JamOnPlayback.startRandom(
-      (baixo, bateria) => {
-        baixoSeq = baixo;
-        bateriaSeq = bateria;
+      document.getElementById("playAleatorioBtn").onclick = () => {
+    try {
+        const playback = JamOnEngine.generateRandomPlayback(bpmAtual, 16);
+
+        baixoSeq = playback.baixo;
+        bateriaSeq = playback.bateria;
+
         construirGridBaixo(document.getElementById("baixoGrid"), baixoSeq);
         construirGridBateria(document.getElementById("drumGrid"), bateriaSeq);
-      },
-      () => tocarPlaybackCompleto(bpmAtual)
-    );
-  } catch (e) {
-    console.error("Erro no playback aleatório:", e);
-  }
+
+        tocarPlaybackCompleto(bpmAtual);
+
+    } catch (error) {
+        console.error("Erro ao gerar playback aleatório:", error);
+        alert("Erro ao gerar playback aleatório. Veja o console.");
+    }
 };
 
+
     };
-          async function gerarPlaybackAleatorioAvancado(tamanho, bpm) {
-        if (window.JamOnEngine && typeof JamOnEngine.generateRandomPlayback === "function") {
-          const res = JamOnEngine.generateRandomPlayback(tamanho, bpm);
-          return {
-            baixo: res.bassSeq || res.baixo || [],
-            bateria: res.bateriaSeq || res.bateria || {}
-          };
-        } else {
-          // Fallback: usa o gerador simples que você já tinha
-          const baixo = gerarSequenciaAleatoriaBaixo(tamanho);
-          const bateria = gerarSequenciasAleatoriasBateria(tamanho);
-          return { baixo, bateria };
-        }
-      }
+          
 
   </script>
 </body>
