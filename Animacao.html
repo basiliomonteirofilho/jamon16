@@ -817,20 +817,6 @@
     }, 30);
 }
 
-function stopPenduloMovimento() {
-    if (window.penduloTimer) {
-        clearInterval(window.penduloTimer);
-        window.penduloTimer = null;
-    }
-
-    ["troncoBaixoLayer","cabecaLayer","cabecaTrasLayer","antebracoLayer","bracoDireitoLayer"]
-      .forEach(id => {
-          const el = document.getElementById(id);
-          if (el) el.style.transform = "";
-      });
-}
-
-
     function stopRightHandAnimation() {
     const braco = document.getElementById("bracoDireitoLayer");
     if (!braco) return;
@@ -1590,3 +1576,5 @@ function pararAnimacaoBracoDireito() {
   </script>
 </body>
 </html>
+
+
