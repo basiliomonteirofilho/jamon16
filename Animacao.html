@@ -3,7 +3,7 @@
 <head>
   <script src="jamon-engine.js"></script>
   <meta charset="UTF-8" />
-  <title>Baixista + Bateria - Animação Corrigida</title>
+  <title>Baixista + Bateria - Animação Integrada CORRIGIDA</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <style>
@@ -17,1131 +17,1371 @@
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: #111;
       color: #f5f5f5;
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-    }
-
-    .top-bar {
-      background: #1f2933;
-      padding: 10px 16px;
-      border-bottom: 1px solid #374151;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .top-bar-left,
-    .top-bar-right {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .top-bar h1 {
-      font-size: 16px;
-      font-weight: 600;
-      margin-right: 12px;
-    }
-
-    .btn {
-      padding: 6px 10px;
-      border-radius: 6px;
-      border: 1px solid #4b5563;
-      background: #111827;
-      color: #e5e7eb;
-      cursor: pointer;
-      font-size: 12px;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .btn:hover {
-      background: #1f2937;
-    }
-    .btn-primary {
-      border-color: #10b981;
-      background: #065f46;
-    }
-    .btn-primary:hover {
-      background: #047857;
-    }
-
-    .status-badge {
-      font-size: 11px;
-      padding: 4px 8px;
-      border-radius: 999px;
-      border: 1px solid #10b981;
-      color: #a7f3d0;
-      background: rgba(5, 150, 105, 0.15);
-    }
-
-    .main-layout {
-      display: flex;
-      flex: 1;
-      min-height: 0;
-    }
-
-    .left-panel {
-      flex: 1.1;
-      border-right: 1px solid #374151;
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      min-width: 0;
-    }
-
-    .right-panel {
-      flex: 0.9;
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      min-width: 280px;
-      max-width: 480px;
-      background: #020617;
-    }
-
-    .panel-title {
-      font-size: 13px;
-      font-weight: 600;
-      margin-bottom: 4px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      color: #e5e7eb;
-    }
-    .panel-title span {
-      font-size: 11px;
-      color: #9ca3af;
-      font-weight: 400;
-    }
-
-    .stage-wrapper {
-      border-radius: 12px;
-      background: radial-gradient(circle at top, #1f2937, #020617 55%);
-      border: 1px solid #374151;
-      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.7);
-      padding: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      flex: 1;
-      min-height: 260px;
-    }
-
-    .stage {
-      flex: 1;
-      position: relative;
       overflow: hidden;
-      border-radius: 10px;
-      background: linear-gradient(to bottom, #020617 0%, #020617 40%, #0b1120 100%);
     }
 
-    .stage-floor {
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      height: 26%;
-      background: radial-gradient(circle at top, #111827, #020617 70%);
-      border-top: 1px solid rgba(55, 65, 81, 0.7);
-      box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.9);
-    }
-
-    .light-cone {
-      position: absolute;
-      top: -5%;
-      left: 50%;
-      width: 120%;
-      height: 90%;
-      transform: translateX(-50%);
-      background: radial-gradient(ellipse at top, rgba(59, 130, 246, 0.25), transparent 60%);
-      pointer-events: none;
-      mix-blend-mode: screen;
-    }
-
-    .character-container {
-      position: absolute;
-      bottom: 10%;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 280px;
-      height: 260px;
-      pointer-events: none;
-    }
-
-    /* Containers da baixista */
-    .layer {
-      position: absolute;
-      transform-origin: center;
-      image-rendering: auto;
-    }
-
-    #cabeca {
-      width: 120px;
-      height: 120px;
-      left: 80px;
-      top: 0px;
-    }
-
-    #tronco_baixo {
-      width: 260px;
-      height: 260px;
-      left: 10px;
-      top: 40px;
-    }
-
-    #braco_direito {
-      width: 120px;
-      height: 120px;
-      left: 140px;
-      top: 80px;
-    }
-
-    /* Futuro: mão / antebraço direito em layer separado, se quiser */
-    #mao_direita {
-      width: 90px;
-      height: 90px;
-      left: 170px;
-      top: 130px;
+    #orientationOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.9);
+      color: #fff;
       display: none;
-    }
-
-    /* Controles de teste */
-    .controls-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
+      justify-content: center;
       align-items: center;
-      font-size: 11px;
-      color: #d1d5db;
-    }
-
-    .controls-row label {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .controls-row input[type="number"],
-    .controls-row input[type="text"] {
-      background: #020617;
-      border: 1px solid #4b5563;
-      color: #e5e7eb;
-      border-radius: 6px;
-      padding: 3px 6px;
-      font-size: 11px;
-      width: 70px;
-    }
-
-    .controls-row input[type="checkbox"] {
-      accent-color: #10b981;
-    }
-
-    .test-buttons {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 4px;
-    }
-
-    .note-btn {
-      min-width: 34px;
       text-align: center;
-      padding-inline: 2px;
+      z-index: 9999;
+      padding: 16px;
     }
 
-    .ghost-label {
-      font-size: 11px;
-      color: #a1a1aa;
-      margin-left: 4px;
+    #orientationOverlay h1 {
+      font-size: 1.4rem;
+      margin-bottom: 0.5rem;
     }
 
-    /* Painel de mapeamento / debug */
-    .debug-card {
-      border-radius: 10px;
-      border: 1px solid #1f2937;
-      background: #020617;
-      padding: 10px;
-      font-size: 11px;
-      color: #e5e7eb;
+    #orientationOverlay p {
+      font-size: 0.95rem;
+      opacity: 0.8;
+    }
+
+    .appRoot {
+      width: 100vw;
+      height: 100vh;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      background: radial-gradient(circle at top, #222 0, #050505 60%);
     }
 
-    .debug-row {
+    #topArea {
+      position: relative;
+      flex: 0 0 58%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding-top: 24px;
+    }
+
+    #bottomArea {
+      flex: 0 0 42%;
+      display: flex;
+      flex-direction: column;
+      background: rgba(5, 5, 5, 0.95);
+      border-top: 1px solid #333;
+      padding: 6px 10px 10px 10px;
+      overflow: hidden;
+    }
+
+    #playerControlsRow {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
       align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+      font-size: 0.9rem;
     }
 
-    .debug-row strong {
-      color: #fbbf24;
+    #playerControlsRow button,
+    #playerControlsRow input[type="range"] {
+      cursor: pointer;
     }
 
-    .debug-log {
-      background: #020617;
-      border-radius: 8px;
-      border: 1px solid #111827;
-      padding: 6px;
-      height: 100px;
-      overflow: auto;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-        "Courier New", monospace;
-      font-size: 10px;
-      color: #9ca3af;
+    #playBtn,
+    #playAleatorioBtn,
+    #playExportadoBtn,
+    #addBaixoCol,
+    #addCol,
+    #duplicateSeq,
+    #clearBaixo,
+    #clearAll {
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid #555;
+      background: #222;
+      color: #eee;
+      font-size: 0.82rem;
+      transition: background 0.2s, transform 0.1s;
     }
 
-    .chip {
+    #playBtn:hover,
+    #playAleatorioBtn:hover,
+    #playExportadoBtn:hover,
+    #addBaixoCol:hover,
+    #addCol:hover,
+    #duplicateSeq:hover,
+    #clearBaixo:hover,
+    #clearAll:hover {
+      background: #333;
+      transform: translateY(-1px);
+    }
+
+    #bpmDisplay {
+      min-width: 70px;
+      font-weight: 600;
+    }
+
+    .sliderGroup {
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      padding: 2px 6px;
-      border-radius: 999px;
-      font-size: 10px;
-      border: 1px solid #4b5563;
-      color: #d1d5db;
-      background: #020617;
     }
 
-    .chip span {
-      font-size: 9px;
-      color: #9ca3af;
+    .sliderGroup label {
+      font-size: 0.8rem;
+      opacity: 0.85;
     }
 
-    .chip-green {
-      border-color: #10b981;
-      color: #a7f3d0;
-      background: rgba(5, 150, 105, 0.15);
+    .sliderGroup input[type="range"] {
+      width: 90px;
     }
 
-    .chip-red {
-      border-color: #f97316;
-      color: #fed7aa;
-      background: rgba(124, 45, 18, 0.25);
-    }
-
-    .chip-blue {
-      border-color: #3b82f6;
-      color: #bfdbfe;
-      background: rgba(30, 64, 175, 0.3);
-    }
-
-    .field-group {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-    }
-
-    .field-group label {
-      font-size: 11px;
-      color: #9ca3af;
-    }
-
-    .field-group input[type="text"] {
+    #progressContainer {
       width: 100%;
+      height: 5px;
+      border-radius: 999px;
+      background: #2c2c2c;
+      overflow: hidden;
+      margin-bottom: 8px;
     }
 
-    /* ----- Ferramenta de ajuste de CSS (setinha) ----- */
-    .css-editor {
-      margin-top: 4px;
-      border-radius: 10px;
-      border: 1px solid #1f2937;
-      background: #020617;
-      padding: 8px;
-      font-size: 11px;
-      color: #e5e7eb;
+    #progressBar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #00c853, #ffd600);
+      transition: width 0.12s linear;
+    }
+
+    #gridsArea {
+      flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 6px;
-    }
-
-    .css-editor-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
       gap: 4px;
-    }
-
-    .css-editor-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 4px;
-      margin-top: 4px;
-    }
-
-    .css-editor-grid button {
-      font-size: 11px;
-      padding: 4px 0;
-    }
-
-    .css-code {
-      margin-top: 4px;
-      padding: 4px;
-      border-radius: 6px;
-      background: #020617;
-      border: 1px solid #111827;
-      font-family: ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: 10px;
-      color: #9ca3af;
-      white-space: pre-wrap;
-      word-break: break-word;
-      max-height: 110px;
       overflow: auto;
     }
 
-    .css-editor select {
-      background: #020617;
-      border: 1px solid #4b5563;
-      color: #e5e7eb;
-      border-radius: 6px;
-      padding: 3px 6px;
-      font-size: 11px;
+    #baixoLabelRow {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 2px;
     }
 
-    .css-editor small {
-      font-size: 10px;
-      color: #9ca3af;
+    #baixoLabelRow span {
+      font-size: 0.78rem;
+      opacity: 0.9;
+    }
+
+    #baixoGridContainer {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+
+    #baixoGridLabel {
+      width: 60px;
+      font-size: 0.78rem;
+      text-align: right;
+      opacity: 0.85;
+      padding-right: 6px;
+    }
+
+    #baixoGrid {
+      flex: 1;
+      display: grid;
+      grid-auto-rows: 24px;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(20px, 1fr);
+      gap: 2px;
+      background: #080808;
+      padding: 2px;
+      border-radius: 4px;
+      border: 1px solid #333;
+    }
+
+    .gridWrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    #drumGrid {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding-top: 2px;
+      border-top: 1px solid #222;
+      margin-top: 2px;
+    }
+
+    .drumRow {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      min-height: 22px;
+    }
+
+    .drumLabel {
+      width: 60px;
+      font-size: 0.76rem;
+      text-align: right;
+      opacity: 0.85;
+      padding-right: 6px;
+      white-space: nowrap;
+    }
+
+    .composicaoGrid {
+      flex: 1;
+      display: grid;
+      grid-auto-rows: 22px;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(20px, 1fr);
+      gap: 2px;
+      background: #050505;
+      padding: 2px;
+      border-radius: 4px;
+      border: 1px solid #222;
+    }
+
+    .cell {
+      font-size: 0.7rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 3px;
+      border: 1px solid #333;
+      background: #151515;
+      cursor: pointer;
+      user-select: none;
+      color: #f5f5f5;
+      min-width: 20px;
+    }
+
+    .cell.active {
+      background: #1b5e20;
+      border-color: #00c853;
+      font-weight: 600;
+    }
+
+    .cell:hover {
+      filter: brightness(1.2);
+    }
+
+    #animacaoStageWrapper {
+      position: relative;
+      width: 60vw;
+      max-width: 520px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #baixistaStage {
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      height: 100%;
+      max-height: 360px;
+      margin: 0 auto;
+    }
+
+    #baixistaStage img {
+      position: absolute;
+      image-rendering: crisp-edges;
+      image-rendering: pixelated;
+      pointer-events: none;
+    }
+
+    #cabecaLayer {
+      z-index: 10;
+    }
+
+    #troncoBaixoLayer {
+      z-index: 5;
+    }
+
+    #antebracoLayer {
+      z-index: 8;
+    }
+
+    #bracoDireitoLayer {
+      z-index: 9;
+    }
+
+    #pernasLayer {
+      z-index: 1;
+    }
+
+    .countdownOverlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1500;
+      background: radial-gradient(circle, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.95));
+      color: #fff;
+      font-size: 3rem;
+      font-weight: bold;
+    }
+
+    #selectionOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9000;
+    }
+
+    #selectionOverlay.visible {
+      display: flex;
+    }
+
+    #selectionPanel {
+      background: #181818;
+      padding: 10px;
+      border-radius: 6px;
+      max-width: 520px;
+      max-height: 70vh;
+      overflow: auto;
+      border: 1px solid #444;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
+    }
+
+    #selectionTitle {
+      font-size: 0.9rem;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    #selectionOptions {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+      gap: 4px;
+    }
+
+    .selection-option {
+      border-radius: 4px;
+      background: #222;
+      border: 1px solid #555;
+      font-size: 0.72rem;
+      text-align: center;
+      padding: 4px 2px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .selection-option.active {
+      background: #1b5e20;
+      border-color: #00c853;
+      font-weight: 600;
+    }
+
+    .selection-option.x-option {
+      background: #880e4f;
+      border-color: #f50057;
+    }
+
+    .selection-option.x-option.active {
+      background: #ad1457;
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #444;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #111;
+    }
+
+    #posEditorPanel {
+      position: fixed;
+      top: 6px;
+      left: 6px;
+      z-index: 9999;
+      background: rgba(0, 0, 0, 0.75);
+      color: #fff;
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      align-items: center;
+    }
+    #posEditorPanel label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    #posEditorPanel select {
+      font-size: 12px;
+    }
+    #posEditButtons button,
+    #posCopyCssBtn {
+      font-size: 11px;
+      padding: 2px 6px;
+      cursor: pointer;
     }
 
     @media (max-width: 900px) {
-      .main-layout {
-        flex-direction: column;
+      #animacaoStageWrapper {
+        width: 90vw;
       }
-      .right-panel {
-        max-width: 100%;
+      #baixistaStage {
+        max-height: 320px;
       }
-      .character-container {
-        width: 220px;
-        height: 220px;
+      #bottomArea {
+        flex-basis: 45%;
       }
-      #tronco_baixo {
-        width: 230px;
-        height: 230px;
-        left: 5px;
-        top: 32px;
+      #playerControlsRow {
+        font-size: 0.8rem;
       }
-      #cabeca {
-        width: 100px;
-        height: 100px;
-        left: 70px;
-        top: 0px;
+    }
+
+    @media (max-width: 600px) {
+      #bottomArea {
+        flex-basis: 48%;
       }
-      #braco_direito {
-        width: 100px;
-        height: 100px;
-        left: 130px;
-        top: 70px;
+      #playerControlsRow button {
+        padding: 3px 6px;
+        font-size: 0.7rem;
+      }
+      #baixoGrid,
+      .composicaoGrid {
+        grid-auto-rows: 20px;
       }
     }
   </style>
 </head>
 <body>
-  <div class="top-bar">
-    <div class="top-bar-left">
-      <h1>Jam On – Baixista & Baterista (Animação)</h1>
-      <span class="status-badge">Beta – sincronizado com a composição</span>
-    </div>
-    <div class="top-bar-right">
-      <button class="btn" id="btnRecarregar">Recarregar imagens</button>
-      <button class="btn" id="btnLimparLog">Limpar log</button>
+  <div id="orientationOverlay">
+    <div>
+      <h1>Gire o dispositivo</h1>
+      <p>Para uma experiência melhor, use em modo paisagem (deitado).</p>
     </div>
   </div>
 
-  <div class="main-layout">
-    <section class="left-panel">
-      <div class="panel-title">
-        Palco da Baixista
-        <span>(usa PNGs de <code>animacao/cabeca</code>, <code>animacao/tronco_baixo</code> e
-          <code>animacao/braco_direito</code>)</span>
-      </div>
+  <!-- Painel de ajuste de posição (modo editor) -->
+  <div id="posEditorPanel">
+    <label>
+      <input type="checkbox" id="posEditToggle" />
+      Modo edição de posição
+    </label>
+    <label for="posPartSelect">Parte:</label>
+    <select id="posPartSelect">
+      <option value="troncoBaixoLayer">Tronco / Baixo</option>
+      <option value="cabecaLayer">Cabeça</option>
+      <option value="antebracoLayer">Antebraço</option>
+      <option value="bracoDireitoLayer">Braço direito</option>
+      <option value="pernasLayer">Pernas</option>
+    </select>
+    <div id="posEditButtons">
+      <button type="button" id="posUpBtn">↑</button>
+      <button type="button" id="posDownBtn">↓</button>
+      <button type="button" id="posLeftBtn">←</button>
+      <button type="button" id="posRightBtn">→</button>
+    </div>
+    <button type="button" id="posCopyCssBtn">Copiar CSS</button>
+    <small>(Use apenas para calibrar, depois pode desativar no código.)</small>
+  </div>
 
-      <div class="stage-wrapper">
-        <div class="stage">
-          <div class="light-cone"></div>
-          <div class="stage-floor"></div>
-
-          <div class="character-container">
-            <img id="cabeca" class="layer" src="" alt="Cabeça da baixista" />
-            <img id="tronco_baixo" class="layer" src="" alt="Tronco + Baixo" />
-            <img id="braco_direito" class="layer" src="" alt="Braço direito" />
-            <img id="mao_direita" class="layer" src="" alt="Mão direita (futuro)" />
+  <div class="appRoot">
+    <div id="topArea">
+      <div id="animacaoStageWrapper">
+        <div id="baixistaStage">
+          <img id="pernasLayer" src="animacao/pernas/Pernas.png" alt="Pernas" />
+          <img id="troncoBaixoLayer" src="animacao/tronco_baixo/Pasta_1F/1E.png" alt="Tronco/Baixo" />
+          <img id="antebracoLayer" src="animacao/antebraco/antebracoE.png" alt="Antebraço direito" />
+          <img id="bracoDireitoLayer" src="animacao/braco_direito/Corda_E1.png" alt="Braço direito" />
+          <img id="cabecaLayer" src="animacao/cabeca/cabeca0001.png" alt="Cabeça" />
+          <div id="countdownOverlay" class="countdownOverlay">
+            <span id="countdownText">3</span>
           </div>
         </div>
-
-        <div class="controls-row">
-          <label>
-            Nota manual:
-            <input type="text" id="inputNotaManual" placeholder="Ex: 1E, 2F, 4G, x" />
-          </label>
-          <button class="btn btn-primary" id="btnTocarNotaManual">Tocar nota + animar</button>
-          <span class="ghost-label">Use <strong>x</strong> para ghost note (notas abafadas)</span>
-        </div>
-
-        <div class="test-buttons">
-          <button class="btn note-btn" data-nota="1E">1E</button>
-          <button class="btn note-btn" data-nota="2F">2F</button>
-          <button class="btn note-btn" data-nota="3FS">3FS</button>
-          <button class="btn note-btn" data-nota="4G">4G</button>
-          <button class="btn note-btn" data-nota="5GS">5GS</button>
-          <button class="btn note-btn" data-nota="6A">6A</button>
-          <button class="btn note-btn" data-nota="7AS">7AS</button>
-          <button class="btn note-btn" data-nota="8B">8B</button>
-          <button class="btn note-btn" data-nota="x">X</button>
-        </div>
       </div>
-    </section>
+    </div>
 
-    <aside class="right-panel">
-      <div class="panel-title">
-        Mapeamento / Estado
-        <span>(debug rápido da lógica de “economia de movimentos”)</span>
-      </div>
+    <div id="bottomArea">
+      <div id="playerControlsRow">
+        <button id="playBtn">▶ Play</button>
+        <button id="playAleatorioBtn">🎲 Playback aleatório</button>
+        <button id="playExportadoBtn">📁 Carregar JSON exportado</button>
 
-      <div class="debug-card">
-        <div class="debug-row">
-          <span class="chip chip-blue">
-            Posição atual:
-            <span id="lblPosicaoAtual">–</span>
-          </span>
-          <span class="chip chip-green">
-            Última nota real:
-            <span id="lblUltimaNotaReal">–</span>
-          </span>
-          <span class="chip">
-            Pasta atual:
-            <span id="lblPastaAtual">–</span>
-          </span>
+        <span id="bpmDisplay">120 BPM</span>
+        <input type="range" id="bpmSlider" min="60" max="180" value="120" />
+
+        <div class="sliderGroup">
+          <label for="baixoVolume">Baixo</label>
+          <input type="range" id="baixoVolume" min="0" max="1" step="0.01" value="0.9" />
         </div>
 
-        <div class="debug-row">
-          <span class="chip">
-            Nota recebida:
-            <span id="lblNotaRecebida">–</span>
-          </span>
-          <span class="chip">
-            Tipo:
-            <span id="lblTipoNota">–</span>
-          </span>
-          <span class="chip chip-red">
-            Fantasma?
-            <span id="lblGhost">–</span>
-          </span>
+        <div class="sliderGroup">
+          <label for="drumVolume">Bateria</label>
+          <input type="range" id="drumVolume" min="0" max="1" step="0.01" value="0.9" />
         </div>
 
-        <div class="debug-row">
-          <span class="chip">
-            Pasta escolhida:
-            <span id="lblPastaEscolhida">–</span>
-          </span>
-          <span class="chip">
-            PNG:
-            <span id="lblPngEscolhido">–</span>
-          </span>
-        </div>
-
-        <div class="field-group">
-          <label>Log de eventos</label>
-          <div id="debugLog" class="debug-log"></div>
-        </div>
+        <button id="addBaixoCol">+1 passo baixo</button>
+        <button id="addCol">+1 passo tudo</button>
+        <button id="duplicateSeq">×2 últimos 16</button>
+        <button id="clearBaixo">Limpar baixo</button>
+        <button id="clearAll">Limpar tudo</button>
       </div>
 
-      <div class="panel-title">
-        Ferramenta para ajustar posição dos PNGs
-        <span>(setinhas + copia CSS para colar no código)</span>
+      <div id="progressContainer">
+        <div id="progressBar"></div>
       </div>
 
-      <div class="css-editor">
-        <div class="css-editor-header">
-          <div class="debug-row" style="gap: 4px">
-            <span class="chip chip-blue">
-              Selecionado:
-              <span id="lblLayerSelecionada">tronco_baixo</span>
-            </span>
-            <span class="chip">
-              X:
-              <span id="lblPosX">10</span> / Y:
-              <span id="lblPosY">40</span>
-            </span>
-          </div>
-          <select id="selectLayer">
-            <option value="cabeca">Cabeça</option>
-            <option value="tronco_baixo" selected>Tronco + Baixo</option>
-            <option value="braco_direito">Braço direito</option>
-            <option value="mao_direita">Mão direita (futuro)</option>
-          </select>
+      <div id="gridsArea">
+        <div id="baixoLabelRow">
+          <span>Baixo: clique nas células para escolher nota ou X (ghost note).</span>
         </div>
-
-        <div class="css-editor-grid">
-          <button class="btn" id="btnUp">▲</button>
-          <button class="btn" id="btnCenter">Reset</button>
-          <button class="btn" id="btnDown">▼</button>
-          <button class="btn" id="btnLeft">◄</button>
-          <button class="btn" id="btnCopyCss">Copiar CSS</button>
-          <button class="btn" id="btnRight">►</button>
+        <div id="baixoGridContainer">
+          <div id="baixoGridLabel">Baixo</div>
+          <div id="baixoGrid"></div>
         </div>
-
-        <small>
-          Use as setas para ajustar a posição absoluta do container selecionado.
-          Depois clique em <strong>Copiar CSS</strong> e cole no arquivo HTML/CSS
-          principal para fixar a posição.
-        </small>
-
-        <div id="cssCode" class="css-code"></div>
+        <div class="gridWrapper" id="drumGrid"></div>
       </div>
-    </aside>
+    </div>
+  </div>
+
+  <div id="selectionOverlay">
+    <div id="selectionPanel">
+      <div id="selectionTitle">Selecione a nota</div>
+      <div id="selectionOptions"></div>
+    </div>
   </div>
 
   <script>
-    // =====================  CONFIGURAÇÃO DE PATHS ===========================
-    const BASE_ANIM_PATH = "animacao"; // raiz das imagens da animação
-    const CABECA_PATH = `${BASE_ANIM_PATH}/cabeca`;
-    const TRONCO_PATH = `${BASE_ANIM_PATH}/tronco_baixo`;
-    const BRACO_DIR_PATH = `${BASE_ANIM_PATH}/braco_direito`;
+    // ========== CONFIGURAÇÕES E VARIÁVEIS GLOBAIS ==========
+    let headFrames = [];
+    let headFrameIndex = 0;
+    let headLoopTimer = null;
+    let troncoTimerBpm = null;
+    let headTiltTimerBpm = null;
+    let lateralTimer = null;
+    let animTimers = [];
 
-    // Áudios da bateria (mesmo esquema do Jam On)
-    const DRUM_SAMPLES = {
-      ataque: "assets/ataque.mp3",
-      bumbo: "assets/bumbo.mp3",
-      caixa: "assets/caixa.mp3",
-      caixaAro: "assets/caixaAro.mp3",
-      chimbal: "assets/chimbal.mp3",
-      chimbalAberto: "assets/chimbal-aberto.mp3",
-      chimbalPedal: "assets/chimbal-pedal.mp3",
-      conducao: "assets/conducao.mp3",
-      conducaoCentro: "assets/conducao-centro.mp3",
-      surdo: "assets/surdo.mp3",
-      tom1: "assets/tom-1.mp3",
-      tom2: "assets/tom-2.mp3",
-    };
+    let bpmAtual = 120;
+    let baixoSeq = [];
+    let bateriaSeq = {};
+    let isPlaying = false;
+    let playbackInterval = null;
+    let atualPasso = 0;
 
-    // =====================  ESTADO GLOBAL DA ANIMAÇÃO =======================
-    const cabecaEl = document.getElementById("cabeca");
-    const troncoEl = document.getElementById("tronco_baixo");
-    const bracoDirEl = document.getElementById("braco_direito");
-    const maoDirEl = document.getElementById("mao_direita");
+    let baixoVolumeGlobal = 0.9;
+    let bateriaVolumeGlobal = 0.9;
 
-    // Label de debug
-    const lblPosicaoAtual = document.getElementById("lblPosicaoAtual");
-    const lblUltimaNotaReal = document.getElementById("lblUltimaNotaReal");
-    const lblPastaAtual = document.getElementById("lblPastaAtual");
-    const lblNotaRecebida = document.getElementById("lblNotaRecebida");
-    const lblTipoNota = document.getElementById("lblTipoNota");
-    const lblGhost = document.getElementById("lblGhost");
-    const lblPastaEscolhida = document.getElementById("lblPastaEscolhida");
-    const lblPngEscolhido = document.getElementById("lblPngEscolhido");
-    const debugLogEl = document.getElementById("debugLog");
+    let audioBaixoAtual = null;
+    let audioBaixoTimer = null;
 
-    const btnRecarregar = document.getElementById("btnRecarregar");
-    const btnLimparLog = document.getElementById("btnLimparLog");
-    const btnTocarNotaManual = document.getElementById("btnTocarNotaManual");
-    const inputNotaManual = document.getElementById("inputNotaManual");
+    // ========== SISTEMA DE POSICIONAMENTO INTELIGENTE (REGRA E) ==========
+    let posicaoAtualPasta = 1; // Começa na Pasta_1F
+    let ultimaCordaUsada = "E";
+    let ultimaNotaReal = "1E"; // Para ghost notes herdarem
 
-    // Editor CSS
-    const selectLayer = document.getElementById("selectLayer");
-    const btnUp = document.getElementById("btnUp");
-    const btnDown = document.getElementById("btnDown");
-    const btnLeft = document.getElementById("btnLeft");
-    const btnRight = document.getElementById("btnRight");
-    const btnCenter = document.getElementById("btnCenter");
-    const btnCopyCss = document.getElementById("btnCopyCss");
-    const cssCodeEl = document.getElementById("cssCode");
-    const lblLayerSelecionada = document.getElementById("lblLayerSelecionada");
-    const lblPosX = document.getElementById("lblPosX");
-    const lblPosY = document.getElementById("lblPosY");
-
-    // Estado de posição atual da "mão" no braço
-    let posicaoAtualPasta = 1; // 1..24
-    let ultimaNotaReal = null; // última nota diferente de X ou sustain
-    let imagensCarregadas = false;
-
-    // =====================  MAPA DE PASTAS DO BAIXO =========================
-    // Mapa corrigido baseado na lista de pastas/PNGs que você enviou
-    // (economia de movimentos: cada pasta representa uma posição de mão).
-
+    // Mapeamento REAL das pastas (baseado na sua documentação)
     const pastaMap = {
-      1: { nome: "Pasta_1F", notas: ["1E", "2F", "3FS", "4G", "5GS", "6A", "7AS", "8B", "9C", "10CS", "11D", "12DS", "13E", "14F", "15FS", "16G", "17GS", "18A", "19AS", "20B"] },
-      2: { nome: "Pasta_2FS", notas: ["3FS", "4G", "5GS", "6A", "8B", "9C", "10CS", "11D", "13E", "14F", "15FS", "16G", "18A", "19AS", "20B", "21C"] },
-      3: { nome: "Pasta_3G", notas: ["4G", "5GS", "6A", "7AS", "9C", "10CS", "11D", "12DS", "14F", "15FS", "16G", "17GS", "19AS", "20B", "21C", "22CS"] },
-      4: { nome: "Pasta_4GS", notas: ["5GS", "6A", "7AS", "8B", "10CS", "11D", "12DS", "13E", "15FS", "16G", "17GS", "18A", "20B", "21C", "22CS", "23D"] },
-      5: { nome: "Pasta_5A", notas: ["6A", "7AS", "8B", "9C", "11D", "12DS", "13E", "14F", "16G", "17GS", "18A", "19AS", "21C", "22CS", "23D", "24DS"] },
-      6: { nome: "Pasta_6AS", notas: ["7AS", "8B", "9C", "10CS", "12DS", "13E", "14F", "15FS", "17GS", "18A", "19AS", "20B", "22CS", "23D", "24DS", "25E"] },
-      7: { nome: "Pasta_7B", notas: ["8B", "9C", "10CS", "11D", "13E", "14F", "15FS", "16G", "18A", "19AS", "20B", "21C", "23D", "24DS", "25E", "26F"] },
-      8: { nome: "Pasta_8C", notas: ["9C", "10CS", "11D", "12DS", "14F", "15FS", "16G", "17GS", "19AS", "20B", "21C", "22CS", "24DS", "25E", "26F", "27FS"] },
-      9: { nome: "Pasta_9CS", notas: ["10CS", "11D", "12DS", "13E", "15FS", "16G", "17GS", "18A", "20B", "21C", "22CS", "23D", "25E", "26F", "27FS", "28G"] },
-      10: { nome: "Pasta_10D", notas: ["11D", "12DS", "13E", "14F", "16G", "17GS", "18A", "19AS", "21C", "22CS", "23D", "24DS", "26F", "27FS", "28G", "29GS"] },
-      11: { nome: "Pasta_11DS", notas: ["12DS", "13E", "14F", "15FS", "17GS", "18A", "19AS", "20B", "22CS", "23D", "24DS", "25E", "27FS", "28G", "29GS", "30A"] },
-      12: { nome: "Pasta_12E", notas: ["13E", "14F", "15FS", "16G", "18A", "19AS", "20B", "21C", "23D", "24DS", "25E", "26F", "28G", "29GS", "30A", "31B"] }, // <-- corrigido 31B
-      13: { nome: "Pasta_13F", notas: ["14F", "15FS", "16G", "17GS", "19AS", "20B", "21C", "22CS", "24DS", "25E", "26F", "27FS", "29GS", "30A", "31AS", "32B"] },
-      14: { nome: "Pasta_14FS", notas: ["15FS", "16G", "17GS", "18A", "20B", "21C", "22CS", "23D", "25E", "26F", "27FS", "28G", "30A", "31AS", "32B", "33C"] },
-      15: { nome: "Pasta_15G", notas: ["16G", "17GS", "18A", "19AS", "21C", "22CS", "23D", "24DS", "26F", "27FS", "28G", "29GS", "31AS", "32B", "33C", "34CS"] },
-      16: { nome: "Pasta_16GS", notas: ["17GS", "18A", "19AS", "20B", "22CS", "23D", "24DS", "25E", "27FS", "28G", "29GS", "30A", "32B", "33C", "34CS", "35D"] },
-      17: { nome: "Pasta_17A", notas: ["18A", "19AS", "20B", "21C", "23D", "24DS", "25E", "26F", "28G", "29GS", "30A", "31AS", "33C", "34CS", "35D", "36DS"] },
-      18: { nome: "Pasta_18AS", notas: ["19AS", "20B", "21C", "22CS", "24DS", "25E", "26F", "27FS", "29GS", "30A", "31AS", "32B", "34CS", "35D", "36DS", "37E"] },
-      19: { nome: "Pasta_19B", notas: ["20B", "21C", "22CS", "23D", "25E", "26F", "27FS", "28G", "30A", "31AS", "32B", "33C", "35D", "36DS", "37E", "38F"] },
-      20: { nome: "Pasta_20C", notas: ["21C", "22CS", "23D", "24DS", "26F", "27FS", "28G", "29GS", "31AS", "32B", "33C", "34CS", "36DS", "37E", "38F", "39FS"] },
-      21: { nome: "Pasta_21CS", notas: ["22CS", "23D", "24DS", "25E", "27FS", "28G", "29GS", "30A", "32B", "33C", "34CS", "35D", "37E", "38F", "39FS", "40G"] },
-      22: { nome: "Pasta_22D", notas: ["23D", "24DS", "25E", "26F", "28G", "29GS", "30A", "31AS", "33C", "34CS", "35D", "36DS", "38F", "39FS", "40G", "41GS"] },
-      23: { nome: "Pasta_23DS", notas: ["24DS", "25E", "26F", "27FS", "29GS", "30A", "31AS", "32B", "34CS", "35D", "36DS", "37E", "39FS", "40G", "41GS", "42A"] },
-      24: { nome: "Pasta_24E", notas: ["25E", "26F", "27FS", "28G", "30A", "31AS", "32B", "33C", "35D", "36DS", "37E", "38F", "40G", "41GS", "42A", "43AS"] },
+      1: ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B"],
+      2: ["3FS","4G","5GS","6A","8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C"],
+      3: ["4G","5GS","6A","7AS","9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS"],
+      4: ["5GS","6A","7AS","8B","10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D"],
+      5: ["6A","7AS","8B","9C","11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS"],
+      6: ["7AS","8B","9C","10CS","12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E"],
+      7: ["8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F"],
+      8: ["9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS"],
+      9: ["10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G"],
+      10: ["11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS"],
+      11: ["12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A"],
+      12: ["13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS"],
+      13: ["14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B"],
+      14: ["15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C"],
+      15: ["16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS"],
+      16: ["17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D"],
+      17: ["18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS"],
+      18: ["19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E"],
+      19: ["20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F"],
+      20: ["21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS","36DS","37E","38F","39FS"],
+      21: ["22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D","37E","38F","39FS","40G"],
+      22: ["23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS","38F","39FS","40G","41GS"],
+      23: ["24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E","39FS","40G","41GS","42A"],
+      24: ["25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F","40G","41GS","42A","43AS"]
     };
 
-    const totalPastas = 24;
-
-    // Mapa de cordas -> range de notas (para debug; pode ser refinado)
-    const pastasPorCordas = {
-      E: [1, 12],
-      A: [5, 16],
-      D: [9, 20],
-      G: [13, 24],
-    };
-
-    function logDebug(msg) {
-      const ts = new Date().toLocaleTimeString("pt-BR", { hour12: false });
-      const line = `[${ts}] ${msg}\n`;
-      debugLogEl.textContent = line + debugLogEl.textContent;
-    }
-
-    function atualizarLabelsEstado(extra = {}) {
-      lblPosicaoAtual.textContent = posicaoAtualPasta ?? "–";
-      lblUltimaNotaReal.textContent = ultimaNotaReal ?? "–";
-      lblPastaAtual.textContent = posicaoAtualPasta ? pastaMap[posicaoAtualPasta].nome : "–";
-
-      if (extra.nota != null) lblNotaRecebida.textContent = extra.nota;
-      if (extra.tipo != null) lblTipoNota.textContent = extra.tipo;
-      if (extra.ghost != null) lblGhost.textContent = extra.ghost ? "Sim" : "Não";
-      if (extra.pastaEscolhida != null) lblPastaEscolhida.textContent = extra.pastaEscolhida;
-      if (extra.png != null) lblPngEscolhido.textContent = extra.png;
-    }
-
-    function obterNotasDaPasta(idx) {
-      const p = pastaMap[idx];
-      return p ? p.notas : [];
-    }
-
-    function encontrarPastas(nota) {
-      const indices = [];
-      for (let i = 1; i <= totalPastas; i++) {
-        const notas = obterNotasDaPasta(i);
-        if (notas.includes(nota)) indices.push(i);
-      }
-      return indices;
-    }
-
-    function escolherMelhorPasta(nota, pastaAnteriorIndex) {
-      const candidatas = encontrarPastas(nota);
-      if (!candidatas.length) return null;
-      if (!pastaAnteriorIndex || !pastaMap[pastaAnteriorIndex]) return candidatas[0];
-
-      let melhor = candidatas[0];
-      let menorDist = Math.abs(candidatas[0] - pastaAnteriorIndex);
-      for (let i = 1; i < candidatas.length; i++) {
-        const dist = Math.abs(candidatas[i] - pastaAnteriorIndex);
-        if (dist < menorDist) {
-          menorDist = dist;
-          melhor = candidatas[i];
+    // Função para encontrar em quais pastas uma nota está disponível
+    function encontrarPastasDisponiveis(nota) {
+      const pastas = [];
+      for (let pastaNum = 1; pastaNum <= 24; pastaNum++) {
+        if (pastaMap[pastaNum].includes(nota)) {
+          pastas.push(pastaNum);
         }
       }
-      return melhor;
+      return pastas;
     }
 
-    // =====================  AUDIO DO BAIXO (INTEGRÁVEL COM JAM ON) ========
-    const baixistaAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const baixoBufferCache = new Map();
+    // REGRA E: Escolher a pasta mais próxima da posição atual
+    function escolherMelhorPasta(nota, posicaoAtual) {
+      if (nota === "x") {
+        // Ghost note: usar a mesma pasta anterior
+        return posicaoAtual;
+      }
+      
+      const pastasDisponiveis = encontrarPastasDisponiveis(nota);
+      if (pastasDisponiveis.length === 0) {
+        console.warn(`Nota ${nota} não encontrada em nenhuma pasta. Usando padrão.`);
+        return 1; // Fallback
+      }
+      
+      // Encontrar a pasta com menor distância da posição atual
+      let melhorPasta = pastasDisponiveis[0];
+      let menorDistancia = Math.abs(posicaoAtual - melhorPasta);
+      
+      for (let i = 1; i < pastasDisponiveis.length; i++) {
+        const distancia = Math.abs(posicaoAtual - pastasDisponiveis[i]);
+        if (distancia < menorDistancia) {
+          menorDistancia = distancia;
+          melhorPasta = pastasDisponiveis[i];
+        }
+      }
+      
+      return melhorPasta;
+    }
+
+    const notasValidas = [
+      "1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS",
+      "11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B",
+      "21C","22CS","23D","24DS","25E","26F","27FS","28G","29GS","30A",
+      "31AS","32B","33C","34CS","35D","36DS","37E","38F","39FS","40G",
+      "41GS","42A","43AS"
+    ];
 
     const BAIXO_SAMPLES = {};
+    notasValidas.forEach(n => {
+      BAIXO_SAMPLES[n] = "assets/BaixoMelodia/" + n + ".mp3";
+    });
+    BAIXO_SAMPLES["x"] = "assets/bass-muted.mp3";
 
-    function precacheBaixoSamples() {
-      for (let n = 1; n <= 24; n++) {
-        const noteName = mapBassNoteToFile(n); // mapeamento original 1E..24E
-        const path = `assets/BaixoMelodia/${noteName}.mp3`;
-        BAIXO_SAMPLES[n] = path;
+    const drumLines = [
+      { id: "bumbo",          label: "B",    file: "bumbo.mp3" },
+      { id: "caixa",          label: "C",    file: "caixa.mp3" },
+      { id: "caixaAro",       label: "Rim",  file: "caixaAro.mp3" },
+      { id: "chimbal",        label: "HH",   file: "chimbal.mp3" },
+      { id: "chimbal_pedal",  label: "HHP",  file: "chimbal-pedal.mp3" },
+      { id: "chimbalaberto",  label: "HHo",  file: "chimbal-aberto.mp3" },
+      { id: "ataque",         label: "Atk",  file: "ataque.mp3" },
+      { id: "tom1",           label: "T1",   file: "tom-1.mp3" },
+      { id: "tom2",           label: "T2",   file: "tom-2.mp3" },
+      { id: "surdo",          label: "Sd",   file: "surdo.mp3" },
+      { id: "conducao",       label: "Rd",   file: "conducao.mp3" },
+      { id: "conducao_centro",label: "RdC",  file: "conducao-centro.mp3" }
+    ];
+
+    // ========== CORREÇÃO DAS CORDAS ==========
+    function getCordaDaNota(nota) {
+      if (!nota || nota === "x") return ultimaCordaUsada;
+      
+      const m = nota.match(/^(\d+)/);
+      if (!m) return "E";
+      
+      const n = parseInt(m[1], 10);
+      
+      // CORREÇÃO: Mapeamento REAL baseado nas suas cordas
+      if (n <= 20) return "E";    // 1E até 20B
+      if (n <= 28) return "A";    // 21C até 28G
+      if (n <= 36) return "D";    // 29GS até 36DS
+      return "G";                 // 37E até 43AS
+    }
+
+    // ========== SISTEMA DE ANIMAÇÃO CORRIGIDO ==========
+    function generateHeadFramePaths() {
+      const arr = [];
+      for (let i = 1; i <= 100; i++) {
+        const num = String(i).padStart(4, "0");
+        arr.push("animacao/cabeca/cabeca" + num + ".png");
       }
-      // Ghost note usa áudio abafado dedicado (arquivo que você informou)
-      BAIXO_SAMPLES["x"] = "assets/bass-muted.mp3";
+      return arr;
     }
 
-    function mapBassNoteToFile(n) {
-      // 1..24 => 1E..24E (mesmo padrão do Jam On)
-      return `${n}E`;
-    }
-
-    async function loadAudioBuffer(src) {
-      if (baixoBufferCache.has(src)) return baixoBufferCache.get(src);
-      const res = await fetch(src);
-      const arrBuf = await res.arrayBuffer();
-      const audioBuf = await baixistaAudioCtx.decodeAudioData(arrBuf);
-      baixoBufferCache.set(src, audioBuf);
-      return audioBuf;
-    }
-
-    async function tocarNotaAudioBaixo(nota) {
-      // nota pode vir como "1E".."24E" ou "x" (ghost) ou vazia
-      if (!nota || nota === "-") return;
-
-      try {
-        await baixistaAudioCtx.resume();
-      } catch (e) {}
-
-      let src;
-      if (nota === "x") {
-        // sempre usa o arquivo de nota abafada
-        src = BAIXO_SAMPLES["x"];
-      } else {
-        // extrai apenas o número da nota (1..24) se vier no formato "4G", "3FS", etc.
-        const match = String(nota).match(/^(\d+)/);
-        if (!match) return;
-        const idx = Number(match[1]);
-        src = BAIXO_SAMPLES[idx];
-      }
-      if (!src) return;
-
-      try {
-        const buf = await loadAudioBuffer(src);
-        const node = baixistaAudioCtx.createBufferSource();
-        node.buffer = buf;
-        node.connect(baixistaAudioCtx.destination);
-        node.start();
-      } catch (err) {
-        console.warn("Erro ao tocar áudio do baixo:", nota, err);
-      }
-    }
-
-    // =====================  ANIMAÇÃO DO TRONCO (POSIÇÃO DA MÃO) ============
-    function trocarFrameTronco(nota) {
-      logDebug(`Recebida nota: ${nota}`);
-      atualizarLabelsEstado({
-        nota,
-        tipo: !nota ? "Sustain" : nota === "x" ? "Ghost" : "Nota real",
-        ghost: nota === "x",
+    function preloadImages(urls) {
+      return new Promise(resolve => {
+        if (!urls || !urls.length) return resolve();
+        let loaded = 0;
+        urls.forEach(src => {
+          const img = new Image();
+          img.onload = img.onerror = () => {
+            loaded++;
+            if (loaded >= urls.length) resolve();
+          };
+          img.src = src;
+        });
       });
+    }
 
-      if (!troncoEl) return;
+    function startHeadLoop() {
+      const el = document.getElementById("cabecaLayer");
+      if (!el) return;
+      if (headLoopTimer) clearInterval(headLoopTimer);
+      headLoopTimer = setInterval(() => {
+        headFrameIndex = (headFrameIndex + 1) % headFrames.length;
+        el.src = headFrames[headFrameIndex];
+      }, 1000 / 30);
+    }
 
-      if (!troncoEl.dataset.x) {
-        troncoEl.dataset.x = "10";
-        troncoEl.dataset.y = "40";
-        troncoEl.dataset.width = troncoEl.style.width || "260px";
-        troncoEl.dataset.height = troncoEl.style.height || "260px";
-        troncoEl.style.left = troncoEl.dataset.x + "px";
-        troncoEl.style.top = troncoEl.dataset.y + "px";
+    function startTroncoBpm(bpm) {
+      const el = document.getElementById("troncoBaixoLayer");
+      if (!el) return;
+      if (troncoTimerBpm) clearInterval(troncoTimerBpm);
+      const interval = (60000 / bpm) / 2;
+      let up = false;
+      troncoTimerBpm = setInterval(() => {
+        up = !up;
+        el.style.transform = up ? "translateY(-2px)" : "translateY(0px)";
+      }, interval);
+    }
+
+    function startHeadTiltBpm(bpm) {
+      const el = document.getElementById("cabecaLayer");
+      if (!el) return;
+      if (headTiltTimerBpm) clearInterval(headTiltTimerBpm);
+      const interval = (60000 / bpm) / 4;
+      let toggle = false;
+      headTiltTimerBpm = setInterval(() => {
+        toggle = !toggle;
+        el.style.transform = toggle ? "rotate(-2deg)" : "rotate(2deg)";
+      }, interval);
+    }
+
+    function startLateralMovement() {
+      const el = document.getElementById("baixistaStage");
+      if (!el) return;
+      if (lateralTimer) clearInterval(lateralTimer);
+      let dir = 1;
+      let offset = 0;
+      lateralTimer = setInterval(() => {
+        offset += dir * 0.4;
+        if (offset > 2) dir = -1;
+        if (offset < -2) dir = 1;
+        el.style.transform = "translateX(" + offset + "px)";
+      }, 80);
+    }
+
+    function resetAnimTimers() {
+      animTimers.forEach(id => clearInterval(id));
+      animTimers = [];
+    }
+
+    function pararAudioBaixo() {
+      if (audioBaixoAtual) {
+        audioBaixoAtual.pause();
+        audioBaixoAtual.currentTime = 0;
+        audioBaixoAtual = null;
       }
+      if (audioBaixoTimer) {
+        clearTimeout(audioBaixoTimer);
+        audioBaixoTimer = null;
+      }
+    }
 
-      // 1) Ghost note (X) -> usa última nota real mas com pasta de menor movimento
+    function tocarBateriaNoStep(step, volume) {
+      drumLines.forEach(line => {
+        const seq = bateriaSeq[line.id];
+        if (!seq || step >= seq.length) return;
+        const val = seq[step];
+        if (val === line.id) {
+          const a = new Audio("assets/" + line.file);
+          a.volume = volume;
+          a.play().catch(e => console.log("Erro ao tocar bateria:", e));
+        }
+      });
+    }
+
+    function tocarNotaAudioBaixo(nota, volume) {
+      if (!nota) return;
+      let src = BAIXO_SAMPLES[nota];
+      if (!src) src = BAIXO_SAMPLES["x"];
+      if (audioBaixoAtual) {
+        audioBaixoAtual.pause();
+        audioBaixoAtual.currentTime = 0;
+      }
+      const a = new Audio(src);
+      a.volume = volume;
+      audioBaixoAtual = a;
+      audioBaixoAtual.play().catch(e => {
+        console.log("Erro ao tocar áudio do baixo:", nota, e);
+      });
+    }
+
+    function trocarFrameTronco(nota) {
+      const tronco = document.getElementById("troncoBaixoLayer");
+      if (!tronco) return;
+      
       if (nota === "x") {
+        // Ghost note: usar a mesma imagem da última nota real
         if (ultimaNotaReal) {
-          const indicePastaGhost = escolherMelhorPasta(ultimaNotaReal, posicaoAtualPasta);
-          if (indicePastaGhost != null) {
-            posicaoAtualPasta = indicePastaGhost;
-            const nomePastaGhost = pastaMap[indicePastaGhost].nome;
-            const pathGhost = `${TRONCO_PATH}/${nomePastaGhost}/${ultimaNotaReal}.png`;
-            troncoEl.src = pathGhost;
-            logDebug(`Ghost note usando: ${pathGhost}`);
-            atualizarLabelsEstado({
-              pastaEscolhida: nomePastaGhost,
-              png: `${ultimaNotaReal}.png (ghost)`,
-            });
-          }
+          const pastaGhost = escolherMelhorPasta(ultimaNotaReal, posicaoAtualPasta);
+          const pathGhost = "animacao/tronco_baixo/Pasta_" + pastaGhost + "F/" + ultimaNotaReal + ".png";
+          tronco.src = pathGhost;
         }
         return;
       }
-
-      // 2) Sustain (nota vazia) -> mantém o frame atual
-      if (!nota || nota === "-") {
-        logDebug("Sustain: mantendo frame atual.");
-        return;
-      }
-
-      // 3) Nota real
+      
+      // Atualizar posição usando REGRA E
+      posicaoAtualPasta = escolherMelhorPasta(nota, posicaoAtualPasta);
       ultimaNotaReal = nota;
+      
+      const path = "animacao/tronco_baixo/Pasta_" + posicaoAtualPasta + "F/" + nota + ".png";
+      tronco.onerror = () => {
+        console.warn("Falha ao carregar:", path);
+      };
+      tronco.src = path;
+    }
 
-      const novaPasta = escolherMelhorPasta(nota, posicaoAtualPasta);
-      if (novaPasta == null) {
-        logDebug(`Nenhuma pasta encontrada contendo a nota ${nota}.`);
+    function trocarAntebraco(corda) {
+      const el = document.getElementById("antebracoLayer");
+      if (!el) return;
+      const path = "animacao/antebraco/antebraco" + corda + ".png";
+      el.src = path;
+    }
+
+    function animarBracoDireito(corda, duracaoMs) {
+      const el = document.getElementById("bracoDireitoLayer");
+      if (!el) return;
+      let frame = 1;
+      const totalFrames = 5;
+      const intervalo = Math.max(40, duracaoMs / (totalFrames * 2));
+      
+      clearInterval(el.__timerBraco || 0);
+
+      el.__timerBraco = setInterval(() => {
+        const path = "animacao/braco_direito/Corda_" + corda + frame + ".png";
+        el.src = path;
+        frame++;
+        if (frame > totalFrames) {
+          frame = 1;
+        }
+      }, intervalo);
+    }
+
+    function tocarNotaComAnimacao(nota, duracaoMs, volume) {
+      tocarNotaAudioBaixo(nota, volume);
+
+      if (nota === "x") {
+        // Ghost note: usar corda e posição anteriores
+        const cordaGhost = ultimaCordaUsada || "E";
+        animarBracoDireito(cordaGhost, duracaoMs);
+        trocarFrameTronco("x"); // Manter posição anterior
         return;
       }
 
-      posicaoAtualPasta = novaPasta;
-      const nomePasta = pastaMap[posicaoAtualPasta].nome;
-      const novoSrc = `${TRONCO_PATH}/${nomePasta}/${nota}.png`;
-
-      troncoEl.src = novoSrc;
-      logDebug(`Nova posição: ${nomePasta} -> ${novoSrc}`);
-      atualizarLabelsEstado({
-        pastaEscolhida: nomePasta,
-        png: `${nota}.png`,
-      });
-    }
-
-    // =====================  ANIMAÇÃO CABEÇA / BRAÇO (SIMPLES) =============
-    let frameCabeca = 1;
-    const TOTAL_FRAMES_CABECA = 809;
-
-    function atualizarCabeca() {
-      frameCabeca++;
-      if (frameCabeca > TOTAL_FRAMES_CABECA) frameCabeca = 1;
-      const frameStr = String(frameCabeca).padStart(4, "0");
-      cabecaEl.src = `${CABECA_PATH}/cabeca${frameStr}.png`;
-    }
-
-    let animCabecaInterval = null;
-    function iniciarAnimacaoCabeca() {
-      if (animCabecaInterval) clearInterval(animCabecaInterval);
-      animCabecaInterval = setInterval(atualizarCabeca, 80);
-    }
-
-    function animarBracoDireitoPequenoGolpe() {
-      if (!bracoDirEl) return;
-      bracoDirEl.style.transform = "translateY(4px) rotate(2deg)";
-      setTimeout(() => {
-        bracoDirEl.style.transform = "translateY(0) rotate(0deg)";
-      }, 120);
-    }
-
-    // =====================  TESTE LOCAL (botões / input) ===================
-    function tocarNotaComAnimacao(nota) {
-      // Áudio (inclui ghost com bass-muted)
-      tocarNotaAudioBaixo(nota);
-
-      // Tronco / mão
       trocarFrameTronco(nota);
 
-      // Cabeça balançando sempre
-      if (!animCabecaInterval) iniciarAnimacaoCabeca();
+      const corda = getCordaDaNota(nota);
+      ultimaCordaUsada = corda;
 
-      // Pequeno movimento no braço
-      if (nota && nota !== "-" && nota !== "x") {
-        animarBracoDireitoPequenoGolpe();
-      }
+      trocarAntebraco(corda);
+      animarBracoDireito(corda, duracaoMs);
     }
 
-    // Botões de teste
-    document.querySelectorAll(".note-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const nota = btn.dataset.nota;
-        tocarNotaComAnimacao(nota);
-      });
-    });
+    function tocarPasso(passo) {
+      const baixoLen = Array.isArray(baixoSeq) ? baixoSeq.length : 0;
+      const nota = (passo < baixoLen) ? baixoSeq[passo] : "x";
+      const stepTime = (60000 / bpmAtual) / 4;
+      tocarNotaComAnimacao(nota, stepTime, baixoVolumeGlobal);
+      tocarBateriaNoStep(passo, bateriaVolumeGlobal);
 
-    if (btnTocarNotaManual) {
-      btnTocarNotaManual.addEventListener("click", () => {
-        const nota = inputNotaManual.value.trim().toUpperCase();
-        inputNotaManual.value = nota;
-        tocarNotaComAnimacao(nota);
-      });
-    }
-
-    // =====================  PRELOAD IMAGENS / DRUM AUDIO ===================
-    const imagemCache = new Map();
-
-    function preloadImage(src) {
-      return new Promise((resolve, reject) => {
-        if (imagemCache.has(src)) return resolve(imagemCache.get(src));
-        const img = new Image();
-        img.onload = () => {
-          imagemCache.set(src, true);
-          resolve(true);
-        };
-        img.onerror = (e) => {
-          console.warn("Falha ao carregar imagem:", src, e);
-          resolve(false); // não rejeita pra não travar tudo
-        };
-        img.src = src;
-      });
-    }
-
-    async function precarregarImagensAnimacao() {
-      const promessas = [];
-
-      promessas.push(preloadImage(`${CABECA_PATH}/cabeca0001.png`));
-
-      for (let i = 1; i <= totalPastas; i++) {
-        const pasta = pastaMap[i];
-        if (!pasta) continue;
-        for (const nota of pasta.notas) {
-          const src = `${TRONCO_PATH}/${pasta.nome}/${nota}.png`;
-          promessas.push(preloadImage(src));
-        }
-      }
-
-      // Braço direito: se você tiver sprites específicos, pode pré-carregar aqui
-      // Exemplo: 21 frames
-      for (let i = 1; i <= 21; i++) {
-        const frameStr = String(i).padStart(2, "0");
-        const src = `${BRACO_DIR_PATH}/braco_direito_${frameStr}.png`;
-        promessas.push(preloadImage(src));
-      }
-
-      await Promise.all(promessas);
-      imagensCarregadas = true;
-      logDebug("Todas as imagens principais foram pré-carregadas (dentro do possível).");
-    }
-
-    async function preloadDrums() {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const cache = {};
-      const urls = Object.values(DRUM_SAMPLES);
-      await Promise.all(
-        urls.map(async (u) => {
-          try {
-            const res = await fetch(u);
-            const buf = await res.arrayBuffer();
-            const audioBuf = await ctx.decodeAudioData(buf);
-            cache[u] = audioBuf;
-          } catch (e) {
-            console.warn("Falha ao pré-carregar som de bateria:", u, e);
-          }
-        })
+      const totalSteps = Math.max(
+        baixoLen,
+        ...(drumLines.map(line => (bateriaSeq[line.id] || []).length))
       );
-      logDebug("Pré-carreguei o essencial da bateria.");
-      ctx.close();
+      atualizarBarraProgresso(totalSteps > 0 ? (passo / totalSteps) * 100 : 0);
     }
 
-    // =====================  BOTÕES DA BARRA SUPERIOR =======================
-    if (btnRecarregar) {
-      btnRecarregar.addEventListener("click", () => {
-        imagensCarregadas = false;
-        imagemCache.clear();
-        precarregarImagensAnimacao().then(() => {
-          logDebug("Recarregamento de imagens concluído.");
-        });
+    function iniciarPlayback() {
+      if (isPlaying) return;
+      isPlaying = true;
+      atualPasso = 0;
+      const stepTime = (60000 / bpmAtual) / 4;
+      playbackInterval = setInterval(() => {
+        tocarPasso(atualPasso);
+        atualPasso++;
+        const baixoLen = Array.isArray(baixoSeq) ? baixoSeq.length : 0;
+        const totalSteps = Math.max(
+          baixoLen,
+          ...(drumLines.map(line => (bateriaSeq[line.id] || []).length))
+        );
+        if (totalSteps === 0) return;
+        if (atualPasso >= totalSteps) atualPasso = 0;
+      }, stepTime);
+      document.getElementById("playBtn").innerText = "⏸ Pause";
+    }
+
+    function pararPlayback() {
+      if (!isPlaying) return;
+      isPlaying = false;
+      clearInterval(playbackInterval);
+      playbackInterval = null;
+      pararAudioBaixo();
+      document.getElementById("playBtn").innerText = "▶ Play";
+    }
+
+    function togglePlay() {
+      if (!isPlaying) iniciarPlayback();
+      else pararPlayback();
+    }
+
+    function iniciarContagemRegressiva(callback) {
+      const overlay = document.getElementById("countdownOverlay");
+      const txt = document.getElementById("countdownText");
+      if (!overlay || !txt) {
+        callback();
+        return;
+      }
+      let valor = 4;
+      overlay.style.display = "flex";
+      txt.textContent = valor;
+      const id = setInterval(() => {
+        valor--;
+        if (valor <= 0) {
+          clearInterval(id);
+          overlay.style.display = "none";
+          callback();
+        } else {
+          txt.textContent = valor;
+        }
+      }, 60000 / bpmAtual);
+    }
+
+    async function preScanAnimacao() {
+      const frames = [];
+      (baixoSeq || []).forEach(nota => {
+        if (!nota || nota === "x") return;
+        const pastas = encontrarPastasDisponiveis(nota);
+        if (pastas.length > 0) {
+          // Usar a primeira pasta disponível para pré-carregamento
+          frames.push("animacao/tronco_baixo/Pasta_" + pastas[0] + "F/" + nota + ".png");
+        }
+      });
+      await preloadImages(frames);
+      console.log("Pré-carregamento de imagens da animação concluído.");
+    }
+
+    function tocarPlaybackCompleto(bpm) {
+      pararPlayback();
+      resetAnimTimers();
+
+      startTroncoBpm(bpm);
+      startHeadTiltBpm(bpm);
+      startLateralMovement();
+
+      iniciarContagemRegressiva(async () => {
+        try {
+          await preScanAnimacao();
+        } catch (e) {
+          console.warn("Falha ao pré-carregar imagens da animação:", e);
+        }
+        iniciarPlayback();
       });
     }
 
-    if (btnLimparLog) {
-      btnLimparLog.addEventListener("click", () => {
-        debugLogEl.textContent = "";
+    // ========== INTERFACE E CONTROLES ==========
+    const selectionOverlay = document.getElementById("selectionOverlay");
+    const selectionTitle = document.getElementById("selectionTitle");
+    const selectionOptions = document.getElementById("selectionOptions");
+    const painelSelecao = { tipo: null, seqRef: null, idx: null, cell: null, drumLine: null };
+
+    function abrirPainelSelecaoBaixo(seqRef, idx, cellEl) {
+      painelSelecao.tipo = "baixo";
+      painelSelecao.seqRef = seqRef;
+      painelSelecao.idx = idx;
+      painelSelecao.cell = cellEl;
+      const valorAtual = seqRef[idx];
+      const opcoes = ["x", ...notasValidas];
+      selectionTitle.textContent = "Selecione a nota do baixo";
+      selectionOptions.innerHTML = "";
+      opcoes.forEach(opt => {
+        const div = document.createElement("div");
+        div.className = "selection-option";
+        let label = opt;
+        if (opt === "x") {
+          div.classList.add("x-option");
+          label = "X";
+        } else {
+          label = opt.replace(/S/g, "#");
+        }
+        if (opt === valorAtual) div.classList.add("active");
+        div.textContent = label;
+        div.onclick = () => {
+          painelSelecao.seqRef[painelSelecao.idx] = opt;
+          const c = painelSelecao.cell;
+          c.textContent = label;
+          if (opt === "x") c.classList.remove("active");
+          else c.classList.add("active");
+          fecharPainelSelecao();
+        };
+        selectionOptions.appendChild(div);
       });
+      selectionOverlay.classList.add("visible");
     }
 
-    // =====================  EDITOR DE POSIÇÃO (CSS) ========================
-    function getLayerElementById(id) {
-      switch (id) {
-        case "cabeca":
-          return cabecaEl;
-        case "tronco_baixo":
-          return troncoEl;
-        case "braco_direito":
-          return bracoDirEl;
-        case "mao_direita":
-          return maoDirEl;
-        default:
-          return null;
-      }
+    function fecharPainelSelecao() {
+      selectionOverlay.classList.remove("visible");
+      Object.keys(painelSelecao).forEach(k => painelSelecao[k] = null);
     }
 
-    function atualizarCssCode() {
-      const layerId = selectLayer.value;
-      const el = getLayerElementById(layerId);
-      if (!el) return;
-
-      const left = el.style.left || "0px";
-      const top = el.style.top || "0px";
-      const width = el.style.width || "";
-      const height = el.style.height || "";
-
-      lblLayerSelecionada.textContent = layerId;
-      lblPosX.textContent = parseInt(left, 10) || 0;
-      lblPosY.textContent = parseInt(top, 10) || 0;
-
-      const css = [
-        `#${layerId} {`,
-        `  position: absolute;`,
-        `  left: ${left};`,
-        `  top: ${top};`,
-        width ? `  width: ${width};` : "",
-        height ? `  height: ${height};` : "",
-        `}`,
-      ]
-        .filter(Boolean)
-        .join("\n");
-
-      cssCodeEl.textContent = css;
-    }
-
-    function moverSelecionado(dx, dy) {
-      const layerId = selectLayer.value;
-      const el = getLayerElementById(layerId);
-      if (!el) return;
-
-      const left = parseInt(el.style.left || "0", 10) || 0;
-      const top = parseInt(el.style.top || "0", 10) || 0;
-      el.style.left = left + dx + "px";
-      el.style.top = top + dy + "px";
-      atualizarCssCode();
-    }
-
-    function resetarPosicaoSelecionado() {
-      const layerId = selectLayer.value;
-      const el = getLayerElementById(layerId);
-      if (!el) return;
-
-      switch (layerId) {
-        case "cabeca":
-          el.style.left = "80px";
-          el.style.top = "0px";
-          el.style.width = "120px";
-          el.style.height = "120px";
-          break;
-        case "tronco_baixo":
-          el.style.left = "10px";
-          el.style.top = "40px";
-          el.style.width = "260px";
-          el.style.height = "260px";
-          break;
-        case "braco_direito":
-          el.style.left = "140px";
-          el.style.top = "80px";
-          el.style.width = "120px";
-          el.style.height = "120px";
-          break;
-        case "mao_direita":
-          el.style.left = "170px";
-          el.style.top = "130px";
-          el.style.width = "90px";
-          el.style.height = "90px";
-          break;
-      }
-      atualizarCssCode();
-    }
-
-    function copiarCss() {
-      const css = cssCodeEl.textContent;
-      if (!css) return;
-      navigator.clipboard
-        .writeText(css)
-        .then(() => {
-          logDebug("CSS copiado para a área de transferência.");
-        })
-        .catch((e) => {
-          console.warn("Falha ao copiar CSS:", e);
-        });
-    }
-
-    selectLayer.addEventListener("change", atualizarCssCode);
-
-    window.addEventListener("load", () => {
-      resetarPosicaoSelecionado();
-      atualizarCssCode();
-      precacheBaixoSamples();
-      precarregarImagensAnimacao();
-      preloadDrums();
-      iniciarAnimacaoCabeca();
+    selectionOverlay.addEventListener("click", (ev) => {
+      if (ev.target === selectionOverlay) fecharPainelSelecao();
     });
 
-    if (btnUp) btnUp.addEventListener("click", () => moverSelecionado(0, -1));
-    if (btnDown) btnDown.addEventListener("click", () => moverSelecionado(0, 1));
-    if (btnLeft) btnLeft.addEventListener("click", () => moverSelecionado(-1, 0));
-    if (btnRight) btnRight.addEventListener("click", () => moverSelecionado(1, 0));
-    if (btnCenter) btnCenter.addEventListener("click", resetarPosicaoSelecionado);
-    if (btnCopyCss) btnCopyCss.addEventListener("click", copiarCss);
+    function construirGridBaixo(container, seq) {
+      container.innerHTML = "";
+      if (!Array.isArray(seq)) return;
+      seq.forEach((nota, idx) => {
+        const div = document.createElement("div");
+        div.className = "cell";
+        if (nota === "x") {
+          div.textContent = "X";
+        } else {
+          div.textContent = String(nota).replace(/S/g, "#");
+          div.classList.add("active");
+        }
+        div.onclick = () => abrirPainelSelecaoBaixo(seq, idx, div);
+        container.appendChild(div);
+      });
+    }
+
+    function construirGridBateria(container, bateriaSeqObj) {
+      container.innerHTML = "";
+      drumLines.forEach(line => {
+        const rowDiv = document.createElement("div");
+        rowDiv.className = "drumRow";
+        const label = document.createElement("div");
+        label.className = "drumLabel";
+        label.textContent = line.label;
+        rowDiv.appendChild(label);
+        const rowGrid = document.createElement("div");
+        rowGrid.className = "composicaoGrid";
+        const seq = bateriaSeqObj[line.id] || [];
+        
+        // Garantir que a bateria tenha o mesmo número de células que o baixo
+        while (seq.length < baixoSeq.length) {
+          seq.push("x");
+        }
+        
+        seq.forEach((item, idx) => {
+          const cell = document.createElement("div");
+          cell.className = "cell";
+          if (item === "x") {
+            cell.textContent = "X";
+          } else if (item === line.id) {
+            cell.textContent = line.label.toUpperCase();
+            cell.classList.add("active");
+          } else {
+            cell.textContent = "?";
+          }
+          cell.onclick = () => {
+            if (seq[idx] === "x") {
+              seq[idx] = line.id;
+              cell.classList.add("active");
+              cell.textContent = line.label.toUpperCase();
+            } else {
+              seq[idx] = "x";
+              cell.classList.remove("active");
+              cell.textContent = "X";
+            }
+          };
+          rowGrid.appendChild(cell);
+        });
+        rowDiv.appendChild(rowGrid);
+        container.appendChild(rowDiv);
+      });
+    }
+
+    function atualizarBarraProgresso(perc) {
+      document.getElementById("progressBar").style.width = perc + "%";
+    }
+
+    function gerarSequenciaAleatoriaBaixo(tam) {
+      const seq = [];
+      for (let i = 0; i < tam; i++) {
+        if (Math.random() < 0.6) seq.push("x");
+        else seq.push(notasValidas[Math.floor(Math.random() * notasValidas.length)]);
+      }
+      return seq;
+    }
+
+    function gerarSequenciasAleatoriasBateria(tam) {
+      const obj = {};
+      drumLines.forEach(line => {
+        obj[line.id] = [];
+        for (let i = 0; i < tam; i++) {
+          obj[line.id].push(Math.random() < 0.75 ? "x" : line.id);
+        }
+      });
+      return obj;
+    }
+
+    function configurarPlaybackExportado() {
+      const btn = document.getElementById("playExportadoBtn");
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "application/json";
+      input.style.display = "none";
+      document.body.appendChild(input);
+      btn.onclick = () => input.click();
+      input.onchange = async (ev) => {
+        const file = ev.target.files[0];
+        if (!file) return;
+        try {
+          const txt = await file.text();
+          const obj = JSON.parse(txt);
+          if (!Array.isArray(obj.baixo) || typeof obj.bpm !== "number" || typeof obj.bateria !== "object") {
+            alert("JSON inválido. Esperado: { bpm, baixo[], bateria{bumbo[],...} }");
+            return;
+          }
+          baixoSeq = obj.baixo;
+          bpmAtual = obj.bpm;
+          drumLines.forEach(line => {
+            if (Array.isArray(obj.bateria[line.id])) {
+              bateriaSeq[line.id] = obj.bateria[line.id];
+            } else {
+              bateriaSeq[line.id] = Array(baixoSeq.length).fill("x");
+            }
+          });
+          document.getElementById("bpmSlider").value = bpmAtual;
+          document.getElementById("bpmDisplay").textContent = bpmAtual + " BPM";
+          construirGridBaixo(document.getElementById("baixoGrid"), baixoSeq);
+          construirGridBateria(document.getElementById("drumGrid"), bateriaSeq);
+          tocarPlaybackCompleto(bpmAtual);
+        } catch (e) {
+          console.error(e);
+          alert("Erro ao ler o arquivo JSON.");
+        }
+      };
+    }
+
+    function garantirPaisagem() {
+      const overlay = document.getElementById("orientationOverlay");
+      function checar() {
+        overlay.style.display = (window.innerWidth < window.innerHeight) ? "flex" : "none";
+      }
+      checar();
+      window.addEventListener("resize", checar);
+    }
+
+    function iniciarInterface() {
+      const baixoGrid = document.getElementById("baixoGrid");
+      const drumGrid = document.getElementById("drumGrid");
+      const passosIniciais = 16;
+      baixoSeq = gerarSequenciaAleatoriaBaixo(passosIniciais);
+      bateriaSeq = gerarSequenciasAleatoriasBateria(passosIniciais);
+      construirGridBaixo(baixoGrid, baixoSeq);
+      construirGridBateria(drumGrid, bateriaSeq);
+
+      document.getElementById("bpmSlider").oninput = () => {
+        bpmAtual = parseInt(document.getElementById("bpmSlider").value, 10);
+        document.getElementById("bpmDisplay").textContent = bpmAtual + " BPM";
+        startTroncoBpm(bpmAtual);
+        startHeadTiltBpm(bpmAtual);
+      };
+
+      document.getElementById("baixoVolume").oninput = () => {
+        baixoVolumeGlobal = parseFloat(document.getElementById("baixoVolume").value);
+      };
+      document.getElementById("drumVolume").oninput = () => {
+        bateriaVolumeGlobal = parseFloat(document.getElementById("drumVolume").value);
+      };
+
+      document.getElementById("addBaixoCol").onclick = () => {
+        baixoSeq.push("x");
+        construirGridBaixo(baixoGrid, baixoSeq);
+      };
+
+      document.getElementById("clearBaixo").onclick = () => {
+        baixoSeq = baixoSeq.map(() => "x");
+        construirGridBaixo(baixoGrid, baixoSeq);
+      };
+
+      document.getElementById("clearAll").onclick = () => {
+        baixoSeq = baixoSeq.map(() => "x");
+        drumLines.forEach(line => bateriaSeq[line.id] = bateriaSeq[line.id].map(() => "x"));
+        construirGridBaixo(baixoGrid, baixoSeq);
+        construirGridBateria(drumGrid, bateriaSeq);
+      };
+
+      document.getElementById("addCol").onclick = () => {
+        baixoSeq.push("x");
+        drumLines.forEach(line => {
+          if (!Array.isArray(bateriaSeq[line.id])) bateriaSeq[line.id] = [];
+          bateriaSeq[line.id].push("x");
+        });
+        construirGridBaixo(baixoGrid, baixoSeq);
+        construirGridBateria(drumGrid, bateriaSeq);
+      };
+
+      document.getElementById("duplicateSeq").onclick = () => {
+        const bloco = 16;
+        if (baixoSeq.length >= bloco) {
+          const ultimas = baixoSeq.slice(-bloco);
+          baixoSeq = baixoSeq.concat(ultimas);
+        }
+        drumLines.forEach(line => {
+          const arr = bateriaSeq[line.id] || [];
+          if (arr.length >= bloco) {
+            const ultimas = arr.slice(-bloco);
+            bateriaSeq[line.id] = arr.concat(ultimas);
+          } else {
+            bateriaSeq[line.id] = arr;
+          }
+        });
+        construirGridBaixo(baixoGrid, baixoSeq);
+        construirGridBateria(drumGrid, bateriaSeq);
+      };
+
+      configurarPlaybackExportado();
+    }
+
+    window.onload = async () => {
+      garantirPaisagem();
+      headFrames = generateHeadFramePaths();
+      await preloadImages(headFrames);
+      startHeadLoop();
+      startTroncoBpm(bpmAtual);
+      startHeadTiltBpm(bpmAtual);
+      startLateralMovement();
+      iniciarInterface();
+      if (window.__initPosEditor) window.__initPosEditor();
+
+      document.getElementById("playBtn").onclick = togglePlay;
+
+      document.getElementById("playAleatorioBtn").onclick = () => {
+        try {
+          if (!window.JamOnEngine || typeof JamOnEngine.generateRandomPlayback !== "function") {
+            alert("Engine de playback não encontrada.");
+            return;
+          }
+          const passos = (Array.isArray(baixoSeq) && baixoSeq.length) ? baixoSeq.length : 16;
+          const playback = JamOnEngine.generateRandomPlayback(bpmAtual, passos);
+
+          baixoSeq = Array.isArray(playback.bassSeq) ? playback.bassSeq.slice() : [];
+
+          const bateriaOrig = playback.bateriaSeq || {};
+          bateriaSeq = {};
+          drumLines.forEach(line => {
+            const arr = bateriaOrig[line.id];
+            if (Array.isArray(arr)) {
+              bateriaSeq[line.id] = arr.slice();
+            } else {
+              bateriaSeq[line.id] = new Array(baixoSeq.length || passos).fill("x");
+            }
+          });
+
+          construirGridBaixo(document.getElementById("baixoGrid"), baixoSeq);
+          construirGridBateria(document.getElementById("drumGrid"), bateriaSeq);
+          tocarPlaybackCompleto(bpmAtual);
+        } catch (error) {
+          console.error("Erro ao gerar playback aleatório:", error);
+          alert("Erro ao gerar playback aleatório. Veja o console.");
+        }
+      };
+    };
+
+    async function gerarPlaybackAleatorioAvancado(tamanho, bpm) {
+      if (window.JamOnEngine && typeof JamOnEngine.generateRandomPlayback === "function") {
+        const res = JamOnEngine.generateRandomPlayback(bpm, tamanho);
+        return {
+          baixo: res.bassSeq || [],
+          bateria: res.bateriaSeq || {}
+        };
+      } else {
+        const baixo = gerarSequenciaAleatoriaBaixo(tamanho);
+        const bateria = gerarSequenciasAleatoriasBateria(tamanho);
+        return { baixo, bateria };
+      }
+    }
+
+    // ========== EDITOR DE POSIÇÃO ==========
+    (function configurarEditorPosicao() {
+      const partIds = [
+        "cabecaLayer",
+        "troncoBaixoLayer",
+        "antebracoLayer",
+        "bracoDireitoLayer",
+        "pernasLayer"
+      ];
+      const posMap = {};
+      let posEditEnabled = false;
+      let selectedPartId = "troncoBaixoLayer";
+
+      function lerPosicaoInicial(id) {
+        const el = document.getElementById(id);
+        if (!el) return { top: 0, left: 0 };
+        const st = window.getComputedStyle(el);
+        const top = parseInt(st.top || "0", 10) || 0;
+        const left = parseInt(st.left || "0", 10) || 0;
+        return { top, left };
+      }
+
+      function aplicarPosicao(id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const p = posMap[id];
+        el.style.top = p.top + "px";
+        el.style.left = p.left + "px";
+      }
+
+      function moverSelecionado(dx, dy) {
+        if (!posEditEnabled) return;
+        const id = selectedPartId;
+        if (!posMap[id]) return;
+        posMap[id].left += dx;
+        posMap[id].top += dy;
+        aplicarPosicao(id);
+      }
+
+      function copiarCss() {
+        let css = "";
+        for (const id of partIds) {
+          const p = posMap[id];
+          if (!p) continue;
+          css += "#" + id + "{ top:" + p.top + "px; left:" + p.left + "px; }\n";
+        }
+        console.log("CSS sugerido para posicionamento:\n" + css);
+        alert("CSS de posicionamento impresso no console (F12). Copie e cole no seu arquivo CSS.");
+      }
+
+      window.__initPosEditor = function() {
+        partIds.forEach(id => {
+          posMap[id] = lerPosicaoInicial(id);
+        });
+
+        const toggle = document.getElementById("posEditToggle");
+        const select = document.getElementById("posPartSelect");
+        const upBtn = document.getElementById("posUpBtn");
+        const downBtn = document.getElementById("posDownBtn");
+        const leftBtn = document.getElementById("posLeftBtn");
+        const rightBtn = document.getElementById("posRightBtn");
+        const copyBtn = document.getElementById("posCopyCssBtn");
+
+        if (!toggle || !select) return;
+
+        toggle.addEventListener("change", () => {
+          posEditEnabled = toggle.checked;
+        });
+        select.addEventListener("change", () => {
+          selectedPartId = select.value;
+        });
+        if (upBtn)   upBtn.addEventListener("click", () => moverSelecionado(0, -1));
+        if (downBtn) downBtn.addEventListener("click", () => moverSelecionado(0, 1));
+        if (leftBtn) leftBtn.addEventListener("click", () => moverSelecionado(-1, 0));
+        if (rightBtn)rightBtn.addEventListener("click", () => moverSelecionado(1, 0));
+        if (copyBtn) copyBtn.addEventListener("click", copiarCss);
+      };
+    })();
   </script>
 </body>
 </html>
