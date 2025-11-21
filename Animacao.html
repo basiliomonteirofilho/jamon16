@@ -277,6 +277,7 @@
 
     #baixistaStage {
       position: relative;
+      z-index: 0;
       width: 100%;
       max-width: 100px;
       height: 100%;
@@ -291,11 +292,21 @@
       pointer-events: none;
     }
 
+    #cabecaLayer{ top:-212px; left:70px; }
+    #cabecaTrasLayer{ top:-210px; left:70px; } /* cabeça traseira */
+    #troncoBaixoLayer{ top:-114px; left:0px; }
+    #antebracoLayer{ top:-66px; left:0px; }
+    #bracoDireitoLayer{ top:9px; left:-3px; }
+    #pernasLayer{ top:81px; left:64px; }
+
+
     #cabecaLayer { z-index: 10; }
     #troncoBaixoLayer { z-index: 5; }
-    #antebracoLayer { z-index: 8; }
+    #cabecaTrasLayer   { z-index: 7; }
+    #cabecaTrasLayer { z-index: 7; }
     #bracoDireitoLayer { z-index: 9; }
     #pernasLayer { z-index: 1; }
+    #antebracoLayer { z-index: 2; }
 
     .countdownOverlay {
       position: absolute;
@@ -484,8 +495,10 @@
         <div id="baixistaStage">
           <img id="pernasLayer" src="animacao/pernas/Pernas.png" alt="Pernas" />
           <img id="troncoBaixoLayer" src="animacao/tronco_baixo/Pasta_1F/1E.png" alt="Tronco/Baixo" />
+          <img id="cabecaTrasLayer" src="animacao/cabeca_tras/cabeca-parte-de-tras.png">
           <img id="antebracoLayer" src="animacao/antebraco/antebracoE.png" alt="Antebraço direito" />
           <img id="bracoDireitoLayer" src="animacao/braco_direito/Corda_E1.png" alt="Braço direito" />
+          <img id="cabecaTrasLayer" src="animacao/cabeca_tras/cabeca-parte-de-tras.png" alt="Cabeça atrás">
           <img id="cabecaLayer" src="animacao/cabeca/cabeca0001.png" alt="Cabeça" />
           <div id="countdownOverlay" class="countdownOverlay">
             <span id="countdownText">3</span>
@@ -777,11 +790,28 @@
       let dir = 1;
       let offset = 0;
       lateralTimer = setInterval(() => {
-        offset += dir * 0.4;
-        if (offset > 2) dir = -1;
-        if (offset < -2) dir = 1;
-        el.style.transform = "translateX(" + offset + "px)";
-      }, 80);
+    offset += dir * 0.4;
+    if (offset > 2) dir = -1;
+    if (offset < -2) dir = 1;
+
+    // Movimento lateral do corpo inteiro
+    el.style.transform = "translateX(" + offset + "px)";
+
+    // === Movimento lateral sincronizado das camadas ===
+    const tronco = document.getElementById("troncoBaixoLayer");
+    const cabeca = document.getElementById("cabecaLayer");
+    const cabecaTras = document.getElementById("cabecaTrasLayer");
+    const ante = document.getElementById("antebracoLayer");
+    const braco = document.getElementById("bracoDireitoLayer");
+
+    if (tronco) tronco.style.transform = "translateX(" + offset + "px)";
+    if (cabeca) cabeca.style.transform = "translateX(" + offset + "px)";
+    if (cabecaTras) cabecaTras.style.transform = "translateX(" + offset + "px)";
+    if (ante) ante.style.transform = "translateX(" + offset + "px)";
+    if (braco) braco.style.transform = "translateX(" + offset + "px)";
+
+}, 80);
+
     }
 
     function resetAnimTimers() {
@@ -866,6 +896,8 @@
       const path = "animacao/antebraco/antebraco" + corda + ".png";
       el.src = path;
     }
+
+   
 
     function animarBracoDireito(corda, duracaoMs) {
       const el = document.getElementById("bracoDireitoLayer");
@@ -996,6 +1028,18 @@
       await preloadImages(frames);
       console.log("Pré-carregamento de imagens da animação concluído.");
     }
+     function startAntebracoBpm(bpm) {
+    const el = document.getElementById("antebracoLayer");
+    if (!el) return;
+
+    let up = false;
+    const interval = (60000 / bpm) / 2;
+
+    setInterval(() => {
+        up = !up;
+        el.style.transform = up ? "translateY(-2px)" : "translateY(0px)";
+    }, interval);
+}
 
     function tocarPlaybackCompleto(bpm) {
       pararPlayback();
@@ -1004,6 +1048,7 @@
       startTroncoBpm(bpm);
       startHeadTiltBpm(bpm);
       startLateralMovement();
+      startAntebracoBpm(bpmAtual);
 
       iniciarContagemRegressiva(async () => {
         try {
@@ -1466,5 +1511,6 @@
   </script>
 </body>
 </html>
+
 
 
