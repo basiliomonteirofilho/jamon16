@@ -1,939 +1,1468 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <script src="jamon-engine.js"></script>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Jam On - Baixista & Baterista Animados</title>
+  <title>Baixista + Bateria - Animação Integrada</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <style>
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
-    
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-      background: #121212;
-      color: #e0e0e0;
       margin: 0;
-      padding: 20px;
-      overflow-x: hidden;
-    }
-    
-    header {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    
-    h1 {
-      color: #5eead4;
-      font-size: 1.8em;
-      margin: 0;
-    }
-    
-    .pill {
-      display: inline-block;
-      background: #333;
-      color: #aaa;
-      font-size: 0.75em;
-      padding: 4px 10px;
-      border-radius: 12px;
-      margin-top: 8px;
-    }
-    
-    .card {
-      max-width: 1200px;
-      margin: 0 auto;
-      background: #1e1e1e;
-      border-radius: 16px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #111;
+      color: #f5f5f5;
       overflow: hidden;
-      padding: 20px;
     }
-    
-    .animation-section {
+
+    #orientationOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.9);
+      color: #fff;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      z-index: 9999;
+      padding: 16px;
+    }
+
+    #orientationOverlay h1 {
+      font-size: 1.4rem;
+      margin-bottom: 0.5rem;
+    }
+
+    #orientationOverlay p {
+      font-size: 0.95rem;
+      opacity: 0.8;
+    }
+
+    .appRoot {
+      width: 100vw;
+      height: 100vh;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      margin-bottom: 30px;
+      background: radial-gradient(circle at top, #222 0, #050505 60%);
     }
-    
-    #animationContainer {
+
+    #topArea {
       position: relative;
-      width: 100%;
-      max-width: 800px;
-      height: 400px;
-      background: #0a0a0a;
-      border-radius: 12px;
-      overflow: hidden;
-      border: 2px solid #333;
-      margin-bottom: 20px;
+      flex: 0 0 58%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding-top: 24px;
     }
-    
-    #baixistaStage {
-      position: absolute;
+
+    #bottomArea {
+      flex: 0 0 42%;
+      display: flex;
+      flex-direction: column;
+      background: rgba(5, 5, 5, 0.95);
+      border-top: 1px solid #333;
+      padding: 6px 10px 10px 10px;
+      overflow: hidden;
+    }
+
+    #playerControlsRow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+      font-size: 0.9rem;
+    }
+
+    #playerControlsRow button,
+    #playerControlsRow input[type="range"] {
+      cursor: pointer;
+    }
+
+    #playBtn,
+    #playAleatorioBtn,
+    #playExportadoBtn,
+    #addBaixoCol,
+    #addCol,
+    #duplicateSeq,
+    #clearBaixo,
+    #clearAll {
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid #555;
+      background: #222;
+      color: #eee;
+      font-size: 0.82rem;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    #playBtn:hover,
+    #playAleatorioBtn:hover,
+    #playExportadoBtn:hover,
+    #addBaixoCol:hover,
+    #addCol:hover,
+    #duplicateSeq:hover,
+    #clearBaixo:hover,
+    #clearAll:hover {
+      background: #333;
+      transform: translateY(-1px);
+    }
+
+    #bpmDisplay {
+      min-width: 70px;
+      font-weight: 600;
+    }
+
+    .sliderGroup {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .sliderGroup label {
+      font-size: 0.8rem;
+      opacity: 0.85;
+    }
+
+    .sliderGroup input[type="range"] {
+      width: 90px;
+    }
+
+    #progressContainer {
       width: 100%;
+      height: 5px;
+      border-radius: 999px;
+      background: #2c2c2c;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    #progressBar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #00c853, #ffd600);
+      transition: width 0.12s linear;
+    }
+
+    #gridsArea {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      overflow: auto;
+    }
+
+    #baixoLabelRow {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 2px;
+    }
+
+    #baixoLabelRow span {
+      font-size: 0.78rem;
+      opacity: 0.9;
+    }
+
+    #baixoGridContainer {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+
+    #baixoGridLabel {
+      width: 60px;
+      font-size: 0.78rem;
+      text-align: right;
+      opacity: 0.85;
+      padding-right: 6px;
+    }
+
+    #baixoGrid {
+      flex: 1;
+      display: grid;
+      grid-auto-rows: 24px;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(20px, 1fr);
+      gap: 2px;
+      background: #080808;
+      padding: 2px;
+      border-radius: 4px;
+      border: 1px solid #333;
+    }
+
+    .gridWrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    #drumGrid {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding-top: 2px;
+      border-top: 1px solid #222;
+      margin-top: 2px;
+    }
+
+    .drumRow {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      min-height: 22px;
+    }
+
+    .drumLabel {
+      width: 60px;
+      font-size: 0.76rem;
+      text-align: right;
+      opacity: 0.85;
+      padding-right: 6px;
+      white-space: nowrap;
+    }
+
+    .composicaoGrid {
+      flex: 1;
+      display: grid;
+      grid-auto-rows: 22px;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(20px, 1fr);
+      gap: 2px;
+      background: #050505;
+      padding: 2px;
+      border-radius: 4px;
+      border: 1px solid #222;
+    }
+
+    .cell {
+      font-size: 0.7rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 3px;
+      border: 1px solid #333;
+      background: #151515;
+      cursor: pointer;
+      user-select: none;
+      color: #f5f5f5;
+      min-width: 20px;
+    }
+
+    .cell.active {
+      background: #1b5e20;
+      border-color: #00c853;
+      font-weight: 600;
+    }
+
+    .cell:hover {
+      filter: brightness(1.2);
+    }
+
+    #animacaoStageWrapper {
+      position: relative;
+      width: 60vw;
+      max-width: 520px;
       height: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
     }
-    
-    .animation-layer {
+
+    #baixistaStage {
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      height: 100%;
+      max-height: 360px;
+      margin: 0 auto;
+    }
+
+    #baixistaStage img {
       position: absolute;
       image-rendering: crisp-edges;
       image-rendering: pixelated;
       pointer-events: none;
     }
-    
-    #pernasLayer {
-      z-index: 1;
-      bottom: 0;
-    }
-    
-    #troncoBaixoLayer {
-      z-index: 5;
-    }
-    
-    #antebracoLayer {
-      z-index: 8;
-    }
-    
-    #bracoDireitoLayer {
-      z-index: 9;
-    }
-    
-    #cabecaLayer {
-      z-index: 10;
-    }
-    
-    .controls-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 15px;
-      margin-bottom: 20px;
-    }
-    
-    .control-group {
-      background: #2a2a2a;
-      padding: 15px;
-      border-radius: 8px;
-    }
-    
-    .control-group h3 {
-      color: #5eead4;
-      margin-bottom: 10px;
-      font-size: 1.1em;
-    }
-    
-    .btn-row {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 15px;
-      flex-wrap: wrap;
-    }
-    
-    button {
-      padding: 10px 16px;
-      border: none;
-      border-radius: 6px;
-      font-weight: bold;
-      cursor: pointer;
-      font-size: 0.9em;
-      transition: all 0.2s;
-    }
-    
-    button.primary {
-      background: #5eead4;
-      color: #121212;
-    }
-    
-    button.danger {
-      background: #f44336;
-      color: white;
-    }
-    
-    button:hover:not(:disabled) {
-      opacity: 0.9;
-      transform: translateY(-1px);
-    }
-    
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-    
-    .slider-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 8px;
-    }
-    
-    .slider-row label {
-      width: 100px;
-      text-align: right;
-      font-size: 0.9em;
-      color: #ccc;
-    }
-    
-    input[type="range"] {
-      flex: 1;
-      accent-color: #5eead4;
-    }
-    
-    .slider-value {
-      width: 40px;
-      text-align: left;
-      font-size: 0.9em;
-      color: #aaa;
-    }
-    
-    .grid-container {
-      background: #2a2a2a;
-      padding: 15px;
-      border-radius: 8px;
-      margin-top: 20px;
-    }
-    
-    .grid-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-    
-    .grid-header h3 {
-      color: #5eead4;
-      margin: 0;
-    }
-    
-    .grid-wrapper {
-      display: flex;
-      gap: 20px;
-      overflow-x: auto;
-      padding: 10px 0;
-    }
-    
-    .instrument-grid {
-      min-width: 300px;
-    }
-    
-    .grid-label {
-      font-size: 0.9em;
-      color: #ccc;
-      margin-bottom: 5px;
-      text-align: center;
-    }
-    
-    .note-grid {
-      display: grid;
-      grid-template-columns: repeat(16, 1fr);
-      gap: 2px;
-      background: #1a1a1a;
-      padding: 5px;
-      border-radius: 4px;
-    }
-    
-    .grid-cell {
-      aspect-ratio: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #333;
-      border-radius: 3px;
-      cursor: pointer;
-      font-size: 0.7em;
-      user-select: none;
-      transition: all 0.1s;
-    }
-    
-    .grid-cell.active {
-      background: #1b5e20;
-      color: white;
-      font-weight: bold;
-    }
-    
-    .grid-cell.ghost {
-      background: #880e4f;
-      color: white;
-    }
-    
-    .grid-cell:hover {
-      filter: brightness(1.2);
-    }
-    
-    .drum-grid {
-      display: grid;
-      grid-template-columns: 100px repeat(16, 1fr);
-      gap: 2px;
-      background: #1a1a1a;
-      padding: 5px;
-      border-radius: 4px;
-    }
-    
-    .drum-label {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      padding-right: 8px;
-      font-size: 0.8em;
-      color: #ccc;
-    }
-    
-    .status-info {
-      text-align: center;
-      margin-top: 15px;
-      padding: 10px;
-      background: #2a2a2a;
-      border-radius: 6px;
-      font-size: 0.9em;
-    }
-    
-    .countdown-overlay {
+
+    #cabecaLayer { z-index: 10; }
+    #troncoBaixoLayer { z-index: 5; }
+    #antebracoLayer { z-index: 8; }
+    #bracoDireitoLayer { z-index: 9; }
+    #pernasLayer { z-index: 1; }
+
+    .countdownOverlay {
       position: absolute;
       inset: 0;
       display: none;
       justify-content: center;
       align-items: center;
-      background: rgba(0, 0, 0, 0.8);
-      z-index: 100;
-      font-size: 4rem;
+      z-index: 1500;
+      background: radial-gradient(circle, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.95));
+      color: #fff;
+      font-size: 3rem;
       font-weight: bold;
-      color: #5eead4;
     }
-    
-    @media (max-width: 768px) {
-      body {
-        padding: 10px;
+
+    #selectionOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9000;
+    }
+
+    #selectionOverlay.visible {
+      display: flex;
+    }
+
+    #selectionPanel {
+      background: #181818;
+      padding: 10px;
+      border-radius: 6px;
+      max-width: 520px;
+      max-height: 70vh;
+      overflow: auto;
+      border: 1px solid #444;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
+    }
+
+    #selectionTitle {
+      font-size: 0.9rem;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    #selectionOptions {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+      gap: 4px;
+    }
+
+    .selection-option {
+      border-radius: 4px;
+      background: #222;
+      border: 1px solid #555;
+      font-size: 0.72rem;
+      text-align: center;
+      padding: 4px 2px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .selection-option.active {
+      background: #1b5e20;
+      border-color: #00c853;
+      font-weight: 600;
+    }
+
+    .selection-option.x-option {
+      background: #880e4f;
+      border-color: #f50057;
+    }
+
+    .selection-option.x-option.active {
+      background: #ad1457;
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #444;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #111;
+    }
+
+    /* Painel editor de posição */
+    #posEditorPanel {
+      position: fixed;
+      top: 6px;
+      left: 6px;
+      z-index: 9999;
+      background: rgba(0, 0, 0, 0.75);
+      color: #fff;
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      align-items: center;
+    }
+    #posEditorPanel label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    #posEditorPanel select {
+      font-size: 12px;
+    }
+    #posEditButtons button,
+    #posCopyCssBtn {
+      font-size: 11px;
+      padding: 2px 6px;
+      cursor: pointer;
+    }
+
+    @media (max-width: 900px) {
+      #animacaoStageWrapper {
+        width: 90vw;
       }
-      
-      .card {
-        padding: 15px;
+      #baixistaStage {
+        max-height: 320px;
       }
-      
-      #animationContainer {
-        height: 300px;
+      #bottomArea {
+        flex-basis: 45%;
       }
-      
-      .controls-grid {
-        grid-template-columns: 1fr;
+      #playerControlsRow {
+        font-size: 0.8rem;
       }
-      
-      .grid-wrapper {
-        flex-direction: column;
+    }
+
+    @media (max-width: 600px) {
+      #bottomArea {
+        flex-basis: 48%;
       }
-      
-      .instrument-grid {
-        min-width: auto;
+      #playerControlsRow button {
+        padding: 3px 6px;
+        font-size: 0.7rem;
+      }
+      #baixoGrid,
+      .composicaoGrid {
+        grid-auto-rows: 20px;
       }
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Jam On – Baixista & Baterista Animados</h1>
-    <div class="pill">Visualização em tempo real da performance</div>
-  </header>
-  
-  <div class="card">
-    <div class="animation-section">
-      <div id="animationContainer">
+  <div id="orientationOverlay">
+    <div>
+      <h1>Gire o dispositivo</h1>
+      <p>Para uma experiência melhor, use em modo paisagem (deitado).</p>
+    </div>
+  </div>
+
+  <!-- Painel de ajuste de posição (modo editor) -->
+  <div id="posEditorPanel">
+    <label>
+      <input type="checkbox" id="posEditToggle" />
+      Modo edição de posição
+    </label>
+    <label for="posPartSelect">Parte:</label>
+    <select id="posPartSelect">
+      <option value="troncoBaixoLayer">Tronco / Baixo</option>
+      <option value="cabecaLayer">Cabeça</option>
+      <option value="antebracoLayer">Antebraço</option>
+      <option value="bracoDireitoLayer">Braço direito</option>
+      <option value="pernasLayer">Pernas</option>
+    </select>
+    <div id="posEditButtons">
+      <button type="button" id="posUpBtn">↑</button>
+      <button type="button" id="posDownBtn">↓</button>
+      <button type="button" id="posLeftBtn">←</button>
+      <button type="button" id="posRightBtn">→</button>
+    </div>
+    <button type="button" id="posCopyCssBtn">Copiar CSS</button>
+    <small>(Use apenas para calibrar, depois pode desativar no código.)</small>
+  </div>
+
+  <div class="appRoot">
+    <div id="topArea">
+      <div id="animacaoStageWrapper">
         <div id="baixistaStage">
-          <img id="pernasLayer" class="animation-layer" src="animacao/pernas/Pernas.png" alt="Pernas">
-          <img id="troncoBaixoLayer" class="animation-layer" src="animacao/tronco_baixo/Pasta_1F/1E.png" alt="Tronco/Baixo">
-          <img id="antebracoLayer" class="animation-layer" src="animacao/antebraco/antebracoE.png" alt="Antebraço">
-          <img id="bracoDireitoLayer" class="animation-layer" src="animacao/braco_direito/Corda_E1.png" alt="Braço Direito">
-          <img id="cabecaLayer" class="animation-layer" src="animacao/cabeca/cabeca0001.png" alt="Cabeça">
-        </div>
-        <div id="countdownOverlay" class="countdown-overlay">
-          <span id="countdownText">3</span>
-        </div>
-      </div>
-      
-      <div class="btn-row">
-        <button id="btnPlayAnimation" class="primary">▶ Iniciar Animação</button>
-        <button id="btnStopAnimation" class="danger">⏹ Parar</button>
-        <button id="btnRandomAnimation" class="primary">🎲 Aleatório</button>
-        <button id="btnBackToMain" class="primary">← Voltar ao Principal</button>
-      </div>
-    </div>
-    
-    <div class="controls-grid">
-      <div class="control-group">
-        <h3>Configurações de Animação</h3>
-        <div class="slider-row">
-          <label>BPM</label>
-          <input type="range" id="animBpm" min="60" max="180" value="120">
-          <span class="slider-value" id="animBpmLabel">120</span>
-        </div>
-        <div class="slider-row">
-          <label>Volume Baixo</label>
-          <input type="range" id="animBassVolume" min="0" max="1" step="0.01" value="0.8">
-          <span class="slider-value" id="animBassVolumeLabel">80%</span>
-        </div>
-        <div class="slider-row">
-          <label>Volume Bateria</label>
-          <input type="range" id="animDrumVolume" min="0" max="1" step="0.01" value="0.7">
-          <span class="slider-value" id="animDrumVolumeLabel">70%</span>
-        </div>
-      </div>
-      
-      <div class="control-group">
-        <h3>Controles de Visualização</h3>
-        <div class="btn-row">
-          <button id="btnAddMeasure">+ Compasso</button>
-          <button id="btnClearGrid">🧹 Limpar</button>
-        </div>
-        <div class="slider-row">
-          <label>Suavidade</label>
-          <input type="range" id="animSmoothness" min="1" max="10" value="5">
-          <span class="slider-value" id="animSmoothnessLabel">5</span>
-        </div>
-      </div>
-    </div>
-    
-    <div class="grid-container">
-      <div class="grid-header">
-        <h3>Composição - Baixo & Bateria</h3>
-        <div style="font-size: 0.8em; color: #aaa;">Clique nas células para editar</div>
-      </div>
-      
-      <div class="grid-wrapper">
-        <div class="instrument-grid">
-          <div class="grid-label">Baixo</div>
-          <div id="bassAnimationGrid" class="note-grid">
-            <!-- Será preenchido via JavaScript -->
-          </div>
-        </div>
-        
-        <div class="instrument-grid" style="min-width: 400px;">
-          <div class="grid-label">Bateria</div>
-          <div id="drumAnimationGrid" class="drum-grid">
-            <!-- Será preenchido via JavaScript -->
+          <img id="pernasLayer" src="animacao/pernas/Pernas.png" alt="Pernas" />
+          <img id="troncoBaixoLayer" src="animacao/tronco_baixo/Pasta_1F/1E.png" alt="Tronco/Baixo" />
+          <img id="antebracoLayer" src="animacao/antebraco/antebracoE.png" alt="Antebraço direito" />
+          <img id="bracoDireitoLayer" src="animacao/braco_direito/Corda_E1.png" alt="Braço direito" />
+          <img id="cabecaLayer" src="animacao/cabeca/cabeca0001.png" alt="Cabeça" />
+          <div id="countdownOverlay" class="countdownOverlay">
+            <span id="countdownText">3</span>
           </div>
         </div>
       </div>
     </div>
-    
-    <div class="status-info">
-      <div id="animationStatus">Pronto para iniciar</div>
-      <div id="currentNoteInfo" style="font-size: 0.8em; margin-top: 5px; color: #5eead4;"></div>
+
+    <div id="bottomArea">
+      <div id="playerControlsRow">
+        <button id="playBtn">▶ Play</button>
+        <button id="playAleatorioBtn">🎲 Playback aleatório</button>
+        <button id="playExportadoBtn">📁 Carregar JSON exportado</button>
+
+        <span id="bpmDisplay">120 BPM</span>
+        <input type="range" id="bpmSlider" min="60" max="180" value="120" />
+
+        <div class="sliderGroup">
+          <label for="baixoVolume">Baixo</label>
+          <input type="range" id="baixoVolume" min="0" max="1" step="0.01" value="0.9" />
+        </div>
+
+        <div class="sliderGroup">
+          <label for="drumVolume">Bateria</label>
+          <input type="range" id="drumVolume" min="0" max="1" step="0.01" value="0.9" />
+        </div>
+
+        <button id="addBaixoCol">+1 passo baixo</button>
+        <button id="addCol">+1 passo tudo</button>
+        <button id="duplicateSeq">×2 últimos 16</button>
+        <button id="clearBaixo">Limpar baixo</button>
+        <button id="clearAll">Limpar tudo</button>
+      </div>
+
+      <div id="progressContainer">
+        <div id="progressBar"></div>
+      </div>
+
+      <div id="gridsArea">
+        <div id="baixoLabelRow">
+          <span>Baixo: clique nas células para escolher nota, X (ghost note) ou deixar em branco (nota continua).</span>
+        </div>
+        <div id="baixoGridContainer">
+          <div id="baixoGridLabel">Baixo</div>
+          <div id="baixoGrid"></div>
+        </div>
+        <div class="gridWrapper" id="drumGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="selectionOverlay">
+    <div id="selectionPanel">
+      <div id="selectionTitle">Selecione a nota</div>
+      <div id="selectionOptions"></div>
     </div>
   </div>
 
   <script>
-    // ===== SISTEMA DE ANIMAÇÃO DO BAIXISTA =====
-    class BaixistaAnimation {
-      constructor() {
-        this.isPlaying = false;
-        this.currentStep = 0;
-        this.bpm = 120;
-        this.stepInterval = null;
-        this.bassSequence = [];
-        this.drumSequence = {};
-        this.audioContext = null;
-        this.bassVolume = 0.8;
-        this.drumVolume = 0.7;
-        
-        // Cache de buffers de áudio
-        this.audioBuffers = {
-          bass: {},
-          drums: {}
-        };
-        
-        // Estado da animação
-        this.currentPosition = 1; // Pasta inicial
-        this.lastRealNote = "1E";
-        this.lastStringUsed = "E";
-        this.headFrameIndex = 0;
-        this.headFrames = this.generateHeadFramePaths();
-        this.animationTimers = [];
-        
-        // Mapeamento de pastas (REGRA E - Economia de movimento)
-        this.pastaMap = {
-          1: ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B"],
-          2: ["3FS","4G","5GS","6A","8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C"],
-          3: ["4G","5GS","6A","7AS","9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS"],
-          4: ["5GS","6A","7AS","8B","10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D"],
-          5: ["6A","7AS","8B","9C","11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS"],
-          6: ["7AS","8B","9C","10CS","12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E"],
-          7: ["8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F"],
-          8: ["9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS"],
-          9: ["10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G"],
-          10: ["11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS"],
-          11: ["12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A"],
-          12: ["13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS"],
-          13: ["14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B"],
-          14: ["15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C"],
-          15: ["16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS"],
-          16: ["17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D"],
-          17: ["18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS"],
-          18: ["19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E"],
-          19: ["20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F"],
-          20: ["21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS","36DS","37E","38F","39FS"],
-          21: ["22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D","37E","38F","39FS","40G"],
-          22: ["23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS","38F","39FS","40G","41GS"],
-          23: ["24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E","39FS","40G","41GS","42A"],
-          24: ["25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F","40G","41GS","42A","43AS"]
-        };
-        
-        // Instrumentos de bateria
-        this.drumLines = [
-          { id: "bumbo", label: "Bumbo", file: "bumbo.mp3" },
-          { id: "caixa", label: "Caixa", file: "caixa.mp3" },
-          { id: "chimbal", label: "Chimbal", file: "chimbal.mp3" },
-          { id: "tom1", label: "Tom 1", file: "tom-1.mp3" },
-          { id: "tom2", label: "Tom 2", file: "tom-2.mp3" }
-        ];
-        
-        this.initializeAudio();
-        this.setupEventListeners();
-        this.initializeGrids();
-        this.startHeadAnimation();
-        this.startBodyAnimations();
-      }
-      
-      generateHeadFramePaths() {
-        const frames = [];
-        for (let i = 1; i <= 100; i++) {
-          const num = String(i).padStart(4, "0");
-          frames.push(`animacao/cabeca/cabeca${num}.png`);
-        }
-        return frames;
-      }
-      
-      async initializeAudio() {
-        try {
-          this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-          await this.audioContext.resume();
-          
-          // Pré-carregar samples essenciais
-          await this.preloadEssentialSamples();
-        } catch (error) {
-          console.warn("AudioContext não suportado:", error);
-        }
-      }
-      
-      async preloadEssentialSamples() {
-        // Pré-carregar algumas notas de baixo comuns
-        const commonNotes = ["1E", "6A", "11D", "16G", "13E", "18A", "8B", "3FS"];
-        for (const note of commonNotes) {
-          await this.loadBassSample(note);
-        }
-        
-        // Pré-carregar samples de bateria
-        for (const drum of this.drumLines) {
-          await this.loadDrumSample(drum.id, drum.file);
-        }
-        
-        // Ghost note
-        await this.loadBassSample("x");
-      }
-      
-      async loadBassSample(note) {
-        if (this.audioBuffers.bass[note]) return this.audioBuffers.bass[note];
-        
-        try {
-          const url = note === "x" ? 
-            "assets/bass-muted.mp3" : 
-            `assets/BaixoMelodia/${note}.mp3`;
-          
-          const response = await fetch(url);
-          const arrayBuffer = await response.arrayBuffer();
-          const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
-          this.audioBuffers.bass[note] = audioBuffer;
-          return audioBuffer;
-        } catch (error) {
-          console.warn(`Erro ao carregar sample de baixo: ${note}`, error);
-          return null;
+    // ========== CONFIGURAÇÕES E VARIÁVEIS GLOBAIS ==========
+    let headFrames = [];
+    let headFrameIndex = 0;
+    let headLoopTimer = null;
+    let troncoTimerBpm = null;
+    let headTiltTimerBpm = null;
+    let lateralTimer = null;
+    let animTimers = [];
+
+    let bpmAtual = 120;
+    let baixoSeq = [];
+    let bateriaSeq = {};
+    let isPlaying = false;
+    let playbackInterval = null;
+    let atualPasso = 0;
+
+    let baixoVolumeGlobal = 0.9;
+    let bateriaVolumeGlobal = 0.9;
+
+    let audioBaixoAtual = null;
+    let audioBaixoTimer = null;
+
+    // ========= Estado para pasta / corda / nota =========
+    let posicaoAtualPasta = 1; // começa na Pasta_1F
+    let ultimaCordaUsada = "E";
+    let ultimaNotaReal = "1E"; // para ghost notes herdarem postura
+
+    // ========= Mapeamento de quais notas existem em cada pasta =========
+    const pastaMap = {
+      1: ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B"],
+      2: ["3FS","4G","5GS","6A","8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C"],
+      3: ["4G","5GS","6A","7AS","9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS"],
+      4: ["5GS","6A","7AS","8B","10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D"],
+      5: ["6A","7AS","8B","9C","11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS"],
+      6: ["7AS","8B","9C","10CS","12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E"],
+      7: ["8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F"],
+      8: ["9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS"],
+      9: ["10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G"],
+      10: ["11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS"],
+      11: ["12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A"],
+      12: ["13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS"],
+      13: ["14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B"],
+      14: ["15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C"],
+      15: ["16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS"],
+      16: ["17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D"],
+      17: ["18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS"],
+      18: ["19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E"],
+      19: ["20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F"],
+      20: ["21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS","36DS","37E","38F","39FS"],
+      21: ["22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D","37E","38F","39FS","40G"],
+      22: ["23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS","38F","39FS","40G","41GS"],
+      23: ["24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E","39FS","40G","41GS","42A"],
+      24: ["25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F","40G","41GS","42A","43AS"]
+    };
+
+    // Nomes reais das pastas (Pasta_1F ... Pasta_24E)
+    const pastaFolderNames = {
+      1: "1F",
+      2: "2FS",
+      3: "3G",
+      4: "4GS",
+      5: "5A",
+      6: "6AS",
+      7: "7B",
+      8: "8C",
+      9: "9CS",
+      10: "10D",
+      11: "11DS",
+      12: "12E",
+      13: "13F",
+      14: "14FS",
+      15: "15G",
+      16: "16GS",
+      17: "17A",
+      18: "18AS",
+      19: "19B",
+      20: "20C",
+      21: "21CS",
+      22: "22D",
+      23: "23DS",
+      24: "24E"
+    };
+
+    // Função para encontrar pastas que contêm determinada nota
+    function encontrarPastasDisponiveis(nota) {
+      const pastas = [];
+      for (let pastaNum = 1; pastaNum <= 24; pastaNum++) {
+        if (pastaMap[pastaNum].includes(nota)) {
+          pastas.push(pastaNum);
         }
       }
-      
-      async loadDrumSample(drumId, fileName) {
-        if (this.audioBuffers.drums[drumId]) return this.audioBuffers.drums[drumId];
-        
-        try {
-          const response = await fetch(`assets/${fileName}`);
-          const arrayBuffer = await response.arrayBuffer();
-          const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
-          this.audioBuffers.drums[drumId] = audioBuffer;
-          return audioBuffer;
-        } catch (error) {
-          console.warn(`Erro ao carregar sample de bateria: ${drumId}`, error);
-          return null;
+      return pastas;
+    }
+
+    // REGRA E: escolher pasta com menor deslocamento em relação à atual
+    function escolherMelhorPasta(nota, posicaoAtual) {
+      if (nota === "x") {
+        // Ghost note: mantém pasta anterior
+        return posicaoAtual;
+      }
+
+      const pastasDisponiveis = encontrarPastasDisponiveis(nota);
+      if (pastasDisponiveis.length === 0) {
+        console.warn(`Nota ${nota} não encontrada em nenhuma pasta. Usando Pasta_1F.`);
+        return 1;
+      }
+
+      let melhorPasta = pastasDisponiveis[0];
+      let menorDistancia = Math.abs(posicaoAtual - melhorPasta);
+
+      for (let i = 1; i < pastasDisponiveis.length; i++) {
+        const distancia = Math.abs(posicaoAtual - pastasDisponiveis[i]);
+        if (distancia < menorDistancia) {
+          menorDistancia = distancia;
+          melhorPasta = pastasDisponiveis[i];
         }
       }
-      
-      playBassNote(note) {
-        if (!this.audioContext || !this.audioBuffers.bass[note]) return;
-        
-        const source = this.audioContext.createBufferSource();
-        const gainNode = this.audioContext.createGain();
-        
-        source.buffer = this.audioBuffers.bass[note];
-        source.connect(gainNode);
-        gainNode.connect(this.audioContext.destination);
-        gainNode.gain.value = this.bassVolume;
-        
-        source.start();
+
+      return melhorPasta;
+    }
+
+    const notasValidas = [
+      "1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS",
+      "11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B",
+      "21C","22CS","23D","24DS","25E","26F","27FS","28G","29GS","30A",
+      "31AS","32B","33C","34CS","35D","36DS","37E","38F","39FS","40G",
+      "41GS","42A","43AS"
+    ];
+
+    const BAIXO_SAMPLES = {};
+    notasValidas.forEach(n => {
+      BAIXO_SAMPLES[n] = "assets/BaixoMelodia/" + n + ".mp3";
+    });
+    BAIXO_SAMPLES["x"] = "assets/bass-muted.mp3"; // ghost note
+
+    const drumLines = [
+      { id: "bumbo",           label: "B",   file: "bumbo.mp3" },
+      { id: "caixa",           label: "C",   file: "caixa.mp3" },
+      { id: "caixaAro",        label: "Rim", file: "caixaAro.mp3" },
+      { id: "chimbal",         label: "HH",  file: "chimbal.mp3" },
+      { id: "chimbal_pedal",   label: "HHP", file: "chimbal-pedal.mp3" },
+      { id: "chimbalaberto",   label: "HHo", file: "chimbal-aberto.mp3" },
+      { id: "ataque",          label: "Atk", file: "ataque.mp3" },
+      { id: "tom1",            label: "T1",  file: "tom-1.mp3" },
+      { id: "tom2",            label: "T2",  file: "tom-2.mp3" },
+      { id: "surdo",           label: "Sd",  file: "surdo.mp3" },
+      { id: "conducao",        label: "Rd",  file: "conducao.mp3" },
+      { id: "conducao_centro", label: "RdC", file: "conducao-centro.mp3" }
+    ];
+
+    // ========== Corda da nota (para animar braço/antebraço) ==========
+    function getCordaDaNota(nota) {
+      if (!nota || nota === "x") return ultimaCordaUsada;
+
+      const m = nota.match(/^(\d+)/);
+      if (!m) return "E";
+
+      const n = parseInt(m[1], 10);
+
+      // 1E–20B = corda E; 21C–28G = A; 29GS–36DS = D; 37E–43AS = G
+      if (n <= 20) return "E";
+      if (n <= 28) return "A";
+      if (n <= 36) return "D";
+      return "G";
+    }
+
+    // ========== CABEÇA / MOVIMENTO SUAVE ==========
+    function generateHeadFramePaths() {
+      const arr = [];
+      for (let i = 1; i <= 100; i++) {
+        const num = String(i).padStart(4, "0");
+        arr.push("animacao/cabeca/cabeca" + num + ".png");
       }
-      
-      playDrumNote(drumId) {
-        if (!this.audioContext || !this.audioBuffers.drums[drumId]) return;
-        
-        const source = this.audioContext.createBufferSource();
-        const gainNode = this.audioContext.createGain();
-        
-        source.buffer = this.audioBuffers.drums[drumId];
-        source.connect(gainNode);
-        gainNode.connect(this.audioContext.destination);
-        gainNode.gain.value = this.drumVolume;
-        
-        source.start();
+      return arr;
+    }
+
+    function preloadImages(urls) {
+      return new Promise(resolve => {
+        if (!urls || !urls.length) return resolve();
+        let loaded = 0;
+        urls.forEach(src => {
+          const img = new Image();
+          img.onload = img.onerror = () => {
+            loaded++;
+            if (loaded >= urls.length) resolve();
+          };
+          img.src = src;
+        });
+      });
+    }
+
+    function startHeadLoop() {
+      const el = document.getElementById("cabecaLayer");
+      if (!el) return;
+      if (headLoopTimer) clearInterval(headLoopTimer);
+      headLoopTimer = setInterval(() => {
+        headFrameIndex = (headFrameIndex + 1) % headFrames.length;
+        el.src = headFrames[headFrameIndex];
+      }, 1000 / 30);
+    }
+
+    function startTroncoBpm(bpm) {
+      const el = document.getElementById("troncoBaixoLayer");
+      if (!el) return;
+      if (troncoTimerBpm) clearInterval(troncoTimerBpm);
+      const interval = (60000 / bpm) / 2;
+      let up = false;
+      troncoTimerBpm = setInterval(() => {
+        up = !up;
+        el.style.transform = up ? "translateY(-2px)" : "translateY(0px)";
+      }, interval);
+    }
+
+    function startHeadTiltBpm(bpm) {
+      const el = document.getElementById("cabecaLayer");
+      if (!el) return;
+      if (headTiltTimerBpm) clearInterval(headTiltTimerBpm);
+      const interval = (60000 / bpm) / 4;
+      let toggle = false;
+      headTiltTimerBpm = setInterval(() => {
+        toggle = !toggle;
+        el.style.transform = toggle ? "rotate(-2deg)" : "rotate(2deg)";
+      }, interval);
+    }
+
+    function startLateralMovement() {
+      const el = document.getElementById("baixistaStage");
+      if (!el) return;
+      if (lateralTimer) clearInterval(lateralTimer);
+      let dir = 1;
+      let offset = 0;
+      lateralTimer = setInterval(() => {
+        offset += dir * 0.4;
+        if (offset > 2) dir = -1;
+        if (offset < -2) dir = 1;
+        el.style.transform = "translateX(" + offset + "px)";
+      }, 80);
+    }
+
+    function resetAnimTimers() {
+      animTimers.forEach(id => clearInterval(id));
+      animTimers = [];
+    }
+
+    function pararAudioBaixo() {
+      if (audioBaixoAtual) {
+        audioBaixoAtual.pause();
+        audioBaixoAtual.currentTime = 0;
+        audioBaixoAtual = null;
       }
-      
-      // REGRA E: Encontrar pastas disponíveis para uma nota
-      findAvailableFolders(note) {
-        const folders = [];
-        for (let folderNum = 1; folderNum <= 24; folderNum++) {
-          if (this.pastaMap[folderNum].includes(note)) {
-            folders.push(folderNum);
-          }
+      if (audioBaixoTimer) {
+        clearTimeout(audioBaixoTimer);
+        audioBaixoTimer = null;
+      }
+    }
+
+    // ========== ÁUDIO BATERIA ==========
+    function tocarBateriaNoStep(step, volume) {
+      drumLines.forEach(line => {
+        const seq = bateriaSeq[line.id];
+        if (!seq || step >= seq.length) return;
+        const val = seq[step];
+        if (val === line.id) {
+          const a = new Audio("assets/" + line.file);
+          a.volume = volume;
+          a.play().catch(e => console.log("Erro ao tocar bateria:", e));
         }
-        return folders;
+      });
+    }
+
+    // ========== ÁUDIO BAIXO ==========
+    function tocarNotaAudioBaixo(nota, volume) {
+      if (!nota) return;
+      let src = BAIXO_SAMPLES[nota];
+      if (!src) src = BAIXO_SAMPLES["x"];
+      if (audioBaixoAtual) {
+        audioBaixoAtual.pause();
+        audioBaixoAtual.currentTime = 0;
       }
-      
-      // REGRA E: Escolher a melhor pasta baseada na economia de movimento
-      chooseBestFolder(note, currentPosition) {
-        if (note === "x") {
-          // Ghost note: usar a mesma pasta anterior
-          return currentPosition;
+      const a = new Audio(src);
+      a.volume = volume;
+      audioBaixoAtual = a;
+      audioBaixoAtual.play().catch(e => {
+        console.log("Erro ao tocar áudio do baixo:", nota, e);
+      });
+    }
+
+    // ========== TROCA DE PNGS DO TRONCO/BAIXO ==========
+    function trocarFrameTronco(nota) {
+      const tronco = document.getElementById("troncoBaixoLayer");
+      if (!tronco) return;
+
+      if (nota === "x") {
+        // Ghost note → mantém postura da última nota real
+        if (ultimaNotaReal) {
+          const pastaGhostNum = escolherMelhorPasta(ultimaNotaReal, posicaoAtualPasta);
+          const folderGhost = pastaFolderNames[pastaGhostNum] || "1F";
+          const pathGhost = "animacao/tronco_baixo/Pasta_" + folderGhost + "/" + ultimaNotaReal + ".png";
+          tronco.src = pathGhost;
         }
-        
-        const availableFolders = this.findAvailableFolders(note);
-        if (availableFolders.length === 0) {
-          console.warn(`Nota ${note} não encontrada em nenhuma pasta. Usando padrão.`);
-          return 1;
+        return;
+      }
+
+      // Atualiza pasta de acordo com REGRA E
+      posicaoAtualPasta = escolherMelhorPasta(nota, posicaoAtualPasta);
+      ultimaNotaReal = nota;
+
+      const pastaFolder = pastaFolderNames[posicaoAtualPasta] || "1F";
+      const path = "animacao/tronco_baixo/Pasta_" + pastaFolder + "/" + nota + ".png";
+      tronco.onerror = () => {
+        console.warn("Falha ao carregar:", path);
+      };
+      tronco.src = path;
+    }
+
+    function trocarAntebraco(corda) {
+      const el = document.getElementById("antebracoLayer");
+      if (!el) return;
+      const path = "animacao/antebraco/antebraco" + corda + ".png";
+      el.src = path;
+    }
+
+    function animarBracoDireito(corda, duracaoMs) {
+      const el = document.getElementById("bracoDireitoLayer");
+      if (!el) return;
+      let frame = 1;
+      const totalFrames = 5;
+      const intervalo = Math.max(40, duracaoMs / (totalFrames * 2));
+
+      clearInterval(el.__timerBraco || 0);
+
+      el.__timerBraco = setInterval(() => {
+        const path = "animacao/braco_direito/Corda_" + corda + frame + ".png";
+        el.src = path;
+        frame++;
+        if (frame > totalFrames) {
+          frame = 1;
         }
-        
-        // Encontrar a pasta com menor distância da posição atual
-        let bestFolder = availableFolders[0];
-        let minDistance = Math.abs(currentPosition - bestFolder);
-        
-        for (let i = 1; i < availableFolders.length; i++) {
-          const distance = Math.abs(currentPosition - availableFolders[i]);
-          if (distance < minDistance) {
-            minDistance = distance;
-            bestFolder = availableFolders[i];
-          }
-        }
-        
-        return bestFolder;
+      }, intervalo);
+    }
+
+    function tocarNotaComAnimacao(nota, duracaoMs, volume) {
+      // Áudio
+      tocarNotaAudioBaixo(nota, volume);
+
+      if (nota === "x") {
+        // Ghost note: mesma postura de mão esquerda, só muda mão direita
+        const cordaGhost = ultimaCordaUsada || "E";
+        animarBracoDireito(cordaGhost, duracaoMs);
+        trocarFrameTronco("x");
+        return;
       }
-      
-      // Determinar a corda baseada na nota
-      getStringFromNote(note) {
-        if (!note || note === "x") return this.lastStringUsed;
-        
-        const match = note.match(/^(\d+)/);
-        if (!match) return "E";
-        
-        const noteNum = parseInt(match[1], 10);
-        
-        if (noteNum <= 20) return "E";
-        if (noteNum <= 28) return "A";
-        if (noteNum <= 36) return "D";
-        return "G";
+
+      // Nota real
+      trocarFrameTronco(nota);
+      const corda = getCordaDaNota(nota);
+      ultimaCordaUsada = corda;
+      trocarAntebraco(corda);
+      animarBracoDireito(corda, duracaoMs);
+    }
+
+    // ========== PLAYBACK (nota mantém até ghost ou outra nota) ==========
+    function tocarPasso(passo) {
+      const baixoLen = Array.isArray(baixoSeq) ? baixoSeq.length : 0;
+      const nota = (passo < baixoLen) ? (baixoSeq[passo] || "") : "";
+      const stepTime = (60000 / bpmAtual) / 4;
+
+      // Se a célula estiver em branco → nenhuma nova nota: a anterior continua soando
+      if (nota) {
+        // nota ou "x"
+        tocarNotaComAnimacao(nota, stepTime, baixoVolumeGlobal);
       }
-      
-      // Atualizar animação do tronco/baixo
-      updateTorsoAnimation(note) {
-        const torsoElement = document.getElementById("troncoBaixoLayer");
-        if (!torsoElement) return;
-        
-        if (note === "x") {
-          // Ghost note: usar a mesma imagem da última nota real
-          if (this.lastRealNote) {
-            const ghostFolder = this.chooseBestFolder(this.lastRealNote, this.currentPosition);
-            const ghostPath = `animacao/tronco_baixo/Pasta_${ghostFolder}F/${this.lastRealNote}.png`;
-            torsoElement.src = ghostPath;
-          }
-          return;
-        }
-        
-        // Atualizar posição usando REGRA E
-        this.currentPosition = this.chooseBestFolder(note, this.currentPosition);
-        this.lastRealNote = note;
-        
-        const imagePath = `animacao/tronco_baixo/Pasta_${this.currentPosition}F/${note}.png`;
-        torsoElement.onerror = () => {
-          console.warn("Falha ao carregar imagem:", imagePath);
-        };
-        torsoElement.src = imagePath;
+
+      tocarBateriaNoStep(passo, bateriaVolumeGlobal);
+
+      const totalSteps = Math.max(
+        baixoLen,
+        ...(drumLines.map(line => (bateriaSeq[line.id] || []).length))
+      );
+      atualizarBarraProgresso(totalSteps > 0 ? (passo / totalSteps) * 100 : 0);
+    }
+
+    function iniciarPlayback() {
+      if (isPlaying) return;
+      isPlaying = true;
+      atualPasso = 0;
+      const stepTime = (60000 / bpmAtual) / 4;
+      playbackInterval = setInterval(() => {
+        tocarPasso(atualPasso);
+        atualPasso++;
+        const baixoLen = Array.isArray(baixoSeq) ? baixoSeq.length : 0;
+        const totalSteps = Math.max(
+          baixoLen,
+          ...(drumLines.map(line => (bateriaSeq[line.id] || []).length))
+        );
+        if (totalSteps === 0) return;
+        if (atualPasso >= totalSteps) atualPasso = 0;
+      }, stepTime);
+      document.getElementById("playBtn").innerText = "⏸ Pause";
+    }
+
+    function pararPlayback() {
+      if (!isPlaying) return;
+      isPlaying = false;
+      clearInterval(playbackInterval);
+      playbackInterval = null;
+      pararAudioBaixo();
+      document.getElementById("playBtn").innerText = "▶ Play";
+    }
+
+    function togglePlay() {
+      if (!isPlaying) iniciarPlayback();
+      else pararPlayback();
+    }
+
+    function iniciarContagemRegressiva(callback) {
+      const overlay = document.getElementById("countdownOverlay");
+      const txt = document.getElementById("countdownText");
+      if (!overlay || !txt) {
+        callback();
+        return;
       }
-      
-      // Atualizar animação do antebraço
-      updateForearmAnimation(string) {
-        const forearmElement = document.getElementById("antebracoLayer");
-        if (!forearmElement) return;
-        
-        const imagePath = `animacao/antebraco/antebraco${string}.png`;
-        forearmElement.src = imagePath;
-        this.lastStringUsed = string;
-      }
-      
-      // Animar braço direito (mão dedilhando)
-      animateRightArm(string, durationMs) {
-        const armElement = document.getElementById("bracoDireitoLayer");
-        if (!armElement) return;
-        
-        let frame = 1;
-        const totalFrames = 5;
-        const interval = Math.max(40, durationMs / (totalFrames * 2));
-        
-        // Limpar timer anterior
-        if (armElement.animationTimer) {
-          clearInterval(armElement.animationTimer);
-        }
-        
-        armElement.animationTimer = setInterval(() => {
-          const imagePath = `animacao/braco_direito/Corda_${string}${frame}.png`;
-          armElement.src = imagePath;
-          frame++;
-          if (frame > totalFrames) {
-            frame = 1;
-          }
-        }, interval);
-      }
-      
-      // Animação da cabeça (loop contínuo)
-      startHeadAnimation() {
-        const headElement = document.getElementById("cabecaLayer");
-        if (!headElement) return;
-        
-        setInterval(() => {
-          this.headFrameIndex = (this.headFrameIndex + 1) % this.headFrames.length;
-          headElement.src = this.headFrames[this.headFrameIndex];
-        }, 1000 / 30); // 30 FPS
-      }
-      
-      // Animações sutis do corpo
-      startBodyAnimations() {
-        // Movimento lateral suave do palco
-        const stageElement = document.getElementById("baixistaStage");
-        if (!stageElement) return;
-        
-        let direction = 1;
-        let offset = 0;
-        
-        setInterval(() => {
-          offset += direction * 0.3;
-          if (offset > 3) direction = -1;
-          if (offset < -3) direction = 1;
-          stageElement.style.transform = `translateX(${offset}px)`;
-        }, 80);
-        
-        // Movimento sutil do tronco no BPM
-        const torsoElement = document.getElementById("troncoBaixoLayer");
-        if (!torsoElement) return;
-        
-        let torsoUp = false;
-        setInterval(() => {
-          const interval = (60000 / this.bpm) / 2;
-          torsoUp = !torsoUp;
-          torsoElement.style.transform = torsoUp ? "translateY(-1px)" : "translateY(0px)";
-        }, (60000 / this.bpm) / 2);
-      }
-      
-      // Tocar uma nota com animação completa
-      playNoteWithAnimation(note, durationMs) {
-        // Tocar áudio
-        this.playBassNote(note);
-        
-        if (note === "x") {
-          // Ghost note: usar corda e posição anteriores
-          this.animateRightArm(this.lastStringUsed, durationMs);
-          this.updateTorsoAnimation("x");
-          return;
-        }
-        
-        // Atualizar animações visuais
-        this.updateTorsoAnimation(note);
-        
-        const string = this.getStringFromNote(note);
-        this.updateForearmAnimation(string);
-        this.animateRightArm(string, durationMs);
-      }
-      
-      // Executar um passo completo da sequência
-      executeStep(stepIndex) {
-        if (!this.bassSequence.length) return;
-        
-        const note = this.bassSequence[stepIndex % this.bassSequence.length];
-        const stepDuration = (60000 / this.bpm) / 4;
-        
-        // Tocar nota do baixo com animação
-        this.playNoteWithAnimation(note, stepDuration);
-        
-        // Tocar bateria
-        for (const drum of this.drumLines) {
-          if (this.drumSequence[drum.id] && 
-              this.drumSequence[drum.id][stepIndex % this.drumSequence[drum.id].length] === drum.id) {
-            this.playDrumNote(drum.id);
-          }
-        }
-        
-        // Atualizar interface
-        this.updateGridHighlight(stepIndex);
-        this.updateStatusInfo(note, stepIndex);
-      }
-      
-      // Iniciar reprodução
-      startPlayback() {
-        if (this.isPlaying) return;
-        
-        this.isPlaying = true;
-        this.currentStep = 0;
-        
-        const stepDuration = (60000 / this.bpm) / 4;
-        
-        this.stepInterval = setInterval(() => {
-          this.executeStep(this.currentStep);
-          this.currentStep++;
-          
-          if (this.currentStep >= Math.max(
-            this.bassSequence.length,
-            ...this.drumLines.map(d => this.drumSequence[d.id]?.length || 0)
-          )) {
-            this.currentStep = 0;
-          }
-        }, stepDuration);
-      }
-      
-      // Parar reprodução
-      stopPlayback() {
-        this.isPlaying = false;
-        if (this.stepInterval) {
-          clearInterval(this.stepInterval);
-          this.stepInterval = null;
-        }
-        
-        // Limpar highlights da grade
-        this.clearGridHighlights();
-        
-        // Atualizar status
-        document.getElementById("animationStatus").textContent = "Parado";
-        document.getElementById("currentNoteInfo").textContent = "";
-      }
-      
-      // Contagem regressiva para início
-      startCountdown(callback) {
-        const overlay = document.getElementById("countdownOverlay");
-        const text = document.getElementById("countdownText");
-        
-        if (!overlay || !text) {
+      let valor = 4;
+      overlay.style.display = "flex";
+      txt.textContent = valor;
+      const id = setInterval(() => {
+        valor--;
+        if (valor <= 0) {
+          clearInterval(id);
+          overlay.style.display = "none";
           callback();
-          return;
+        } else {
+          txt.textContent = valor;
         }
-        
-        let count = 3;
-        overlay.style.display = "flex";
-        text.textContent = count;
-        
-        const countdownInterval = setInterval(() => {
-          count--;
-          if (count <= 0) {
-            clearInterval(countdownInterval);
-            overlay.style.display = "none";
-            callback();
+      }, 60000 / bpmAtual);
+    }
+
+    async function preScanAnimacao() {
+      const frames = [];
+      (baixoSeq || []).forEach(nota => {
+        if (!nota || nota === "x") return;
+        const pastas = encontrarPastasDisponiveis(nota);
+        if (pastas.length > 0) {
+          const pastaNum = pastas[0];
+          const folder = pastaFolderNames[pastaNum] || "1F";
+          frames.push("animacao/tronco_baixo/Pasta_" + folder + "/" + nota + ".png");
+        }
+      });
+      await preloadImages(frames);
+      console.log("Pré-carregamento de imagens da animação concluído.");
+    }
+
+    function tocarPlaybackCompleto(bpm) {
+      pararPlayback();
+      resetAnimTimers();
+
+      startTroncoBpm(bpm);
+      startHeadTiltBpm(bpm);
+      startLateralMovement();
+
+      iniciarContagemRegressiva(async () => {
+        try {
+          await preScanAnimacao();
+        } catch (e) {
+          console.warn("Falha ao pré-carregar imagens da animação:", e);
+        }
+        iniciarPlayback();
+      });
+    }
+
+    // ========== INTERFACE DE SELEÇÃO ==========
+    const selectionOverlay = document.getElementById("selectionOverlay");
+    const selectionTitle = document.getElementById("selectionTitle");
+    const selectionOptions = document.getElementById("selectionOptions");
+    const painelSelecao = { tipo: null, seqRef: null, idx: null, cell: null, drumLine: null };
+
+    function abrirPainelSelecaoBaixo(seqRef, idx, cellEl) {
+      painelSelecao.tipo = "baixo";
+      painelSelecao.seqRef = seqRef;
+      painelSelecao.idx = idx;
+      painelSelecao.cell = cellEl;
+      const valorAtual = seqRef[idx];
+
+      // "" = vazio (nota continua), "x" = ghost note, demais = notas
+      const opcoes = ["", "x", ...notasValidas];
+
+      selectionTitle.textContent = "Selecione a nota do baixo";
+      selectionOptions.innerHTML = "";
+
+      opcoes.forEach(opt => {
+        const div = document.createElement("div");
+        div.className = "selection-option";
+
+        let label;
+        if (opt === "") {
+          label = "—"; // vazio
+        } else if (opt === "x") {
+          div.classList.add("x-option");
+          label = "X";
+        } else {
+          label = opt.replace(/S/g, "#");
+        }
+
+        if (opt === valorAtual) div.classList.add("active");
+        div.textContent = label;
+
+        div.onclick = () => {
+          painelSelecao.seqRef[painelSelecao.idx] = opt;
+          const c = painelSelecao.cell;
+
+          if (opt === "") {
+            c.textContent = "";
+            c.classList.remove("active");
+          } else if (opt === "x") {
+            c.textContent = "X";
+            c.classList.remove("active"); // ghost não marca como nota "firme"
           } else {
-            text.textContent = count;
+            c.textContent = label;
+            c.classList.add("active");
           }
-        }, 60000 / this.bpm);
-      }
-      
-      // Inicializar grades de interface
-      initializeGrids() {
-        this.initializeBassGrid();
-        this.initializeDrumGrid();
-        
-        // Sequência inicial padrão
-        this.generateDefaultSequence();
-      }
-      
-      initializeBassGrid() {
-        const grid = document.getElementById("bassAnimationGrid");
-        grid.innerHTML = "";
-        
-        for (let i = 0; i < 16; i++) {
+
+          fecharPainelSelecao();
+        };
+
+        selectionOptions.appendChild(div);
+      });
+      selectionOverlay.classList.add("visible");
+    }
+
+    function fecharPainelSelecao() {
+      selectionOverlay.classList.remove("visible");
+      Object.keys(painelSelecao).forEach(k => painelSelecao[k] = null);
+    }
+
+    selectionOverlay.addEventListener("click", (ev) => {
+      if (ev.target === selectionOverlay) fecharPainelSelecao();
+    });
+
+    function construirGridBaixo(container, seq) {
+      container.innerHTML = "";
+      if (!Array.isArray(seq)) return;
+      seq.forEach((nota, idx) => {
+        const div = document.createElement("div");
+        div.className = "cell";
+
+        if (!nota) {
+          // vazio → nota continua
+          div.textContent = "";
+        } else if (nota === "x") {
+          div.textContent = "X";
+        } else {
+          div.textContent = String(nota).replace(/S/g, "#");
+          div.classList.add("active");
+        }
+
+        div.onclick = () => abrirPainelSelecaoBaixo(seq, idx, div);
+        container.appendChild(div);
+      });
+    }
+
+    function construirGridBateria(container, bateriaSeqObj) {
+      container.innerHTML = "";
+      drumLines.forEach(line => {
+        const rowDiv = document.createElement("div");
+        rowDiv.className = "drumRow";
+
+        const label = document.createElement("div");
+        label.className = "drumLabel";
+        label.textContent = line.label;
+        rowDiv.appendChild(label);
+
+        const rowGrid = document.createElement("div");
+        rowGrid.className = "composicaoGrid";
+        const seq = bateriaSeqObj[line.id] || [];
+
+        // garante que bateria tenha mesmo número de passos que o baixo
+        while (seq.length < baixoSeq.length) {
+          seq.push("x");
+        }
+
+        seq.forEach((item, idx) => {
           const cell = document.createElement("div");
-          cell.className = "grid-cell";
-          cell.textContent = "X";
-          cell.dataset.index = i;
-          cell.dataset.type = "bass";
-          
-          cell.addEventListener("click", () => {
-            this.openNoteSelector(cell, i, "bass");
-          });
-          
-          grid.appendChild(cell);
-        }
-      }
-      
-      initializeDrumGrid() {
-        const grid = document.getElementById("drumAnimationGrid");
-        grid.innerHTML = "";
-        
-        for (const drum of this.drumLines) {
-          // Label da linha
-          const label = document.createElement("div");
-          label.className = "drum-label";
-          label.textContent = drum.label;
-          grid.appendChild(label);
-          
-          // Células da linha
-          for (let i = 0; i < 16; i++) {
-            const cell = document.createElement("div");
-            cell.className = "grid-cell";
+          cell.className = "cell";
+          if (item === "x") {
             cell.textContent = "X";
-            cell.dataset.index = i;
-            cell.dataset.drum = drum.id;
-            cell.dataset.type = "drum";
-            
-            cell.addEventListener("click", () => {
-              this.toggleDrumCell(cell, i, drum.id);
-            });
-            
-            grid.appendChild(cell);
+          } else if (item === line.id) {
+            cell.textContent = line.label.toUpperCase();
+            cell.classList.add("active");
+          } else {
+            cell.textContent = "?";
           }
+
+          cell.onclick = () => {
+            if (seq[idx] === "x") {
+              seq[idx] = line.id;
+              cell.classList.add("active");
+              cell.textContent = line.label.toUpperCase();
+            } else {
+              seq[idx] = "x";
+              cell.classList.remove("active");
+              cell.textContent = "X";
+            }
+          };
+
+          rowGrid.appendChild(cell);
+        });
+
+        rowDiv.appendChild(rowGrid);
+        container.appendChild(rowDiv);
+      });
+    }
+
+    function atualizarBarraProgresso(perc) {
+      document.getElementById("progressBar").style.width = perc + "%";
+    }
+
+    // ========== Geração aleatória ==========
+    function gerarSequenciaAleatoriaBaixo(tam) {
+      const seq = [];
+      for (let i = 0; i < tam; i++) {
+        const r = Math.random();
+        if (r < 0.6) {
+          // mais comum: vazio (nota continua)
+          seq.push("");
+        } else if (r < 0.8) {
+          // ghost note
+          seq.push("x");
+        } else {
+          // nota real
+          seq.push(notasValidas[Math.floor(Math.random() * notasValidas.length)]);
         }
       }
-      
-      // Gerar sequência padrão
-      generateDefaultSequence() {
-        this.bassSequence = Array(16).fill("x");
-        this.bassSequence[0] = "1E";
-        this.bassSequence[4] = "6A";
-        this.bassSequence[8] = "11D";
-        this.bassSequence[12] = "16G";
-        
-        this.drumSequence = {};
-        for (const drum of this.drumLines) {
-          this.drumSequence[drum.id] = Array(16).fill("x");
+      return seq;
+    }
+
+    function gerarSequenciasAleatoriasBateria(tam) {
+      const obj = {};
+      drumLines.forEach(line => {
+        obj[line.id] = [];
+        for (let i = 0; i < tam; i++) {
+          obj[line.id].push(Math.random() < 0.75 ? "x" : line.id);
         }
-        
-        // Padrão básico de bateria
-        for (let i = 0; i < 16; i++) {
-          if (i % 4 === 0) this.drumSequence.bumbo[i] = "bumbo";
-          if (i % 2 === 0) this.drumSequence.chimbal[i] = "chimbal";
-          if (i === 4 || i === 12) this.drumSequence.caixa[i] = "caixa";
+      });
+      return obj;
+    }
+
+    // ========== Carregar playback exportado JSON ==========
+    function configurarPlaybackExportado() {
+      const btn = document.getElementById("playExportadoBtn");
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "application/json";
+      input.style.display = "none";
+      document.body.appendChild(input);
+
+      btn.onclick = () => input.click();
+
+      input.onchange = async (ev) => {
+        const file = ev.target.files[0];
+        if (!file) return;
+        try {
+          const txt = await file.text();
+          const obj = JSON.parse(txt);
+          if (!Array.isArray(obj.baixo) || typeof obj.bpm !== "number" || typeof obj.bateria !== "object") {
+            alert("JSON inválido. Esperado: { bpm, baixo[], bateria{bumbo[],...} }");
+            return;
+          }
+          baixoSeq = obj.baixo;
+          bpmAtual = obj.bpm;
+          drumLines.forEach(line => {
+            if (Array.isArray(obj.bateria[line.id])) {
+              bateriaSeq[line.id] = obj.bateria[line.id];
+            } else {
+              bateriaSeq[line.id] = Array(baixoSeq.length).fill("x");
+            }
+          });
+          document.getElementById("bpmSlider").value = bpmAtual;
+          document.getElementById("bpmDisplay").textContent = bpmAtual + " BPM";
+          construirGridBaixo(document.getElementById("baixoGrid"), baixoSeq);
+          construirGridBateria(document.getElementById("drumGrid"), bateriaSeq);
+          tocarPlaybackCompleto(bpmAtual);
+        } catch (e) {
+          console.error(e);
+          alert("Erro ao ler o arquivo JSON.");
         }
-        
-        this.updateGridDisplay();
+      };
+    }
+
+    // ========== Orientação (paisagem) ==========
+    function garantirPaisagem() {
+      const overlay = document.getElementById("orientationOverlay");
+      function checar() {
+        overlay.style.display = (window.innerWidth < window.innerHeight) ? "flex" : "none";
       }
-      
-      // Gerar sequência aleatória
-      generateRandomSequence() {
-        const notes = ["1E", "2F", "3FS", "4G", "5GS", "6A", "7AS", "8B", 
-                      "9C", "10CS", "11D", "
+      checar();
+      window.addEventListener("resize", checar);
+    }
+
+    // ========== Inicialização da interface ==========
+    function iniciarInterface() {
+      const baixoGrid = document.getElementById("baixoGrid");
+      const drumGrid = document.getElementById("drumGrid");
+      const passosIniciais = 16;
+
+      // Inicialmente: sequência aleatória, mas com bastante espaço em branco
+      baixoSeq = gerarSequenciaAleatoriaBaixo(passosIniciais);
+      bateriaSeq = gerarSequenciasAleatoriasBateria(passosIniciais);
+
+      construirGridBaixo(baixoGrid, baixoSeq);
+      construirGridBateria(drumGrid, bateriaSeq);
+
+      document.getElementById("bpmSlider").oninput = () => {
+        bpmAtual = parseInt(document.getElementById("bpmSlider").value, 10);
+        document.getElementById("bpmDisplay").textContent = bpmAtual + " BPM";
+        startTroncoBpm(bpmAtual);
+        startHeadTiltBpm(bpmAtual);
+      };
+
+      document.getElementById("baixoVolume").oninput = () => {
+        baixoVolumeGlobal = parseFloat(document.getElementById("baixoVolume").value);
+      };
+      document.getElementById("drumVolume").oninput = () => {
+        bateriaVolumeGlobal = parseFloat(document.getElementById("drumVolume").value);
+      };
+
+      // +1 passo só no baixo
+      document.getElementById("addBaixoCol").onclick = () => {
+        baixoSeq.push("");
+        construirGridBaixo(baixoGrid, baixoSeq);
+      };
+
+      // Limpar só o baixo (vira tudo vazio, sem notas novas)
+      document.getElementById("clearBaixo").onclick = () => {
+        baixoSeq = baixoSeq.map(() => "");
+        construirGridBaixo(baixoGrid, baixoSeq);
+      };
+
+      // Limpar tudo (baixo vazio, bateria sem hits)
+      document.getElementById("clearAll").onclick = () => {
+        baixoSeq = baixoSeq.map(() => "");
+        drumLines.forEach(line => bateriaSeq[line.id] = (bateriaSeq[line.id] || []).map(() => "x"));
+        construirGridBaixo(baixoGrid, baixoSeq);
+        construirGridBateria(drumGrid, bateriaSeq);
+      };
+
+      // +1 passo em tudo (baixo vazio, bateria x)
+      document.getElementById("addCol").onclick = () => {
+        baixoSeq.push("");
+        drumLines.forEach(line => {
+          if (!Array.isArray(bateriaSeq[line.id])) bateriaSeq[line.id] = [];
+          bateriaSeq[line.id].push("x");
+        });
+        construirGridBaixo(baixoGrid, baixoSeq);
+        construirGridBateria(drumGrid, bateriaSeq);
+      };
+
+      // Duplicar últimos 16 passos
+      document.getElementById("duplicateSeq").onclick = () => {
+        const bloco = 16;
+        if (baixoSeq.length >= bloco) {
+          const ultimas = baixoSeq.slice(-bloco);
+          baixoSeq = baixoSeq.concat(ultimas);
+        }
+        drumLines.forEach(line => {
+          const arr = bateriaSeq[line.id] || [];
+          if (arr.length >= bloco) {
+            const ultimas = arr.slice(-bloco);
+            bateriaSeq[line.id] = arr.concat(ultimas);
+          } else {
+            bateriaSeq[line.id] = arr;
+          }
+        });
+        construirGridBaixo(baixoGrid, baixoSeq);
+        construirGridBateria(drumGrid, bateriaSeq);
+      };
+
+      configurarPlaybackExportado();
+    }
+
+    // Função utilitária caso queira gerar playback aleatório avançado via engine
+    async function gerarPlaybackAleatorioAvancado(tamanho, bpm) {
+      if (window.JamOnEngine && typeof JamOnEngine.generateRandomPlayback === "function") {
+        const res = JamOnEngine.generateRandomPlayback(bpm, tamanho);
+        return {
+          baixo: res.bassSeq || [],
+          bateria: res.bateriaSeq || {}
+        };
+      } else {
+        const baixo = gerarSequenciaAleatoriaBaixo(tamanho);
+        const bateria = gerarSequenciasAleatoriasBateria(tamanho);
+        return { baixo, bateria };
+      }
+    }
+
+    // ========== EDITOR DE POSIÇÃO ==========
+    (function configurarEditorPosicao() {
+      const partIds = [
+        "cabecaLayer",
+        "troncoBaixoLayer",
+        "antebracoLayer",
+        "bracoDireitoLayer",
+        "pernasLayer"
+      ];
+      const posMap = {};
+      let posEditEnabled = false;
+      let selectedPartId = "troncoBaixoLayer";
+
+      function lerPosicaoInicial(id) {
+        const el = document.getElementById(id);
+        if (!el) return { top: 0, left: 0 };
+        const st = window.getComputedStyle(el);
+        const top = parseInt(st.top || "0", 10) || 0;
+        const left = parseInt(st.left || "0", 10) || 0;
+        return { top, left };
+      }
+
+      function aplicarPosicao(id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const p = posMap[id];
+        el.style.top = p.top + "px";
+        el.style.left = p.left + "px";
+      }
+
+      function moverSelecionado(dx, dy) {
+        if (!posEditEnabled) return;
+        const id = selectedPartId;
+        if (!posMap[id]) return;
+        posMap[id].left += dx;
+        posMap[id].top += dy;
+        aplicarPosicao(id);
+      }
+
+      function copiarCss() {
+        let css = "";
+        for (const id of partIds) {
+          const p = posMap[id];
+          if (!p) continue;
+          css += "#" + id + "{ top:" + p.top + "px; left:" + p.left + "px; }\n";
+        }
+        console.log("CSS sugerido para posicionamento:\n" + css);
+        alert("CSS de posicionamento impresso no console (F12). Copie e cole no seu arquivo CSS.");
+      }
+
+      window.__initPosEditor = function() {
+        partIds.forEach(id => {
+          posMap[id] = lerPosicaoInicial(id);
+        });
+
+        const toggle = document.getElementById("posEditToggle");
+        const select = document.getElementById("posPartSelect");
+        const upBtn = document.getElementById("posUpBtn");
+        const downBtn = document.getElementById("posDownBtn");
+        const leftBtn = document.getElementById("posLeftBtn");
+        const rightBtn = document.getElementById("posRightBtn");
+        const copyBtn = document.getElementById("posCopyCssBtn");
+
+        if (!toggle || !select) return;
+
+        toggle.addEventListener("change", () => {
+          posEditEnabled = toggle.checked;
+        });
+        select.addEventListener("change", () => {
+          selectedPartId = select.value;
+        });
+        if (upBtn)   upBtn.addEventListener("click", () => moverSelecionado(0, -1));
+        if (downBtn) downBtn.addEventListener("click", () => moverSelecionado(0, 1));
+        if (leftBtn) leftBtn.addEventListener("click", () => moverSelecionado(-1, 0));
+        if (rightBtn)rightBtn.addEventListener("click", () => moverSelecionado(1, 0));
+        if (copyBtn) copyBtn.addEventListener("click", copiarCss);
+      };
+    })();
+
+    // ========== ONLOAD ==========
+    window.onload = async () => {
+      garantirPaisagem();
+      headFrames = generateHeadFramePaths();
+      await preloadImages(headFrames);
+      startHeadLoop();
+      startTroncoBpm(bpmAtual);
+      startHeadTiltBpm(bpmAtual);
+      startLateralMovement();
+      iniciarInterface();
+      if (window.__initPosEditor) window.__initPosEditor();
+
+      document.getElementById("playBtn").onclick = togglePlay;
+
+      document.getElementById("playAleatorioBtn").onclick = () => {
+        try {
+          if (!window.JamOnEngine || typeof JamOnEngine.generateRandomPlayback !== "function") {
+            alert("Engine de playback não encontrada.");
+            return;
+          }
+          const passos = (Array.isArray(baixoSeq) && baixoSeq.length) ? baixoSeq.length : 16;
+          const playback = JamOnEngine.generateRandomPlayback(bpmAtual, passos);
+
+          baixoSeq = Array.isArray(playback.bassSeq) ? playback.bassSeq.slice() : [];
+
+          const bateriaOrig = playback.bateriaSeq || {};
+          bateriaSeq = {};
+          drumLines.forEach(line => {
+            const arr = bateriaOrig[line.id];
+            if (Array.isArray(arr)) {
+              bateriaSeq[line.id] = arr.slice();
+            } else {
+              bateriaSeq[line.id] = new Array(baixoSeq.length || passos).fill("x");
+            }
+          });
+
+          construirGridBaixo(document.getElementById("baixoGrid"), baixoSeq);
+          construirGridBateria(document.getElementById("drumGrid"), bateriaSeq);
+          tocarPlaybackCompleto(bpmAtual);
+        } catch (error) {
+          console.error("Erro ao gerar playback aleatório:", error);
+          alert("Erro ao gerar playback aleatório. Veja o console.");
+        }
+      };
+    };
+  </script>
+</body>
+</html>
