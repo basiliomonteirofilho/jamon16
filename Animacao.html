@@ -500,6 +500,28 @@
 #bodyWrapperPendulo {
   z-index: 5 !important;
 }
+/* Garante que o editor (bottomArea) fique sempre acima da animação */
+#bottomArea {
+    position: relative;
+    z-index: 20 !important;
+}
+
+/* Garante que a animação fique atrás do editor */
+#topArea {
+    position: relative;
+    z-index: 5 !important;
+}
+
+/* Wrapper da animação — sempre atrás */
+#animacaoStageWrapper {
+    position: relative;
+    z-index: 4 !important;
+}
+
+/* Baixista completa — fica atrás de tudo */
+#baixistaStage {
+    z-index: 3 !important;
+}
 
 
 
