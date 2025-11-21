@@ -559,6 +559,8 @@
 
   <script>
     // ========== CONFIGURAÇÕES E VARIÁVEIS GLOBAIS ==========
+    let playbackAtivo = false;
+
     let headFrames = [];
     let headFrameIndex = 0;
     let headLoopTimer = null;
@@ -759,62 +761,11 @@
       }, 1000 / 30);
     }
 
-    function startTroncoBpm(bpm) {
-      const el = document.getElementById("troncoBaixoLayer");
-      if (!el) return;
-      if (troncoTimerBpm) clearInterval(troncoTimerBpm);
-      const interval = (60000 / bpm) / 2;
-      let up = false;
-      troncoTimerBpm = setInterval(() => {
-        up = !up;
-        el.style.transform = up ? "translateY(-2px)" : "translateY(0px)";
-      }, interval);
-    }
+    
 
-    function startHeadTiltBpm(bpm) {
-      const el = document.getElementById("cabecaLayer");
-      if (!el) return;
-      if (headTiltTimerBpm) clearInterval(headTiltTimerBpm);
-      const interval = (60000 / bpm) / 4;
-      let toggle = false;
-      headTiltTimerBpm = setInterval(() => {
-        toggle = !toggle;
-        el.style.transform = toggle ? "rotate(-2deg)" : "rotate(2deg)";
-      }, interval);
-    }
-
-function startPenduloMovimento() {
-    // Cancela se já estiver rodando
-    if (window.penduloTimer) clearInterval(window.penduloTimer);
-
-    const tronco = document.getElementById("troncoBaixoLayer");
-    const cabeca = document.getElementById("cabecaLayer");
-    const cabecaTras = document.getElementById("cabecaTrasLayer");
-    const ante = document.getElementById("antebracoLayer");
-    const braco = document.getElementById("bracoDireitoLayer");
-
-    let angulo = 0;
-    let dir = 1;
-
-    // Movimento lento, tipo pêndulo
-    window.penduloTimer = setInterval(() => {
-        const angulo = Math.sin(t) * amplitude;
+   
 
 
-        if (angulo > 6) dir = -1;
-        if (angulo < -6) dir = 1;
-
-        // Aplicar somente nos layers acima da cintura
-        const rotate = "rotate(" + angulo + "deg)";
-        
-        if (tronco) tronco.style.transform = rotate;
-        if (cabeca) cabeca.style.transform = rotate;
-        if (cabecaTras) cabecaTras.style.transform = rotate;
-        if (ante) ante.style.transform = rotate;
-        if (braco) braco.style.transform = rotate;
-
-    }, 60);
-}
 
     function startPenduloMovimentoSuave() {
     if (window.penduloTimer) clearInterval(window.penduloTimer);
@@ -862,7 +813,21 @@ function stopPenduloMovimento() {
     });
 }
 
-    
+    function stopRightHandAnimation() {
+    const braco = document.getElementById("bracoDireitoLayer");
+    if (!braco) return;
+
+    // Cancela intervalo se existir
+    if (braco.__timerBraco) {
+        clearInterval(braco.__timerBraco);
+        braco.__timerBraco = null;
+    }
+
+    // Volta para posição neutra
+    // Aqui você define a posição padrão (recomendo a corda E1)
+    braco.src = "animacao/braco_direito/Corda_E1.png";
+}
+
 function stopPenduloMovimento() {
     if (window.penduloTimer) {
         clearInterval(window.penduloTimer);
@@ -885,35 +850,7 @@ function stopPenduloMovimento() {
 }
 
     
-    function startLateralMovement() {
-      const el = document.getElementById("baixistaStage");
-      if (!el) return;
-      if (lateralTimer) clearInterval(lateralTimer);
-      let dir = 1;
-      let offset = 0;
-      lateralTimer = setInterval(() => {
-    offset += dir * 0.4;
-    if (offset > 2) dir = -1;
-    if (offset < -2) dir = 1;
-
-    
-
-    // === Movimento lateral sincronizado das camadas ===
-    const tronco = document.getElementById("troncoBaixoLayer");
-    const cabeca = document.getElementById("cabecaLayer");
-    const cabecaTras = document.getElementById("cabecaTrasLayer");
-    const ante = document.getElementById("antebracoLayer");
-    const braco = document.getElementById("bracoDireitoLayer");
-
-    if (tronco) tronco.style.transform = "translateX(" + offset + "px)";
-    if (cabeca) cabeca.style.transform = "translateX(" + offset + "px)";
-    if (cabecaTras) cabecaTras.style.transform = "translateX(" + offset + "px)";
-    if (ante) ante.style.transform = "translateX(" + offset + "px)";
-    if (braco) braco.style.transform = "translateX(" + offset + "px)";
-
-}, 80);
-
-    }
+  
 
     function resetAnimTimers() {
       animTimers.forEach(id => clearInterval(id));
@@ -1024,19 +961,29 @@ function stopPenduloMovimento() {
       tocarNotaAudioBaixo(nota, volume);
 
       if (nota === "x") {
-        // Ghost note: mesma postura de mão esquerda, só muda mão direita
-        const cordaGhost = ultimaCordaUsada || "E";
+    // Ghost note: mesma postura de mão esquerda, só muda a mão direita
+    const cordaGhost = ultimaCordaUsada || "E";
+
+    // Apenas anima a mão direita se o playback estiver ativo
+    if (playbackAtivo) {
         animarBracoDireito(cordaGhost, duracaoMs);
-        trocarFrameTronco("x");
-        return;
-      }
+    }
+
+    // Tronco usa frame especial "x"
+    trocarFrameTronco("x");
+
+    return;
+}
+
 
       // Nota real
       trocarFrameTronco(nota);
       const corda = getCordaDaNota(nota);
       ultimaCordaUsada = corda;
       trocarAntebraco(corda);
-      animarBracoDireito(corda, duracaoMs);
+      if (playbackAtivo) {
+    animarBracoDireito(corda, duracaoMs);
+}
     }
 
     // ========== PLAYBACK (nota mantém até ghost ou outra nota) ==========
@@ -1070,6 +1017,8 @@ function pararAnimacaoBracoDireito() {
 
 
     function iniciarPlayback() {
+        playbackAtivo = true;
+
       startPenduloMovimentoSuave();
 
       if (isPlaying) return;
@@ -1091,6 +1040,9 @@ function pararAnimacaoBracoDireito() {
     }
 
     function pararPlayback() {
+        playbackAtivo = false;
+
+        stopRightHandAnimation();
       stopPenduloMovimento();
       if (!isPlaying) return;
       isPlaying = false;
@@ -1141,18 +1093,7 @@ function pararAnimacaoBracoDireito() {
       await preloadImages(frames);
       console.log("Pré-carregamento de imagens da animação concluído.");
     }
-     function startAntebracoBpm(bpm) {
-    const el = document.getElementById("antebracoLayer");
-    if (!el) return;
-
-    let up = false;
-    const interval = (60000 / bpm) / 2;
-
-    setInterval(() => {
-        up = !up;
-        el.style.transform = up ? "translateY(-2px)" : "translateY(0px)";
-    }, interval);
-}
+     
 
     function tocarPlaybackCompleto(bpm) {
       pararPlayback();
@@ -1160,8 +1101,8 @@ function pararAnimacaoBracoDireito() {
 
       startTroncoBpm(bpm);
       startHeadTiltBpm(bpm);
-      startLateralMovement();
-      startAntebracoBpm(bpmAtual);
+      
+      
 
       iniciarContagemRegressiva(async () => {
         try {
@@ -1417,8 +1358,8 @@ function pararAnimacaoBracoDireito() {
       document.getElementById("bpmSlider").oninput = () => {
         bpmAtual = parseInt(document.getElementById("bpmSlider").value, 10);
         document.getElementById("bpmDisplay").textContent = bpmAtual + " BPM";
-        startTroncoBpm(bpmAtual);
-        startHeadTiltBpm(bpmAtual);
+        
+        
       };
 
       document.getElementById("baixoVolume").oninput = () => {
@@ -1582,9 +1523,9 @@ function pararAnimacaoBracoDireito() {
       headFrames = generateHeadFramePaths();
       await preloadImages(headFrames);
       startHeadLoop();
-      startTroncoBpm(bpmAtual);
+     
       startHeadTiltBpm(bpmAtual);
-      startLateralMovement();
+     
       iniciarInterface();
       if (window.__initPosEditor) window.__initPosEditor();
 
@@ -1624,13 +1565,3 @@ function pararAnimacaoBracoDireito() {
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
