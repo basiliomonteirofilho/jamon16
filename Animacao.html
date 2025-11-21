@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Baixista + Bateria - Animação Integrada</title>
+  <title>Baixista + Bateria - Animação Integrada CORRIGIDA</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <style>
@@ -556,8 +556,8 @@
     </div>
   </div>
 
-  <script src="jamon-engine.js"></script>
   <script>
+    // ========== CONFIGURAÇÕES E VARIÁVEIS GLOBAIS ==========
     let headFrames = [];
     let headFrameIndex = 0;
     let headLoopTimer = null;
@@ -579,8 +579,77 @@
     let audioBaixoAtual = null;
     let audioBaixoTimer = null;
 
-    let notaAnteriorTronco = null;
+    // ========== SISTEMA DE POSICIONAMENTO INTELIGENTE (REGRA E) ==========
+    let posicaoAtualPasta = 1; // Começa na Pasta_1F
     let ultimaCordaUsada = "E";
+    let ultimaNotaReal = "1E"; // Para ghost notes herdarem
+
+    // Mapeamento REAL das pastas (baseado na sua documentação)
+    const pastaMap = {
+      1: ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B"],
+      2: ["3FS","4G","5GS","6A","8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C"],
+      3: ["4G","5GS","6A","7AS","9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS"],
+      4: ["5GS","6A","7AS","8B","10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D"],
+      5: ["6A","7AS","8B","9C","11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS"],
+      6: ["7AS","8B","9C","10CS","12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E"],
+      7: ["8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F"],
+      8: ["9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS"],
+      9: ["10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G"],
+      10: ["11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS"],
+      11: ["12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A"],
+      12: ["13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS"],
+      13: ["14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B"],
+      14: ["15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C"],
+      15: ["16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS"],
+      16: ["17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D"],
+      17: ["18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS"],
+      18: ["19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E"],
+      19: ["20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F"],
+      20: ["21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS","36DS","37E","38F","39FS"],
+      21: ["22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D","37E","38F","39FS","40G"],
+      22: ["23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS","38F","39FS","40G","41GS"],
+      23: ["24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E","39FS","40G","41GS","42A"],
+      24: ["25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F","40G","41GS","42A","43AS"]
+    };
+
+    // Função para encontrar em quais pastas uma nota está disponível
+    function encontrarPastasDisponiveis(nota) {
+      const pastas = [];
+      for (let pastaNum = 1; pastaNum <= 24; pastaNum++) {
+        if (pastaMap[pastaNum].includes(nota)) {
+          pastas.push(pastaNum);
+        }
+      }
+      return pastas;
+    }
+
+    // REGRA E: Escolher a pasta mais próxima da posição atual
+    function escolherMelhorPasta(nota, posicaoAtual) {
+      if (nota === "x") {
+        // Ghost note: usar a mesma pasta anterior
+        return posicaoAtual;
+      }
+      
+      const pastasDisponiveis = encontrarPastasDisponiveis(nota);
+      if (pastasDisponiveis.length === 0) {
+        console.warn(`Nota ${nota} não encontrada em nenhuma pasta. Usando padrão.`);
+        return 1; // Fallback
+      }
+      
+      // Encontrar a pasta com menor distância da posição atual
+      let melhorPasta = pastasDisponiveis[0];
+      let menorDistancia = Math.abs(posicaoAtual - melhorPasta);
+      
+      for (let i = 1; i < pastasDisponiveis.length; i++) {
+        const distancia = Math.abs(posicaoAtual - pastasDisponiveis[i]);
+        if (distancia < menorDistancia) {
+          menorDistancia = distancia;
+          melhorPasta = pastasDisponiveis[i];
+        }
+      }
+      
+      return melhorPasta;
+    }
 
     const notasValidas = [
       "1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS",
@@ -611,6 +680,23 @@
       { id: "conducao_centro",label: "RdC",  file: "conducao-centro.mp3" }
     ];
 
+    // ========== CORREÇÃO DAS CORDAS ==========
+    function getCordaDaNota(nota) {
+      if (!nota || nota === "x") return ultimaCordaUsada;
+      
+      const m = nota.match(/^(\d+)/);
+      if (!m) return "E";
+      
+      const n = parseInt(m[1], 10);
+      
+      // CORREÇÃO: Mapeamento REAL baseado nas suas cordas
+      if (n <= 20) return "E";    // 1E até 20B
+      if (n <= 28) return "A";    // 21C até 28G
+      if (n <= 36) return "D";    // 29GS até 36DS
+      return "G";                 // 37E até 43AS
+    }
+
+    // ========== SISTEMA DE ANIMAÇÃO CORRIGIDO ==========
     function generateHeadFramePaths() {
       const arr = [];
       for (let i = 1; i <= 100; i++) {
@@ -729,58 +815,29 @@
       });
     }
 
-    function getPastaDaNota(nota) {
-      const idxAtual = notasValidas.indexOf(nota);
-      if (idxAtual < 0) return "Pasta_1F";
-      
-      if (idxAtual < 8) return "Pasta_1F";
-      else if (idxAtual < 12) return "Pasta_2FS";
-      else if (idxAtual < 16) return "Pasta_3G";
-      else if (idxAtual < 20) return "Pasta_4GS";
-      else if (idxAtual < 24) return "Pasta_5A";
-      else if (idxAtual < 28) return "Pasta_6AS";
-      else if (idxAtual < 32) return "Pasta_7B";
-      else if (idxAtual < 36) return "Pasta_8C";
-      else if (idxAtual < 40) return "Pasta_9CS";
-      else if (idxAtual < 44) return "Pasta_10D";
-      else if (idxAtual < 48) return "Pasta_11DS";
-      else if (idxAtual < 52) return "Pasta_12E";
-      else if (idxAtual < 56) return "Pasta_13F";
-      else if (idxAtual < 60) return "Pasta_14FS";
-      else if (idxAtual < 64) return "Pasta_15G";
-      else if (idxAtual < 68) return "Pasta_16GS";
-      else if (idxAtual < 72) return "Pasta_17A";
-      else if (idxAtual < 76) return "Pasta_18AS";
-      else if (idxAtual < 80) return "Pasta_19B";
-      else if (idxAtual < 84) return "Pasta_20C";
-      else if (idxAtual < 88) return "Pasta_21CS";
-      else if (idxAtual < 92) return "Pasta_22D";
-      else if (idxAtual < 96) return "Pasta_23DS";
-      else return "Pasta_24E";
-    }
-
     function trocarFrameTronco(nota) {
       const tronco = document.getElementById("troncoBaixoLayer");
       if (!tronco) return;
-      if (!nota || nota === "x") return;
-
-      const pasta = getPastaDaNota(nota);
-      const path = "animacao/tronco_baixo/" + pasta + "/" + nota + ".png";
+      
+      if (nota === "x") {
+        // Ghost note: usar a mesma imagem da última nota real
+        if (ultimaNotaReal) {
+          const pastaGhost = escolherMelhorPasta(ultimaNotaReal, posicaoAtualPasta);
+          const pathGhost = "animacao/tronco_baixo/Pasta_" + pastaGhost + "F/" + ultimaNotaReal + ".png";
+          tronco.src = pathGhost;
+        }
+        return;
+      }
+      
+      // Atualizar posição usando REGRA E
+      posicaoAtualPasta = escolherMelhorPasta(nota, posicaoAtualPasta);
+      ultimaNotaReal = nota;
+      
+      const path = "animacao/tronco_baixo/Pasta_" + posicaoAtualPasta + "F/" + nota + ".png";
       tronco.onerror = () => {
         console.warn("Falha ao carregar:", path);
       };
       tronco.src = path;
-      notaAnteriorTronco = nota;
-    }
-
-    function getCordaDaNota(nota) {
-      const m = nota && nota.match(/^(\d+)/);
-      if (!m) return "E";
-      const n = parseInt(m[1], 10);
-      if (n <= 5) return "E";
-      if (n <= 10) return "A";
-      if (n <= 15) return "D";
-      return "G";
     }
 
     function trocarAntebraco(corda) {
@@ -796,7 +853,7 @@
       let frame = 1;
       const totalFrames = 5;
       const intervalo = Math.max(40, duracaoMs / (totalFrames * 2));
-      if (!corda) corda = "E";
+      
       clearInterval(el.__timerBraco || 0);
 
       el.__timerBraco = setInterval(() => {
@@ -813,8 +870,10 @@
       tocarNotaAudioBaixo(nota, volume);
 
       if (nota === "x") {
+        // Ghost note: usar corda e posição anteriores
         const cordaGhost = ultimaCordaUsada || "E";
         animarBracoDireito(cordaGhost, duracaoMs);
+        trocarFrameTronco("x"); // Manter posição anterior
         return;
       }
 
@@ -898,12 +957,13 @@
 
     async function preScanAnimacao() {
       const frames = [];
-      let notaAnt = null;
       (baixoSeq || []).forEach(nota => {
         if (!nota || nota === "x") return;
-        const pasta = getPastaDaNota(nota);
-        frames.push("animacao/tronco_baixo/" + pasta + "/" + nota + ".png");
-        notaAnt = nota;
+        const pastas = encontrarPastasDisponiveis(nota);
+        if (pastas.length > 0) {
+          // Usar a primeira pasta disponível para pré-carregamento
+          frames.push("animacao/tronco_baixo/Pasta_" + pastas[0] + "F/" + nota + ".png");
+        }
       });
       await preloadImages(frames);
       console.log("Pré-carregamento de imagens da animação concluído.");
@@ -927,6 +987,7 @@
       });
     }
 
+    // ========== INTERFACE E CONTROLES ==========
     const selectionOverlay = document.getElementById("selectionOverlay");
     const selectionTitle = document.getElementById("selectionTitle");
     const selectionOptions = document.getElementById("selectionOptions");
@@ -1242,6 +1303,7 @@
       }
     }
 
+    // ========== EDITOR DE POSIÇÃO ==========
     (function configurarEditorPosicao() {
       const partIds = [
         "cabecaLayer",
