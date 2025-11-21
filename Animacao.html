@@ -484,6 +484,16 @@
     transform-origin: 50% 80%;
 }
 
+#bodyWrapperPendulo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 80%;
+}
+
+
   </style>
 </head>
 <body>
@@ -816,16 +826,14 @@
     const velocidade = 0.014;
 
     window.penduloTimer = setInterval(() => {
-        t += velocidade;
-        const ang = Math.sin(t) * amplitude;
+    t += velocidade;
+    const ang = Math.sin(t) * amplitude;
 
-        // Aplique a rotação *somente* no tronco, que é o pivô real
-        const rot = "rotate(" + ang + "deg)";
-        pendulares.forEach(el => {
-            el.style.transform = rot;
-        });
+    // O wrapper inteiro recebe a rotação (tronco, cabeça, braço e antebraço dentro dele)
+    const corpo = document.getElementById("bodyWrapperPendulo");
+    if (corpo) corpo.style.transform = "rotate(" + ang + "deg)";
 
-    }, 30);
+}, 30);
 }
 
 
@@ -1585,6 +1593,38 @@ function pararAnimacaoBracoDireito() {
         }
       };
     };
+    // ====== CRIA CONTAINER DO CORPO PARA O PÊNDULO ======
+(function fixarCorpoNoPendulo(){
+    const stage = document.getElementById("baixistaStage");
+    if (!stage) return;
+
+    // cria o wrapper
+    const wrap = document.createElement("div");
+    wrap.id = "bodyWrapperPendulo";
+    wrap.style.position = "absolute";
+    wrap.style.top = "0px";
+    wrap.style.left = "0px";
+
+    // pega as partes que devem girar
+    const partes = [
+        "troncoBaixoLayer",
+        "cabecaLayer",
+        "cabecaTrasLayer",
+        "antebracoLayer",
+        "bracoDireitoLayer"
+    ];
+
+    // move cada uma dentro do wrapper
+    partes.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) wrap.appendChild(el);
+    });
+
+    // coloca o wrapper dentro do baixistaStage ANTES das pernas
+    const pernas = document.getElementById("pernasLayer");
+    stage.insertBefore(wrap, pernas.nextSibling);
+})();
+
   </script>
 </body>
 </html>
