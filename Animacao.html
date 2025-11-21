@@ -798,7 +798,8 @@ function startPenduloMovimento() {
 
     // Movimento lento, tipo pêndulo
     window.penduloTimer = setInterval(() => {
-        angulo += dir * 0.3;
+        const angulo = Math.sin(t) * amplitude;
+
 
         if (angulo > 6) dir = -1;
         if (angulo < -6) dir = 1;
@@ -814,6 +815,54 @@ function startPenduloMovimento() {
 
     }, 60);
 }
+
+    function startPenduloMovimentoSuave() {
+    if (window.penduloTimer) clearInterval(window.penduloTimer);
+
+    const tronco = document.getElementById("troncoBaixoLayer");
+    const cabeca = document.getElementById("cabecaLayer");
+    const cabecaTras = document.getElementById("cabecaTrasLayer");
+    const ante = document.getElementById("antebracoLayer");
+    const braco = document.getElementById("bracoDireitoLayer");
+
+    let t = 0;
+    const amplitude = 3;       // graus
+    const velocidade = 0.015;  // suavidade
+
+    window.penduloTimer = setInterval(() => {
+        t += velocidade;
+        const angulo = Math.sin(t) * amplitude;
+        const rot = "rotate(" + angulo + "deg)";
+
+        if (tronco) tronco.style.transform = rot;
+        if (cabeca) cabeca.style.transform = rot;
+        if (cabecaTras) cabecaTras.style.transform = rot;
+        if (ante) ante.style.transform = rot;
+        if (braco) braco.style.transform = rot;
+
+    }, 30);
+}
+function stopPenduloMovimento() {
+    if (window.penduloTimer) {
+        clearInterval(window.penduloTimer);
+        window.penduloTimer = null;
+    }
+
+    const layers = [
+        "troncoBaixoLayer",
+        "cabecaLayer",
+        "cabecaTrasLayer",
+        "antebracoLayer",
+        "bracoDireitoLayer"
+    ];
+
+    layers.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.transform = "";
+    });
+}
+
+    
 function stopPenduloMovimento() {
     if (window.penduloTimer) {
         clearInterval(window.penduloTimer);
@@ -1021,7 +1070,8 @@ function pararAnimacaoBracoDireito() {
 
 
     function iniciarPlayback() {
-      startPenduloMovimento();
+      startPenduloMovimentoSuave();
+
       if (isPlaying) return;
       isPlaying = true;
       atualPasso = 0;
@@ -1574,6 +1624,7 @@ function pararAnimacaoBracoDireito() {
   </script>
 </body>
 </html>
+
 
 
 
