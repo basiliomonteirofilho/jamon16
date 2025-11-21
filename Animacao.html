@@ -292,12 +292,37 @@
       pointer-events: none;
     }
 
-    #cabecaLayer{ top:-212px; left:70px; }
-    #cabecaTrasLayer{ top:-190px; left:100px; } /* cabeça traseira */
-    #troncoBaixoLayer{ top:-114px; left:0px; }
-    #antebracoLayer{ top:-67px; left:0px; }
-    #bracoDireitoLayer{ top:3px; left:-3px; }
-    #pernasLayer{ top:81px; left:64px; }
+   #cabecaTrasLayer{
+  top:-190px;
+  left:100px;
+  z-index:6;
+}
+#cabecaLayer{
+  top:-213px;
+  left:70px;
+  z-index:10;
+}
+#troncoBaixoLayer{
+  top:-118px;
+  left:0px;
+  z-index:5;
+}
+#antebracoLayer{
+  top:-71px;
+  left:-2px;
+  z-index:3;
+}
+#bracoDireitoLayer{
+  top:0px;
+  left:-5px;
+  z-index:9;
+}
+#pernasLayer{
+  top:82px;
+  left:64px;
+  z-index:1;
+}
+
 
 
     #cabecaLayer { z-index: 10; }
@@ -455,13 +480,8 @@
         grid-auto-rows: 20px;
       }
     }
-
-    #troncoBaixoLayer,
-#cabecaLayer,
-#cabecaTrasLayer,
-#antebracoLayer,
-#bracoDireitoLayer {
-    transform-origin: 50% 80%; /* pivô mais para baixo, sincroniza o pêndulo */
+    .pendulo-sync {
+    transform-origin: 50% 80%;
 }
 
   </style>
@@ -775,10 +795,10 @@
 
 
 
-   function startPenduloMovimentoSuave() {
+  function startPenduloMovimentoSuave() {
     if (window.penduloTimer) clearInterval(window.penduloTimer);
 
-    const partes = [
+    const pendulares = [
         document.getElementById("troncoBaixoLayer"),
         document.getElementById("cabecaLayer"),
         document.getElementById("cabecaTrasLayer"),
@@ -786,32 +806,26 @@
         document.getElementById("bracoDireitoLayer")
     ];
 
+    // Garante que todas as partes compartilhem o mesmo ponto de transformação
+    pendulares.forEach(el => {
+        el.classList.add("pendulo-sync");
+    });
+
     let t = 0;
-    const amplitude = 3;
-    const velocidade = 0.015;
+    const amplitude = 2.3;
+    const velocidade = 0.014;
 
     window.penduloTimer = setInterval(() => {
         t += velocidade;
+        const ang = Math.sin(t) * amplitude;
 
-        const rot = "rotate(" + Math.sin(t) * amplitude + "deg)";
-
-        partes.forEach(el => {
-            if (el) el.style.transform = rot;
+        // Aplique a rotação *somente* no tronco, que é o pivô real
+        const rot = "rotate(" + ang + "deg)";
+        pendulares.forEach(el => {
+            el.style.transform = rot;
         });
+
     }, 30);
-}
-
-function stopPenduloMovimento() {
-    if (window.penduloTimer) {
-        clearInterval(window.penduloTimer);
-        window.penduloTimer = null;
-    }
-
-    ["troncoBaixoLayer","cabecaLayer","cabecaTrasLayer","antebracoLayer","bracoDireitoLayer"]
-      .forEach(id => {
-          const el = document.getElementById(id);
-          if (el) el.style.transform = "";
-      });
 }
 
 
@@ -939,24 +953,33 @@ function stopPenduloMovimento() {
 
    
 
-    function animarBracoDireito(corda, duracaoMs) {
-      const el = document.getElementById("bracoDireitoLayer");
-      if (!el) return;
-      let frame = 1;
-      const totalFrames = 5;
-      const intervalo = Math.max(40, duracaoMs / (totalFrames * 2));
+   function animarBracoDireito(corda, duracaoMs) {
+    const el = document.getElementById("bracoDireitoLayer");
+    if (!el) return;
 
-      clearInterval(el.__timerBraco || 0);
+    // Evita loop infinito enquanto o pendulo move o transform
+    clearInterval(el.__timerBraco || 0);
 
-      el.__timerBraco = setInterval(() => {
+    const totalFrames = 5;
+    const durPorFrame = duracaoMs / totalFrames;
+    let frame = 1;
+
+    el.__timerBraco = setInterval(() => {
         const path = "animacao/braco_direito/Corda_" + corda + frame + ".png";
         el.src = path;
         frame++;
+
+        // quando termina, volta ao quadro 1 e encerra
         if (frame > totalFrames) {
-          frame = 1;
+            clearInterval(el.__timerBraco);
+            el.__timerBraco = null;
+
+            // volta sempre ao primeiro frame da corda 
+            el.src = "animacao/braco_direito/Corda_" + corda + "1.png";
         }
-      }, intervalo);
-    }
+    }, durPorFrame);
+}
+
 
     function tocarNotaComAnimacao(nota, duracaoMs, volume) {
       // Áudio
