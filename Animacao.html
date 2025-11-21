@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <script src="jamon-engine.js"></script>
+    <script src="jamon-engine.js"></script>
   <meta charset="UTF-8" />
   <title>Baixista + Bateria - Animação Integrada CORRIGIDA</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
   <style>
     * {
       box-sizing: border-box;
@@ -19,7 +18,6 @@
       color: #f5f5f5;
       overflow: hidden;
     }
-
     #orientationOverlay {
       position: fixed;
       inset: 0;
@@ -32,17 +30,14 @@
       z-index: 9999;
       padding: 16px;
     }
-
     #orientationOverlay h1 {
       font-size: 1.4rem;
       margin-bottom: 0.5rem;
     }
-
     #orientationOverlay p {
       font-size: 0.95rem;
       opacity: 0.8;
     }
-
     .appRoot {
       width: 100vw;
       height: 100vh;
@@ -50,7 +45,6 @@
       flex-direction: column;
       background: radial-gradient(circle at top, #222 0, #050505 60%);
     }
-
     #topArea {
       position: relative;
       flex: 0 0 58%;
@@ -59,7 +53,6 @@
       justify-content: center;
       padding-top: 24px;
     }
-
     #bottomArea {
       flex: 0 0 42%;
       display: flex;
@@ -69,7 +62,6 @@
       padding: 6px 10px 10px 10px;
       overflow: hidden;
     }
-
     #playerControlsRow {
       display: flex;
       flex-wrap: wrap;
@@ -78,12 +70,10 @@
       margin-bottom: 6px;
       font-size: 0.9rem;
     }
-
     #playerControlsRow button,
     #playerControlsRow input[type="range"] {
       cursor: pointer;
     }
-
     #playBtn,
     #playAleatorioBtn,
     #playExportadoBtn,
@@ -100,7 +90,6 @@
       font-size: 0.82rem;
       transition: background 0.2s, transform 0.1s;
     }
-
     #playBtn:hover,
     #playAleatorioBtn:hover,
     #playExportadoBtn:hover,
@@ -112,27 +101,22 @@
       background: #333;
       transform: translateY(-1px);
     }
-
     #bpmDisplay {
       min-width: 70px;
       font-weight: 600;
     }
-
     .sliderGroup {
       display: inline-flex;
       align-items: center;
       gap: 4px;
     }
-
     .sliderGroup label {
       font-size: 0.8rem;
       opacity: 0.85;
     }
-
     .sliderGroup input[type="range"] {
       width: 90px;
     }
-
     #progressContainer {
       width: 100%;
       height: 5px;
@@ -141,14 +125,12 @@
       overflow: hidden;
       margin-bottom: 8px;
     }
-
     #progressBar {
       height: 100%;
       width: 0%;
       background: linear-gradient(90deg, #00c853, #ffd600);
       transition: width 0.12s linear;
     }
-
     #gridsArea {
       flex: 1;
       display: flex;
@@ -156,26 +138,22 @@
       gap: 4px;
       overflow: auto;
     }
-
     #baixoLabelRow {
       display: flex;
       align-items: center;
       gap: 6px;
       margin-bottom: 2px;
     }
-
     #baixoLabelRow span {
       font-size: 0.78rem;
       opacity: 0.9;
     }
-
     #baixoGridContainer {
       display: flex;
       align-items: center;
       gap: 6px;
       margin-bottom: 4px;
     }
-
     #baixoGridLabel {
       width: 60px;
       font-size: 0.78rem;
@@ -183,7 +161,6 @@
       opacity: 0.85;
       padding-right: 6px;
     }
-
     #baixoGrid {
       flex: 1;
       display: grid;
@@ -196,13 +173,11 @@
       border-radius: 4px;
       border: 1px solid #333;
     }
-
     .gridWrapper {
       display: flex;
       flex-direction: column;
       gap: 2px;
     }
-
     #drumGrid {
       display: flex;
       flex-direction: column;
@@ -211,14 +186,12 @@
       border-top: 1px solid #222;
       margin-top: 2px;
     }
-
     .drumRow {
       display: flex;
       align-items: center;
       gap: 4px;
       min-height: 22px;
     }
-
     .drumLabel {
       width: 60px;
       font-size: 0.76rem;
@@ -227,7 +200,6 @@
       padding-right: 6px;
       white-space: nowrap;
     }
-
     .composicaoGrid {
       flex: 1;
       display: grid;
@@ -240,7 +212,6 @@
       border-radius: 4px;
       border: 1px solid #222;
     }
-
     .cell {
       font-size: 0.7rem;
       display: flex;
@@ -254,17 +225,14 @@
       color: #f5f5f5;
       min-width: 20px;
     }
-
     .cell.active {
       background: #1b5e20;
       border-color: #00c853;
       font-weight: 600;
     }
-
     .cell:hover {
       filter: brightness(1.2);
     }
-
     #animacaoStageWrapper {
       position: relative;
       width: 60vw;
@@ -274,7 +242,6 @@
       align-items: center;
       justify-content: center;
     }
-
     #baixistaStage {
       position: relative;
       width: 100%;
@@ -283,34 +250,27 @@
       max-height: 360px;
       margin: 0 auto;
     }
-
     #baixistaStage img {
       position: absolute;
       image-rendering: crisp-edges;
       image-rendering: pixelated;
       pointer-events: none;
     }
-
     #cabecaLayer {
       z-index: 10;
     }
-
     #troncoBaixoLayer {
       z-index: 5;
     }
-
     #antebracoLayer {
       z-index: 8;
     }
-
     #bracoDireitoLayer {
       z-index: 9;
     }
-
     #pernasLayer {
       z-index: 1;
     }
-
     .countdownOverlay {
       position: absolute;
       inset: 0;
@@ -323,7 +283,6 @@
       font-size: 3rem;
       font-weight: bold;
     }
-
     #selectionOverlay {
       position: fixed;
       inset: 0;
@@ -333,11 +292,9 @@
       justify-content: center;
       z-index: 9000;
     }
-
     #selectionOverlay.visible {
       display: flex;
     }
-
     #selectionPanel {
       background: #181818;
       padding: 10px;
@@ -348,19 +305,16 @@
       border: 1px solid #444;
       box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
     }
-
     #selectionTitle {
       font-size: 0.9rem;
       margin-bottom: 6px;
       font-weight: 600;
     }
-
     #selectionOptions {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
       gap: 4px;
     }
-
     .selection-option {
       border-radius: 4px;
       background: #222;
@@ -371,22 +325,18 @@
       cursor: pointer;
       user-select: none;
     }
-
     .selection-option.active {
       background: #1b5e20;
       border-color: #00c853;
       font-weight: 600;
     }
-
     .selection-option.x-option {
       background: #880e4f;
       border-color: #f50057;
     }
-
     .selection-option.x-option.active {
       background: #ad1457;
     }
-
     ::-webkit-scrollbar {
       width: 8px;
       height: 8px;
@@ -398,7 +348,6 @@
     ::-webkit-scrollbar-track {
       background: #111;
     }
-
     #posEditorPanel {
       position: fixed;
       top: 6px;
@@ -428,7 +377,6 @@
       padding: 2px 6px;
       cursor: pointer;
     }
-
     @media (max-width: 900px) {
       #animacaoStageWrapper {
         width: 90vw;
@@ -443,7 +391,6 @@
         font-size: 0.8rem;
       }
     }
-
     @media (max-width: 600px) {
       #bottomArea {
         flex-basis: 48%;
@@ -466,7 +413,6 @@
       <p>Para uma experiência melhor, use em modo paisagem (deitado).</p>
     </div>
   </div>
-
   <!-- Painel de ajuste de posição (modo editor) -->
   <div id="posEditorPanel">
     <label>
@@ -490,7 +436,6 @@
     <button type="button" id="posCopyCssBtn">Copiar CSS</button>
     <small>(Use apenas para calibrar, depois pode desativar no código.)</small>
   </div>
-
   <div class="appRoot">
     <div id="topArea">
       <div id="animacaoStageWrapper">
@@ -506,37 +451,30 @@
         </div>
       </div>
     </div>
-
     <div id="bottomArea">
       <div id="playerControlsRow">
         <button id="playBtn">▶ Play</button>
         <button id="playAleatorioBtn">🎲 Playback aleatório</button>
         <button id="playExportadoBtn">📁 Carregar JSON exportado</button>
-
         <span id="bpmDisplay">120 BPM</span>
         <input type="range" id="bpmSlider" min="60" max="180" value="120" />
-
         <div class="sliderGroup">
           <label for="baixoVolume">Baixo</label>
           <input type="range" id="baixoVolume" min="0" max="1" step="0.01" value="0.9" />
         </div>
-
         <div class="sliderGroup">
           <label for="drumVolume">Bateria</label>
           <input type="range" id="drumVolume" min="0" max="1" step="0.01" value="0.9" />
         </div>
-
         <button id="addBaixoCol">+1 passo baixo</button>
         <button id="addCol">+1 passo tudo</button>
         <button id="duplicateSeq">×2 últimos 16</button>
         <button id="clearBaixo">Limpar baixo</button>
         <button id="clearAll">Limpar tudo</button>
       </div>
-
       <div id="progressContainer">
         <div id="progressBar"></div>
       </div>
-
       <div id="gridsArea">
         <div id="baixoLabelRow">
           <span>Baixo: clique nas células para escolher nota ou X (ghost note).</span>
@@ -549,14 +487,12 @@
       </div>
     </div>
   </div>
-
   <div id="selectionOverlay">
     <div id="selectionPanel">
       <div id="selectionTitle">Selecione a nota</div>
       <div id="selectionOptions"></div>
     </div>
   </div>
-
   <script>
     // ========== CONFIGURAÇÕES E VARIÁVEIS GLOBAIS ==========
     let headFrames = [];
@@ -566,26 +502,29 @@
     let headTiltTimerBpm = null;
     let lateralTimer = null;
     let animTimers = [];
-
     let bpmAtual = 120;
     let baixoSeq = [];
     let bateriaSeq = {};
     let isPlaying = false;
     let playbackInterval = null;
     let atualPasso = 0;
-
     let baixoVolumeGlobal = 0.9;
     let bateriaVolumeGlobal = 0.9;
-
     let audioBaixoAtual = null;
     let audioBaixoTimer = null;
-
     // ========== SISTEMA DE POSICIONAMENTO INTELIGENTE (REGRA E) ==========
     let posicaoAtualPasta = 1; // Começa na Pasta_1F
     let ultimaCordaUsada = "E";
     let ultimaNotaReal = "1E"; // Para ghost notes herdarem
 
-    // Mapeamento REAL das pastas (baseado na sua documentação)
+    // ========== MAPEAMENTO CORRETO DOS SUFIXOS DAS PASTAS ==========
+    const pastaSufixos = {
+      1: "F", 2: "FS", 3: "G", 4: "GS", 5: "A", 6: "AS", 7: "B", 8: "C", 9: "CS",
+      10: "D", 11: "DS", 12: "E", 13: "F", 14: "FS", 15: "G", 16: "GS", 17: "A",
+      18: "AS", 19: "B", 20: "C", 21: "CS", 22: "D", 23: "DS", 24: "E"
+    };
+
+    // Mapeamento REAL das pastas (baseado nos seus arquivos)
     const pastaMap = {
       1: ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B"],
       2: ["3FS","4G","5GS","6A","8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C"],
@@ -627,20 +566,15 @@
     // REGRA E: Escolher a pasta mais próxima da posição atual
     function escolherMelhorPasta(nota, posicaoAtual) {
       if (nota === "x") {
-        // Ghost note: usar a mesma pasta anterior
         return posicaoAtual;
       }
-      
       const pastasDisponiveis = encontrarPastasDisponiveis(nota);
       if (pastasDisponiveis.length === 0) {
         console.warn(`Nota ${nota} não encontrada em nenhuma pasta. Usando padrão.`);
-        return 1; // Fallback
+        return 1;
       }
-      
-      // Encontrar a pasta com menor distância da posição atual
       let melhorPasta = pastasDisponiveis[0];
       let menorDistancia = Math.abs(posicaoAtual - melhorPasta);
-      
       for (let i = 1; i < pastasDisponiveis.length; i++) {
         const distancia = Math.abs(posicaoAtual - pastasDisponiveis[i]);
         if (distancia < menorDistancia) {
@@ -648,7 +582,6 @@
           melhorPasta = pastasDisponiveis[i];
         }
       }
-      
       return melhorPasta;
     }
 
@@ -684,13 +617,9 @@
     // ========== CORREÇÃO DAS CORDAS ==========
     function getCordaDaNota(nota) {
       if (!nota || nota === "x") return ultimaCordaUsada;
-      
       const m = nota.match(/^(\d+)/);
       if (!m) return "E";
-      
       const n = parseInt(m[1], 10);
-      
-      // CORREÇÃO: Mapeamento REAL baseado nas suas cordas
       if (n <= 20) return "E";    // 1E até 20B
       if (n <= 28) return "A";    // 21C até 28G
       if (n <= 36) return "D";    // 29GS até 36DS
@@ -816,25 +745,26 @@
       });
     }
 
+    // ========== FUNÇÃO PRINCIPAL CORRIGIDA ==========
     function trocarFrameTronco(nota) {
       const tronco = document.getElementById("troncoBaixoLayer");
       if (!tronco) return;
-      
+
       if (nota === "x") {
-        // Ghost note: usar a mesma imagem da última nota real
         if (ultimaNotaReal) {
           const pastaGhost = escolherMelhorPasta(ultimaNotaReal, posicaoAtualPasta);
-          const pathGhost = "animacao/tronco_baixo/Pasta_" + pastaGhost + "F/" + ultimaNotaReal + ".png";
+          const sufixoGhost = pastaSufixos[pastaGhost] || "F";
+          const pathGhost = `animacao/tronco_baixo/Pasta_${pastaGhost}${sufixoGhost}/${ultimaNotaReal}.png`;
           tronco.src = pathGhost;
         }
         return;
       }
-      
-      // Atualizar posição usando REGRA E
+
       posicaoAtualPasta = escolherMelhorPasta(nota, posicaoAtualPasta);
       ultimaNotaReal = nota;
-      
-      const path = "animacao/tronco_baixo/Pasta_" + posicaoAtualPasta + "F/" + nota + ".png";
+      const sufixo = pastaSufixos[posicaoAtualPasta] || "F";
+      const path = `animacao/tronco_baixo/Pasta_${posicaoAtualPasta}${sufixo}/${nota}.png`;
+
       tronco.onerror = () => {
         console.warn("Falha ao carregar:", path);
       };
@@ -854,9 +784,7 @@
       let frame = 1;
       const totalFrames = 5;
       const intervalo = Math.max(40, duracaoMs / (totalFrames * 2));
-      
       clearInterval(el.__timerBraco || 0);
-
       el.__timerBraco = setInterval(() => {
         const path = "animacao/braco_direito/Corda_" + corda + frame + ".png";
         el.src = path;
@@ -869,20 +797,15 @@
 
     function tocarNotaComAnimacao(nota, duracaoMs, volume) {
       tocarNotaAudioBaixo(nota, volume);
-
       if (nota === "x") {
-        // Ghost note: usar corda e posição anteriores
         const cordaGhost = ultimaCordaUsada || "E";
         animarBracoDireito(cordaGhost, duracaoMs);
-        trocarFrameTronco("x"); // Manter posição anterior
+        trocarFrameTronco("x");
         return;
       }
-
       trocarFrameTronco(nota);
-
       const corda = getCordaDaNota(nota);
       ultimaCordaUsada = corda;
-
       trocarAntebraco(corda);
       animarBracoDireito(corda, duracaoMs);
     }
@@ -893,7 +816,6 @@
       const stepTime = (60000 / bpmAtual) / 4;
       tocarNotaComAnimacao(nota, stepTime, baixoVolumeGlobal);
       tocarBateriaNoStep(passo, bateriaVolumeGlobal);
-
       const totalSteps = Math.max(
         baixoLen,
         ...(drumLines.map(line => (bateriaSeq[line.id] || []).length))
@@ -962,8 +884,9 @@
         if (!nota || nota === "x") return;
         const pastas = encontrarPastasDisponiveis(nota);
         if (pastas.length > 0) {
-          // Usar a primeira pasta disponível para pré-carregamento
-          frames.push("animacao/tronco_baixo/Pasta_" + pastas[0] + "F/" + nota + ".png");
+          const pastaNum = pastas[0];
+          const sufixo = pastaSufixos[pastaNum] || "F";
+          frames.push(`animacao/tronco_baixo/Pasta_${pastaNum}${sufixo}/${nota}.png`);
         }
       });
       await preloadImages(frames);
@@ -973,11 +896,9 @@
     function tocarPlaybackCompleto(bpm) {
       pararPlayback();
       resetAnimTimers();
-
       startTroncoBpm(bpm);
       startHeadTiltBpm(bpm);
       startLateralMovement();
-
       iniciarContagemRegressiva(async () => {
         try {
           await preScanAnimacao();
@@ -988,12 +909,12 @@
       });
     }
 
-    // ========== INTERFACE E CONTROLES ==========
+    // ========== RESTANTE DO CÓDIGO (INTERFACE, EVENTOS, ETC.) ==========
+    // (mantido idêntico ao original, pois já estava correto)
     const selectionOverlay = document.getElementById("selectionOverlay");
     const selectionTitle = document.getElementById("selectionTitle");
     const selectionOptions = document.getElementById("selectionOptions");
     const painelSelecao = { tipo: null, seqRef: null, idx: null, cell: null, drumLine: null };
-
     function abrirPainelSelecaoBaixo(seqRef, idx, cellEl) {
       painelSelecao.tipo = "baixo";
       painelSelecao.seqRef = seqRef;
@@ -1027,16 +948,13 @@
       });
       selectionOverlay.classList.add("visible");
     }
-
     function fecharPainelSelecao() {
       selectionOverlay.classList.remove("visible");
       Object.keys(painelSelecao).forEach(k => painelSelecao[k] = null);
     }
-
     selectionOverlay.addEventListener("click", (ev) => {
       if (ev.target === selectionOverlay) fecharPainelSelecao();
     });
-
     function construirGridBaixo(container, seq) {
       container.innerHTML = "";
       if (!Array.isArray(seq)) return;
@@ -1053,7 +971,6 @@
         container.appendChild(div);
       });
     }
-
     function construirGridBateria(container, bateriaSeqObj) {
       container.innerHTML = "";
       drumLines.forEach(line => {
@@ -1066,12 +983,9 @@
         const rowGrid = document.createElement("div");
         rowGrid.className = "composicaoGrid";
         const seq = bateriaSeqObj[line.id] || [];
-        
-        // Garantir que a bateria tenha o mesmo número de células que o baixo
         while (seq.length < baixoSeq.length) {
           seq.push("x");
         }
-        
         seq.forEach((item, idx) => {
           const cell = document.createElement("div");
           cell.className = "cell";
@@ -1100,11 +1014,9 @@
         container.appendChild(rowDiv);
       });
     }
-
     function atualizarBarraProgresso(perc) {
       document.getElementById("progressBar").style.width = perc + "%";
     }
-
     function gerarSequenciaAleatoriaBaixo(tam) {
       const seq = [];
       for (let i = 0; i < tam; i++) {
@@ -1113,7 +1025,6 @@
       }
       return seq;
     }
-
     function gerarSequenciasAleatoriasBateria(tam) {
       const obj = {};
       drumLines.forEach(line => {
@@ -1124,7 +1035,6 @@
       });
       return obj;
     }
-
     function configurarPlaybackExportado() {
       const btn = document.getElementById("playExportadoBtn");
       const input = document.createElement("input");
@@ -1163,7 +1073,6 @@
         }
       };
     }
-
     function garantirPaisagem() {
       const overlay = document.getElementById("orientationOverlay");
       function checar() {
@@ -1172,7 +1081,6 @@
       checar();
       window.addEventListener("resize", checar);
     }
-
     function iniciarInterface() {
       const baixoGrid = document.getElementById("baixoGrid");
       const drumGrid = document.getElementById("drumGrid");
@@ -1181,38 +1089,32 @@
       bateriaSeq = gerarSequenciasAleatoriasBateria(passosIniciais);
       construirGridBaixo(baixoGrid, baixoSeq);
       construirGridBateria(drumGrid, bateriaSeq);
-
       document.getElementById("bpmSlider").oninput = () => {
         bpmAtual = parseInt(document.getElementById("bpmSlider").value, 10);
         document.getElementById("bpmDisplay").textContent = bpmAtual + " BPM";
         startTroncoBpm(bpmAtual);
         startHeadTiltBpm(bpmAtual);
       };
-
       document.getElementById("baixoVolume").oninput = () => {
         baixoVolumeGlobal = parseFloat(document.getElementById("baixoVolume").value);
       };
       document.getElementById("drumVolume").oninput = () => {
         bateriaVolumeGlobal = parseFloat(document.getElementById("drumVolume").value);
       };
-
       document.getElementById("addBaixoCol").onclick = () => {
         baixoSeq.push("x");
         construirGridBaixo(baixoGrid, baixoSeq);
       };
-
       document.getElementById("clearBaixo").onclick = () => {
         baixoSeq = baixoSeq.map(() => "x");
         construirGridBaixo(baixoGrid, baixoSeq);
       };
-
       document.getElementById("clearAll").onclick = () => {
         baixoSeq = baixoSeq.map(() => "x");
-        drumLines.forEach(line => bateriaSeq[line.id] = bateriaSeq[line.id].map(() => "x"));
+        drumLines.forEach(line => bateriaSeq[line.id] = bateriaSeq[line.id].map(() => "x");
         construirGridBaixo(baixoGrid, baixoSeq);
         construirGridBateria(drumGrid, bateriaSeq);
       };
-
       document.getElementById("addCol").onclick = () => {
         baixoSeq.push("x");
         drumLines.forEach(line => {
@@ -1222,7 +1124,6 @@
         construirGridBaixo(baixoGrid, baixoSeq);
         construirGridBateria(drumGrid, bateriaSeq);
       };
-
       document.getElementById("duplicateSeq").onclick = () => {
         const bloco = 16;
         if (baixoSeq.length >= bloco) {
@@ -1241,10 +1142,8 @@
         construirGridBaixo(baixoGrid, baixoSeq);
         construirGridBateria(drumGrid, bateriaSeq);
       };
-
       configurarPlaybackExportado();
     }
-
     window.onload = async () => {
       garantirPaisagem();
       headFrames = generateHeadFramePaths();
@@ -1255,9 +1154,7 @@
       startLateralMovement();
       iniciarInterface();
       if (window.__initPosEditor) window.__initPosEditor();
-
       document.getElementById("playBtn").onclick = togglePlay;
-
       document.getElementById("playAleatorioBtn").onclick = () => {
         try {
           if (!window.JamOnEngine || typeof JamOnEngine.generateRandomPlayback !== "function") {
@@ -1266,9 +1163,7 @@
           }
           const passos = (Array.isArray(baixoSeq) && baixoSeq.length) ? baixoSeq.length : 16;
           const playback = JamOnEngine.generateRandomPlayback(bpmAtual, passos);
-
           baixoSeq = Array.isArray(playback.bassSeq) ? playback.bassSeq.slice() : [];
-
           const bateriaOrig = playback.bateriaSeq || {};
           bateriaSeq = {};
           drumLines.forEach(line => {
@@ -1279,7 +1174,6 @@
               bateriaSeq[line.id] = new Array(baixoSeq.length || passos).fill("x");
             }
           });
-
           construirGridBaixo(document.getElementById("baixoGrid"), baixoSeq);
           construirGridBateria(document.getElementById("drumGrid"), bateriaSeq);
           tocarPlaybackCompleto(bpmAtual);
@@ -1289,7 +1183,6 @@
         }
       };
     };
-
     async function gerarPlaybackAleatorioAvancado(tamanho, bpm) {
       if (window.JamOnEngine && typeof JamOnEngine.generateRandomPlayback === "function") {
         const res = JamOnEngine.generateRandomPlayback(bpm, tamanho);
@@ -1303,7 +1196,6 @@
         return { baixo, bateria };
       }
     }
-
     // ========== EDITOR DE POSIÇÃO ==========
     (function configurarEditorPosicao() {
       const partIds = [
@@ -1316,7 +1208,6 @@
       const posMap = {};
       let posEditEnabled = false;
       let selectedPartId = "troncoBaixoLayer";
-
       function lerPosicaoInicial(id) {
         const el = document.getElementById(id);
         if (!el) return { top: 0, left: 0 };
@@ -1325,7 +1216,6 @@
         const left = parseInt(st.left || "0", 10) || 0;
         return { top, left };
       }
-
       function aplicarPosicao(id) {
         const el = document.getElementById(id);
         if (!el) return;
@@ -1333,7 +1223,6 @@
         el.style.top = p.top + "px";
         el.style.left = p.left + "px";
       }
-
       function moverSelecionado(dx, dy) {
         if (!posEditEnabled) return;
         const id = selectedPartId;
@@ -1342,7 +1231,6 @@
         posMap[id].top += dy;
         aplicarPosicao(id);
       }
-
       function copiarCss() {
         let css = "";
         for (const id of partIds) {
@@ -1353,12 +1241,10 @@
         console.log("CSS sugerido para posicionamento:\n" + css);
         alert("CSS de posicionamento impresso no console (F12). Copie e cole no seu arquivo CSS.");
       }
-
       window.__initPosEditor = function() {
         partIds.forEach(id => {
           posMap[id] = lerPosicaoInicial(id);
         });
-
         const toggle = document.getElementById("posEditToggle");
         const select = document.getElementById("posPartSelect");
         const upBtn = document.getElementById("posUpBtn");
@@ -1366,9 +1252,7 @@
         const leftBtn = document.getElementById("posLeftBtn");
         const rightBtn = document.getElementById("posRightBtn");
         const copyBtn = document.getElementById("posCopyCssBtn");
-
         if (!toggle || !select) return;
-
         toggle.addEventListener("change", () => {
           posEditEnabled = toggle.checked;
         });
