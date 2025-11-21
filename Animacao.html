@@ -292,37 +292,12 @@
       pointer-events: none;
     }
 
-   #cabecaTrasLayer{
-  top:-190px;
-  left:100px;
-  z-index:6;
-}
-#cabecaLayer{
-  top:-213px;
-  left:70px;
-  z-index:10;
-}
-#troncoBaixoLayer{
-  top:-118px;
-  left:0px;
-  z-index:5;
-}
-#antebracoLayer{
-  top:-71px;
-  left:-2px;
-  z-index:3;
-}
-#bracoDireitoLayer{
-  top:0px;
-  left:-5px;
-  z-index:9;
-}
-#pernasLayer{
-  top:82px;
-  left:64px;
-  z-index:1;
-}
-
+    #cabecaLayer{ top:-212px; left:70px; }
+    #cabecaTrasLayer{ top:-190px; left:100px; } /* cabeça traseira */
+    #troncoBaixoLayer{ top:-114px; left:0px; }
+    #antebracoLayer{ top:-60px; left:0px; }
+    #bracoDireitoLayer{ top:8px; left:-1px; }
+    #pernasLayer{ top:81px; left:64px; }
 
 
     #cabecaLayer { z-index: 10; }
@@ -480,6 +455,15 @@
         grid-auto-rows: 20px;
       }
     }
+
+    #troncoBaixoLayer,
+#cabecaLayer,
+#cabecaTrasLayer,
+#antebracoLayer,
+#bracoDireitoLayer {
+    transform-origin: 50% 80%; /* pivô mais para baixo, sincroniza o pêndulo */
+}
+
   </style>
 </head>
 <body>
@@ -817,6 +801,20 @@
     }, 30);
 }
 
+function stopPenduloMovimento() {
+    if (window.penduloTimer) {
+        clearInterval(window.penduloTimer);
+        window.penduloTimer = null;
+    }
+
+    ["troncoBaixoLayer","cabecaLayer","cabecaTrasLayer","antebracoLayer","bracoDireitoLayer"]
+      .forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.transform = "";
+      });
+}
+
+
     function stopRightHandAnimation() {
     const braco = document.getElementById("bracoDireitoLayer");
     if (!braco) return;
@@ -941,33 +939,24 @@ function stopPenduloMovimento() {
 
    
 
-   function animarBracoDireito(corda, duracaoMs) {
-    const el = document.getElementById("bracoDireitoLayer");
-    if (!el) return;
+    function animarBracoDireito(corda, duracaoMs) {
+      const el = document.getElementById("bracoDireitoLayer");
+      if (!el) return;
+      let frame = 1;
+      const totalFrames = 5;
+      const intervalo = Math.max(40, duracaoMs / (totalFrames * 2));
 
-    // Evita loop infinito enquanto o pendulo move o transform
-    clearInterval(el.__timerBraco || 0);
+      clearInterval(el.__timerBraco || 0);
 
-    const totalFrames = 5;
-    const durPorFrame = duracaoMs / totalFrames;
-    let frame = 1;
-
-    el.__timerBraco = setInterval(() => {
+      el.__timerBraco = setInterval(() => {
         const path = "animacao/braco_direito/Corda_" + corda + frame + ".png";
         el.src = path;
         frame++;
-
-        // quando termina, volta ao quadro 1 e encerra
         if (frame > totalFrames) {
-            clearInterval(el.__timerBraco);
-            el.__timerBraco = null;
-
-            // volta sempre ao primeiro frame da corda 
-            el.src = "animacao/braco_direito/Corda_" + corda + "1.png";
+          frame = 1;
         }
-    }, durPorFrame);
-}
-
+      }, intervalo);
+    }
 
     function tocarNotaComAnimacao(nota, duracaoMs, volume) {
       // Áudio
@@ -1576,3 +1565,4 @@ function pararAnimacaoBracoDireito() {
   </script>
 </body>
 </html>
+
