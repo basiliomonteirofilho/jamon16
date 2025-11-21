@@ -493,6 +493,15 @@
   transform-origin: 50% 80%;
 }
 
+#pernasLayer {
+  z-index: 1 !important;
+}
+
+#bodyWrapperPendulo {
+  z-index: 5 !important;
+}
+
+
 
   </style>
 </head>
@@ -1622,7 +1631,8 @@ function pararAnimacaoBracoDireito() {
 
     // coloca o wrapper dentro do baixistaStage ANTES das pernas
     const pernas = document.getElementById("pernasLayer");
-    stage.insertBefore(wrap, pernas.nextSibling);
+    stage.insertBefore(wrap, pernas);   // wrapper fica ANTES das pernas → pernas ficam na frente
+
 })();
 
   </script>
