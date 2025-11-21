@@ -516,14 +516,12 @@
     let posicaoAtualPasta = 1; // Começa na Pasta_1F
     let ultimaCordaUsada = "E";
     let ultimaNotaReal = "1E"; // Para ghost notes herdarem
-
     // ========== MAPEAMENTO CORRETO DOS SUFIXOS DAS PASTAS ==========
     const pastaSufixos = {
       1: "F", 2: "FS", 3: "G", 4: "GS", 5: "A", 6: "AS", 7: "B", 8: "C", 9: "CS",
       10: "D", 11: "DS", 12: "E", 13: "F", 14: "FS", 15: "G", 16: "GS", 17: "A",
       18: "AS", 19: "B", 20: "C", 21: "CS", 22: "D", 23: "DS", 24: "E"
     };
-
     // Mapeamento REAL das pastas (baseado nos seus arquivos)
     const pastaMap = {
       1: ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B"],
@@ -551,7 +549,6 @@
       23: ["24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E","39FS","40G","41GS","42A"],
       24: ["25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F","40G","41GS","42A","43AS"]
     };
-
     // Função para encontrar em quais pastas uma nota está disponível
     function encontrarPastasDisponiveis(nota) {
       const pastas = [];
@@ -562,7 +559,6 @@
       }
       return pastas;
     }
-
     // REGRA E: Escolher a pasta mais próxima da posição atual
     function escolherMelhorPasta(nota, posicaoAtual) {
       if (nota === "x") {
@@ -584,7 +580,6 @@
       }
       return melhorPasta;
     }
-
     const notasValidas = [
       "1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS",
       "11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B",
@@ -592,13 +587,11 @@
       "31AS","32B","33C","34CS","35D","36DS","37E","38F","39FS","40G",
       "41GS","42A","43AS"
     ];
-
     const BAIXO_SAMPLES = {};
     notasValidas.forEach(n => {
       BAIXO_SAMPLES[n] = "assets/BaixoMelodia/" + n + ".mp3";
     });
     BAIXO_SAMPLES["x"] = "assets/bass-muted.mp3";
-
     const drumLines = [
       { id: "bumbo",          label: "B",    file: "bumbo.mp3" },
       { id: "caixa",          label: "C",    file: "caixa.mp3" },
@@ -613,7 +606,6 @@
       { id: "conducao",       label: "Rd",   file: "conducao.mp3" },
       { id: "conducao_centro",label: "RdC",  file: "conducao-centro.mp3" }
     ];
-
     // ========== CORREÇÃO DAS CORDAS ==========
     function getCordaDaNota(nota) {
       if (!nota || nota === "x") return ultimaCordaUsada;
@@ -625,7 +617,6 @@
       if (n <= 36) return "D";    // 29GS até 36DS
       return "G";                 // 37E até 43AS
     }
-
     // ========== SISTEMA DE ANIMAÇÃO CORRIGIDO ==========
     function generateHeadFramePaths() {
       const arr = [];
@@ -635,7 +626,6 @@
       }
       return arr;
     }
-
     function preloadImages(urls) {
       return new Promise(resolve => {
         if (!urls || !urls.length) return resolve();
@@ -650,7 +640,6 @@
         });
       });
     }
-
     function startHeadLoop() {
       const el = document.getElementById("cabecaLayer");
       if (!el) return;
@@ -660,7 +649,6 @@
         el.src = headFrames[headFrameIndex];
       }, 1000 / 30);
     }
-
     function startTroncoBpm(bpm) {
       const el = document.getElementById("troncoBaixoLayer");
       if (!el) return;
@@ -672,7 +660,6 @@
         el.style.transform = up ? "translateY(-2px)" : "translateY(0px)";
       }, interval);
     }
-
     function startHeadTiltBpm(bpm) {
       const el = document.getElementById("cabecaLayer");
       if (!el) return;
@@ -684,7 +671,6 @@
         el.style.transform = toggle ? "rotate(-2deg)" : "rotate(2deg)";
       }, interval);
     }
-
     function startLateralMovement() {
       const el = document.getElementById("baixistaStage");
       if (!el) return;
@@ -698,12 +684,10 @@
         el.style.transform = "translateX(" + offset + "px)";
       }, 80);
     }
-
     function resetAnimTimers() {
       animTimers.forEach(id => clearInterval(id));
       animTimers = [];
     }
-
     function pararAudioBaixo() {
       if (audioBaixoAtual) {
         audioBaixoAtual.pause();
@@ -715,7 +699,6 @@
         audioBaixoTimer = null;
       }
     }
-
     function tocarBateriaNoStep(step, volume) {
       drumLines.forEach(line => {
         const seq = bateriaSeq[line.id];
@@ -728,7 +711,6 @@
         }
       });
     }
-
     function tocarNotaAudioBaixo(nota, volume) {
       if (!nota) return;
       let src = BAIXO_SAMPLES[nota];
@@ -744,12 +726,10 @@
         console.log("Erro ao tocar áudio do baixo:", nota, e);
       });
     }
-
     // ========== FUNÇÃO PRINCIPAL CORRIGIDA ==========
     function trocarFrameTronco(nota) {
       const tronco = document.getElementById("troncoBaixoLayer");
       if (!tronco) return;
-
       if (nota === "x") {
         if (ultimaNotaReal) {
           const pastaGhost = escolherMelhorPasta(ultimaNotaReal, posicaoAtualPasta);
@@ -759,25 +739,21 @@
         }
         return;
       }
-
       posicaoAtualPasta = escolherMelhorPasta(nota, posicaoAtualPasta);
       ultimaNotaReal = nota;
       const sufixo = pastaSufixos[posicaoAtualPasta] || "F";
       const path = `animacao/tronco_baixo/Pasta_${posicaoAtualPasta}${sufixo}/${nota}.png`;
-
       tronco.onerror = () => {
         console.warn("Falha ao carregar:", path);
       };
       tronco.src = path;
     }
-
     function trocarAntebraco(corda) {
       const el = document.getElementById("antebracoLayer");
       if (!el) return;
       const path = "animacao/antebraco/antebraco" + corda + ".png";
       el.src = path;
     }
-
     function animarBracoDireito(corda, duracaoMs) {
       const el = document.getElementById("bracoDireitoLayer");
       if (!el) return;
@@ -794,7 +770,6 @@
         }
       }, intervalo);
     }
-
     function tocarNotaComAnimacao(nota, duracaoMs, volume) {
       tocarNotaAudioBaixo(nota, volume);
       if (nota === "x") {
@@ -809,7 +784,6 @@
       trocarAntebraco(corda);
       animarBracoDireito(corda, duracaoMs);
     }
-
     function tocarPasso(passo) {
       const baixoLen = Array.isArray(baixoSeq) ? baixoSeq.length : 0;
       const nota = (passo < baixoLen) ? baixoSeq[passo] : "x";
@@ -822,7 +796,6 @@
       );
       atualizarBarraProgresso(totalSteps > 0 ? (passo / totalSteps) * 100 : 0);
     }
-
     function iniciarPlayback() {
       if (isPlaying) return;
       isPlaying = true;
@@ -841,7 +814,6 @@
       }, stepTime);
       document.getElementById("playBtn").innerText = "⏸ Pause";
     }
-
     function pararPlayback() {
       if (!isPlaying) return;
       isPlaying = false;
@@ -850,12 +822,10 @@
       pararAudioBaixo();
       document.getElementById("playBtn").innerText = "▶ Play";
     }
-
     function togglePlay() {
       if (!isPlaying) iniciarPlayback();
       else pararPlayback();
     }
-
     function iniciarContagemRegressiva(callback) {
       const overlay = document.getElementById("countdownOverlay");
       const txt = document.getElementById("countdownText");
@@ -877,7 +847,6 @@
         }
       }, 60000 / bpmAtual);
     }
-
     async function preScanAnimacao() {
       const frames = [];
       (baixoSeq || []).forEach(nota => {
@@ -892,7 +861,6 @@
       await preloadImages(frames);
       console.log("Pré-carregamento de imagens da animação concluído.");
     }
-
     function tocarPlaybackCompleto(bpm) {
       pararPlayback();
       resetAnimTimers();
@@ -908,7 +876,6 @@
         iniciarPlayback();
       });
     }
-
     // ========== RESTANTE DO CÓDIGO (INTERFACE, EVENTOS, ETC.) ==========
     // (mantido idêntico ao original, pois já estava correto)
     const selectionOverlay = document.getElementById("selectionOverlay");
