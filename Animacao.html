@@ -2,552 +2,938 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>JamOn – Visualizador com Animação</title>
-  <script src="jamon-engine.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jam On - Baixista & Baterista Animados</title>
   <style>
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
+    
     body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      background: #121212;
+      color: #e0e0e0;
       margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #111;
-      color: #f5f5f5;
-      overflow: hidden;
+      padding: 20px;
+      overflow-x: hidden;
     }
-    .appRoot {
-      width: 100vw;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
+    
+    header {
+      text-align: center;
+      margin-bottom: 20px;
     }
-    #animationArea {
-      flex: 0 0 60%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: radial-gradient(circle at top, #222 0, #050505 60%);
-      position: relative;
+    
+    h1 {
+      color: #5eead4;
+      font-size: 1.8em;
+      margin: 0;
     }
-    #playerArea {
-      flex: 0 0 40%;
-      background: rgba(5,5,5,0.95);
-      padding: 8px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      border-top: 1px solid #333;
-    }
-    #controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-bottom: 6px;
-      font-size: 0.85rem;
-    }
-    #controls button, #controls input[type="range"] {
-      padding: 4px 8px;
-      border: 1px solid #555;
-      background: #222;
-      color: #eee;
-      border-radius: 4px;
-      font-size: 0.8rem;
-      cursor: pointer;
-    }
-    .sliderGroup {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .sliderGroup label {
-      font-size: 0.75rem;
-      opacity: 0.85;
-    }
-    #progressBar {
-      height: 4px;
-      background: #222;
-      margin-bottom: 6px;
-      border-radius: 2px;
-    }
-    #progressFill {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(to right, #00c853, #ffd600);
-      transition: width 0.1s linear;
-    }
-    #grids {
-      flex: 1;
-      overflow: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    .gridRow {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .gridLabel {
-      width: 60px;
-      font-size: 0.75rem;
-      text-align: right;
-      opacity: 0.85;
-    }
-    .drumGrid {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .drumRow {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .grid {
-      flex: 1;
-      display: grid;
-      grid-auto-flow: column;
-      grid-auto-rows: 22px;
-      grid-auto-columns: minmax(20px, 1fr);
-      gap: 2px;
-      background: #0a0a0a;
-      padding: 2px;
-      border: 1px solid #333;
-      border-radius: 4px;
-    }
-    .cell {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.7rem;
-      background: #151515;
-      border: 1px solid #333;
-      border-radius: 3px;
-      color: #f5f5f5;
-      user-select: none;
-    }
-    .cell.active {
-      background: #1b5e20;
-      border-color: #00c853;
-      font-weight: bold;
-    }
-    .cell.x {
+    
+    .pill {
+      display: inline-block;
       background: #333;
-      color: #888;
+      color: #aaa;
+      font-size: 0.75em;
+      padding: 4px 10px;
+      border-radius: 12px;
+      margin-top: 8px;
     }
-    #stageWrapper {
-      position: relative;
-      width: 90vw;
-      max-width: 500px;
-      height: 100%;
+    
+    .card {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: #1e1e1e;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      overflow: hidden;
+      padding: 20px;
+    }
+    
+    .animation-section {
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: center;
+      margin-bottom: 30px;
     }
-    #baixistaStage {
+    
+    #animationContainer {
       position: relative;
       width: 100%;
-      height: 100%;
-      max-height: 340px;
-      margin: 0 auto;
+      max-width: 800px;
+      height: 400px;
+      background: #0a0a0a;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 2px solid #333;
+      margin-bottom: 20px;
     }
-    #baixistaStage img {
+    
+    #baixistaStage {
       position: absolute;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .animation-layer {
+      position: absolute;
+      image-rendering: crisp-edges;
       image-rendering: pixelated;
       pointer-events: none;
     }
-    #pernasLayer { z-index: 1; }
-    #troncoBaixoLayer { z-index: 3; }
-    #antebracoLayer { z-index: 4; }
-    #bracoDireitoLayer { z-index: 5; }
-    #cabecaLayer { z-index: 6; }
-    .countdown {
+    
+    #pernasLayer {
+      z-index: 1;
+      bottom: 0;
+    }
+    
+    #troncoBaixoLayer {
+      z-index: 5;
+    }
+    
+    #antebracoLayer {
+      z-index: 8;
+    }
+    
+    #bracoDireitoLayer {
+      z-index: 9;
+    }
+    
+    #cabecaLayer {
+      z-index: 10;
+    }
+    
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    
+    .control-group {
+      background: #2a2a2a;
+      padding: 15px;
+      border-radius: 8px;
+    }
+    
+    .control-group h3 {
+      color: #5eead4;
+      margin-bottom: 10px;
+      font-size: 1.1em;
+    }
+    
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+    
+    button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 0.9em;
+      transition: all 0.2s;
+    }
+    
+    button.primary {
+      background: #5eead4;
+      color: #121212;
+    }
+    
+    button.danger {
+      background: #f44336;
+      color: white;
+    }
+    
+    button:hover:not(:disabled) {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+    
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    
+    .slider-row label {
+      width: 100px;
+      text-align: right;
+      font-size: 0.9em;
+      color: #ccc;
+    }
+    
+    input[type="range"] {
+      flex: 1;
+      accent-color: #5eead4;
+    }
+    
+    .slider-value {
+      width: 40px;
+      text-align: left;
+      font-size: 0.9em;
+      color: #aaa;
+    }
+    
+    .grid-container {
+      background: #2a2a2a;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+    
+    .grid-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    
+    .grid-header h3 {
+      color: #5eead4;
+      margin: 0;
+    }
+    
+    .grid-wrapper {
+      display: flex;
+      gap: 20px;
+      overflow-x: auto;
+      padding: 10px 0;
+    }
+    
+    .instrument-grid {
+      min-width: 300px;
+    }
+    
+    .grid-label {
+      font-size: 0.9em;
+      color: #ccc;
+      margin-bottom: 5px;
+      text-align: center;
+    }
+    
+    .note-grid {
+      display: grid;
+      grid-template-columns: repeat(16, 1fr);
+      gap: 2px;
+      background: #1a1a1a;
+      padding: 5px;
+      border-radius: 4px;
+    }
+    
+    .grid-cell {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #333;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 0.7em;
+      user-select: none;
+      transition: all 0.1s;
+    }
+    
+    .grid-cell.active {
+      background: #1b5e20;
+      color: white;
+      font-weight: bold;
+    }
+    
+    .grid-cell.ghost {
+      background: #880e4f;
+      color: white;
+    }
+    
+    .grid-cell:hover {
+      filter: brightness(1.2);
+    }
+    
+    .drum-grid {
+      display: grid;
+      grid-template-columns: 100px repeat(16, 1fr);
+      gap: 2px;
+      background: #1a1a1a;
+      padding: 5px;
+      border-radius: 4px;
+    }
+    
+    .drum-label {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 8px;
+      font-size: 0.8em;
+      color: #ccc;
+    }
+    
+    .status-info {
+      text-align: center;
+      margin-top: 15px;
+      padding: 10px;
+      background: #2a2a2a;
+      border-radius: 6px;
+      font-size: 0.9em;
+    }
+    
+    .countdown-overlay {
       position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
+      inset: 0;
       display: none;
       justify-content: center;
       align-items: center;
-      background: rgba(0,0,0,0.85);
-      color: white;
-      font-size: 2.5rem;
-      font-weight: bold;
+      background: rgba(0, 0, 0, 0.8);
       z-index: 100;
+      font-size: 4rem;
+      font-weight: bold;
+      color: #5eead4;
+    }
+    
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+      
+      .card {
+        padding: 15px;
+      }
+      
+      #animationContainer {
+        height: 300px;
+      }
+      
+      .controls-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .grid-wrapper {
+        flex-direction: column;
+      }
+      
+      .instrument-grid {
+        min-width: auto;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="appRoot">
-    <div id="animationArea">
-      <div id="stageWrapper">
+  <header>
+    <h1>Jam On – Baixista & Baterista Animados</h1>
+    <div class="pill">Visualização em tempo real da performance</div>
+  </header>
+  
+  <div class="card">
+    <div class="animation-section">
+      <div id="animationContainer">
         <div id="baixistaStage">
-          <img id="pernasLayer" src="animacao/pernas/Pernas.png" alt="Pernas" />
-          <img id="troncoBaixoLayer" src="animacao/tronco_baixo/Pasta_1F/1E.png" alt="Tronco" />
-          <img id="antebracoLayer" src="animacao/antebraco/antebracoE.png" alt="Antebraço" />
-          <img id="bracoDireitoLayer" src="animacao/braco_direito/Corda_E1.png" alt="Mão direita" />
-          <img id="cabecaLayer" src="animacao/cabeca/cabeca0001.png" alt="Cabeça" />
-          <div class="countdown" id="countdown">3</div>
+          <img id="pernasLayer" class="animation-layer" src="animacao/pernas/Pernas.png" alt="Pernas">
+          <img id="troncoBaixoLayer" class="animation-layer" src="animacao/tronco_baixo/Pasta_1F/1E.png" alt="Tronco/Baixo">
+          <img id="antebracoLayer" class="animation-layer" src="animacao/antebraco/antebracoE.png" alt="Antebraço">
+          <img id="bracoDireitoLayer" class="animation-layer" src="animacao/braco_direito/Corda_E1.png" alt="Braço Direito">
+          <img id="cabecaLayer" class="animation-layer" src="animacao/cabeca/cabeca0001.png" alt="Cabeça">
+        </div>
+        <div id="countdownOverlay" class="countdown-overlay">
+          <span id="countdownText">3</span>
+        </div>
+      </div>
+      
+      <div class="btn-row">
+        <button id="btnPlayAnimation" class="primary">▶ Iniciar Animação</button>
+        <button id="btnStopAnimation" class="danger">⏹ Parar</button>
+        <button id="btnRandomAnimation" class="primary">🎲 Aleatório</button>
+        <button id="btnBackToMain" class="primary">← Voltar ao Principal</button>
+      </div>
+    </div>
+    
+    <div class="controls-grid">
+      <div class="control-group">
+        <h3>Configurações de Animação</h3>
+        <div class="slider-row">
+          <label>BPM</label>
+          <input type="range" id="animBpm" min="60" max="180" value="120">
+          <span class="slider-value" id="animBpmLabel">120</span>
+        </div>
+        <div class="slider-row">
+          <label>Volume Baixo</label>
+          <input type="range" id="animBassVolume" min="0" max="1" step="0.01" value="0.8">
+          <span class="slider-value" id="animBassVolumeLabel">80%</span>
+        </div>
+        <div class="slider-row">
+          <label>Volume Bateria</label>
+          <input type="range" id="animDrumVolume" min="0" max="1" step="0.01" value="0.7">
+          <span class="slider-value" id="animDrumVolumeLabel">70%</span>
+        </div>
+      </div>
+      
+      <div class="control-group">
+        <h3>Controles de Visualização</h3>
+        <div class="btn-row">
+          <button id="btnAddMeasure">+ Compasso</button>
+          <button id="btnClearGrid">🧹 Limpar</button>
+        </div>
+        <div class="slider-row">
+          <label>Suavidade</label>
+          <input type="range" id="animSmoothness" min="1" max="10" value="5">
+          <span class="slider-value" id="animSmoothnessLabel">5</span>
         </div>
       </div>
     </div>
-    <div id="playerArea">
-      <div id="controls">
-        <button id="btnPlay">▶ Play</button>
-        <button id="btnAleatorio">🎲 Playback Aleatório</button>
-        <button id="btnCarregar">📁 Carregar JSON</button>
-        <span id="bpmLabel">120 BPM</span>
-        <input type="range" id="bpmSlider" min="60" max="180" value="120" />
-        <div class="sliderGroup">
-          <label>Baixo</label>
-          <input type="range" id="volBaixo" min="0" max="1" step="0.01" value="0.85" />
+    
+    <div class="grid-container">
+      <div class="grid-header">
+        <h3>Composição - Baixo & Bateria</h3>
+        <div style="font-size: 0.8em; color: #aaa;">Clique nas células para editar</div>
+      </div>
+      
+      <div class="grid-wrapper">
+        <div class="instrument-grid">
+          <div class="grid-label">Baixo</div>
+          <div id="bassAnimationGrid" class="note-grid">
+            <!-- Será preenchido via JavaScript -->
+          </div>
         </div>
-        <div class="sliderGroup">
-          <label>Bateria</label>
-          <input type="range" id="volBateria" min="0" max="1" step="0.01" value="0.85" />
+        
+        <div class="instrument-grid" style="min-width: 400px;">
+          <div class="grid-label">Bateria</div>
+          <div id="drumAnimationGrid" class="drum-grid">
+            <!-- Será preenchido via JavaScript -->
+          </div>
         </div>
       </div>
-      <div id="progressBar">
-        <div id="progressFill"></div>
-      </div>
-      <div id="grids">
-        <div class="gridRow">
-          <div class="gridLabel">Baixo</div>
-          <div id="baixoGrid" class="grid"></div>
-        </div>
-        <div class="drumGrid" id="drumGrid"></div>
-      </div>
+    </div>
+    
+    <div class="status-info">
+      <div id="animationStatus">Pronto para iniciar</div>
+      <div id="currentNoteInfo" style="font-size: 0.8em; margin-top: 5px; color: #5eead4;"></div>
     </div>
   </div>
 
   <script>
-    // ========== NOTAS E PASTAS ==========
-    const NOTAS_VALIDAS = [
-      "1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS",
-      "11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B",
-      "21C","22CS","23D","24DS","25E","26F","27FS","28G","29GS","30A",
-      "31AS","32B","33C","34CS","35D","36DS","37E","38F","39FS","40G",
-      "41GS","42A","43AS","44B","45C","46CS","47D","48DS","49E"
-    ];
-
-    const PASTA_MAP = {
-      1:  ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B"],
-      2:  ["3FS","4G","5GS","6A","8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C"],
-      3:  ["4G","5GS","6A","7AS","9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS"],
-      4:  ["5GS","6A","7AS","8B","10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D"],
-      5:  ["6A","7AS","8B","9C","11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS"],
-      6:  ["7AS","8B","9C","10CS","12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E"],
-      7:  ["8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F"],
-      8:  ["9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS"],
-      9:  ["10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G"],
-      10: ["11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS"],
-      11: ["12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A"],
-      12: ["13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS"],
-      13: ["14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B"],
-      14: ["15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C"],
-      15: ["16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS"],
-      16: ["17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D"],
-      17: ["18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS"],
-      18: ["19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E"],
-      19: ["20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F"],
-      20: ["21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS","36DS","37E","38F","39FS"],
-      21: ["22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D","37E","38F","39FS","40G"],
-      22: ["23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS","38F","39FS","40G","41GS"],
-      23: ["24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E","39FS","40G","41GS","42A"],
-      24: ["25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F","40G","41GS","42A","43AS"]
-    };
-
-    const DRUM_LINES = [
-      { id: "bumbo", label: "B" },
-      { id: "caixa", label: "C" },
-      { id: "chimbal", label: "HH" },
-      { id: "chimbalaberto", label: "HHo" },
-      { id: "conducao", label: "Rd" },
-      { id: "ataque", label: "Atk" },
-      { id: "tom1", label: "T1" },
-      { id: "tom2", label: "T2" },
-      { id: "surdo", label: "Sd" }
-    ];
-
-    // ========== ESTADO ==========
-    let baixoSeq = Array(16).fill("x");
-    let bateriaSeq = {};
-    DRUM_LINES.forEach(d => bateriaSeq[d.id] = Array(16).fill("x"));
-    let isPlaying = false;
-    let currentStep = 0;
-    let playbackInterval = null;
-    let currentBpm = 120;
-    let posicaoAtualPasta = 1;
-    let ultimaNotaReal = "1E";
-    let lastAudio = null;
-
-    // ========== ANIMAÇÃO ==========
-    function getCorda(nota) {
-      if (!nota || nota === "x") return "E";
-      const num = parseInt(nota.match(/^\d+/)?.[0] || "1", 10);
-      if (num >= 37) return "G";
-      if (num >= 29) return "D";
-      if (num >= 21) return "A";
-      return "E";
-    }
-
-    function encontrarPastas(nota) {
-      const pastas = [];
-      for (let i = 1; i <= 24; i++) {
-        if (PASTA_MAP[i].includes(nota)) pastas.push(i);
+    // ===== SISTEMA DE ANIMAÇÃO DO BAIXISTA =====
+    class BaixistaAnimation {
+      constructor() {
+        this.isPlaying = false;
+        this.currentStep = 0;
+        this.bpm = 120;
+        this.stepInterval = null;
+        this.bassSequence = [];
+        this.drumSequence = {};
+        this.audioContext = null;
+        this.bassVolume = 0.8;
+        this.drumVolume = 0.7;
+        
+        // Cache de buffers de áudio
+        this.audioBuffers = {
+          bass: {},
+          drums: {}
+        };
+        
+        // Estado da animação
+        this.currentPosition = 1; // Pasta inicial
+        this.lastRealNote = "1E";
+        this.lastStringUsed = "E";
+        this.headFrameIndex = 0;
+        this.headFrames = this.generateHeadFramePaths();
+        this.animationTimers = [];
+        
+        // Mapeamento de pastas (REGRA E - Economia de movimento)
+        this.pastaMap = {
+          1: ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B"],
+          2: ["3FS","4G","5GS","6A","8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C"],
+          3: ["4G","5GS","6A","7AS","9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS"],
+          4: ["5GS","6A","7AS","8B","10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D"],
+          5: ["6A","7AS","8B","9C","11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS"],
+          6: ["7AS","8B","9C","10CS","12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E"],
+          7: ["8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F"],
+          8: ["9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS"],
+          9: ["10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G"],
+          10: ["11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS"],
+          11: ["12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A"],
+          12: ["13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS"],
+          13: ["14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B"],
+          14: ["15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C"],
+          15: ["16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS"],
+          16: ["17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D"],
+          17: ["18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS"],
+          18: ["19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E"],
+          19: ["20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F"],
+          20: ["21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS","36DS","37E","38F","39FS"],
+          21: ["22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D","37E","38F","39FS","40G"],
+          22: ["23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS","38F","39FS","40G","41GS"],
+          23: ["24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E","39FS","40G","41GS","42A"],
+          24: ["25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F","40G","41GS","42A","43AS"]
+        };
+        
+        // Instrumentos de bateria
+        this.drumLines = [
+          { id: "bumbo", label: "Bumbo", file: "bumbo.mp3" },
+          { id: "caixa", label: "Caixa", file: "caixa.mp3" },
+          { id: "chimbal", label: "Chimbal", file: "chimbal.mp3" },
+          { id: "tom1", label: "Tom 1", file: "tom-1.mp3" },
+          { id: "tom2", label: "Tom 2", file: "tom-2.mp3" }
+        ];
+        
+        this.initializeAudio();
+        this.setupEventListeners();
+        this.initializeGrids();
+        this.startHeadAnimation();
+        this.startBodyAnimations();
       }
-      return pastas;
-    }
-
-    function escolherPasta(nota, atual) {
-      if (nota === "x") return atual;
-      const pastas = encontrarPastas(nota);
-      if (!pastas.length) return atual;
-      return pastas.reduce((melhor, p) => 
-        Math.abs(p - atual) < Math.abs(melhor - atual) ? p : melhor
-      , pastas[0]);
-    }
-
-    function atualizarTronco(nota) {
-      if (nota === "x") {
-        // usa ultima nota real
-        const pasta = escolherPasta(ultimaNotaReal, posicaoAtualPasta);
-        document.getElementById("troncoBaixoLayer").src = `animacao/tronco_baixo/Pasta_${pasta}F/${ultimaNotaReal}.png`;
-        return;
+      
+      generateHeadFramePaths() {
+        const frames = [];
+        for (let i = 1; i <= 100; i++) {
+          const num = String(i).padStart(4, "0");
+          frames.push(`animacao/cabeca/cabeca${num}.png`);
+        }
+        return frames;
       }
-      posicaoAtualPasta = escolherPasta(nota, posicaoAtualPasta);
-      ultimaNotaReal = nota;
-      document.getElementById("troncoBaixoLayer").src = `animacao/tronco_baixo/Pasta_${posicaoAtualPasta}F/${nota}.png`;
-    }
-
-    function atualizarAntebraco(nota) {
-      const corda = getCorda(nota);
-      document.getElementById("antebracoLayer").src = `animacao/antebraco/antebraco${corda}.png`;
-    }
-
-    function atualizarMaoDireita(nota) {
-      const corda = getCorda(nota);
-      // ciclo simples de frames
-      const frames = ["1","2","3","4","5"];
-      let idx = 0;
-      const interval = setInterval(() => {
-        document.getElementById("bracoDireitoLayer").src = `animacao/braco_direito/Corda_${corda}${frames[idx]}.png`;
-        idx = (idx + 1) % frames.length;
-      }, 100);
-      // parar depois de 1s
-      setTimeout(() => clearInterval(interval), 1000);
-    }
-
-    function atualizarCabeça() {
-      let frame = 1;
-      const interval = setInterval(() => {
-        const num = String(frame).padStart(4, "0");
-        document.getElementById("cabecaLayer").src = `animacao/cabeca/cabeca${num}.png`;
-        frame = frame % 100 + 1;
-      }, 33); // ~30fps
-      return interval;
-    }
-
-    let cabecaInterval = null;
-
-    // ========== ÁUDIO ==========
-    function tocarNota(nota, volume) {
-      if (lastAudio) {
-        lastAudio.pause();
-        lastAudio = null;
+      
+      async initializeAudio() {
+        try {
+          this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          await this.audioContext.resume();
+          
+          // Pré-carregar samples essenciais
+          await this.preloadEssentialSamples();
+        } catch (error) {
+          console.warn("AudioContext não suportado:", error);
+        }
       }
-      if (nota === "x") return;
-      const audio = new Audio(`assets/BaixoMelodia/${nota}.mp3`);
-      audio.volume = volume;
-      audio.play().catch(e => console.warn("Erro ao tocar:", nota, e));
-      lastAudio = audio;
-    }
-
-    function tocarBateria(step, volume) {
-      DRUM_LINES.forEach(d => {
-        if (bateriaSeq[d.id][step] === d.id) {
-          const map = {
-            bumbo: "bumbo.mp3",
-            caixa: "caixa.mp3",
-            chimbal: "chimbal.mp3",
-            chimbalaberto: "chimbal-aberto.mp3",
-            conducao: "conducao.mp3",
-            ataque: "ataque.mp3",
-            tom1: "tom-1.mp3",
-            tom2: "tom-2.mp3",
-            surdo: "surdo.mp3"
-          };
-          const file = map[d.id];
-          if (file) {
-            const a = new Audio(`assets/${file}`);
-            a.volume = volume;
-            a.play().catch(e => {});
+      
+      async preloadEssentialSamples() {
+        // Pré-carregar algumas notas de baixo comuns
+        const commonNotes = ["1E", "6A", "11D", "16G", "13E", "18A", "8B", "3FS"];
+        for (const note of commonNotes) {
+          await this.loadBassSample(note);
+        }
+        
+        // Pré-carregar samples de bateria
+        for (const drum of this.drumLines) {
+          await this.loadDrumSample(drum.id, drum.file);
+        }
+        
+        // Ghost note
+        await this.loadBassSample("x");
+      }
+      
+      async loadBassSample(note) {
+        if (this.audioBuffers.bass[note]) return this.audioBuffers.bass[note];
+        
+        try {
+          const url = note === "x" ? 
+            "assets/bass-muted.mp3" : 
+            `assets/BaixoMelodia/${note}.mp3`;
+          
+          const response = await fetch(url);
+          const arrayBuffer = await response.arrayBuffer();
+          const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+          this.audioBuffers.bass[note] = audioBuffer;
+          return audioBuffer;
+        } catch (error) {
+          console.warn(`Erro ao carregar sample de baixo: ${note}`, error);
+          return null;
+        }
+      }
+      
+      async loadDrumSample(drumId, fileName) {
+        if (this.audioBuffers.drums[drumId]) return this.audioBuffers.drums[drumId];
+        
+        try {
+          const response = await fetch(`assets/${fileName}`);
+          const arrayBuffer = await response.arrayBuffer();
+          const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+          this.audioBuffers.drums[drumId] = audioBuffer;
+          return audioBuffer;
+        } catch (error) {
+          console.warn(`Erro ao carregar sample de bateria: ${drumId}`, error);
+          return null;
+        }
+      }
+      
+      playBassNote(note) {
+        if (!this.audioContext || !this.audioBuffers.bass[note]) return;
+        
+        const source = this.audioContext.createBufferSource();
+        const gainNode = this.audioContext.createGain();
+        
+        source.buffer = this.audioBuffers.bass[note];
+        source.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+        gainNode.gain.value = this.bassVolume;
+        
+        source.start();
+      }
+      
+      playDrumNote(drumId) {
+        if (!this.audioContext || !this.audioBuffers.drums[drumId]) return;
+        
+        const source = this.audioContext.createBufferSource();
+        const gainNode = this.audioContext.createGain();
+        
+        source.buffer = this.audioBuffers.drums[drumId];
+        source.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+        gainNode.gain.value = this.drumVolume;
+        
+        source.start();
+      }
+      
+      // REGRA E: Encontrar pastas disponíveis para uma nota
+      findAvailableFolders(note) {
+        const folders = [];
+        for (let folderNum = 1; folderNum <= 24; folderNum++) {
+          if (this.pastaMap[folderNum].includes(note)) {
+            folders.push(folderNum);
           }
         }
-      });
-    }
-
-    // ========== PLAYBACK ==========
-    function playStep(step) {
-      const nota = baixoSeq[step] || "x";
-      const volBaixo = parseFloat(document.getElementById("volBaixo").value);
-      const volBateria = parseFloat(document.getElementById("volBateria").value);
-
-      tocarNota(nota, volBaixo);
-      tocarBateria(step, volBateria);
-
-      atualizarTronco(nota);
-      if (nota !== "x") {
-        atualizarAntebraco(nota);
-        atualizarMaoDireita(nota);
+        return folders;
       }
-
-      const total = Math.max(baixoSeq.length, ...Object.values(bateriaSeq).map(a => a.length));
-      document.getElementById("progressFill").style.width = `${(step / total) * 100}%`;
-    }
-
-    function iniciarPlayback() {
-      if (isPlaying) return;
-      isPlaying = true;
-      currentStep = 0;
-      const tempo = (60000 / currentBpm) / 4;
-      playStep(currentStep);
-      playbackInterval = setInterval(() => {
-        currentStep++;
-        const totalSteps = Math.max(baixoSeq.length, ...Object.values(bateriaSeq).map(a => a.length));
-        if (currentStep >= totalSteps) currentStep = 0;
-        playStep(currentStep);
-      }, tempo);
-      document.getElementById("btnPlay").textContent = "⏸ Pause";
-    }
-
-    function pararPlayback() {
-      if (!isPlaying) return;
-      isPlaying = false;
-      clearInterval(playbackInterval);
-      if (lastAudio) {
-        lastAudio.pause();
-        lastAudio = null;
-      }
-      document.getElementById("btnPlay").textContent = "▶ Play";
-    }
-
-    // ========== UI ==========
-    function construirGradeBaixo() {
-      const grid = document.getElementById("baixoGrid");
-      grid.innerHTML = "";
-      baixoSeq.forEach((nota, i) => {
-        const cell = document.createElement("div");
-        cell.className = nota === "x" ? "cell x" : "cell active";
-        cell.textContent = nota === "x" ? "X" : nota.replace(/S/g, "#");
-        grid.appendChild(cell);
-      });
-    }
-
-    function construirGradeBateria() {
-      const grid = document.getElementById("drumGrid");
-      grid.innerHTML = "";
-      DRUM_LINES.forEach(d => {
-        const row = document.createElement("div");
-        row.className = "drumRow";
-        const label = document.createElement("div");
-        label.className = "gridLabel";
-        label.textContent = d.label;
-        row.appendChild(label);
-        const subgrid = document.createElement("div");
-        subgrid.className = "grid";
-        bateriaSeq[d.id].forEach((val, i) => {
-          const cell = document.createElement("div");
-          if (val === "x") {
-            cell.className = "cell";
-            cell.textContent = "X";
-          } else {
-            cell.className = "cell active";
-            cell.textContent = d.label;
+      
+      // REGRA E: Escolher a melhor pasta baseada na economia de movimento
+      chooseBestFolder(note, currentPosition) {
+        if (note === "x") {
+          // Ghost note: usar a mesma pasta anterior
+          return currentPosition;
+        }
+        
+        const availableFolders = this.findAvailableFolders(note);
+        if (availableFolders.length === 0) {
+          console.warn(`Nota ${note} não encontrada em nenhuma pasta. Usando padrão.`);
+          return 1;
+        }
+        
+        // Encontrar a pasta com menor distância da posição atual
+        let bestFolder = availableFolders[0];
+        let minDistance = Math.abs(currentPosition - bestFolder);
+        
+        for (let i = 1; i < availableFolders.length; i++) {
+          const distance = Math.abs(currentPosition - availableFolders[i]);
+          if (distance < minDistance) {
+            minDistance = distance;
+            bestFolder = availableFolders[i];
           }
-          subgrid.appendChild(cell);
-        });
-        row.appendChild(subgrid);
-        grid.appendChild(row);
-      });
-    }
-
-    function garantirMesmoTamanho() {
-      const len = Math.max(baixoSeq.length, ...Object.values(bateriaSeq).map(a => a.length));
-      baixoSeq = [...baixoSeq, ...Array(Math.max(0, len - baixoSeq.length)).fill("x")];
-      DRUM_LINES.forEach(d => {
-        bateriaSeq[d.id] = [...bateriaSeq[d.id], ...Array(Math.max(0, len - bateriaSeq[d.id].length)).fill("x")];
-      });
-    }
-
-    // ========== INICIALIZAÇÃO ==========
-    function iniciar() {
-      construirGradeBaixo();
-      construirGradeBateria();
-
-      // controles
-      document.getElementById("btnPlay").onclick = () => isPlaying ? pararPlayback() : iniciarPlayback();
-      document.getElementById("btnAleatorio").onclick = () => {
-        const passos = baixoSeq.length;
-        const res = JamOnEngine.generateRandomPlayback(passos, currentBpm);
-        baixoSeq = res.bassSeq;
-        DRUM_LINES.forEach(d => {
-          bateriaSeq[d.id] = res.bateriaSeq[d.id] || Array(passos).fill("x");
-        });
-        garantirMesmoTamanho();
-        construirGradeBaixo();
-        construirGradeBateria();
-        pararPlayback();
-        document.getElementById("bpmSlider").value = res.bpm;
-        currentBpm = res.bpm;
-        document.getElementById("bpmLabel").textContent = `${res.bpm} BPM`;
-      };
-
-      document.getElementById("bpmSlider").oninput = () => {
-        currentBpm = parseInt(document.getElementById("bpmSlider").value);
-        document.getElementById("bpmLabel").textContent = `${currentBpm} BPM`;
-      };
-
-      document.getElementById("btnCarregar").onclick = () => {
-        const input = document.createElement("input");
-        input.type = "file";
-        input.accept = ".json";
-        input.onchange = e => {
-          const file = e.target.files[0];
-          if (!file) return;
-          const reader = new FileReader();
-          reader.onload = () => {
-            try {
-              const data = JSON.parse(reader.result);
-              if (!Array.isArray(data.baixo) || typeof data.bpm !== "number") {
-                alert("JSON inválido!");
-                return;
-              }
-              baixoSeq = data.baixo;
-              DRUM_LINES.forEach(d => {
-                bateriaSeq[d.id] = Array.isArray(data.bateria?.[d.id]) ? data.bateria[d.id] : Array(baixoSeq.length).fill("x");
-              });
-              garantirMesmoTamanho();
-              construirGradeBaixo();
-              construirGradeBateria();
-              currentBpm = data.bpm;
-              document.getElementById("bpmSlider").value = data.bpm;
-              document.getElementById("bpmLabel").textContent = `${data.bpm} BPM`;
-            } catch (err) {
-              alert("Erro ao carregar JSON.");
-            }
-          };
-          reader.readAsText(file);
+        }
+        
+        return bestFolder;
+      }
+      
+      // Determinar a corda baseada na nota
+      getStringFromNote(note) {
+        if (!note || note === "x") return this.lastStringUsed;
+        
+        const match = note.match(/^(\d+)/);
+        if (!match) return "E";
+        
+        const noteNum = parseInt(match[1], 10);
+        
+        if (noteNum <= 20) return "E";
+        if (noteNum <= 28) return "A";
+        if (noteNum <= 36) return "D";
+        return "G";
+      }
+      
+      // Atualizar animação do tronco/baixo
+      updateTorsoAnimation(note) {
+        const torsoElement = document.getElementById("troncoBaixoLayer");
+        if (!torsoElement) return;
+        
+        if (note === "x") {
+          // Ghost note: usar a mesma imagem da última nota real
+          if (this.lastRealNote) {
+            const ghostFolder = this.chooseBestFolder(this.lastRealNote, this.currentPosition);
+            const ghostPath = `animacao/tronco_baixo/Pasta_${ghostFolder}F/${this.lastRealNote}.png`;
+            torsoElement.src = ghostPath;
+          }
+          return;
+        }
+        
+        // Atualizar posição usando REGRA E
+        this.currentPosition = this.chooseBestFolder(note, this.currentPosition);
+        this.lastRealNote = note;
+        
+        const imagePath = `animacao/tronco_baixo/Pasta_${this.currentPosition}F/${note}.png`;
+        torsoElement.onerror = () => {
+          console.warn("Falha ao carregar imagem:", imagePath);
         };
-        input.click();
-      };
-
-      // animação cabeça
-      cabecaInterval = atualizarCabeça();
-    }
-
-    window.onload = iniciar;
-  </script>
-</body>
-</html>
+        torsoElement.src = imagePath;
+      }
+      
+      // Atualizar animação do antebraço
+      updateForearmAnimation(string) {
+        const forearmElement = document.getElementById("antebracoLayer");
+        if (!forearmElement) return;
+        
+        const imagePath = `animacao/antebraco/antebraco${string}.png`;
+        forearmElement.src = imagePath;
+        this.lastStringUsed = string;
+      }
+      
+      // Animar braço direito (mão dedilhando)
+      animateRightArm(string, durationMs) {
+        const armElement = document.getElementById("bracoDireitoLayer");
+        if (!armElement) return;
+        
+        let frame = 1;
+        const totalFrames = 5;
+        const interval = Math.max(40, durationMs / (totalFrames * 2));
+        
+        // Limpar timer anterior
+        if (armElement.animationTimer) {
+          clearInterval(armElement.animationTimer);
+        }
+        
+        armElement.animationTimer = setInterval(() => {
+          const imagePath = `animacao/braco_direito/Corda_${string}${frame}.png`;
+          armElement.src = imagePath;
+          frame++;
+          if (frame > totalFrames) {
+            frame = 1;
+          }
+        }, interval);
+      }
+      
+      // Animação da cabeça (loop contínuo)
+      startHeadAnimation() {
+        const headElement = document.getElementById("cabecaLayer");
+        if (!headElement) return;
+        
+        setInterval(() => {
+          this.headFrameIndex = (this.headFrameIndex + 1) % this.headFrames.length;
+          headElement.src = this.headFrames[this.headFrameIndex];
+        }, 1000 / 30); // 30 FPS
+      }
+      
+      // Animações sutis do corpo
+      startBodyAnimations() {
+        // Movimento lateral suave do palco
+        const stageElement = document.getElementById("baixistaStage");
+        if (!stageElement) return;
+        
+        let direction = 1;
+        let offset = 0;
+        
+        setInterval(() => {
+          offset += direction * 0.3;
+          if (offset > 3) direction = -1;
+          if (offset < -3) direction = 1;
+          stageElement.style.transform = `translateX(${offset}px)`;
+        }, 80);
+        
+        // Movimento sutil do tronco no BPM
+        const torsoElement = document.getElementById("troncoBaixoLayer");
+        if (!torsoElement) return;
+        
+        let torsoUp = false;
+        setInterval(() => {
+          const interval = (60000 / this.bpm) / 2;
+          torsoUp = !torsoUp;
+          torsoElement.style.transform = torsoUp ? "translateY(-1px)" : "translateY(0px)";
+        }, (60000 / this.bpm) / 2);
+      }
+      
+      // Tocar uma nota com animação completa
+      playNoteWithAnimation(note, durationMs) {
+        // Tocar áudio
+        this.playBassNote(note);
+        
+        if (note === "x") {
+          // Ghost note: usar corda e posição anteriores
+          this.animateRightArm(this.lastStringUsed, durationMs);
+          this.updateTorsoAnimation("x");
+          return;
+        }
+        
+        // Atualizar animações visuais
+        this.updateTorsoAnimation(note);
+        
+        const string = this.getStringFromNote(note);
+        this.updateForearmAnimation(string);
+        this.animateRightArm(string, durationMs);
+      }
+      
+      // Executar um passo completo da sequência
+      executeStep(stepIndex) {
+        if (!this.bassSequence.length) return;
+        
+        const note = this.bassSequence[stepIndex % this.bassSequence.length];
+        const stepDuration = (60000 / this.bpm) / 4;
+        
+        // Tocar nota do baixo com animação
+        this.playNoteWithAnimation(note, stepDuration);
+        
+        // Tocar bateria
+        for (const drum of this.drumLines) {
+          if (this.drumSequence[drum.id] && 
+              this.drumSequence[drum.id][stepIndex % this.drumSequence[drum.id].length] === drum.id) {
+            this.playDrumNote(drum.id);
+          }
+        }
+        
+        // Atualizar interface
+        this.updateGridHighlight(stepIndex);
+        this.updateStatusInfo(note, stepIndex);
+      }
+      
+      // Iniciar reprodução
+      startPlayback() {
+        if (this.isPlaying) return;
+        
+        this.isPlaying = true;
+        this.currentStep = 0;
+        
+        const stepDuration = (60000 / this.bpm) / 4;
+        
+        this.stepInterval = setInterval(() => {
+          this.executeStep(this.currentStep);
+          this.currentStep++;
+          
+          if (this.currentStep >= Math.max(
+            this.bassSequence.length,
+            ...this.drumLines.map(d => this.drumSequence[d.id]?.length || 0)
+          )) {
+            this.currentStep = 0;
+          }
+        }, stepDuration);
+      }
+      
+      // Parar reprodução
+      stopPlayback() {
+        this.isPlaying = false;
+        if (this.stepInterval) {
+          clearInterval(this.stepInterval);
+          this.stepInterval = null;
+        }
+        
+        // Limpar highlights da grade
+        this.clearGridHighlights();
+        
+        // Atualizar status
+        document.getElementById("animationStatus").textContent = "Parado";
+        document.getElementById("currentNoteInfo").textContent = "";
+      }
+      
+      // Contagem regressiva para início
+      startCountdown(callback) {
+        const overlay = document.getElementById("countdownOverlay");
+        const text = document.getElementById("countdownText");
+        
+        if (!overlay || !text) {
+          callback();
+          return;
+        }
+        
+        let count = 3;
+        overlay.style.display = "flex";
+        text.textContent = count;
+        
+        const countdownInterval = setInterval(() => {
+          count--;
+          if (count <= 0) {
+            clearInterval(countdownInterval);
+            overlay.style.display = "none";
+            callback();
+          } else {
+            text.textContent = count;
+          }
+        }, 60000 / this.bpm);
+      }
+      
+      // Inicializar grades de interface
+      initializeGrids() {
+        this.initializeBassGrid();
+        this.initializeDrumGrid();
+        
+        // Sequência inicial padrão
+        this.generateDefaultSequence();
+      }
+      
+      initializeBassGrid() {
+        const grid = document.getElementById("bassAnimationGrid");
+        grid.innerHTML = "";
+        
+        for (let i = 0; i < 16; i++) {
+          const cell = document.createElement("div");
+          cell.className = "grid-cell";
+          cell.textContent = "X";
+          cell.dataset.index = i;
+          cell.dataset.type = "bass";
+          
+          cell.addEventListener("click", () => {
+            this.openNoteSelector(cell, i, "bass");
+          });
+          
+          grid.appendChild(cell);
+        }
+      }
+      
+      initializeDrumGrid() {
+        const grid = document.getElementById("drumAnimationGrid");
+        grid.innerHTML = "";
+        
+        for (const drum of this.drumLines) {
+          // Label da linha
+          const label = document.createElement("div");
+          label.className = "drum-label";
+          label.textContent = drum.label;
+          grid.appendChild(label);
+          
+          // Células da linha
+          for (let i = 0; i < 16; i++) {
+            const cell = document.createElement("div");
+            cell.className = "grid-cell";
+            cell.textContent = "X";
+            cell.dataset.index = i;
+            cell.dataset.drum = drum.id;
+            cell.dataset.type = "drum";
+            
+            cell.addEventListener("click", () => {
+              this.toggleDrumCell(cell, i, drum.id);
+            });
+            
+            grid.appendChild(cell);
+          }
+        }
+      }
+      
+      // Gerar sequência padrão
+      generateDefaultSequence() {
+        this.bassSequence = Array(16).fill("x");
+        this.bassSequence[0] = "1E";
+        this.bassSequence[4] = "6A";
+        this.bassSequence[8] = "11D";
+        this.bassSequence[12] = "16G";
+        
+        this.drumSequence = {};
+        for (const drum of this.drumLines) {
+          this.drumSequence[drum.id] = Array(16).fill("x");
+        }
+        
+        // Padrão básico de bateria
+        for (let i = 0; i < 16; i++) {
+          if (i % 4 === 0) this.drumSequence.bumbo[i] = "bumbo";
+          if (i % 2 === 0) this.drumSequence.chimbal[i] = "chimbal";
+          if (i === 4 || i === 12) this.drumSequence.caixa[i] = "caixa";
+        }
+        
+        this.updateGridDisplay();
+      }
+      
+      // Gerar sequência aleatória
+      generateRandomSequence() {
+        const notes = ["1E", "2F", "3FS", "4G", "5GS", "6A", "7AS", "8B", 
+                      "9C", "10CS", "11D", "
