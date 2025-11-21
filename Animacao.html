@@ -955,24 +955,33 @@ function stopPenduloMovimento() {
 
    
 
-    function animarBracoDireito(corda, duracaoMs) {
-      const el = document.getElementById("bracoDireitoLayer");
-      if (!el) return;
-      let frame = 1;
-      const totalFrames = 5;
-      const intervalo = Math.max(40, duracaoMs / (totalFrames * 2));
+   function animarBracoDireito(corda, duracaoMs) {
+    const el = document.getElementById("bracoDireitoLayer");
+    if (!el) return;
 
-      clearInterval(el.__timerBraco || 0);
+    // Evita loop infinito enquanto o pendulo move o transform
+    clearInterval(el.__timerBraco || 0);
 
-      el.__timerBraco = setInterval(() => {
+    const totalFrames = 5;
+    const durPorFrame = duracaoMs / totalFrames;
+    let frame = 1;
+
+    el.__timerBraco = setInterval(() => {
         const path = "animacao/braco_direito/Corda_" + corda + frame + ".png";
         el.src = path;
         frame++;
+
+        // quando termina, volta ao quadro 1 e encerra
         if (frame > totalFrames) {
-          frame = 1;
+            clearInterval(el.__timerBraco);
+            el.__timerBraco = null;
+
+            // volta sempre ao primeiro frame da corda 
+            el.src = "animacao/braco_direito/Corda_" + corda + "1.png";
         }
-      }, intervalo);
-    }
+    }, durPorFrame);
+}
+
 
     function tocarNotaComAnimacao(nota, duracaoMs, volume) {
       // Áudio
@@ -1581,4 +1590,3 @@ function pararAnimacaoBracoDireito() {
   </script>
 </body>
 </html>
-
