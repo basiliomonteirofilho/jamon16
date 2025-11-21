@@ -766,51 +766,45 @@
 
 
 
-    function startPenduloMovimentoSuave() {
+   function startPenduloMovimentoSuave() {
     if (window.penduloTimer) clearInterval(window.penduloTimer);
 
-    const tronco = document.getElementById("troncoBaixoLayer");
-    const cabeca = document.getElementById("cabecaLayer");
-    const cabecaTras = document.getElementById("cabecaTrasLayer");
-    const ante = document.getElementById("antebracoLayer");
-    const braco = document.getElementById("bracoDireitoLayer");
+    const partes = [
+        document.getElementById("troncoBaixoLayer"),
+        document.getElementById("cabecaLayer"),
+        document.getElementById("cabecaTrasLayer"),
+        document.getElementById("antebracoLayer"),
+        document.getElementById("bracoDireitoLayer")
+    ];
 
     let t = 0;
-    const amplitude = 3;       // graus
-    const velocidade = 0.015;  // suavidade
+    const amplitude = 3;
+    const velocidade = 0.015;
 
     window.penduloTimer = setInterval(() => {
         t += velocidade;
-        const angulo = Math.sin(t) * amplitude;
-        const rot = "rotate(" + angulo + "deg)";
 
-        if (tronco) tronco.style.transform = rot;
-        if (cabeca) cabeca.style.transform = rot;
-        if (cabecaTras) cabecaTras.style.transform = rot;
-        if (ante) ante.style.transform = rot;
-        if (braco) braco.style.transform = rot;
+        const rot = "rotate(" + Math.sin(t) * amplitude + "deg)";
 
+        partes.forEach(el => {
+            if (el) el.style.transform = rot;
+        });
     }, 30);
 }
+
 function stopPenduloMovimento() {
     if (window.penduloTimer) {
         clearInterval(window.penduloTimer);
         window.penduloTimer = null;
     }
 
-    const layers = [
-        "troncoBaixoLayer",
-        "cabecaLayer",
-        "cabecaTrasLayer",
-        "antebracoLayer",
-        "bracoDireitoLayer"
-    ];
-
-    layers.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.transform = "";
-    });
+    ["troncoBaixoLayer","cabecaLayer","cabecaTrasLayer","antebracoLayer","bracoDireitoLayer"]
+      .forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.transform = "";
+      });
 }
+
 
     function stopRightHandAnimation() {
     const braco = document.getElementById("bracoDireitoLayer");
@@ -1098,7 +1092,7 @@ function pararAnimacaoBracoDireito() {
       pararPlayback();
       resetAnimTimers();
 
-      startTroncoBpm(bpm);
+     
          
       
 
@@ -1521,6 +1515,7 @@ function pararAnimacaoBracoDireito() {
       headFrames = generateHeadFramePaths();
       await preloadImages(headFrames);
       startHeadLoop();
+     
          
       iniciarInterface();
       if (window.__initPosEditor) window.__initPosEditor();
@@ -1561,16 +1556,4 @@ function pararAnimacaoBracoDireito() {
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
 
