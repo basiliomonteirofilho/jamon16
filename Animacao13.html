@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Baixista + Bateria - Jam On Engine Integrada</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+  <style>
+    :root {
+      --bg-color: #111;
+      --panel-bg: rgba(10, 10, 10, 0.95);
+      --highlight-color: #00e676; /* Verde Neon */
+      --accent-color: #2e7d32;
+      --grid-bg: #080808;
+      --cell-bg: #151515;
+      --cell-border: #333;
+      --playing-col-bg: rgba(255, 255, 255, 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #000;
+      color: #f5f5f5;
+      overflow: hidden;
+    }
+
+    /* Overlay de Orientação */
+    #orientationOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.95);
+      color: #fff;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      z-index: 10000;
+      padding: 20px;
+    }
+    #orientationOverlay h1 { font-size: 1.5rem; margin-bottom: 10px; color: var(--highlight-color); }
+
+    /* Layout Principal */
+    .appRoot {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: radial-gradient(circle at top, #2a2a2a 0%, #000000 80%);
+    }
+
+    /* Área da Animação (Topo) */
+    #topArea {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    #animacaoStageWrapper {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #baixistaStage {
+      position: relative;
+      width: 520px;
+      height: 520px;
+      transform-origin: center center;
+    }
+
+    #pernasLayer {
+      position: absolute;
+      top: 82px; 
+      left: 64px;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    #bodyWrapperPendulo {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 5;
+      transform-origin: 50% 80%;
+      will-change: transform;
+    }
+
+    #bodyWrapperPendulo img {
+      position: absolute;
+      image-rendering: pixelated;
+      pointer-events: none;
+    }
+
+    #cabecaTrasLayer   { top: -190px; left: 100px; z-index: 1; }
+    #troncoBaixoLayer  { top: -118px; left: 0px;   z-index: 2; }
+    #antebracoLayer    { top: -71px;  left: -2px;  z-index: 3; }
+    #bracoDireitoLayer { top: 0px;    left: -5px;  z-index: 4; }
+    #cabecaLayer       { top: -213px; left: 70px;  z-index: 5; }
+
+    /* Área de Controles */
+    #bottomArea {
+      flex: 0 0 45vh;
+      max-height: 400px;
+      min-height: 280px;
+      display: flex;
+      flex-direction: column;
+      background: var(--panel-bg);
+      border-top: 1px solid #444;
+      padding: 10px;
+      z-index: 10;
+      box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
+    }
+
+    #playerControlsRow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    button {
+      padding: 6px 12px;
+      border-radius: 4px;
+      border: 1px solid #555;
+      background: #222;
+      color: #eee;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    button:hover { background: #333; border-color: #777; }
+    button:active { transform: translateY(1px); }
+    
+    #playBtn { background: var(--accent-color); border-color: var(--highlight-color); font-weight: bold; }
+    #playBtn:hover { background: #00c853; color: #000; }
+
+    /* Estilo Info da Geração */
+    #generationInfo {
+        margin-left: auto;
+        font-size: 0.7rem;
+        color: var(--highlight-color);
+        background: rgba(0,230,118, 0.1);
+        padding: 4px 8px;
+        border-radius: 4px;
+        border: 1px solid var(--accent-color);
+        display: none; 
+    }
+
+    .sliderGroup {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(0,0,0,0.3);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .sliderGroup label { font-size: 0.75rem; color: #aaa; }
+    input[type="range"] { width: 80px; cursor: pointer; }
+
+    #bpmDisplay { font-family: monospace; font-weight: bold; min-width: 65px; text-align: center;}
+
+    #progressContainer {
+      width: 100%;
+      height: 4px;
+      background: #333;
+      border-radius: 2px;
+      margin-bottom: 8px;
+      overflow: hidden;
+    }
+    #progressBar {
+      height: 100%;
+      width: 0%;
+      background: var(--highlight-color);
+      transition: width 0.1s linear;
+      box-shadow: 0 0 8px var(--highlight-color);
+    }
+
+    #gridsArea {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: auto;
+      border: 1px solid #333;
+      background: #000;
+      border-radius: 4px;
+      padding: 5px;
+    }
+
+    .rowContainer {
+      display: flex;
+      align-items: center;
+      margin-bottom: 2px;
+    }
+    .gridLabel {
+      width: 60px;
+      min-width: 60px;
+      font-size: 0.7rem;
+      text-align: right;
+      padding-right: 8px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      position: sticky;
+      left: 0;
+      background: #000;
+      z-index: 2;
+    }
+
+    .trackGrid {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: 24px; 
+      grid-template-rows: 24px;
+      gap: 1px;
+    }
+
+    .cell {
+      background: var(--cell-bg);
+      border: 1px solid var(--cell-border);
+      border-radius: 2px;
+      color: #fff;
+      font-size: 0.65rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .cell:hover { border-color: #666; }
+    
+    .cell.active {
+      background: var(--accent-color);
+      border-color: var(--highlight-color);
+      box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
+    }
+    .cell.active-ghost {
+      background: #880e4f;
+      border-color: #f50057;
+    }
+
+    .cell.playing-step {
+      background-color: #444 !important;
+      border-color: #fff !important;
+    }
+    .cell.active.playing-step {
+      background-color: #00e676 !important; 
+      color: #000;
+      box-shadow: 0 0 8px #00e676;
+    }
+
+    #selectionOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 20000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    #selectionOverlay.visible { display: flex; animation: fadeIn 0.15s ease-out; }
+    
+    #selectionPanel {
+      background: #1a1a1a;
+      border: 1px solid #555;
+      padding: 15px;
+      border-radius: 8px;
+      width: 90%;
+      max-width: 600px;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 10px 40px rgba(0,0,0,1);
+    }
+    #selectionTitle { margin-bottom: 10px; font-weight: bold; color: #fff; text-align: center; }
+    #selectionOptions {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(45px, 1fr));
+      gap: 5px;
+    }
+    .selection-option {
+      padding: 8px 0;
+      background: #333;
+      text-align: center;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+    .selection-option:hover { background: #444; border-color: #888; }
+    .selection-option.active { background: var(--accent-color); border-color: var(--highlight-color); }
+    .selection-option.ghost { color: #ff80ab; }
+
+    .countdownOverlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 50;
+      background: rgba(0,0,0,0.7);
+      font-size: 4rem;
+      font-weight: 800;
+      color: var(--highlight-color);
+      text-shadow: 0 0 20px var(--highlight-color);
+    }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+    ::-webkit-scrollbar-track { background: #111; }
+
+    @media (max-width: 600px) {
+        #bottomArea { flex-basis: 50vh; }
+        .gridLabel { width: 40px; font-size: 0.6rem; }
+        #playerControlsRow button { padding: 4px 8px; font-size: 0.7rem; }
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  </style>
+</head>
+<body>
+
+  <div id="orientationOverlay">
+    <div>
+      <h1>🎵 Melhor Experiência 🎸</h1>
+      <p>Por favor, gire seu dispositivo para o modo paisagem.</p>
+    </div>
+  </div>
+
+  <div class="appRoot">
+    <div id="topArea">
+      <div id="animacaoStageWrapper">
+        <div id="baixistaStage">
+            <img id="pernasLayer" src="animacao/pernas/Pernas.png" alt="Pernas" />
+
+            <div id="bodyWrapperPendulo">
+                <img id="cabecaTrasLayer" src="animacao/cabeca_tras/cabeca-parte-de-tras.png" alt="Cabeça atrás" />
+                <img id="troncoBaixoLayer" src="animacao/tronco_baixo/Pasta_1F/1E.png" alt="Tronco/Baixo" />
+                <img id="antebracoLayer" src="animacao/antebraco/antebracoE.png" alt="Antebraço esquerdo" />
+                <img id="bracoDireitoLayer" src="animacao/braco_direito/Corda_E1.png" alt="Mão direita" />
+                <img id="cabecaLayer" src="animacao/cabeca/cabeca0001.png" alt="Cabeça frente" />
+            </div>
+
+            <div id="countdownOverlay" class="countdownOverlay">
+              <span id="countdownText">3</span>
+            </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="bottomArea">
+      <div id="playerControlsRow">
+        <button id="playBtn">▶ Play</button>
+        <button id="playAleatorioBtn">🎲 Aleatório (Harmonia Inteligente)</button>
+        <button id="playExportadoBtn">📁 Importar</button>
+        <span id="generationInfo"></span>
+        
+        <span id="bpmDisplay">120 BPM</span>
+        <input type="range" id="bpmSlider" min="60" max="180" value="120" title="Tempo (BPM)" />
+
+        <div class="sliderGroup">
+          <label>Baixo</label>
+          <input type="range" id="baixoVolume" min="0" max="1" step="0.05" value="0.9" />
+        </div>
+        <div class="sliderGroup">
+          <label>Bat.</label>
+          <input type="range" id="drumVolume" min="0" max="1" step="0.05" value="0.9" />
+        </div>
+
+        <button id="addBaixoCol">+1</button>
+        <button id="addCol">+Tudo</button>
+        <button id="duplicateSeq">x2</button>
+        <button id="clearAll">Limpar</button>
+      </div>
+
+      <div id="progressContainer">
+        <div id="progressBar"></div>
+      </div>
+
+      <div id="gridsArea">
+        <div class="rowContainer">
+            <div class="gridLabel">Baixo</div>
+            <div id="baixoGrid" class="trackGrid"></div>
+        </div>
+        <div id="drumGridWrapper"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="selectionOverlay">
+    <div id="selectionPanel">
+      <div id="selectionTitle">Escolha a Nota</div>
+      <div id="selectionOptions"></div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================
+    // DADOS DA ANIMAÇÃO (Visual)
+    // =========================================================
+    const pastaMap = {
+      1: ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B"],
+      2: ["3FS","4G","5GS","6A","8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C"],
+      3: ["4G","5GS","6A","7AS","9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS"],
+      4: ["5GS","6A","7AS","8B","10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D"],
+      5: ["6A","7AS","8B","9C","11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS"],
+      6: ["7AS","8B","9C","10CS","12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E"],
+      7: ["8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F"],
+      8: ["9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS"],
+      9: ["10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G"],
+      10: ["11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS"],
+      11: ["12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A"],
+      12: ["13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS"],
+      13: ["14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B"],
+      14: ["15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C"],
+      15: ["16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS"],
+      16: ["17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D"],
+      17: ["18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS"],
+      18: ["19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E"],
+      19: ["20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F"],
+      20: ["21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS","36DS","37E","38F","39FS"],
+      21: ["22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D","37E","38F","39FS","40G"],
+      22: ["23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS","38F","39FS","40G","41GS"],
+      23: ["24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E","39FS","40G","41GS","42A"],
+      24: ["25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F","40G","41GS","42A","43AS"]
+    };
+
+    const pastaFolderNames = {
+      1:"1F", 2:"2FS", 3:"3G", 4:"4GS", 5:"5A", 6:"6AS", 7:"7B", 8:"8C", 9:"9CS", 10:"10D",
+      11:"11DS", 12:"12E", 13:"13F", 14:"14FS", 15:"15G", 16:"16GS", 17:"17A", 18:"18AS", 19:"19B",
+      20:"20C", 21:"21CS", 22:"22D", 23:"23DS", 24:"24E"
+    };
+
+    const notasValidas = [
+      "1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS",
+      "11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B",
+      "21C","22CS","23D","24DS","25E","26F","27FS","28G","29GS","30A",
+      "31AS","32B","33C","34CS","35D","36DS","37E","38F","39FS","40G",
+      "41GS","42A","43AS"
+    ];
+
+    const drumLines = [
+      { id: "bumbo",           label: "Bumbo",   file: "bumbo.mp3" },
+      { id: "caixa",           label: "Caixa",   file: "caixa.mp3" },
+      { id: "caixaAro",        label: "Aro",     file: "caixaAro.mp3" },
+      { id: "chimbal",         label: "HH",      file: "chimbal.mp3" },
+      { id: "chimbal_pedal",   label: "HH Ped",  file: "chimbal-pedal.mp3" },
+      { id: "chimbalaberto",   label: "HH Open", file: "chimbal-aberto.mp3" },
+      { id: "ataque",          label: "Ataque",  file: "ataque.mp3" },
+      { id: "tom1",            label: "Tom 1",   file: "tom-1.mp3" },
+      { id: "tom2",            label: "Tom 2",   file: "tom-2.mp3" },
+      { id: "surdo",           label: "Surdo",   file: "surdo.mp3" },
+      { id: "conducao",        label: "Ride",    file: "conducao.mp3" },
+      { id: "conducao_centro", label: "Ride C",  file: "conducao-centro.mp3" }
+    ];
+
+    // =========================================================
+    // CÉREBRO MUSICAL (Portado do Index em Vigor)
+    // =========================================================
+    const PITCHES = ['A','AS','B','C','CS','D','DS','E','F','FS','G','GS'];
+    const DEGREE_TO_ROOT = { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11 };
+    
+    const STYLE_PROGRESSIONS = {
+        Rock: [[1,4,5,1], [1,5,6,4], [6,4,1,5]],
+        Rock2: [[4,5,1,5], [5,4,1,4], [7,4,1,1]],
+        Rock3: [[1,4,5,1], [1,3,4,5]],
+        Rock4: [[6,4,1,5,1,5,4,5], [1,4,5,1,4,5,4,5], [1,5,6,4,1,5,6,7]],
+        Rock5: [[1,5,7,4], [1,4,5,6], [1,5,6,4]],
+        Rock6: [[1,5,6,4], [1,4,5,1], [1,5,6,7]],
+        Rock7: [[2,3,5,1], [1,4,7,1], [1,5,3,4]],
+        Rock_Progressivo: [[4,5,1,1,4,5,7], [1,4,1,4,5,6,5], [1,4,5,6,3,5,4]],
+        Rock_Progressivo2: [[1,4,5,1,5], [4,5,3,1,3,1,4,5,7,5], [1,4,1,4,5]],
+        Rock_Progressivo3: [[1,4,5,1,5,7], [1,3,4,5,2,5]],
+        Rock_Progressivo4: [[4,5,1,1,4,5,7,5], [1,4,1,4,5,6,5,7], [1,4,5,6,3,5,4,5]],
+        Rock_Progressivo5: [[4,5,1,1,4,5,7], [1,4,1,4,5,6,5], [1,4,5,6,3,5,4]],
+        Rock_Progressivo6: [[1,4,5,6,3,5], [1,4,1,4,5,6,5]],
+        Rock_Progressivo7: [[4,5,1,1], [1,4,5,1]],
+        Blues: [[1,4,5,4,1,4,5,4,1,4,5,4], [1,4,5,1]],
+        Forró: [[1,5,1,5,4,5,4,5]],
+        Samba: [[2,5,1,1], [1,4,5,1]],
+        Metal: [[1, 3, 5, 6, 1, 2, 3, 4], [1, 3, 4, 5], [2, 5, 1, 5]],
+        Jazz: [[1,2,5,1], [2,5,1,4], [3,6,2,5]]
+    };
+
+    const ALL_GROOVES = [
+        { name: "Rock", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch bu"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 8] },
+        { name: "Rock2", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 5] },
+        { name: "Rock3", meter: "4/4", drumPattern: ["bch - ch bu cch bu ch - bch - ch - cch - ch -"], bassRhythm: ["bo - - bo - - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 1] },
+        { name: "Rock4", meter: "4/4", drumPattern: ["ba - co - cco - co - bco - co - cco bu bco bu"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 7, 8, 7, 5, 3] },
+        { name: "Rock5", meter: "4/4", drumPattern: ["bch ch ch ch cch ch ch ch bch ch ch ch cch ch ch -"], bassRhythm: ["bo - - bo - - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 1, 5] },
+        { name: "Rock6", meter: "4/4", drumPattern: ["bco co co co cco co co co bco co co co cco co co co"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [8, 8, 1, 1] },
+        { name: "Rock_Progressivo", meter: "7/4", drumPattern: ["bch - ch -  cch - ch - bch - ch - cch - ch bu bch - ch - cch - ch - bch - ch bu"], bassRhythm: ["bo - - - - - - - bo - - - - - - bo - - bo bo bo bo bo bo bo bo bo bo"], bassScale: [1, 1, 1, 3, 5, 8, 3, 5, 8, 3, 5, 8, 5] },
+        { name: "Blues", meter: "4/4", drumPattern: ["bch - ch ch cch - ch ch bch - ch ch cch - ch ch"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 6, 8, 6, 5, 3] },
+        { name: "Forró", meter: "2/4", drumPattern: ["bch - co - ch - ca -"], bassRhythm: ["bo - - - x - - -"], bassScale: [8, 1] },
+        { name: "Funk", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch -"], bassRhythm: ["bo - - - bo - bo x bo x bo x bo - x x"], bassScale: [1,8] },
+        { name: "Disco", meter: "4/4", drumPattern: ["bu - ch ch bu - ch ch bu - ch ch bu - ch ch"], bassRhythm: ["bo - x x bo - x x bo - x x bo - x x"], bassScale: [1] },
+        { name: "Metal", meter: "4/4", drumPattern: ["bch bu bch bu cch bu bch bu bch bu bch bu cch bu bch bu"], bassRhythm: ["bo bo bo bo bo bo bo bo bo bo bo bo bo bo bo bo"], bassScale: [1,1,1,1] },
+        { name: "Samba", meter: "2/4", drumPattern: ["bch - ch bu bch - ch bu"], bassRhythm: ["bo - x x bo - - x"], bassScale: [8, 5] },
+    ];
+
+    // =========================================================
+    // ESTADO GLOBAL
+    // =========================================================
+    let isPlaying = false;
+    let playbackInterval = null;
+    let bpmAtual = 120;
+    let atualPasso = 0;
+    
+    let baixoSeq = Array(16).fill(""); 
+    let bateriaSeq = {};
+    drumLines.forEach(d => bateriaSeq[d.id] = Array(16).fill("x"));
+
+    let baixoVolumeGlobal = 0.9;
+    let bateriaVolumeGlobal = 0.9;
+    let audioBaixoAtual = null;
+
+    // Animação
+    let posicaoAtualPasta = 1;
+    let ultimaCordaUsada = "E";
+    let ultimaNotaReal = "1E";
+    let reqAnimIdPendulo = null;
+    let headLoopTimer = null;
+    let rightHandTimer = null;
+    let headFrameIndex = 0;
+    const headFrames = [];
+
+    // =========================================================
+    // HELPERS DO MOTOR MUSICAL
+    // =========================================================
+    function meterToBeats(meter) {
+        return Number(meter.split('/')[0]) || 4;
+    }
+
+    function expandRhythm(patternArray, totalSteps) {
+        const joined = patternArray.join(' ').replace(/\s+/g, ' ').trim();
+        const tokens = joined.split(/\s+/).filter(t => t);
+        const out = [];
+        let i = 0;
+        while (out.length < totalSteps) {
+            for (const token of tokens) {
+                if (out.length >= totalSteps) break;
+                out.push(token);
+            }
+            if (i++ > 1000) break;
+        }
+        return out.slice(0, totalSteps);
+    }
+
+    function parsePattern(patternText) {
+        const result = { intro: [], loop: [] };
+        const loopMatch = patternText.match(/\((.*?)\)/);
+        if (loopMatch) result.loop = loopMatch[1].trim().split(/\s+/).filter(s => s);
+        else result.loop = patternText.trim().split(/\s+/).filter(s => s);
+        return result;
+    }
+
+    // Converte Nota Musical (ex: "C", "F#") para ID da Animação (ex: "9C", "15FS")
+    function mapNoteToAnimId(musicalNote) {
+        // Remove o número da oitava se houver (C3 -> C)
+        let cleanNote = musicalNote.replace(/[0-9]/g, '');
+        // Normaliza sustenido para S
+        cleanNote = cleanNote.replace('#', 'S');
+        
+        // Procura na lista de notas válidas da animação (preferindo as mais graves/comuns)
+        // Ex: se a nota é E, prefere "1E" ou "13E"
+        const matches = notasValidas.filter(n => n.endsWith(cleanNote));
+        
+        if (matches.length === 0) return "1E"; // Fallback
+        
+        // Retorna o primeiro (geralmente o mais grave, ex: 1E vs 13E)
+        return matches[0]; 
+    }
+
+    // =========================================================
+    // INICIALIZAÇÃO
+    // =========================================================
+    window.onload = async () => {
+        verificarOrientacao();
+        window.addEventListener("resize", verificarOrientacao);
+        
+        for (let i = 1; i <= 100; i++) {
+            headFrames.push(`animacao/cabeca/cabeca${String(i).padStart(4, "0")}.png`);
+        }
+        preloadImages(headFrames).then(startHeadLoop);
+
+        // Gera um estilo inicial
+        gerarAleatorio();
+        
+        setupListeners();
+    };
+
+    function setupListeners() {
+        document.getElementById("playBtn").onclick = togglePlay;
+        
+        document.getElementById("bpmSlider").oninput = (e) => {
+            bpmAtual = parseInt(e.target.value);
+            document.getElementById("bpmDisplay").textContent = bpmAtual + " BPM";
+        };
+
+        document.getElementById("baixoVolume").oninput = (e) => baixoVolumeGlobal = parseFloat(e.target.value);
+        document.getElementById("drumVolume").oninput = (e) => bateriaVolumeGlobal = parseFloat(e.target.value);
+
+        document.getElementById("addBaixoCol").onclick = () => { baixoSeq.push(""); renderGrids(); };
+        document.getElementById("addCol").onclick = () => {
+            baixoSeq.push("");
+            Object.keys(bateriaSeq).forEach(k => bateriaSeq[k].push("x"));
+            renderGrids();
+        };
+        document.getElementById("duplicateSeq").onclick = () => {
+            baixoSeq = [...baixoSeq, ...baixoSeq];
+            Object.keys(bateriaSeq).forEach(k => bateriaSeq[k] = [...bateriaSeq[k], ...bateriaSeq[k]]);
+            renderGrids();
+        };
+        document.getElementById("clearAll").onclick = () => {
+            baixoSeq.fill("");
+            Object.keys(bateriaSeq).forEach(k => bateriaSeq[k].fill("x"));
+            renderGrids();
+        };
+
+        document.getElementById("playAleatorioBtn").onclick = gerarAleatorio;
+        document.getElementById("playExportadoBtn").onclick = importarJSON;
+    }
+
+    // =========================================================
+    // LÓGICA DE GERAÇÃO (HARMONIA INTELIGENTE)
+    // =========================================================
+    function gerarAleatorio() {
+        // 1. Escolhe Groove e Tonalidade
+        const groove = ALL_GROOVES[Math.floor(Math.random() * ALL_GROOVES.length)];
+        const keyIdx = Math.floor(Math.random() * PITCHES.length);
+        const quality = Math.random() > 0.5 ? 'maj' : 'min';
+        
+        // Ajusta BPM e UI
+        if (groove.name === "Samba") bpmAtual = 70;
+        else bpmAtual = 100 + Math.floor(Math.random() * 40);
+        
+        document.getElementById("bpmSlider").value = bpmAtual;
+        document.getElementById("bpmDisplay").textContent = bpmAtual + " BPM";
+
+        // Feedback Visual
+        const infoEl = document.getElementById("generationInfo");
+        infoEl.style.display = "inline";
+        infoEl.textContent = `${groove.name} em ${PITCHES[keyIdx]}${quality === 'min' ? 'm' : ''}`;
+
+        // 2. Escolhe Progressão
+        let styleKey = "Rock";
+        if (groove.name.includes("Samba")) styleKey = "Samba";
+        else if (groove.name.includes("Jazz")) styleKey = "Jazz";
+        else if (groove.name.includes("Forró")) styleKey = "Forró";
+        else if (groove.name.includes("Metal")) styleKey = "Metal";
+        else if (groove.name.includes("Blues")) styleKey = "Blues";
+
+        const progressions = STYLE_PROGRESSIONS[styleKey] || STYLE_PROGRESSIONS.Rock;
+        const progression = progressions[Math.floor(Math.random() * progressions.length)];
+
+        // 3. Calcula Notas do Baixo (Teoria Musical)
+        const beats = meterToBeats(groove.meter);
+        const sixteenthsPerBar = beats * 4;
+        const totalBars = Math.min(progression.length, 4); // Gera 4 compassos por padrão
+        const totalSteps = sixteenthsPerBar * totalBars;
+
+        const rhythmPattern = expandRhythm(groove.bassRhythm, totalSteps);
+        const newBassSeq = [];
+
+        for (let bar = 0; bar < totalBars; bar++) {
+            const degree = progression[bar];
+            // Calcula a nota raiz do grau da escala
+            const rootOffset = DEGREE_TO_ROOT[degree];
+            const rootIdx = (keyIdx + rootOffset) % 12;
+            
+            // Determina escala do acorde para o baixo
+            const chordScale = groove.bassScale;
+            let noteIndices = [];
+
+            if (Array.isArray(chordScale)) {
+                // Mapeia graus da escala (1,3,5) para índices cromáticos relativos à raiz
+                const isMinor = (quality === 'min' && [1,4,5].includes(degree)) || degree === 2 || degree === 3 || degree === 6;
+                const intervals = isMinor ? {1:0, 2:2, 3:3, 4:5, 5:7, 6:8, 7:10, 8:12} : {1:0, 2:2, 3:4, 4:5, 5:7, 6:9, 7:11, 8:12};
+                
+                noteIndices = chordScale.map(int => (rootIdx + (intervals[int]||0)) % 12);
+            } else {
+                noteIndices = [rootIdx]; // Fallback
+            }
+
+            const notesPerBar = Math.ceil(sixteenthsPerBar / noteIndices.length);
+
+            for (let step = 0; step < sixteenthsPerBar; step++) {
+                const globalStep = bar * sixteenthsPerBar + step;
+                const sym = rhythmPattern[globalStep] || '-';
+
+                if (sym === 'x') {
+                    newBassSeq.push("x");
+                } else if (sym === '-' || sym === 'sm') {
+                    newBassSeq.push(""); // Sustain
+                } else {
+                    // Escolhe a nota da escala baseada na posição do tempo
+                    const noteIdx = noteIndices[Math.floor(step / notesPerBar) % noteIndices.length];
+                    const noteName = PITCHES[noteIdx];
+                    // Converte Nota Musical -> ID da Animação
+                    newBassSeq.push(mapNoteToAnimId(noteName));
+                }
+            }
+        }
+
+        baixoSeq = newBassSeq;
+
+        // 4. Gera Bateria
+        const drumParsed = parsePattern(groove.drumPattern.join(' '));
+        const loopSeq = drumParsed.loop;
+        
+        // Inicializa bateria vazia
+        drumLines.forEach(d => bateriaSeq[d.id] = []);
+
+        for (let i = 0; i < baixoSeq.length; i++) {
+            const token = loopSeq[i % loopSeq.length];
+            
+            // Mapeia tokens do Index (ex: "bch") para IDs da Animação
+            let activeDrums = [];
+            if (token === 'bu' || token === 'bumbo' || token === 'bch' || token === 'ba' || token === 'bco') activeDrums.push('bumbo');
+            if (token === 'ca' || token === 'caixa' || token === 'cch' || token === 'cco') activeDrums.push('caixa');
+            if (token === 'ch' || token === 'chimbal' || token === 'bch' || token === 'cch') activeDrums.push('chimbal');
+            if (token === 'co' || token === 'conducao' || token === 'bco' || token === 'cco') activeDrums.push('conducao');
+            if (token === 'ba') activeDrums.push('ataque');
+            if (token === 'to1') activeDrums.push('tom1');
+
+            drumLines.forEach(d => {
+                bateriaSeq[d.id].push(activeDrums.includes(d.id) ? d.id : "x");
+            });
+        }
+
+        renderGrids();
+    }
+
+    // =========================================================
+    // PLAYBACK
+    // =========================================================
+    function togglePlay() {
+        if (isPlaying) pararPlayback();
+        else {
+            const overlay = document.getElementById("countdownOverlay");
+            const txt = document.getElementById("countdownText");
+            overlay.style.display = "flex";
+            let count = 4;
+            txt.innerText = count;
+            
+            const countInt = setInterval(() => {
+                count--;
+                if(count > 0) {
+                    txt.innerText = count;
+                } else {
+                    clearInterval(countInt);
+                    overlay.style.display = "none";
+                    iniciarPlayback();
+                }
+            }, 60000 / bpmAtual);
+        }
+    }
+
+    function iniciarPlayback() {
+        isPlaying = true;
+        atualPasso = 0;
+        document.getElementById("playBtn").innerText = "⏸ Pause";
+        document.getElementById("playBtn").style.background = "#e65100";
+
+        startPenduloAnim();
+
+        const msPorStep = (60000 / bpmAtual) / 4;
+        
+        const loop = () => {
+            if (!isPlaying) return;
+            
+            const totalSteps = baixoSeq.length;
+            if (atualPasso >= totalSteps) atualPasso = 0;
+
+            highlightGridStep(atualPasso);
+            
+            // BAIXO
+            const notaBaixo = baixoSeq[atualPasso];
+            if (notaBaixo !== "") {
+                if (notaBaixo === "x") {
+                    tocarAudio("assets/bass-muted.mp3", baixoVolumeGlobal);
+                    animarBaixo("x", msPorStep);
+                } else {
+                    tocarAudio(`assets/BaixoMelodia/${notaBaixo}.mp3`, baixoVolumeGlobal);
+                    animarBaixo(notaBaixo, msPorStep);
+                }
+            } else {
+                stopRightHand();
+            }
+
+            // BATERIA
+            drumLines.forEach(line => {
+                const seq = bateriaSeq[line.id];
+                if (seq && seq[atualPasso] === line.id) {
+                    tocarAudio(`assets/${line.file}`, bateriaVolumeGlobal);
+                }
+            });
+            
+            const pct = ((atualPasso + 1) / totalSteps) * 100;
+            document.getElementById("progressBar").style.width = pct + "%";
+
+            atualPasso++;
+        };
+
+        loop();
+        playbackInterval = setInterval(loop, msPorStep);
+    }
+
+    function pararPlayback() {
+        isPlaying = false;
+        clearInterval(playbackInterval);
+        document.getElementById("playBtn").innerText = "▶ Play";
+        document.getElementById("playBtn").style.background = "";
+        
+        stopPenduloAnim();
+        stopRightHand();
+        
+        document.querySelectorAll(".playing-step").forEach(el => el.classList.remove("playing-step"));
+        if(audioBaixoAtual) {
+            audioBaixoAtual.pause();
+            audioBaixoAtual = null;
+        }
+    }
+
+    function tocarAudio(path, vol) {
+        const audio = new Audio(path);
+        audio.volume = Math.max(0, Math.min(1, vol));
+        audio.play().catch(() => {}); 
+        
+        if (path.includes("BaixoMelodia") || path.includes("bass-muted")) {
+            audioBaixoAtual = audio;
+        }
+    }
+
+    // =========================================================
+    // ANIMAÇÃO (Visual)
+    // =========================================================
+    function startPenduloAnim() {
+        const wrapper = document.getElementById("bodyWrapperPendulo");
+        const amplitude = 2.3;
+        const speed = 0.003; 
+        const frame = () => {
+            if (!isPlaying) return;
+            const now = Date.now();
+            const ang = Math.sin(now * speed * (bpmAtual / 120)) * amplitude; 
+            wrapper.style.transform = `rotate(${ang}deg)`;
+            reqAnimIdPendulo = requestAnimationFrame(frame);
+        };
+        reqAnimIdPendulo = requestAnimationFrame(frame);
+    }
+
+    function stopPenduloAnim() {
+        cancelAnimationFrame(reqAnimIdPendulo);
+        const wrapper = document.getElementById("bodyWrapperPendulo");
+        if(wrapper) wrapper.style.transform = "rotate(0deg)";
+    }
+
+    function startHeadLoop() {
+        const el = document.getElementById("cabecaLayer");
+        if(headLoopTimer) clearInterval(headLoopTimer);
+        headLoopTimer = setInterval(() => {
+            headFrameIndex = (headFrameIndex + 1) % headFrames.length;
+            if(headFrames[headFrameIndex]) el.src = headFrames[headFrameIndex];
+        }, 33);
+    }
+
+    function animarBaixo(nota, duracaoStep) {
+        const tronco = document.getElementById("troncoBaixoLayer");
+        const antebraco = document.getElementById("antebracoLayer");
+
+        if (nota === "x") {
+            if (ultimaNotaReal) {
+                const pasta = pastaFolderNames[posicaoAtualPasta] || "1F";
+                tronco.src = `animacao/tronco_baixo/Pasta_${pasta}/${ultimaNotaReal}.png`;
+            }
+            animarMaoDireita(ultimaCordaUsada, duracaoStep);
+            return;
+        }
+
+        const novaPasta = escolherMelhorPasta(nota, posicaoAtualPasta);
+        posicaoAtualPasta = novaPasta;
+        ultimaNotaReal = nota;
+
+        const pastaNome = pastaFolderNames[novaPasta];
+        tronco.src = `animacao/tronco_baixo/Pasta_${pastaNome}/${nota}.png`;
+
+        const corda = getCordaDaNota(nota);
+        ultimaCordaUsada = corda;
+        antebraco.src = `animacao/antebraco/antebraco${corda}.png`;
+
+        animarMaoDireita(corda, duracaoStep);
+    }
+
+    function getCordaDaNota(nota) {
+        const m = nota.match(/^(\d+)/);
+        if (!m) return "E";
+        const n = parseInt(m[1], 10);
+        if (n <= 20) return "E";
+        if (n <= 28) return "A";
+        if (n <= 36) return "D";
+        return "G";
+    }
+
+    function escolherMelhorPasta(nota, posAtual) {
+        const pastasDisponiveis = [];
+        for (let p = 1; p <= 24; p++) {
+            if (pastaMap[p].includes(nota)) pastasDisponiveis.push(p);
+        }
+        if (pastasDisponiveis.length === 0) return 1;
+        return pastasDisponiveis.reduce((prev, curr) => {
+            return (Math.abs(curr - posAtual) < Math.abs(prev - posAtual) ? curr : prev);
+        });
+    }
+
+    function animarMaoDireita(corda, duracaoTotal) {
+        const el = document.getElementById("bracoDireitoLayer");
+        clearInterval(rightHandTimer);
+        
+        let frame = 1;
+        const totalFrames = 5;
+        const frameTime = Math.min(duracaoTotal / totalFrames, 40); 
+
+        rightHandTimer = setInterval(() => {
+            el.src = `animacao/braco_direito/Corda_${corda}${frame}.png`;
+            frame++;
+            if (frame > totalFrames) {
+                clearInterval(rightHandTimer);
+                el.src = `animacao/braco_direito/Corda_${corda}1.png`;
+            }
+        }, frameTime);
+    }
+
+    function stopRightHand() {
+        const el = document.getElementById("bracoDireitoLayer");
+        clearInterval(rightHandTimer);
+        el.src = `animacao/braco_direito/Corda_${ultimaCordaUsada || 'E'}1.png`;
+    }
+
+    // =========================================================
+    // GRIDS & UTIL
+    // =========================================================
+    function renderGrids() {
+        const deleteContainer = document.getElementById("deleteGrid"); // Pode ser removido se não usado
+        const baixoContainer = document.getElementById("baixoGrid");
+        const drumWrapper = document.getElementById("drumGridWrapper");
+
+        // 1. Baixo Grid
+        baixoContainer.innerHTML = "";
+        baixoSeq.forEach((nota, idx) => {
+            const cell = document.createElement("div");
+            cell.className = "cell";
+            
+            if (nota === "x") {
+                cell.textContent = "X";
+                cell.classList.add("active-ghost");
+            } else if (nota !== "") {
+                cell.textContent = nota.replace("S", "#");
+                cell.classList.add("active");
+            } else {
+                cell.style.opacity = "0.3";
+            }
+            cell.onclick = () => abrirSelecaoNota(idx, cell);
+            baixoContainer.appendChild(cell);
+        });
+
+        // 2. Bateria Grid
+        drumWrapper.innerHTML = "";
+        drumLines.forEach(line => {
+            const row = document.createElement("div");
+            row.className = "rowContainer";
+            
+            const label = document.createElement("div");
+            label.className = "gridLabel";
+            label.textContent = line.label;
+            row.appendChild(label);
+
+            const grid = document.createElement("div");
+            grid.className = "trackGrid";
+            
+            while(bateriaSeq[line.id].length < baixoSeq.length) bateriaSeq[line.id].push("x");
+
+            bateriaSeq[line.id].forEach((val, idx) => {
+                const cell = document.createElement("div");
+                cell.className = "cell";
+                if (val === line.id) cell.classList.add("active");
+                else cell.textContent = "";
+
+                cell.onclick = () => {
+                    if (bateriaSeq[line.id][idx] === "x") {
+                        bateriaSeq[line.id][idx] = line.id;
+                        cell.classList.add("active");
+                        new Audio(`assets/${line.file}`).play().catch(()=>{});
+                    } else {
+                        bateriaSeq[line.id][idx] = "x";
+                        cell.classList.remove("active");
+                    }
+                };
+                grid.appendChild(cell);
+            });
+            row.appendChild(grid);
+            drumWrapper.appendChild(row);
+        });
+    }
+
+    function highlightGridStep(step) {
+        document.querySelectorAll(".playing-step").forEach(el => el.classList.remove("playing-step"));
+        
+        const baixoCells = document.getElementById("baixoGrid").children;
+        if(baixoCells[step]) baixoCells[step].classList.add("playing-step");
+        
+        const drumRows = document.querySelectorAll("#drumGridWrapper .trackGrid");
+        drumRows.forEach(row => {
+            if(row.children[step]) row.children[step].classList.add("playing-step");
+        });
+
+        if(baixoCells[step]) {
+             baixoCells[step].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+    }
+
+    function abrirSelecaoNota(idx, cellElement) {
+        const overlay = document.getElementById("selectionOverlay");
+        const optionsContainer = document.getElementById("selectionOptions");
+        optionsContainer.innerHTML = "";
+
+        const btnEmpty = document.createElement("div");
+        btnEmpty.className = "selection-option";
+        btnEmpty.textContent = "—";
+        btnEmpty.onclick = () => selecionarNota(idx, "", overlay);
+        optionsContainer.appendChild(btnEmpty);
+
+        const btnGhost = document.createElement("div");
+        btnGhost.className = "selection-option ghost";
+        btnGhost.textContent = "X";
+        btnGhost.onclick = () => selecionarNota(idx, "x", overlay);
+        optionsContainer.appendChild(btnGhost);
+
+        notasValidas.forEach(nota => {
+            const btn = document.createElement("div");
+            btn.className = "selection-option";
+            btn.textContent = nota.replace("S", "#");
+            if(nota === baixoSeq[idx]) btn.classList.add("active");
+            
+            btn.onclick = () => {
+                selecionarNota(idx, nota, overlay);
+                tocarAudio(`assets/BaixoMelodia/${nota}.mp3`, 1.0);
+            };
+            optionsContainer.appendChild(btn);
+        });
+        overlay.classList.add("visible");
+        overlay.onclick = (e) => { if(e.target === overlay) overlay.classList.remove("visible"); };
+    }
+
+    function selecionarNota(idx, valor, overlay) {
+        baixoSeq[idx] = valor;
+        overlay.classList.remove("visible");
+        renderGrids();
+    }
+
+    function importarJSON() {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = ".json";
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                try {
+                    const data = JSON.parse(evt.target.result);
+                    if(data.baixo) baixoSeq = data.baixo;
+                    if(data.bateria) bateriaSeq = data.bateria;
+                    if(data.bpm) {
+                        bpmAtual = data.bpm;
+                        document.getElementById("bpmSlider").value = bpmAtual;
+                        document.getElementById("bpmDisplay").textContent = bpmAtual + " BPM";
+                    }
+                    renderGrids();
+                } catch(err) { alert("JSON Inválido"); }
+            };
+            reader.readAsText(file);
+        };
+        input.click();
+    }
+
+    function verificarOrientacao() {
+        const overlay = document.getElementById("orientationOverlay");
+        if (window.innerWidth < window.innerHeight && window.innerWidth < 900) {
+            overlay.style.display = "flex";
+        } else {
+            overlay.style.display = "none";
+        }
+    }
+
+    function preloadImages(srcArray) {
+        const promises = srcArray.map(src => new Promise(r => {
+            const img = new Image();
+            img.onload = img.onerror = r;
+            img.src = src;
+        }));
+        return Promise.all(promises);
+    }
+  </script>
+</body>
+</html>
