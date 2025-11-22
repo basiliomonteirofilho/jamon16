@@ -86,7 +86,7 @@
       transform-origin: center center;
     }
 
-    /* Camadas da Animação (POSICIONAMENTO REBAIXADO MANTIDO) */
+    /* Camadas da Animação */
     #pernasLayer {
       position: absolute;
       top: 332px; 
@@ -112,7 +112,7 @@
       pointer-events: none;
     }
 
-    /* Posições ajustadas (+250px vertical) */
+    /* Posições ajustadas */
     #cabecaTrasLayer   { top: 60px;   left: 100px; z-index: 1; }
     #troncoBaixoLayer  { top: 132px;  left: 0px;   z-index: 2; }
     #antebracoLayer    { top: 179px;  left: -2px;  z-index: 3; }
@@ -239,9 +239,28 @@
     .trackGrid {
       display: grid;
       grid-auto-flow: column;
-      grid-auto-columns: 24px;
+      grid-auto-columns: 24px; /* LARGURA DA CÉLULA */
       grid-template-rows: 24px;
       gap: 1px;
+    }
+
+    /* Estilo do botão de deletar coluna */
+    .delete-btn {
+        width: 24px; /* Mesma largura da célula */
+        height: 18px;
+        font-size: 12px;
+        background: #b71c1c; /* Vermelho escuro */
+        border: none;
+        color: white;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        border-radius: 2px;
+    }
+    .delete-btn:hover {
+        background: #f44336;
     }
 
     .cell {
@@ -410,9 +429,14 @@
 
       <div id="gridsArea">
         <div class="rowContainer">
+            <div class="gridLabel"></div> <div id="deleteGrid" class="trackGrid"></div>
+        </div>
+
+        <div class="rowContainer">
             <div class="gridLabel">Baixo</div>
             <div id="baixoGrid" class="trackGrid"></div>
         </div>
+
         <div id="drumGridWrapper"></div>
       </div>
     </div>
@@ -514,7 +538,6 @@
     // Áudio
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const audioBuffers = {};
-    // Nó de destino extra para gravação (Stream)
     const mediaStreamDestination = audioContext.createMediaStreamDestination();
     
     // Gravador
@@ -575,42 +598,53 @@
     }
 
     // =========================================================
-    // GRAVAÇÃO DE VÍDEO (SCREEN CAPTURE + WEBAUDIO)
+    // FUNÇÕES NOVAS: DELETAR COLUNA
+    // =========================================================
+    function deleteColumn(idx) {
+        // Evitar deletar se só tiver 1 coluna (opcional, pode remover se quiser permitir zerar)
+        if (baixoSeq.length <= 1) return;
+
+        // Remove do baixo
+        baixoSeq.splice(idx, 1);
+
+        // Remove da bateria
+        Object.keys(bateriaSeq).forEach(key => {
+            if (bateriaSeq[key]) {
+                bateriaSeq[key].splice(idx, 1);
+            }
+        });
+
+        renderGrids();
+    }
+
+    // =========================================================
+    // GRAVAÇÃO DE VÍDEO
     // =========================================================
     async function toggleRecording() {
         const btn = document.getElementById("recordVideoBtn");
         
         if (isRecording) {
-            // Parar
             mediaRecorder.stop();
             isRecording = false;
             btn.innerText = "🔴 Gravar Vídeo";
             btn.classList.remove("recording");
         } else {
-            // Iniciar
             try {
-                alert("Para gravar a animação em alta qualidade:\n\n1. Na janela que abrir, escolha a aba 'Guia do Chrome' (ou Atual).\n2. Selecione esta aba onde está o baixista.\n3. Certifique-se de que 'Compartilhar áudio da guia' esteja marcado (embora usaremos o áudio interno).");
+                alert("Para gravar a animação em alta qualidade:\n\n1. Na janela que abrir, escolha a aba 'Guia do Chrome' (ou Atual).\n2. Selecione esta aba onde está o baixista.\n3. Certifique-se de que 'Compartilhar áudio da guia' esteja marcado.");
                 
-                // Captura o vídeo da aba (Screen Capture API)
                 const videoStream = await navigator.mediaDevices.getDisplayMedia({
                     video: { 
                         frameRate: 60,
                         width: { ideal: 1920 },
                         height: { ideal: 1080 }
                     },
-                    audio: false // Usaremos o audioContext limpo, não o do sistema
+                    audio: false 
                 });
 
-                // Pega a faixa de vídeo da tela
                 const videoTrack = videoStream.getVideoTracks()[0];
-                
-                // Pega a faixa de áudio do nosso contexto WebAudio
                 const audioTrack = mediaStreamDestination.stream.getAudioTracks()[0];
-
-                // Combina os dois
                 const combinedStream = new MediaStream([videoTrack, audioTrack]);
 
-                // Configura gravador
                 mediaRecorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm; codecs=vp9' });
                 recordedChunks = [];
 
@@ -628,8 +662,6 @@
                     document.body.appendChild(a);
                     a.click();
                     window.URL.revokeObjectURL(url);
-                    
-                    // Para a captura de tela
                     videoTrack.stop();
                 };
 
@@ -638,10 +670,8 @@
                 btn.innerText = "⏹ Parar Gravação";
                 btn.classList.add("recording");
 
-                // Se não estiver tocando, começa a tocar
                 if (!isPlaying) togglePlay();
 
-                // Se o usuário clicar em "Parar compartilhamento" na UI do navegador
                 videoTrack.onended = () => {
                     if (isRecording) toggleRecording();
                 };
@@ -766,18 +796,13 @@
             gainNode.gain.value = Math.max(0, Math.min(1, vol));
             
             source.connect(gainNode);
-            
-            // Conecta aos alto-falantes
             gainNode.connect(audioContext.destination);
-            // E TAMBÉM conecta ao destino de gravação
             gainNode.connect(mediaStreamDestination);
             
             source.start();
             
-            // Controle de sobreposição para o baixo ao vivo
             if (path.includes("BaixoMelodia") || path.includes("bass-muted")) {
                 if(audioBaixoAtual) {
-                    // Pequeno fade out para evitar clique
                     try { audioBaixoAtual.stop(); } catch(e){}
                 }
                 audioBaixoAtual = source;
@@ -788,7 +813,7 @@
     }
 
     // =========================================================
-    // EXPORTAÇÃO WAV MONOFÔNICA (COM MUTE CORRETO)
+    // EXPORTAÇÃO WAV
     // =========================================================
     async function exportarWAV() {
         const btn = document.getElementById("exportWavBtn");
@@ -799,16 +824,13 @@
         try {
             const totalSteps = baixoSeq.length;
             const secondsPerStep = (60 / bpmAtual) / 4;
-            const totalDuration = totalSteps * secondsPerStep + 2; // +2s de cauda
+            const totalDuration = totalSteps * secondsPerStep + 2; 
             const sampleRate = 44100;
 
             const offlineCtx = new OfflineAudioContext(2, sampleRate * totalDuration, sampleRate);
 
-            // --- Processamento do Baixo Monofônico ---
             for (let i = 0; i < totalSteps; i++) {
                 const nota = baixoSeq[i];
-                
-                // Só processa se for um evento de "trigger" (Nota ou Ghost Note)
                 if (nota !== "" && nota !== null) {
                     const startTime = i * secondsPerStep;
                     let url = nota === "x" ? "assets/bass-muted.mp3" : `assets/BaixoMelodia/${nota}.mp3`;
@@ -823,27 +845,19 @@
                     source.connect(gainNode);
                     gainNode.connect(offlineCtx.destination);
                     
-                    // CALCULAR DURAÇÃO ATÉ O PRÓXIMO TRIGGER
-                    // Procura o próximo índice que NÃO seja vazio ("")
                     let durationSteps = 1;
                     for (let j = i + 1; j < totalSteps; j++) {
-                        if (baixoSeq[j] !== "") {
-                            break; // Encontrou a próxima nota ou 'x', paramos de contar
-                        }
+                        if (baixoSeq[j] !== "") break; 
                         durationSteps++;
                     }
-                    
                     const durationSeconds = durationSteps * secondsPerStep;
                     
                     source.start(startTime);
-                    // O segredo do mute: parar a nota atual exatamente quando a próxima começaria
-                    // Adicionamos um pequeno fade out (0.01s) para evitar clique digital
                     source.stop(startTime + durationSeconds);
                     gainNode.gain.setTargetAtTime(0, startTime + durationSeconds - 0.01, 0.01);
                 }
             }
 
-            // --- Bateria ---
             for (const line of drumLines) {
                 const seq = bateriaSeq[line.id];
                 if (seq) {
@@ -875,7 +889,7 @@
             URL.revokeObjectURL(url);
         } catch (error) {
             console.error("Erro ao exportar WAV:", error);
-            alert("Falha na exportação. Verifique se os arquivos de áudio estão carregados.");
+            alert("Falha na exportação.");
         } finally {
             btn.innerText = originalText;
             btn.disabled = false;
@@ -990,9 +1004,22 @@
     // GRIDS & UTIL
     // =========================================================
     function renderGrids() {
+        const deleteContainer = document.getElementById("deleteGrid");
         const baixoContainer = document.getElementById("baixoGrid");
         const drumWrapper = document.getElementById("drumGridWrapper");
 
+        // 0. Botões de Deletar
+        deleteContainer.innerHTML = "";
+        baixoSeq.forEach((_, idx) => {
+            const btn = document.createElement("button");
+            btn.className = "delete-btn";
+            btn.innerText = "×";
+            btn.title = "Apagar coluna";
+            btn.onclick = () => deleteColumn(idx);
+            deleteContainer.appendChild(btn);
+        });
+
+        // 1. Baixo Grid
         baixoContainer.innerHTML = "";
         baixoSeq.forEach((nota, idx) => {
             const cell = document.createElement("div");
@@ -1011,6 +1038,7 @@
             baixoContainer.appendChild(cell);
         });
 
+        // 2. Bateria Grid
         drumWrapper.innerHTML = "";
         drumLines.forEach(line => {
             const row = document.createElement("div");
@@ -1052,6 +1080,7 @@
     function highlightGridStep(step) {
         document.querySelectorAll(".playing-step").forEach(el => el.classList.remove("playing-step"));
         
+        // Highlight no botão delete tbm se quiser, mas aqui só nas notas
         const baixoCells = document.getElementById("baixoGrid").children;
         if(baixoCells[step]) baixoCells[step].classList.add("playing-step");
         
