@@ -4,20 +4,21 @@
   <script src="jamon-engine.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/audiobuffer-to-wav@1.0.0/index.min.js"></script>
   <meta charset="UTF-8" />
-  <title>Baixista + Bateria - Gravador e Exportador</title>
+  <title>Baixista + Bateria - Studio Mode</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
   <style>
     :root {
       --bg-color: #111;
-      --panel-bg: rgba(10, 10, 10, 0.95);
+      --panel-bg: rgba(10, 10, 10, 0.98);
       --highlight-color: #00e676; /* Verde Neon */
       --accent-color: #2e7d32;
-      --record-color: #ff3d00;
-      --grid-bg: #080808;
+      --record-color: #ff1744;
+      --grid-bg: #000;
       --cell-bg: #151515;
       --cell-border: #333;
-      --playing-col-bg: rgba(255, 255, 255, 0.1);
+      --label-width: 70px;
+      --cell-size: 26px;
     }
 
     * {
@@ -56,7 +57,7 @@
       height: 100vh;
       display: flex;
       flex-direction: column;
-      background: radial-gradient(circle at top, #2a2a2a 0%, #000000 80%);
+      background: radial-gradient(circle at top, #222 0%, #000 80%);
     }
 
     /* Área da Animação (Topo) */
@@ -112,7 +113,6 @@
       pointer-events: none;
     }
 
-    /* Posições ajustadas */
     #cabecaTrasLayer   { top: 60px;   left: 100px; z-index: 1; }
     #troncoBaixoLayer  { top: 132px;  left: 0px;   z-index: 2; }
     #antebracoLayer    { top: 179px;  left: -2px;  z-index: 3; }
@@ -121,16 +121,16 @@
 
     /* Área de Controles */
     #bottomArea {
-      flex: 0 0 45vh;
-      max-height: 400px;
-      min-height: 280px;
+      flex: 0 0 50vh; /* Aumentado um pouco para ver melhor a grid */
+      max-height: 450px;
+      min-height: 300px;
       display: flex;
       flex-direction: column;
       background: var(--panel-bg);
-      border-top: 1px solid #444;
+      border-top: 1px solid #333;
       padding: 10px;
       z-index: 10;
-      box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
+      box-shadow: 0 -5px 30px rgba(0,0,0,0.8);
     }
 
     #playerControlsRow {
@@ -144,114 +144,135 @@
     button {
       padding: 6px 12px;
       border-radius: 4px;
-      border: 1px solid #555;
+      border: 1px solid #444;
       background: #222;
       color: #eee;
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       cursor: pointer;
       transition: all 0.2s;
       display: flex;
       align-items: center;
       gap: 4px;
+      white-space: nowrap;
     }
     button:hover { background: #333; border-color: #777; }
     button:active { transform: translateY(1px); }
     
-    #playBtn { background: var(--accent-color); border-color: var(--highlight-color); font-weight: bold; }
+    #playBtn { background: var(--accent-color); border-color: var(--highlight-color); font-weight: bold; color: #fff; }
     #playBtn:hover { background: #00c853; color: #000; }
 
     /* Botão de Gravar Vídeo */
     #recordVideoBtn {
-        background: #3700b3;
-        border-color: #6200ea;
+        background: #212121;
+        border: 1px solid #b71c1c;
+        color: #ff8a80;
     }
+    #recordVideoBtn:hover { background: #b71c1c; color: white; }
+    
     #recordVideoBtn.recording {
         background: var(--record-color);
+        color: white;
         border-color: #ff0000;
         animation: pulse 1.5s infinite;
+        font-weight: bold;
     }
     @keyframes pulse {
-        0% { box-shadow: 0 0 0 0 rgba(255, 61, 0, 0.7); }
-        70% { box-shadow: 0 0 0 6px rgba(255, 61, 0, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(255, 61, 0, 0); }
+        0% { box-shadow: 0 0 0 0 rgba(255, 23, 68, 0.7); }
+        70% { box-shadow: 0 0 0 8px rgba(255, 23, 68, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(255, 23, 68, 0); }
     }
 
     .sliderGroup {
       display: flex;
       align-items: center;
       gap: 5px;
-      background: rgba(0,0,0,0.3);
+      background: rgba(255,255,255,0.05);
       padding: 2px 6px;
       border-radius: 4px;
     }
-    .sliderGroup label { font-size: 0.75rem; color: #aaa; }
-    input[type="range"] { width: 80px; cursor: pointer; }
+    .sliderGroup label { font-size: 0.7rem; color: #ccc; }
+    input[type="range"] { width: 70px; cursor: pointer; accent-color: var(--highlight-color); }
 
-    #bpmDisplay { font-family: monospace; font-weight: bold; min-width: 65px; text-align: center;}
+    #bpmDisplay { font-family: monospace; font-weight: bold; min-width: 65px; text-align: center; font-size: 0.8rem;}
 
     #progressContainer {
       width: 100%;
-      height: 4px;
+      height: 3px;
       background: #333;
-      border-radius: 2px;
       margin-bottom: 8px;
-      overflow: hidden;
+      position: relative;
     }
     #progressBar {
       height: 100%;
       width: 0%;
       background: var(--highlight-color);
       transition: width 0.1s linear;
-      box-shadow: 0 0 8px var(--highlight-color);
+      box-shadow: 0 0 10px var(--highlight-color);
     }
 
-    /* Grades */
+    /* =========================================
+       CORREÇÃO DO GRID E STICKY HEADERS
+       ========================================= */
     #gridsArea {
       flex: 1;
-      overflow-y: auto;
-      overflow-x: auto;
+      overflow: auto; /* Scroll nas duas direções */
       border: 1px solid #333;
-      background: #000;
+      background: var(--grid-bg);
       border-radius: 4px;
-      padding: 5px;
+      padding: 0;
+      position: relative;
     }
 
     .rowContainer {
       display: flex;
       align-items: center;
-      margin-bottom: 2px;
+      margin-bottom: 1px;
+      /* CORREÇÃO CRÍTICA: */
+      width: max-content; /* Permite que a linha cresça além da tela */
+      min-width: 100%;    /* Garante que ocupe pelo menos a tela */
+      position: relative;
     }
+    
+    /* Rótulos (Labels) que ficam fixos à esquerda */
     .gridLabel {
-      width: 60px;
-      min-width: 60px;
-      font-size: 0.7rem;
-      text-align: right;
-      padding-right: 8px;
-      color: #888;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
       position: sticky;
       left: 0;
-      background: #000;
-      z-index: 2;
+      z-index: 10; /* Z-index maior que as células */
+      
+      width: var(--label-width);
+      min-width: var(--label-width);
+      font-size: 0.65rem;
+      text-align: right;
+      padding-right: 8px;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: #000; /* Fundo opaco para não ver as notas passando por baixo */
+      border-right: 1px solid #333;
+      height: var(--cell-size);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.5);
     }
 
     .trackGrid {
       display: grid;
       grid-auto-flow: column;
-      grid-auto-columns: 24px; /* LARGURA DA CÉLULA */
-      grid-template-rows: 24px;
+      grid-auto-columns: var(--cell-size);
+      grid-template-rows: var(--cell-size);
       gap: 1px;
+      padding-left: 1px;
     }
 
-    /* Estilo do botão de deletar coluna */
+    /* Botões de Delete (Topo) */
     .delete-btn {
-        width: 24px; /* Mesma largura da célula */
+        width: var(--cell-size);
         height: 18px;
-        font-size: 12px;
-        background: #b71c1c; /* Vermelho escuro */
+        font-size: 10px;
+        background: #b71c1c;
         border: none;
-        color: white;
+        color: rgba(255,255,255,0.8);
         padding: 0;
         display: flex;
         align-items: center;
@@ -259,10 +280,9 @@
         cursor: pointer;
         border-radius: 2px;
     }
-    .delete-btn:hover {
-        background: #f44336;
-    }
+    .delete-btn:hover { background: #f44336; color: #fff; }
 
+    /* Células */
     .cell {
       background: var(--cell-bg);
       border: 1px solid var(--cell-border);
@@ -274,8 +294,10 @@
       justify-content: center;
       cursor: pointer;
       user-select: none;
+      width: var(--cell-size);
+      height: var(--cell-size);
     }
-    .cell:hover { border-color: #666; }
+    .cell:hover { border-color: #666; filter: brightness(1.2); }
     
     .cell.active {
       background: var(--accent-color);
@@ -286,21 +308,24 @@
       background: #880e4f;
       border-color: #f50057;
     }
+    
+    /* Cursor de reprodução */
     .cell.playing-step {
-      background-color: #444 !important;
+      background-color: #333 !important;
       border-color: #fff !important;
     }
     .cell.active.playing-step {
       background-color: #00e676 !important;
       color: #000;
-      box-shadow: 0 0 8px #00e676;
+      box-shadow: 0 0 12px #00e676;
+      z-index: 2;
     }
 
     /* Modal de Seleção */
     #selectionOverlay {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.8);
+      background: rgba(0, 0, 0, 0.85);
       z-index: 20000;
       display: none;
       align-items: center;
@@ -310,33 +335,34 @@
     
     #selectionPanel {
       background: #1a1a1a;
-      border: 1px solid #555;
-      padding: 15px;
+      border: 1px solid #444;
+      padding: 20px;
       border-radius: 8px;
       width: 90%;
-      max-width: 600px;
+      max-width: 500px;
       max-height: 80vh;
       overflow-y: auto;
-      box-shadow: 0 10px 40px rgba(0,0,0,1);
+      box-shadow: 0 10px 50px rgba(0,0,0,1);
     }
-    #selectionTitle { margin-bottom: 10px; font-weight: bold; color: #fff; text-align: center; }
+    #selectionTitle { margin-bottom: 15px; font-weight: bold; color: #fff; text-align: center; text-transform: uppercase; letter-spacing: 1px; }
     #selectionOptions {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(45px, 1fr));
-      gap: 5px;
+      gap: 6px;
     }
     .selection-option {
-      padding: 8px 0;
-      background: #333;
+      padding: 10px 0;
+      background: #2c2c2c;
       text-align: center;
       border-radius: 4px;
-      font-size: 0.75rem;
+      font-size: 0.8rem;
       cursor: pointer;
       border: 1px solid transparent;
+      transition: transform 0.1s;
     }
-    .selection-option:hover { background: #444; border-color: #888; }
+    .selection-option:hover { background: #444; transform: scale(1.05); }
     .selection-option.active { background: var(--accent-color); border-color: var(--highlight-color); }
-    .selection-option.ghost { color: #ff80ab; }
+    .selection-option.ghost { color: #ff80ab; border-color: #880e4f; }
 
     .countdownOverlay {
       position: absolute;
@@ -346,20 +372,21 @@
       align-items: center;
       z-index: 50;
       background: rgba(0,0,0,0.7);
-      font-size: 4rem;
-      font-weight: 800;
+      font-size: 5rem;
+      font-weight: 900;
       color: var(--highlight-color);
-      text-shadow: 0 0 20px var(--highlight-color);
+      text-shadow: 0 0 30px var(--highlight-color);
     }
 
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-corner { background: #000; }
+    ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; border: 2px solid #000; }
     ::-webkit-scrollbar-track { background: #111; }
 
     @media (max-width: 600px) {
-        #bottomArea { flex-basis: 50vh; }
-        .gridLabel { width: 40px; font-size: 0.6rem; }
-        #playerControlsRow button { padding: 4px 8px; font-size: 0.7rem; }
+        #bottomArea { flex-basis: 55vh; }
+        :root { --label-width: 50px; --cell-size: 22px; }
+        #playerControlsRow button { padding: 4px 8px; font-size: 0.65rem; }
     }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   </style>
@@ -397,7 +424,7 @@
     <div id="bottomArea">
       <div id="playerControlsRow">
         <button id="playBtn">▶ Play</button>
-        <button id="recordVideoBtn" title="Grava a aba do navegador">🔴 Gravar Vídeo</button>
+        <button id="recordVideoBtn" title="Grava tela e áudio interno em WebM">🔴 Gravar Vídeo (WebM)</button>
         
         <div style="width:1px; height:20px; background:#444; margin:0 4px;"></div>
         
@@ -418,8 +445,8 @@
         </div>
 
         <button id="addBaixoCol">+1</button>
-        <button id="addCol">+Todos</button>
-        <button id="duplicateSeq">x2</button>
+        <button id="addCol">+Tudo</button>
+        <button id="duplicateSeq">x2 Loop</button>
         <button id="clearAll">Limpar</button>
       </div>
 
@@ -428,12 +455,13 @@
       </div>
 
       <div id="gridsArea">
-        <div class="rowContainer">
-            <div class="gridLabel"></div> <div id="deleteGrid" class="trackGrid"></div>
+        <div class="rowContainer" style="margin-bottom: 4px;">
+            <div class="gridLabel" style="background: transparent; border: none;"></div> 
+            <div id="deleteGrid" class="trackGrid"></div>
         </div>
 
         <div class="rowContainer">
-            <div class="gridLabel">Baixo</div>
+            <div class="gridLabel" style="color: var(--highlight-color); font-weight: bold;">BAIXO</div>
             <div id="baixoGrid" class="trackGrid"></div>
         </div>
 
@@ -538,6 +566,7 @@
     // Áudio
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const audioBuffers = {};
+    // Destino extra para gravação (Stream interno de alta qualidade)
     const mediaStreamDestination = audioContext.createMediaStreamDestination();
     
     // Gravador
@@ -598,54 +627,62 @@
     }
 
     // =========================================================
-    // FUNÇÕES NOVAS: DELETAR COLUNA
+    // DELETAR COLUNA
     // =========================================================
     function deleteColumn(idx) {
-        // Evitar deletar se só tiver 1 coluna (opcional, pode remover se quiser permitir zerar)
         if (baixoSeq.length <= 1) return;
-
-        // Remove do baixo
         baixoSeq.splice(idx, 1);
-
-        // Remove da bateria
         Object.keys(bateriaSeq).forEach(key => {
-            if (bateriaSeq[key]) {
-                bateriaSeq[key].splice(idx, 1);
-            }
+            if (bateriaSeq[key]) bateriaSeq[key].splice(idx, 1);
         });
-
         renderGrids();
     }
 
     // =========================================================
-    // GRAVAÇÃO DE VÍDEO
+    // GRAVAÇÃO DE VÍDEO (WEBM COM SOM INTERNO)
     // =========================================================
     async function toggleRecording() {
         const btn = document.getElementById("recordVideoBtn");
         
         if (isRecording) {
+            // Para a gravação
             mediaRecorder.stop();
             isRecording = false;
-            btn.innerText = "🔴 Gravar Vídeo";
+            btn.innerText = "🔴 Gravar Vídeo (WebM)";
             btn.classList.remove("recording");
         } else {
+            // Inicia a gravação
             try {
-                alert("Para gravar a animação em alta qualidade:\n\n1. Na janela que abrir, escolha a aba 'Guia do Chrome' (ou Atual).\n2. Selecione esta aba onde está o baixista.\n3. Certifique-se de que 'Compartilhar áudio da guia' esteja marcado.");
+                if (audioContext.state === 'suspended') await audioContext.resume();
+
+                alert("🎥 PREPARANDO GRAVAÇÃO:\n\n1. Escolha a aba 'Guia do Chrome' (ou Atual).\n2. O áudio será gravado internamente com qualidade digital (não precisa de microfone).\n3. Clique em 'Compartilhar' para começar.");
                 
+                // Captura apenas o vídeo da tela
                 const videoStream = await navigator.mediaDevices.getDisplayMedia({
                     video: { 
                         frameRate: 60,
                         width: { ideal: 1920 },
                         height: { ideal: 1080 }
                     },
-                    audio: false 
+                    audio: false // Não capturamos o áudio do sistema aqui, usamos o interno
                 });
 
                 const videoTrack = videoStream.getVideoTracks()[0];
+                // Pega o áudio do nosso contexto WebAudio (mixagem limpa)
                 const audioTrack = mediaStreamDestination.stream.getAudioTracks()[0];
+
+                // Combina vídeo da tela + áudio interno
                 const combinedStream = new MediaStream([videoTrack, audioTrack]);
 
-                mediaRecorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm; codecs=vp9' });
+                // Escolhe o melhor codec WebM disponível
+                let mimeType = 'video/webm';
+                if (MediaRecorder.isTypeSupported('video/webm; codecs=vp9')) {
+                    mimeType = 'video/webm; codecs=vp9';
+                } else if (MediaRecorder.isTypeSupported('video/webm; codecs=vp8')) {
+                    mimeType = 'video/webm; codecs=vp8';
+                }
+
+                mediaRecorder = new MediaRecorder(combinedStream, { mimeType: mimeType });
                 recordedChunks = [];
 
                 mediaRecorder.ondataavailable = (e) => {
@@ -658,11 +695,11 @@
                     const a = document.createElement('a');
                     a.style.display = 'none';
                     a.href = url;
-                    a.download = 'baixista_jam.webm';
+                    a.download = 'baixista_jam_session.webm';
                     document.body.appendChild(a);
                     a.click();
                     window.URL.revokeObjectURL(url);
-                    videoTrack.stop();
+                    videoTrack.stop(); // Para o compartilhamento de tela
                 };
 
                 mediaRecorder.start();
@@ -670,15 +707,17 @@
                 btn.innerText = "⏹ Parar Gravação";
                 btn.classList.add("recording");
 
+                // Inicia o playback automaticamente se estiver parado
                 if (!isPlaying) togglePlay();
 
+                // Se o usuário cancelar o compartilhamento pela UI do navegador
                 videoTrack.onended = () => {
                     if (isRecording) toggleRecording();
                 };
 
             } catch (err) {
                 console.error("Erro ao iniciar gravação:", err);
-                alert("Não foi possível iniciar a gravação. Verifique as permissões.");
+                alert("Gravação cancelada ou não permitida.");
             }
         }
     }
@@ -796,7 +835,9 @@
             gainNode.gain.value = Math.max(0, Math.min(1, vol));
             
             source.connect(gainNode);
+            // Conecta aos alto-falantes
             gainNode.connect(audioContext.destination);
+            // E TAMBÉM conecta ao gravador de vídeo
             gainNode.connect(mediaStreamDestination);
             
             source.start();
@@ -813,7 +854,7 @@
     }
 
     // =========================================================
-    // EXPORTAÇÃO WAV
+    // EXPORTAÇÃO WAV (MONOFÔNICA COM MUTE)
     // =========================================================
     async function exportarWAV() {
         const btn = document.getElementById("exportWavBtn");
@@ -1080,7 +1121,6 @@
     function highlightGridStep(step) {
         document.querySelectorAll(".playing-step").forEach(el => el.classList.remove("playing-step"));
         
-        // Highlight no botão delete tbm se quiser, mas aqui só nas notas
         const baixoCells = document.getElementById("baixoGrid").children;
         if(baixoCells[step]) baixoCells[step].classList.add("playing-step");
         
