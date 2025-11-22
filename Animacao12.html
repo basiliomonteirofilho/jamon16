@@ -4,7 +4,7 @@
   <script src="jamon-engine.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/audiobuffer-to-wav@1.0.0/index.min.js"></script>
   <meta charset="UTF-8" />
-  <title>Baixista + Bateria - Animação Otimizada</title>
+  <title>Baixista + Bateria - Gravador e Exportador</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
   <style>
@@ -13,10 +13,11 @@
       --panel-bg: rgba(10, 10, 10, 0.95);
       --highlight-color: #00e676; /* Verde Neon */
       --accent-color: #2e7d32;
+      --record-color: #ff3d00;
       --grid-bg: #080808;
       --cell-bg: #151515;
       --cell-border: #333;
-      --playing-col-bg: rgba(255, 255, 255, 0.1); /* Cor da coluna tocando */
+      --playing-col-bg: rgba(255, 255, 255, 0.1);
     }
 
     * {
@@ -31,7 +32,7 @@
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: #000;
       color: #f5f5f5;
-      overflow: hidden; /* Impede scroll global */
+      overflow: hidden;
     }
 
     /* Overlay de Orientação */
@@ -60,7 +61,7 @@
 
     /* Área da Animação (Topo) */
     #topArea {
-      flex: 1; /* Ocupa o espaço restante */
+      flex: 1;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -80,29 +81,15 @@
 
     #baixistaStage {
       position: relative;
-      width: 520px;  /* Largura base de referência */
-      height: 520px; /* Altura base de referência */
-      /* Scale dinâmico via JS pode ser aplicado aqui se necessário, 
-         mas o layout flex já centraliza bem. */
+      width: 520px;
+      height: 520px;
       transform-origin: center center;
     }
 
-    /* Camadas da Animação */
-    /* Z-INDEX DEFINITIVO:
-       1: Pernas (Fixo)
-       5: Wrapper do Corpo (Pêndulo)
-          Dentro do Wrapper:
-            1: Cabeça Trás
-            2: Tronco/Baixo
-            3: Antebraço
-            4: Braço Direito (Mão que toca)
-            5: Cabeça Frente
-    */
-    
-    /* POSICIONAMENTO AJUSTADO: Movido 250px para baixo */
+    /* Camadas da Animação (POSICIONAMENTO REBAIXADO MANTIDO) */
     #pernasLayer {
       position: absolute;
-      top: 332px; /* 82px + 250px */
+      top: 332px; 
       left: 64px;
       z-index: 1;
       pointer-events: none;
@@ -115,26 +102,26 @@
       width: 100%;
       height: 100%;
       z-index: 5;
-      transform-origin: 50% 80%; /* Pivô do gingado na cintura */
-      will-change: transform; /* Otimização de GPU */
+      transform-origin: 50% 80%;
+      will-change: transform;
     }
 
     #bodyWrapperPendulo img {
       position: absolute;
-      image-rendering: pixelated; /* Mantém o estilo pixel art nítido */
+      image-rendering: pixelated;
       pointer-events: none;
     }
 
-    /* POSICIONAMENTO AJUSTADO: Movido 250px para baixo */
-    #cabecaTrasLayer   { top: 60px;   left: 100px; z-index: 1; } /* -190 + 250 */
-    #troncoBaixoLayer  { top: 132px;  left: 0px;   z-index: 2; } /* -118 + 250 */
-    #antebracoLayer    { top: 179px;  left: -2px;  z-index: 3; } /* -71 + 250 */
-    #bracoDireitoLayer { top: 250px;  left: -5px;  z-index: 4; } /* 0 + 250 */
-    #cabecaLayer       { top: 37px;   left: 70px;  z-index: 5; } /* -213 + 250 */
+    /* Posições ajustadas (+250px vertical) */
+    #cabecaTrasLayer   { top: 60px;   left: 100px; z-index: 1; }
+    #troncoBaixoLayer  { top: 132px;  left: 0px;   z-index: 2; }
+    #antebracoLayer    { top: 179px;  left: -2px;  z-index: 3; }
+    #bracoDireitoLayer { top: 250px;  left: -5px;  z-index: 4; }
+    #cabecaLayer       { top: 37px;   left: 70px;  z-index: 5; }
 
-    /* Área de Controles (Editor) */
+    /* Área de Controles */
     #bottomArea {
-      flex: 0 0 45vh; /* Altura fixa relativa */
+      flex: 0 0 45vh;
       max-height: 400px;
       min-height: 280px;
       display: flex;
@@ -146,7 +133,6 @@
       box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
     }
 
-    /* Controles Superiores */
     #playerControlsRow {
       display: flex;
       flex-wrap: wrap;
@@ -164,13 +150,31 @@
       font-size: 0.8rem;
       cursor: pointer;
       transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
     button:hover { background: #333; border-color: #777; }
     button:active { transform: translateY(1px); }
     
-    /* Botões de Destaque */
     #playBtn { background: var(--accent-color); border-color: var(--highlight-color); font-weight: bold; }
     #playBtn:hover { background: #00c853; color: #000; }
+
+    /* Botão de Gravar Vídeo */
+    #recordVideoBtn {
+        background: #3700b3;
+        border-color: #6200ea;
+    }
+    #recordVideoBtn.recording {
+        background: var(--record-color);
+        border-color: #ff0000;
+        animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(255, 61, 0, 0.7); }
+        70% { box-shadow: 0 0 0 6px rgba(255, 61, 0, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(255, 61, 0, 0); }
+    }
 
     .sliderGroup {
       display: flex;
@@ -185,7 +189,6 @@
 
     #bpmDisplay { font-family: monospace; font-weight: bold; min-width: 65px; text-align: center;}
 
-    /* Barra de Progresso */
     #progressContainer {
       width: 100%;
       height: 4px;
@@ -202,7 +205,7 @@
       box-shadow: 0 0 8px var(--highlight-color);
     }
 
-    /* Grades (Sequencer) */
+    /* Grades */
     #gridsArea {
       flex: 1;
       overflow-y: auto;
@@ -213,7 +216,6 @@
       padding: 5px;
     }
 
-    /* Estilização Geral das Grids */
     .rowContainer {
       display: flex;
       align-items: center;
@@ -230,14 +232,14 @@
       letter-spacing: 0.5px;
       position: sticky;
       left: 0;
-      background: #000; /* Para cobrir scroll */
+      background: #000;
       z-index: 2;
     }
 
     .trackGrid {
       display: grid;
       grid-auto-flow: column;
-      grid-auto-columns: 24px; /* Largura fixa das células */
+      grid-auto-columns: 24px;
       grid-template-rows: 24px;
       gap: 1px;
     }
@@ -256,7 +258,6 @@
     }
     .cell:hover { border-color: #666; }
     
-    /* Células Ativas */
     .cell.active {
       background: var(--accent-color);
       border-color: var(--highlight-color);
@@ -266,19 +267,17 @@
       background: #880e4f;
       border-color: #f50057;
     }
-
-    /* Highlight da coluna atual durante playback */
     .cell.playing-step {
       background-color: #444 !important;
       border-color: #fff !important;
     }
     .cell.active.playing-step {
-      background-color: #00e676 !important; /* Brilho extra na nota ativa tocando */
+      background-color: #00e676 !important;
       color: #000;
       box-shadow: 0 0 8px #00e676;
     }
 
-    /* Modal de Seleção de Notas */
+    /* Modal de Seleção */
     #selectionOverlay {
       position: fixed;
       inset: 0;
@@ -320,7 +319,6 @@
     .selection-option.active { background: var(--accent-color); border-color: var(--highlight-color); }
     .selection-option.ghost { color: #ff80ab; }
 
-    /* Countdown Overlay */
     .countdownOverlay {
       position: absolute;
       inset: 0;
@@ -335,15 +333,10 @@
       text-shadow: 0 0 20px var(--highlight-color);
     }
 
-    /* Scrollbars customizadas */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
     ::-webkit-scrollbar-track { background: #111; }
 
-    /* Media Queries */
-    @media (orientation: portrait) {
-       /* O JS vai mostrar o overlay, mas caso falhe, ajustamos */
-    }
     @media (max-width: 600px) {
         #bottomArea { flex-basis: 50vh; }
         .gridLabel { width: 40px; font-size: 0.6rem; }
@@ -385,6 +378,10 @@
     <div id="bottomArea">
       <div id="playerControlsRow">
         <button id="playBtn">▶ Play</button>
+        <button id="recordVideoBtn" title="Grava a aba do navegador">🔴 Gravar Vídeo</button>
+        
+        <div style="width:1px; height:20px; background:#444; margin:0 4px;"></div>
+        
         <button id="playAleatorioBtn">🎲 Aleatório</button>
         <button id="playExportadoBtn">📁 Importar</button>
         <button id="exportWavBtn">💾 Exportar WAV</button>
@@ -401,9 +398,9 @@
           <input type="range" id="drumVolume" min="0" max="1" step="0.05" value="0.9" />
         </div>
 
-        <button id="addBaixoCol">+Passo (Bx)</button>
-        <button id="addCol">+Passo (Todos)</button>
-        <button id="duplicateSeq">x2 Loop</button>
+        <button id="addBaixoCol">+1</button>
+        <button id="addCol">+Todos</button>
+        <button id="duplicateSeq">x2</button>
         <button id="clearAll">Limpar</button>
       </div>
 
@@ -430,10 +427,8 @@
 
   <script>
     // =========================================================
-    // CONFIGURAÇÕES E DADOS GLOBAIS
+    // DADOS ESTÁTICOS
     // =========================================================
-    
-    // Mapeamento de quais notas existem em cada pasta (Otimização da memória visual)
     const pastaMap = {
       1: ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B"],
       2: ["3FS","4G","5GS","6A","8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C"],
@@ -476,76 +471,77 @@
     ];
 
     const drumLines = [
-      { id: "bumbo",           label: "Bumbo",   short: "BD",  file: "bumbo.mp3" },
-      { id: "caixa",           label: "Caixa",   short: "SN",  file: "caixa.mp3" },
-      { id: "caixaAro",        label: "Aro",     short: "Rim", file: "caixaAro.mp3" },
-      { id: "chimbal",         label: "HH",      short: "HH",  file: "chimbal.mp3" },
-      { id: "chimbal_pedal",   label: "HH Ped",  short: "HP",  file: "chimbal-pedal.mp3" },
-      { id: "chimbalaberto",   label: "HH Open", short: "HO",  file: "chimbal-aberto.mp3" },
-      { id: "ataque",          label: "Ataque",  short: "Cr",  file: "ataque.mp3" },
-      { id: "tom1",            label: "Tom 1",   short: "T1",  file: "tom-1.mp3" },
-      { id: "tom2",            label: "Tom 2",   short: "T2",  file: "tom-2.mp3" },
-      { id: "surdo",           label: "Surdo",   short: "FT",  file: "surdo.mp3" },
-      { id: "conducao",        label: "Ride",    short: "Rd",  file: "conducao.mp3" },
-      { id: "conducao_centro", label: "Ride C",  short: "RC",  file: "conducao-centro.mp3" }
+      { id: "bumbo",           label: "Bumbo",   file: "bumbo.mp3" },
+      { id: "caixa",           label: "Caixa",   file: "caixa.mp3" },
+      { id: "caixaAro",        label: "Aro",     file: "caixaAro.mp3" },
+      { id: "chimbal",         label: "HH",      file: "chimbal.mp3" },
+      { id: "chimbal_pedal",   label: "HH Ped",  file: "chimbal-pedal.mp3" },
+      { id: "chimbalaberto",   label: "HH Open", file: "chimbal-aberto.mp3" },
+      { id: "ataque",          label: "Ataque",  file: "ataque.mp3" },
+      { id: "tom1",            label: "Tom 1",   file: "tom-1.mp3" },
+      { id: "tom2",            label: "Tom 2",   file: "tom-2.mp3" },
+      { id: "surdo",           label: "Surdo",   file: "surdo.mp3" },
+      { id: "conducao",        label: "Ride",    file: "conducao.mp3" },
+      { id: "conducao_centro", label: "Ride C",  file: "conducao-centro.mp3" }
     ];
 
-    // Estado do App
+    // =========================================================
+    // ESTADO GLOBAL
+    // =========================================================
     let isPlaying = false;
     let playbackInterval = null;
     let bpmAtual = 120;
     let atualPasso = 0;
     
-    // Sequencers
-    let baixoSeq = Array(16).fill(""); // "" = vazio (sustain), "x" = ghost
+    let baixoSeq = Array(16).fill(""); 
     let bateriaSeq = {};
-    drumLines.forEach(d => bateriaSeq[d.id] = Array(16).fill("x")); // "x" = vazio, id = tocar
+    drumLines.forEach(d => bateriaSeq[d.id] = Array(16).fill("x"));
 
-    // Volumes
     let baixoVolumeGlobal = 0.9;
     let bateriaVolumeGlobal = 0.9;
     let audioBaixoAtual = null;
 
-    // Estado da Animação (Regra E)
+    // Animação
     let posicaoAtualPasta = 1;
     let ultimaCordaUsada = "E";
     let ultimaNotaReal = "1E";
-
-    // Refs de Animação
     let reqAnimIdPendulo = null;
     let headLoopTimer = null;
     let rightHandTimer = null;
     let headFrameIndex = 0;
     const headFrames = [];
 
-    // Audio Context Global
+    // Áudio
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const audioBuffers = {}; // Cache para os buffers de áudio
+    const audioBuffers = {};
+    // Nó de destino extra para gravação (Stream)
+    const mediaStreamDestination = audioContext.createMediaStreamDestination();
+    
+    // Gravador
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let isRecording = false;
 
     // =========================================================
     // INICIALIZAÇÃO
     // =========================================================
-    
     window.onload = async () => {
         verificarOrientacao();
         window.addEventListener("resize", verificarOrientacao);
         
-        // Preload imagens da cabeça
         for (let i = 1; i <= 100; i++) {
             headFrames.push(`animacao/cabeca/cabeca${String(i).padStart(4, "0")}.png`);
         }
         preloadImages(headFrames).then(startHeadLoop);
 
-        // Gera aleatório inicial
         gerarAleatorio();
         renderGrids();
-        
-        // Listeners UI
         setupListeners();
     };
 
     function setupListeners() {
         document.getElementById("playBtn").onclick = togglePlay;
+        document.getElementById("recordVideoBtn").onclick = toggleRecording;
         
         document.getElementById("bpmSlider").oninput = (e) => {
             bpmAtual = parseInt(e.target.value);
@@ -555,25 +551,19 @@
         document.getElementById("baixoVolume").oninput = (e) => baixoVolumeGlobal = parseFloat(e.target.value);
         document.getElementById("drumVolume").oninput = (e) => bateriaVolumeGlobal = parseFloat(e.target.value);
 
-        document.getElementById("addBaixoCol").onclick = () => {
-            baixoSeq.push("");
-            renderGrids();
-        };
-
+        // Botões Grid
+        document.getElementById("addBaixoCol").onclick = () => { baixoSeq.push(""); renderGrids(); };
         document.getElementById("addCol").onclick = () => {
             baixoSeq.push("");
             Object.keys(bateriaSeq).forEach(k => bateriaSeq[k].push("x"));
             renderGrids();
         };
-
         document.getElementById("duplicateSeq").onclick = () => {
             baixoSeq = [...baixoSeq, ...baixoSeq];
             Object.keys(bateriaSeq).forEach(k => bateriaSeq[k] = [...bateriaSeq[k], ...bateriaSeq[k]]);
             renderGrids();
         };
-
         document.getElementById("clearAll").onclick = () => {
-            const len = baixoSeq.length;
             baixoSeq.fill("");
             Object.keys(bateriaSeq).forEach(k => bateriaSeq[k].fill("x"));
             renderGrids();
@@ -585,13 +575,90 @@
     }
 
     // =========================================================
-    // LÓGICA DE ÁUDIO & PLAYBACK
+    // GRAVAÇÃO DE VÍDEO (SCREEN CAPTURE + WEBAUDIO)
     // =========================================================
+    async function toggleRecording() {
+        const btn = document.getElementById("recordVideoBtn");
+        
+        if (isRecording) {
+            // Parar
+            mediaRecorder.stop();
+            isRecording = false;
+            btn.innerText = "🔴 Gravar Vídeo";
+            btn.classList.remove("recording");
+        } else {
+            // Iniciar
+            try {
+                alert("Para gravar a animação em alta qualidade:\n\n1. Na janela que abrir, escolha a aba 'Guia do Chrome' (ou Atual).\n2. Selecione esta aba onde está o baixista.\n3. Certifique-se de que 'Compartilhar áudio da guia' esteja marcado (embora usaremos o áudio interno).");
+                
+                // Captura o vídeo da aba (Screen Capture API)
+                const videoStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: { 
+                        frameRate: 60,
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    },
+                    audio: false // Usaremos o audioContext limpo, não o do sistema
+                });
 
+                // Pega a faixa de vídeo da tela
+                const videoTrack = videoStream.getVideoTracks()[0];
+                
+                // Pega a faixa de áudio do nosso contexto WebAudio
+                const audioTrack = mediaStreamDestination.stream.getAudioTracks()[0];
+
+                // Combina os dois
+                const combinedStream = new MediaStream([videoTrack, audioTrack]);
+
+                // Configura gravador
+                mediaRecorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm; codecs=vp9' });
+                recordedChunks = [];
+
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) recordedChunks.push(e.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = 'baixista_jam.webm';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    
+                    // Para a captura de tela
+                    videoTrack.stop();
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+                btn.innerText = "⏹ Parar Gravação";
+                btn.classList.add("recording");
+
+                // Se não estiver tocando, começa a tocar
+                if (!isPlaying) togglePlay();
+
+                // Se o usuário clicar em "Parar compartilhamento" na UI do navegador
+                videoTrack.onended = () => {
+                    if (isRecording) toggleRecording();
+                };
+
+            } catch (err) {
+                console.error("Erro ao iniciar gravação:", err);
+                alert("Não foi possível iniciar a gravação. Verifique as permissões.");
+            }
+        }
+    }
+
+    // =========================================================
+    // PLAYBACK
+    // =========================================================
     function togglePlay() {
         if (isPlaying) pararPlayback();
         else {
-            // Contagem regressiva antes de começar
             const overlay = document.getElementById("countdownOverlay");
             const txt = document.getElementById("countdownText");
             overlay.style.display = "flex";
@@ -607,22 +674,21 @@
                     overlay.style.display = "none";
                     iniciarPlayback();
                 }
-            }, 60000 / bpmAtual); // Pulsa no ritmo
+            }, 60000 / bpmAtual);
         }
     }
 
     function iniciarPlayback() {
-        if (audioContext.state === 'suspended') {
-            audioContext.resume();
-        }
+        if (audioContext.state === 'suspended') audioContext.resume();
+        
         isPlaying = true;
         atualPasso = 0;
         document.getElementById("playBtn").innerText = "⏸ Pause";
-        document.getElementById("playBtn").style.background = "#e65100"; // Laranja para pause
+        document.getElementById("playBtn").style.background = "#e65100";
 
-        startPenduloAnim(); // Inicia o gingado
+        startPenduloAnim();
 
-        const msPorStep = (60000 / bpmAtual) / 4; // Semicolcheia
+        const msPorStep = (60000 / bpmAtual) / 4;
         
         const loop = () => {
             if (!isPlaying) return;
@@ -630,12 +696,11 @@
             const totalSteps = baixoSeq.length;
             if (atualPasso >= totalSteps) atualPasso = 0;
 
-            // Atualiza UI Grid
             highlightGridStep(atualPasso);
             
-            // Processa Baixo
+            // BAIXO
             const notaBaixo = baixoSeq[atualPasso];
-            if (notaBaixo !== "") { // Se não for sustain
+            if (notaBaixo !== "") {
                 if (notaBaixo === "x") {
                     tocarAudioBuffer("assets/bass-muted.mp3", baixoVolumeGlobal);
                     animarBaixo("x", msPorStep);
@@ -644,11 +709,10 @@
                     animarBaixo(notaBaixo, msPorStep);
                 }
             } else {
-                // Se é vazio (sustain), mão direita para
                 stopRightHand();
             }
 
-            // Processa Bateria
+            // BATERIA
             drumLines.forEach(line => {
                 const seq = bateriaSeq[line.id];
                 if (seq && seq[atualPasso] === line.id) {
@@ -656,14 +720,13 @@
                 }
             });
             
-            // Atualiza barra de progresso
             const pct = ((atualPasso + 1) / totalSteps) * 100;
             document.getElementById("progressBar").style.width = pct + "%";
 
             atualPasso++;
         };
 
-        loop(); // Toca o primeiro imediatamente
+        loop();
         playbackInterval = setInterval(loop, msPorStep);
     }
 
@@ -676,8 +739,8 @@
         stopPenduloAnim();
         stopRightHand();
         
-        // Remove highlights
         document.querySelectorAll(".playing-step").forEach(el => el.classList.remove("playing-step"));
+        
         if(audioBaixoAtual) {
             audioBaixoAtual.stop();
             audioBaixoAtual = null;
@@ -698,13 +761,25 @@
             const buffer = await getAudioBuffer(path);
             const source = audioContext.createBufferSource();
             source.buffer = buffer;
+            
             const gainNode = audioContext.createGain();
             gainNode.gain.value = Math.max(0, Math.min(1, vol));
+            
             source.connect(gainNode);
+            
+            // Conecta aos alto-falantes
             gainNode.connect(audioContext.destination);
+            // E TAMBÉM conecta ao destino de gravação
+            gainNode.connect(mediaStreamDestination);
+            
             source.start();
+            
+            // Controle de sobreposição para o baixo ao vivo
             if (path.includes("BaixoMelodia") || path.includes("bass-muted")) {
-                if(audioBaixoAtual) audioBaixoAtual.stop();
+                if(audioBaixoAtual) {
+                    // Pequeno fade out para evitar clique
+                    try { audioBaixoAtual.stop(); } catch(e){}
+                }
                 audioBaixoAtual = source;
             }
         } catch (e) {
@@ -713,19 +788,110 @@
     }
 
     // =========================================================
-    // LÓGICA DE ANIMAÇÃO (REGRA E + PÊNDULO)
+    // EXPORTAÇÃO WAV MONOFÔNICA (COM MUTE CORRETO)
     // =========================================================
+    async function exportarWAV() {
+        const btn = document.getElementById("exportWavBtn");
+        const originalText = btn.innerText;
+        btn.innerText = "Processando...";
+        btn.disabled = true;
 
-    // 1. Pêndulo (Gingado) com requestAnimationFrame
+        try {
+            const totalSteps = baixoSeq.length;
+            const secondsPerStep = (60 / bpmAtual) / 4;
+            const totalDuration = totalSteps * secondsPerStep + 2; // +2s de cauda
+            const sampleRate = 44100;
+
+            const offlineCtx = new OfflineAudioContext(2, sampleRate * totalDuration, sampleRate);
+
+            // --- Processamento do Baixo Monofônico ---
+            for (let i = 0; i < totalSteps; i++) {
+                const nota = baixoSeq[i];
+                
+                // Só processa se for um evento de "trigger" (Nota ou Ghost Note)
+                if (nota !== "" && nota !== null) {
+                    const startTime = i * secondsPerStep;
+                    let url = nota === "x" ? "assets/bass-muted.mp3" : `assets/BaixoMelodia/${nota}.mp3`;
+                    
+                    const buffer = await getAudioBuffer(url);
+                    const source = offlineCtx.createBufferSource();
+                    source.buffer = buffer;
+                    
+                    const gainNode = offlineCtx.createGain();
+                    gainNode.gain.value = baixoVolumeGlobal;
+                    
+                    source.connect(gainNode);
+                    gainNode.connect(offlineCtx.destination);
+                    
+                    // CALCULAR DURAÇÃO ATÉ O PRÓXIMO TRIGGER
+                    // Procura o próximo índice que NÃO seja vazio ("")
+                    let durationSteps = 1;
+                    for (let j = i + 1; j < totalSteps; j++) {
+                        if (baixoSeq[j] !== "") {
+                            break; // Encontrou a próxima nota ou 'x', paramos de contar
+                        }
+                        durationSteps++;
+                    }
+                    
+                    const durationSeconds = durationSteps * secondsPerStep;
+                    
+                    source.start(startTime);
+                    // O segredo do mute: parar a nota atual exatamente quando a próxima começaria
+                    // Adicionamos um pequeno fade out (0.01s) para evitar clique digital
+                    source.stop(startTime + durationSeconds);
+                    gainNode.gain.setTargetAtTime(0, startTime + durationSeconds - 0.01, 0.01);
+                }
+            }
+
+            // --- Bateria ---
+            for (const line of drumLines) {
+                const seq = bateriaSeq[line.id];
+                if (seq) {
+                    for (let i = 0; i < totalSteps; i++) {
+                        if (seq[i] === line.id) {
+                            const time = i * secondsPerStep;
+                            const buffer = await getAudioBuffer(`assets/${line.file}`);
+                            const source = offlineCtx.createBufferSource();
+                            source.buffer = buffer;
+                            const gainNode = offlineCtx.createGain();
+                            gainNode.gain.value = bateriaVolumeGlobal;
+                            source.connect(gainNode);
+                            gainNode.connect(offlineCtx.destination);
+                            source.start(time);
+                        }
+                    }
+                }
+            }
+
+            const renderedBuffer = await offlineCtx.startRendering();
+            const wavBuffer = audioBufferToWav(renderedBuffer);
+            const blob = new Blob([wavBuffer], { type: 'audio/wav' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'minha-composicao.wav';
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("Erro ao exportar WAV:", error);
+            alert("Falha na exportação. Verifique se os arquivos de áudio estão carregados.");
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
+    }
+
+    // =========================================================
+    // ANIMAÇÃO
+    // =========================================================
     function startPenduloAnim() {
         const wrapper = document.getElementById("bodyWrapperPendulo");
         const amplitude = 2.3;
         const speed = 0.003; 
-        
         const frame = () => {
             if (!isPlaying) return;
             const now = Date.now();
-            // Seno baseado no tempo para suavidade absoluta
             const ang = Math.sin(now * speed * (bpmAtual / 120)) * amplitude; 
             wrapper.style.transform = `rotate(${ang}deg)`;
             reqAnimIdPendulo = requestAnimationFrame(frame);
@@ -739,48 +905,39 @@
         if(wrapper) wrapper.style.transform = "rotate(0deg)";
     }
 
-    // 2. Cabeça (Loop constante)
     function startHeadLoop() {
         const el = document.getElementById("cabecaLayer");
         if(headLoopTimer) clearInterval(headLoopTimer);
-        
         headLoopTimer = setInterval(() => {
             headFrameIndex = (headFrameIndex + 1) % headFrames.length;
             if(headFrames[headFrameIndex]) el.src = headFrames[headFrameIndex];
-        }, 33); // ~30fps
+        }, 33);
     }
 
-    // 3. Postura Baixista (Tronco e Braço Esquerdo)
     function animarBaixo(nota, duracaoStep) {
         const tronco = document.getElementById("troncoBaixoLayer");
         const antebraco = document.getElementById("antebracoLayer");
 
         if (nota === "x") {
-            // Ghost note: mantém postura, usa tronco da nota anterior se houver
             if (ultimaNotaReal) {
                 const pasta = pastaFolderNames[posicaoAtualPasta] || "1F";
                 tronco.src = `animacao/tronco_baixo/Pasta_${pasta}/${ultimaNotaReal}.png`;
             }
-            // Anima mão direita na corda atual (muted)
             animarMaoDireita(ultimaCordaUsada, duracaoStep);
             return;
         }
 
-        // Nota Real: Escolhe melhor pasta (Regra E)
         const novaPasta = escolherMelhorPasta(nota, posicaoAtualPasta);
         posicaoAtualPasta = novaPasta;
         ultimaNotaReal = nota;
 
-        // Atualiza imagem tronco
         const pastaNome = pastaFolderNames[novaPasta];
         tronco.src = `animacao/tronco_baixo/Pasta_${pastaNome}/${nota}.png`;
 
-        // Descobre corda e atualiza antebraco
         const corda = getCordaDaNota(nota);
         ultimaCordaUsada = corda;
         antebraco.src = `animacao/antebraco/antebraco${corda}.png`;
 
-        // Anima mão direita
         animarMaoDireita(corda, duracaoStep);
     }
 
@@ -795,27 +952,22 @@
     }
 
     function escolherMelhorPasta(nota, posAtual) {
-        // Lógica original: encontra pastas com a nota e pega a mais próxima da atual
         const pastasDisponiveis = [];
         for (let p = 1; p <= 24; p++) {
             if (pastaMap[p].includes(nota)) pastasDisponiveis.push(p);
         }
         if (pastasDisponiveis.length === 0) return 1;
-
-        // Reduz array para encontrar a menor distância
         return pastasDisponiveis.reduce((prev, curr) => {
             return (Math.abs(curr - posAtual) < Math.abs(prev - posAtual) ? curr : prev);
         });
     }
 
-    // 4. Mão Direita (Plucking)
     function animarMaoDireita(corda, duracaoTotal) {
         const el = document.getElementById("bracoDireitoLayer");
         clearInterval(rightHandTimer);
         
         let frame = 1;
         const totalFrames = 5;
-        // Toca a animação um pouco mais rápido que o passo para dar "snap"
         const frameTime = Math.min(duracaoTotal / totalFrames, 40); 
 
         rightHandTimer = setInterval(() => {
@@ -823,7 +975,6 @@
             frame++;
             if (frame > totalFrames) {
                 clearInterval(rightHandTimer);
-                // Retorna ao frame 1 (posição de descanso na corda)
                 el.src = `animacao/braco_direito/Corda_${corda}1.png`;
             }
         }, frameTime);
@@ -832,24 +983,20 @@
     function stopRightHand() {
         const el = document.getElementById("bracoDireitoLayer");
         clearInterval(rightHandTimer);
-        // Volta para posição neutra da última corda
         el.src = `animacao/braco_direito/Corda_${ultimaCordaUsada || 'E'}1.png`;
     }
 
     // =========================================================
-    // UI: GRIDS & SEQUENCER
+    // GRIDS & UTIL
     // =========================================================
-
     function renderGrids() {
         const baixoContainer = document.getElementById("baixoGrid");
         const drumWrapper = document.getElementById("drumGridWrapper");
 
-        // 1. Baixo Grid
         baixoContainer.innerHTML = "";
         baixoSeq.forEach((nota, idx) => {
             const cell = document.createElement("div");
             cell.className = "cell";
-            cell.dataset.idx = idx;
             
             if (nota === "x") {
                 cell.textContent = "X";
@@ -858,14 +1005,12 @@
                 cell.textContent = nota.replace("S", "#");
                 cell.classList.add("active");
             } else {
-                cell.style.opacity = "0.3"; // Visual de vazio
+                cell.style.opacity = "0.3";
             }
-
             cell.onclick = () => abrirSelecaoNota(idx, cell);
             baixoContainer.appendChild(cell);
         });
 
-        // 2. Bateria Grid
         drumWrapper.innerHTML = "";
         drumLines.forEach(line => {
             const row = document.createElement("div");
@@ -879,26 +1024,18 @@
             const grid = document.createElement("div");
             grid.className = "trackGrid";
             
-            // Sincroniza tamanho com baixo se necessário
             while(bateriaSeq[line.id].length < baixoSeq.length) bateriaSeq[line.id].push("x");
 
             bateriaSeq[line.id].forEach((val, idx) => {
                 const cell = document.createElement("div");
                 cell.className = "cell";
-                cell.dataset.idx = idx;
-                cell.dataset.track = line.id;
-                
-                if (val === line.id) {
-                    cell.classList.add("active");
-                } else {
-                    cell.textContent = "";
-                }
+                if (val === line.id) cell.classList.add("active");
+                else cell.textContent = "";
 
                 cell.onclick = () => {
                     if (bateriaSeq[line.id][idx] === "x") {
                         bateriaSeq[line.id][idx] = line.id;
                         cell.classList.add("active");
-                        // Preview som
                         tocarAudioBuffer(`assets/${line.file}`, 1.0);
                     } else {
                         bateriaSeq[line.id][idx] = "x";
@@ -907,53 +1044,44 @@
                 };
                 grid.appendChild(cell);
             });
-            
             row.appendChild(grid);
             drumWrapper.appendChild(row);
         });
     }
 
     function highlightGridStep(step) {
-        // Remove anterior
         document.querySelectorAll(".playing-step").forEach(el => el.classList.remove("playing-step"));
         
-        // Adiciona novo (Baixo)
         const baixoCells = document.getElementById("baixoGrid").children;
         if(baixoCells[step]) baixoCells[step].classList.add("playing-step");
         
-        // Adiciona novo (Bateria)
         const drumRows = document.querySelectorAll("#drumGridWrapper .trackGrid");
         drumRows.forEach(row => {
             if(row.children[step]) row.children[step].classList.add("playing-step");
         });
 
-        // Auto-scroll se a grid for longa
         if(baixoCells[step]) {
              baixoCells[step].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
         }
     }
 
-    // Modal de Seleção
     function abrirSelecaoNota(idx, cellElement) {
         const overlay = document.getElementById("selectionOverlay");
         const optionsContainer = document.getElementById("selectionOptions");
         optionsContainer.innerHTML = "";
 
-        // Opção: Limpar (Sustain)
         const btnEmpty = document.createElement("div");
         btnEmpty.className = "selection-option";
         btnEmpty.textContent = "—";
         btnEmpty.onclick = () => selecionarNota(idx, "", overlay);
         optionsContainer.appendChild(btnEmpty);
 
-        // Opção: Ghost (X)
         const btnGhost = document.createElement("div");
         btnGhost.className = "selection-option ghost";
         btnGhost.textContent = "X";
         btnGhost.onclick = () => selecionarNota(idx, "x", overlay);
         optionsContainer.appendChild(btnGhost);
 
-        // Notas Reais
         notasValidas.forEach(nota => {
             const btn = document.createElement("div");
             btn.className = "selection-option";
@@ -962,18 +1090,12 @@
             
             btn.onclick = () => {
                 selecionarNota(idx, nota, overlay);
-                // Preview som
                 tocarAudioBuffer(`assets/BaixoMelodia/${nota}.mp3`, 1.0);
             };
             optionsContainer.appendChild(btn);
         });
-
         overlay.classList.add("visible");
-        
-        // Fechar ao clicar fora
-        overlay.onclick = (e) => {
-            if(e.target === overlay) overlay.classList.remove("visible");
-        };
+        overlay.onclick = (e) => { if(e.target === overlay) overlay.classList.remove("visible"); };
     }
 
     function selecionarNota(idx, valor, overlay) {
@@ -982,36 +1104,27 @@
         renderGrids();
     }
 
-    // =========================================================
-    // UTILITÁRIOS & EXPORTAÇÃO
-    // =========================================================
-
     function gerarAleatorio() {
         if (window.JamOnEngine && typeof JamOnEngine.generateRandomPlayback === "function") {
             try {
                 const res = JamOnEngine.generateRandomPlayback(bpmAtual, 16);
                 baixoSeq = res.bassSeq || Array(16).fill("");
-                // Converte formato da engine para o nosso se necessário
                 const bat = res.bateriaSeq || {};
                 drumLines.forEach(d => {
                      bateriaSeq[d.id] = bat[d.id] || Array(16).fill("x");
                 });
-            } catch(e) { console.warn("Engine error", e); fallbackAleatorio(); }
-        } else {
-            fallbackAleatorio();
-        }
+            } catch(e) { fallbackAleatorio(); }
+        } else { fallbackAleatorio(); }
         renderGrids();
     }
 
     function fallbackAleatorio() {
-        // Gerador simples caso não tenha engine
         baixoSeq = Array(16).fill(0).map(() => {
             const r = Math.random();
             if(r < 0.5) return "";
             if(r < 0.6) return "x";
             return notasValidas[Math.floor(Math.random() * notasValidas.length)];
         });
-        
         drumLines.forEach(d => {
             bateriaSeq[d.id] = Array(16).fill(0).map(() => Math.random() < 0.2 ? d.id : "x");
         });
@@ -1041,77 +1154,6 @@
             reader.readAsText(file);
         };
         input.click();
-    }
-
-    async function exportarWAV() {
-        const btn = document.getElementById("exportWavBtn");
-        const originalText = btn.innerText;
-        btn.innerText = "Exportando...";
-        btn.disabled = true;
-
-        try {
-            const totalSteps = baixoSeq.length;
-            const secondsPerStep = (60 / bpmAtual) / 4;
-            const totalDuration = totalSteps * secondsPerStep;
-            const sampleRate = 44100;
-
-            const offlineCtx = new OfflineAudioContext(2, sampleRate * totalDuration, sampleRate);
-
-            // Agenda os samples do baixo
-            for (let i = 0; i < totalSteps; i++) {
-                const nota = baixoSeq[i];
-                if (nota !== "" && nota !== null) {
-                    const time = i * secondsPerStep;
-                    let url = nota === "x" ? "assets/bass-muted.mp3" : `assets/BaixoMelodia/${nota}.mp3`;
-                    const buffer = await getAudioBuffer(url);
-                    const source = offlineCtx.createBufferSource();
-                    source.buffer = buffer;
-                    const gainNode = offlineCtx.createGain();
-                    gainNode.gain.value = baixoVolumeGlobal;
-                    source.connect(gainNode);
-                    gainNode.connect(offlineCtx.destination);
-                    source.start(time);
-                }
-            }
-
-            // Agenda os samples da bateria
-            for (const line of drumLines) {
-                const seq = bateriaSeq[line.id];
-                if (seq) {
-                    for (let i = 0; i < totalSteps; i++) {
-                        if (seq[i] === line.id) {
-                            const time = i * secondsPerStep;
-                            const url = `assets/${line.file}`;
-                            const buffer = await getAudioBuffer(url);
-                            const source = offlineCtx.createBufferSource();
-                            source.buffer = buffer;
-                            const gainNode = offlineCtx.createGain();
-                            gainNode.gain.value = bateriaVolumeGlobal;
-                            source.connect(gainNode);
-                            gainNode.connect(offlineCtx.destination);
-                            source.start(time);
-                        }
-                    }
-                }
-            }
-
-            const renderedBuffer = await offlineCtx.startRendering();
-            const wavBuffer = audioBufferToWav(renderedBuffer);
-            const blob = new Blob([wavBuffer], { type: 'audio/wav' });
-            const url = URL.createObjectURL(blob);
-            
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'minha-composicao.wav';
-            a.click();
-            URL.revokeObjectURL(url);
-        } catch (error) {
-            console.error("Erro ao exportar WAV:", error);
-            alert("Falha na exportação do áudio.");
-        } finally {
-            btn.innerText = originalText;
-            btn.disabled = false;
-        }
     }
 
     function verificarOrientacao() {
