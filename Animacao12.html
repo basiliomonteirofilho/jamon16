@@ -2,6 +2,7 @@
 <html lang="pt-BR">
 <head>
   <script src="jamon-engine.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/audiobuffer-to-wav@1.0.0/index.min.js"></script>
   <meta charset="UTF-8" />
   <title>Baixista + Bateria - Animação Otimizada</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
@@ -98,9 +99,10 @@
             5: Cabeça Frente
     */
     
+    /* POSICIONAMENTO AJUSTADO: Movido 250px para baixo */
     #pernasLayer {
       position: absolute;
-      top: 82px; 
+      top: 332px; /* 82px + 250px */
       left: 64px;
       z-index: 1;
       pointer-events: none;
@@ -123,11 +125,12 @@
       pointer-events: none;
     }
 
-    #cabecaTrasLayer   { top: -190px; left: 100px; z-index: 1; }
-    #troncoBaixoLayer  { top: -118px; left: 0px;   z-index: 2; }
-    #antebracoLayer    { top: -71px;  left: -2px;  z-index: 3; }
-    #bracoDireitoLayer { top: 0px;    left: -5px;  z-index: 4; }
-    #cabecaLayer       { top: -213px; left: 70px;  z-index: 5; }
+    /* POSICIONAMENTO AJUSTADO: Movido 250px para baixo */
+    #cabecaTrasLayer   { top: 60px;   left: 100px; z-index: 1; } /* -190 + 250 */
+    #troncoBaixoLayer  { top: 132px;  left: 0px;   z-index: 2; } /* -118 + 250 */
+    #antebracoLayer    { top: 179px;  left: -2px;  z-index: 3; } /* -71 + 250 */
+    #bracoDireitoLayer { top: 250px;  left: -5px;  z-index: 4; } /* 0 + 250 */
+    #cabecaLayer       { top: 37px;   left: 70px;  z-index: 5; } /* -213 + 250 */
 
     /* Área de Controles (Editor) */
     #bottomArea {
@@ -384,6 +387,7 @@
         <button id="playBtn">▶ Play</button>
         <button id="playAleatorioBtn">🎲 Aleatório</button>
         <button id="playExportadoBtn">📁 Importar</button>
+        <button id="exportWavBtn">💾 Exportar WAV</button>
         
         <span id="bpmDisplay">120 BPM</span>
         <input type="range" id="bpmSlider" min="60" max="180" value="120" title="Tempo (BPM)" />
@@ -514,6 +518,10 @@
     let headFrameIndex = 0;
     const headFrames = [];
 
+    // Audio Context Global
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const audioBuffers = {}; // Cache para os buffers de áudio
+
     // =========================================================
     // INICIALIZAÇÃO
     // =========================================================
@@ -573,6 +581,7 @@
 
         document.getElementById("playAleatorioBtn").onclick = gerarAleatorio;
         document.getElementById("playExportadoBtn").onclick = importarJSON;
+        document.getElementById("exportWavBtn").onclick = exportarWAV;
     }
 
     // =========================================================
@@ -603,6 +612,9 @@
     }
 
     function iniciarPlayback() {
+        if (audioContext.state === 'suspended') {
+            audioContext.resume();
+        }
         isPlaying = true;
         atualPasso = 0;
         document.getElementById("playBtn").innerText = "⏸ Pause";
@@ -625,10 +637,10 @@
             const notaBaixo = baixoSeq[atualPasso];
             if (notaBaixo !== "") { // Se não for sustain
                 if (notaBaixo === "x") {
-                    tocarAudio("assets/bass-muted.mp3", baixoVolumeGlobal);
+                    tocarAudioBuffer("assets/bass-muted.mp3", baixoVolumeGlobal);
                     animarBaixo("x", msPorStep);
                 } else {
-                    tocarAudio(`assets/BaixoMelodia/${notaBaixo}.mp3`, baixoVolumeGlobal);
+                    tocarAudioBuffer(`assets/BaixoMelodia/${notaBaixo}.mp3`, baixoVolumeGlobal);
                     animarBaixo(notaBaixo, msPorStep);
                 }
             } else {
@@ -640,7 +652,7 @@
             drumLines.forEach(line => {
                 const seq = bateriaSeq[line.id];
                 if (seq && seq[atualPasso] === line.id) {
-                    tocarAudio(`assets/${line.file}`, bateriaVolumeGlobal);
+                    tocarAudioBuffer(`assets/${line.file}`, bateriaVolumeGlobal);
                 }
             });
             
@@ -667,24 +679,36 @@
         // Remove highlights
         document.querySelectorAll(".playing-step").forEach(el => el.classList.remove("playing-step"));
         if(audioBaixoAtual) {
-            audioBaixoAtual.pause();
+            audioBaixoAtual.stop();
             audioBaixoAtual = null;
         }
     }
 
-    function tocarAudio(path, vol) {
-        // Criação dinâmica de audio. Idealmente seria um pool, mas para simplificar:
-        const audio = new Audio(path);
-        audio.volume = Math.max(0, Math.min(1, vol));
-        audio.play().catch(() => {}); // Ignora erros de abort
-        
-        if (path.includes("BaixoMelodia") || path.includes("bass-muted")) {
-            // Guarda referência para poder parar se necessário
-            if(audioBaixoAtual && !audioBaixoAtual.paused) {
-                 // Crossfade rápido se quiser, mas aqui só corta
-                 // audioBaixoAtual.pause(); 
+    async function getAudioBuffer(url) {
+        if (audioBuffers[url]) return audioBuffers[url];
+        const response = await fetch(url);
+        const arrayBuffer = await response.arrayBuffer();
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        audioBuffers[url] = audioBuffer;
+        return audioBuffer;
+    }
+
+    async function tocarAudioBuffer(path, vol) {
+        try {
+            const buffer = await getAudioBuffer(path);
+            const source = audioContext.createBufferSource();
+            source.buffer = buffer;
+            const gainNode = audioContext.createGain();
+            gainNode.gain.value = Math.max(0, Math.min(1, vol));
+            source.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            source.start();
+            if (path.includes("BaixoMelodia") || path.includes("bass-muted")) {
+                if(audioBaixoAtual) audioBaixoAtual.stop();
+                audioBaixoAtual = source;
             }
-            audioBaixoAtual = audio;
+        } catch (e) {
+            console.warn("Erro ao tocar áudio:", path, e);
         }
     }
 
@@ -875,7 +899,7 @@
                         bateriaSeq[line.id][idx] = line.id;
                         cell.classList.add("active");
                         // Preview som
-                        new Audio(`assets/${line.file}`).play().catch(()=>{});
+                        tocarAudioBuffer(`assets/${line.file}`, 1.0);
                     } else {
                         bateriaSeq[line.id][idx] = "x";
                         cell.classList.remove("active");
@@ -939,7 +963,7 @@
             btn.onclick = () => {
                 selecionarNota(idx, nota, overlay);
                 // Preview som
-                tocarAudio(`assets/BaixoMelodia/${nota}.mp3`, 1.0);
+                tocarAudioBuffer(`assets/BaixoMelodia/${nota}.mp3`, 1.0);
             };
             optionsContainer.appendChild(btn);
         });
@@ -959,7 +983,7 @@
     }
 
     // =========================================================
-    // UTILITÁRIOS
+    // UTILITÁRIOS & EXPORTAÇÃO
     // =========================================================
 
     function gerarAleatorio() {
@@ -1017,6 +1041,77 @@
             reader.readAsText(file);
         };
         input.click();
+    }
+
+    async function exportarWAV() {
+        const btn = document.getElementById("exportWavBtn");
+        const originalText = btn.innerText;
+        btn.innerText = "Exportando...";
+        btn.disabled = true;
+
+        try {
+            const totalSteps = baixoSeq.length;
+            const secondsPerStep = (60 / bpmAtual) / 4;
+            const totalDuration = totalSteps * secondsPerStep;
+            const sampleRate = 44100;
+
+            const offlineCtx = new OfflineAudioContext(2, sampleRate * totalDuration, sampleRate);
+
+            // Agenda os samples do baixo
+            for (let i = 0; i < totalSteps; i++) {
+                const nota = baixoSeq[i];
+                if (nota !== "" && nota !== null) {
+                    const time = i * secondsPerStep;
+                    let url = nota === "x" ? "assets/bass-muted.mp3" : `assets/BaixoMelodia/${nota}.mp3`;
+                    const buffer = await getAudioBuffer(url);
+                    const source = offlineCtx.createBufferSource();
+                    source.buffer = buffer;
+                    const gainNode = offlineCtx.createGain();
+                    gainNode.gain.value = baixoVolumeGlobal;
+                    source.connect(gainNode);
+                    gainNode.connect(offlineCtx.destination);
+                    source.start(time);
+                }
+            }
+
+            // Agenda os samples da bateria
+            for (const line of drumLines) {
+                const seq = bateriaSeq[line.id];
+                if (seq) {
+                    for (let i = 0; i < totalSteps; i++) {
+                        if (seq[i] === line.id) {
+                            const time = i * secondsPerStep;
+                            const url = `assets/${line.file}`;
+                            const buffer = await getAudioBuffer(url);
+                            const source = offlineCtx.createBufferSource();
+                            source.buffer = buffer;
+                            const gainNode = offlineCtx.createGain();
+                            gainNode.gain.value = bateriaVolumeGlobal;
+                            source.connect(gainNode);
+                            gainNode.connect(offlineCtx.destination);
+                            source.start(time);
+                        }
+                    }
+                }
+            }
+
+            const renderedBuffer = await offlineCtx.startRendering();
+            const wavBuffer = audioBufferToWav(renderedBuffer);
+            const blob = new Blob([wavBuffer], { type: 'audio/wav' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'minha-composicao.wav';
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("Erro ao exportar WAV:", error);
+            alert("Falha na exportação do áudio.");
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
     }
 
     function verificarOrientacao() {
