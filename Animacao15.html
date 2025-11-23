@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Baixista Studio Pro - Fixed Layers & Smooth Video</title>
+  <title>Baixista Studio Pro - Gravação Otimizada</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
   <style>
@@ -54,8 +54,7 @@
       pointer-events: none; visibility: hidden;
     }
 
-    /* --- CORREÇÃO DE CAMADAS (CSS) --- */
-    /* Antebraço (z-index 2) agora fica ATRÁS do Tronco (z-index 3) */
+    /* CAMADAS CSS (Visualização Tela) */
     #pernasLayer       { position: absolute; top: 332px; left: 64px; z-index: 1; pointer-events: none; }
     
     #bodyWrapperPendulo {
@@ -65,13 +64,8 @@
     #bodyWrapperPendulo img { position: absolute; image-rendering: pixelated; pointer-events: none; }
 
     #cabecaTrasLayer   { top: 60px;   left: 100px; z-index: 1; }
-    
-    /* Antebraço rebaixado para fundo */
-    #antebracoLayer    { top: 179px;  left: -2px;  z-index: 2; } 
-    
-    /* Tronco elevado para frente */
+    #antebracoLayer    { top: 179px;  left: -2px;  z-index: 2; } /* Atrás do tronco */
     #troncoBaixoLayer  { top: 132px;  left: 0px;   z-index: 3; }
-    
     #bracoDireitoLayer { top: 250px;  left: -5px;  z-index: 4; }
     #cabecaLayer       { top: 37px;   left: 70px;  z-index: 5; }
 
@@ -93,15 +87,20 @@
       display: flex; align-items: center; gap: 4px; white-space: nowrap;
     }
     button:hover { background: #333; border-color: #777; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
 
     #playBtn { background: var(--accent-color); border-color: var(--highlight-color); font-weight: bold; color: #fff; }
-    #playBtn:hover { background: #00c853; color: #000; }
-
+    
     #recordVideoBtn.recording {
         background: var(--record-color); color: white; border-color: #ff0000;
         animation: pulse 1.5s infinite; font-weight: bold;
     }
-    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(213, 0, 0, 0.7); } 70% { box-shadow: 0 0 0 8px rgba(213, 0, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(213, 0, 0, 0); } }
+    #recordVideoBtn.preparing {
+        background: #ff9800; color: #000; border-color: #ffb74d;
+        animation: pulse 0.5s infinite;
+    }
+
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
     #generationInfo {
         margin-left: auto; font-size: 0.7rem; color: var(--highlight-color);
@@ -117,6 +116,7 @@
     #progressContainer { width: 100%; height: 3px; background: #333; margin-bottom: 8px; }
     #progressBar { height: 100%; width: 0%; background: var(--highlight-color); transition: width 0.1s linear; }
 
+    /* Grids */
     #gridsArea { flex: 1; overflow: auto; border: 1px solid #333; background: var(--grid-bg); position: relative; }
     .rowContainer { display: flex; align-items: center; margin-bottom: 1px; width: max-content; min-width: 100%; position: relative; }
     .gridLabel {
@@ -135,6 +135,7 @@
     .cell.playing-step { background-color: #333 !important; border-color: #fff !important; }
     .cell.active.playing-step { background-color: #00e676 !important; color: #000; box-shadow: 0 0 12px #00e676; z-index: 2; }
 
+    /* Modal */
     #selectionOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 20000; display: none; align-items: center; justify-content: center; }
     #selectionOverlay.visible { display: flex; animation: fadeIn 0.15s ease-out; }
     #selectionPanel { background: #1a1a1a; border: 1px solid #444; padding: 20px; border-radius: 8px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
@@ -149,7 +150,6 @@
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
     @media (max-width: 600px) { #bottomArea { flex-basis: 55vh; } :root { --label-width: 60px; --cell-size: 24px; } }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   </style>
 </head>
 <body>
@@ -181,7 +181,7 @@
       <div id="playerControlsRow">
         <button id="playBtn">▶ Play</button>
         <button id="playAleatorioBtn">🎲 Aleatório (Smart)</button>
-        <button id="recordVideoBtn" title="Grava apenas a baixista (automático)">🔴 Gravar Vídeo</button>
+        <button id="recordVideoBtn" title="Prepara assets antes de gravar">🔴 Gravar Vídeo</button>
         <span id="generationInfo">Rock em Emaj</span>
         
         <span id="bpmDisplay" style="margin-left: auto;">120 BPM</span>
@@ -221,50 +221,23 @@
   </div>
 
   <script>
+    // =========================================================
+    // CACHE AVANÇADO PARA EVITAR GLITCHES
+    // =========================================================
+    const ASSET_CACHE = {}; // Armazena imagens de Tronco, Braço, Mão já carregadas
+    const HEAD_CACHE = [];  // Armazena os 100 frames da cabeça como Objetos Image prontos
+
     // ... (Dados inalterados) ...
     const pastaMap = { 1: ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B"], 2: ["3FS","4G","5GS","6A","8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C"], 3: ["4G","5GS","6A","7AS","9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS"], 4: ["5GS","6A","7AS","8B","10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D"], 5: ["6A","7AS","8B","9C","11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS"], 6: ["7AS","8B","9C","10CS","12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E"], 7: ["8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F"], 8: ["9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS"], 9: ["10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G"], 10: ["11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS"], 11: ["12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A"], 12: ["13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS"], 13: ["14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B"], 14: ["15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C"], 15: ["16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS"], 16: ["17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D"], 17: ["18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS"], 18: ["19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E"], 19: ["20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F"], 20: ["21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS","36DS","37E","38F","39FS"], 21: ["22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D","37E","38F","39FS","40G"], 22: ["23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS","38F","39FS","40G","41GS"], 23: ["24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E","39FS","40G","41GS","42A"], 24: ["25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F","40G","41GS","42A","43AS"] };
     const pastaFolderNames = { 1:"1F", 2:"2FS", 3:"3G", 4:"4GS", 5:"5A", 6:"6AS", 7:"7B", 8:"8C", 9:"9CS", 10:"10D", 11:"11DS", 12:"12E", 13:"13F", 14:"14FS", 15:"15G", 16:"16GS", 17:"17A", 18:"18AS", 19:"19B", 20:"20C", 21:"21CS", 22:"22D", 23:"23DS", 24:"24E" };
     const notasValidas = ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B","21C","22CS","23D","24DS","25E","26F","27FS","28G","29GS","30A","31AS","32B","33C","34CS","35D","36DS","37E","38F","39FS","40G","41GS","42A","43AS"];
-    
     const drumLines = [
-      { id: "bumbo", label: "Bumbo", file: "bumbo.mp3" },
-      { id: "caixa", label: "Caixa", file: "caixa.mp3" },
-      { id: "caixaAro", label: "Aro", file: "caixaAro.mp3" },
-      { id: "chimbal", label: "HH", file: "chimbal.mp3" },
-      { id: "chimbal_pedal", label: "HH Ped", file: "chimbal-pedal.mp3" },
-      { id: "chimbalaberto", label: "HH Open", file: "chimbal-aberto.mp3" },
-      { id: "ataque", label: "Ataque", file: "ataque.mp3" },
-      { id: "tom1", label: "Tom 1", file: "tom-1.mp3" },
-      { id: "tom2", label: "Tom 2", file: "tom-2.mp3" },
-      { id: "surdo", label: "Surdo", file: "surdo.mp3" },
-      { id: "conducao", label: "Ride", file: "conducao.mp3" },
-      { id: "conducao_centro", label: "Ride C", file: "conducao-centro.mp3" }
+      { id: "bumbo", label: "Bumbo", file: "bumbo.mp3" }, { id: "caixa", label: "Caixa", file: "caixa.mp3" }, { id: "caixaAro", label: "Aro", file: "caixaAro.mp3" }, { id: "chimbal", label: "HH", file: "chimbal.mp3" }, { id: "chimbal_pedal", label: "HH Ped", file: "chimbal-pedal.mp3" }, { id: "chimbalaberto", label: "HH Open", file: "chimbal-aberto.mp3" }, { id: "ataque", label: "Ataque", file: "ataque.mp3" }, { id: "tom1", label: "Tom 1", file: "tom-1.mp3" }, { id: "tom2", label: "Tom 2", file: "tom-2.mp3" }, { id: "surdo", label: "Surdo", file: "surdo.mp3" }, { id: "conducao", label: "Ride", file: "conducao.mp3" }, { id: "conducao_centro", label: "Ride C", file: "conducao-centro.mp3" }
     ];
-
     const PITCHES = ['A','AS','B','C','CS','D','DS','E','F','FS','G','GS'];
     const DEGREE_TO_ROOT = { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11 };
-    const STYLE_PROGRESSIONS = {
-        Rock: [[1,4,5,1], [1,5,6,4], [6,4,1,5]],
-        Rock2: [[4,5,1,5], [5,4,1,4], [7,4,1,1]],
-        Rock3: [[1,4,5,1], [1,3,4,5]],
-        Rock4: [[6,4,1,5,1,5,4,5], [1,4,5,1,4,5,4,5], [1,5,6,4,1,5,6,7]],
-        Rock5: [[1,5,7,4], [1,4,5,6], [1,5,6,4]],
-        Rock6: [[1,5,6,4], [1,4,5,1], [1,5,6,7]],
-        Rock7: [[2,3,5,1], [1,4,7,1], [1,5,3,4]],
-        Rock_Progressivo: [[4,5,1,1,4,5,7], [1,4,1,4,5,6,5], [1,4,5,6,3,5,4]],
-        Blues: [[1,4,5,4,1,4,5,4,1,4,5,4], [1,4,5,1]],
-        Forró: [[1,5,1,5,4,5,4,5]],
-        Samba: [[2,5,1,1], [1,4,5,1]],
-        Metal: [[1, 3, 5, 6, 1, 2, 3, 4], [1, 3, 4, 5], [2, 5, 1, 5]],
-        Jazz: [[1,2,5,1], [2,5,1,4], [3,6,2,5]]
-    };
-    const ALL_GROOVES = [
-        { name: "Rock", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch bu"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 8] },
-        { name: "Rock Drive", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 5] },
-        { name: "Metal", meter: "4/4", drumPattern: ["bch bu bch bu cch bu bch bu bch bu bch bu cch bu bch bu"], bassRhythm: ["bo bo bo bo bo bo bo bo bo bo bo bo bo bo bo bo"], bassScale: [1,1,1,1] },
-        { name: "Funk", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch -"], bassRhythm: ["bo - - - bo - bo x bo x bo x bo - x x"], bassScale: [1,8] },
-        { name: "Samba", meter: "2/4", drumPattern: ["bch - ch bu bch - ch bu"], bassRhythm: ["bo - x x bo - - x"], bassScale: [8, 5] },
-    ];
+    const STYLE_PROGRESSIONS = { Rock: [[1,4,5,1], [1,5,6,4], [6,4,1,5]], Rock2: [[4,5,1,5], [5,4,1,4], [7,4,1,1]], Rock3: [[1,4,5,1], [1,3,4,5]], Rock4: [[6,4,1,5,1,5,4,5], [1,4,5,1,4,5,4,5], [1,5,6,4,1,5,6,7]], Rock5: [[1,5,7,4], [1,4,5,6], [1,5,6,4]], Rock6: [[1,5,6,4], [1,4,5,1], [1,5,6,7]], Rock7: [[2,3,5,1], [1,4,7,1], [1,5,3,4]], Rock_Progressivo: [[4,5,1,1,4,5,7], [1,4,1,4,5,6,5], [1,4,5,6,3,5,4]], Blues: [[1,4,5,4,1,4,5,4,1,4,5,4], [1,4,5,1]], Forró: [[1,5,1,5,4,5,4,5]], Samba: [[2,5,1,1], [1,4,5,1]], Metal: [[1, 3, 5, 6, 1, 2, 3, 4], [1, 3, 4, 5], [2, 5, 1, 5]], Jazz: [[1,2,5,1], [2,5,1,4], [3,6,2,5]] };
+    const ALL_GROOVES = [ { name: "Rock", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch bu"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 8] }, { name: "Rock Drive", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 5] }, { name: "Metal", meter: "4/4", drumPattern: ["bch bu bch bu cch bu bch bu bch bu bch bu cch bu bch bu"], bassRhythm: ["bo bo bo bo bo bo bo bo bo bo bo bo bo bo bo bo"], bassScale: [1,1,1,1] }, { name: "Funk", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch -"], bassRhythm: ["bo - - - bo - bo x bo x bo x bo - x x"], bassScale: [1,8] }, { name: "Samba", meter: "2/4", drumPattern: ["bch - ch bu bch - ch bu"], bassRhythm: ["bo - x x bo - - x"], bassScale: [8, 5] } ];
 
     // STATE
     let isPlaying = false, playbackInterval = null, bpmAtual = 120, atualPasso = 0;
@@ -275,7 +248,7 @@
     // Animation State
     let posicaoAtualPasta = 1, ultimaCordaUsada = "E", ultimaNotaReal = "1E";
     let reqAnimIdVisual = null, headLoopTimer = null, rightHandTimer = null;
-    let headFrameIndex = 0, headFrames = [];
+    let headFrameIndex = 0;
     let pendulumAngle = 0;
 
     // Canvas & Recording State
@@ -296,46 +269,329 @@
         cabeca: document.getElementById("cabecaLayer")
     };
 
-    // --- CORREÇÃO DE BUG DE FRAMES NO VÍDEO ---
-    // Objeto que guarda as imagens reais carregadas para o canvas desenhar
-    // Isso evita que o canvas tente desenhar uma imagem que ainda está "loading" no DOM
+    // Buffer de Desenho do Canvas (O que está pronto para ser desenhado)
     let canvasBuffer = {
         tronco: domImages.tronco,
         antebraco: domImages.antebraco,
         bracoDir: domImages.bracoDir,
-        cabeca: domImages.cabeca
+        cabeca: domImages.cabeca // Inicial, depois usa HEAD_CACHE
     };
 
     window.onload = async () => {
         verificarOrientacao();
         window.addEventListener("resize", verificarOrientacao);
         
-        // Init Buffer
-        canvasBuffer.tronco = domImages.tronco;
-        canvasBuffer.antebraco = domImages.antebraco;
-
-        for (let i = 1; i <= 100; i++) headFrames.push(`animacao/cabeca/cabeca${String(i).padStart(4, "0")}.png`);
-        preloadImages(headFrames).then(startHeadLoop);
+        // 1. Carregar todas as 100 imagens da cabeça na memória
+        const headUrls = [];
+        for (let i = 1; i <= 100; i++) headUrls.push(`animacao/cabeca/cabeca${String(i).padStart(4, "0")}.png`);
         
+        document.getElementById("playBtn").innerText = "Carregando...";
+        document.getElementById("playBtn").disabled = true;
+
+        // Carrega Cabeça
+        await Promise.all(headUrls.map(url => new Promise(resolve => {
+            const img = new Image();
+            img.onload = img.onerror = () => {
+                 HEAD_CACHE.push(img); // Guarda o objeto imagem pronto
+                 resolve();
+            };
+            img.src = url;
+        })));
+        
+        // Inicia loop da cabeça e visual
+        startHeadLoop();
+        startVisualLoop();
+
+        document.getElementById("playBtn").innerText = "▶ Play";
+        document.getElementById("playBtn").disabled = false;
+
         gerarAleatorio(); 
         renderGrids();
         setupListeners();
-        startVisualLoop();
     };
 
-    // Helper para carregar imagem sem piscar
-    function carregarImagemBuffer(key, url) {
-        const img = new Image();
-        img.onload = () => {
-            // Atualiza DOM (Visualização)
-            domImages[key].src = url;
-            // Atualiza Buffer (Canvas/Video) - Só agora que está pronta
-            canvasBuffer[key] = img;
-        };
-        img.src = url;
+    // =========================================================
+    // SISTEMA DE PREPARAÇÃO DE ASSETS (Blindagem contra Bugs)
+    // =========================================================
+    
+    // Função auxiliar para carregar e decodificar imagem
+    function carregarAssetUnico(url) {
+        return new Promise((resolve, reject) => {
+            if (ASSET_CACHE[url]) return resolve(ASSET_CACHE[url]); // Já tem
+            const img = new Image();
+            img.src = url;
+            img.onload = () => {
+                // decode() força o browser a processar a imagem na GPU/Memória
+                img.decode().then(() => {
+                    ASSET_CACHE[url] = img;
+                    resolve(img);
+                }).catch(() => {
+                    ASSET_CACHE[url] = img; // Fallback se decode falhar
+                    resolve(img);
+                });
+            };
+            img.onerror = resolve; // Não trava se falhar
+        });
     }
 
-    // ... (Funções de Audio WAV - Mantidas do código anterior) ...
+    // Analisa a música atual e carrega TUDO que vai ser usado
+    async function prepararGravacao() {
+        const btn = document.getElementById("recordVideoBtn");
+        btn.innerText = "Preparando...";
+        btn.classList.add("preparing");
+        
+        // 1. Pausa se estiver tocando
+        if (isPlaying) pararPlayback();
+
+        // 2. Coleta URLs únicas necessárias
+        const urlsParaCarregar = new Set();
+
+        // Percorre a sequência do baixo
+        let lastValidNote = "1E";
+        let lastFolder = 1;
+
+        // Simula a execução para descobrir quais assets seriam chamados
+        // Precisamos de um estado simulado pois a escolha da pasta depende do estado anterior
+        let simPosFolder = 1;
+
+        for (let i = 0; i < baixoSeq.length; i++) {
+            const nota = baixoSeq[i];
+            if (!nota || nota === "") continue;
+            
+            let noteToUse = nota;
+            if (nota === "x") noteToUse = lastValidNote; // Muted usa a anterior visualmente
+            else lastValidNote = nota;
+
+            // Lógica de pasta (simplificada mas alinhada com animarBaixo)
+            simPosFolder = escolherMelhorPasta(noteToUse, simPosFolder);
+            const folderName = pastaFolderNames[simPosFolder];
+            
+            // Tronco
+            urlsParaCarregar.add(`animacao/tronco_baixo/Pasta_${folderName}/${noteToUse}.png`);
+            
+            // Braço/Mão
+            const corda = getCordaDaNota(noteToUse);
+            urlsParaCarregar.add(`animacao/antebraco/antebraco${corda}.png`);
+            // Mãos (todos os 5 frames)
+            for(let f=1; f<=5; f++) {
+                urlsParaCarregar.add(`animacao/braco_direito/Corda_${corda}${f}.png`);
+            }
+        }
+
+        // 3. Carrega tudo
+        const promessas = Array.from(urlsParaCarregar).map(url => carregarAssetUnico(url));
+        await Promise.all(promessas);
+
+        // 4. Pronto
+        btn.classList.remove("preparing");
+        return true;
+    }
+
+    async function toggleRecording() {
+        const btn = document.getElementById("recordVideoBtn");
+        
+        if (isRecording) {
+            // PARAR
+            if (mediaRecorder) mediaRecorder.stop();
+            isRecording = false; 
+            btn.innerText = "🔴 Gravar Vídeo"; 
+            btn.classList.remove("recording");
+        } else {
+            // INICIAR
+            // Passo 1: Preparar Assets (Tempo de Download)
+            await prepararGravacao();
+
+            try {
+                if (audioContext.state === 'suspended') await audioContext.resume();
+                if(!isPlaying) drawFrameToCanvas(); 
+
+                const canvasStream = canvas.captureStream(30); 
+                const videoTrack = canvasStream.getVideoTracks()[0];
+                const audioTrack = mediaStreamDestination.stream.getAudioTracks()[0];
+                
+                const combinedStream = new MediaStream([videoTrack, audioTrack]);
+                let mimeType = 'video/webm';
+                if (MediaRecorder.isTypeSupported('video/webm; codecs=vp9')) mimeType = 'video/webm; codecs=vp9';
+                
+                mediaRecorder = new MediaRecorder(combinedStream, { mimeType: mimeType, videoBitsPerSecond: 3000000 });
+                recordedChunks = [];
+                mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a'); a.style.display = 'none'; a.href = url; a.download = 'baixista_jam_pro.webm';
+                    document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url);
+                };
+                
+                mediaRecorder.start(); 
+                isRecording = true; 
+                btn.innerText = "⏹ Parar"; 
+                btn.classList.add("recording");
+                
+                // Auto-play
+                if (!isPlaying) togglePlay();
+
+            } catch (err) { 
+                alert("Erro gravação: " + err); 
+                btn.innerText = "🔴 Gravar Vídeo";
+                btn.classList.remove("preparing");
+            }
+        }
+    }
+
+    // ... (Resto das funções inalteradas: Audio, WAV, Playback, etc) ...
+    function getCordaDaNota(nota) {
+        const m = nota.match(/^(\d+)/);
+        if (!m) return "E";
+        const n = parseInt(m[1], 10);
+        if (n <= 20) return "E"; if (n <= 28) return "A"; if (n <= 36) return "D"; return "G";
+    }
+
+    function escolherMelhorPasta(nota, posAtual) {
+        const pastas = [];
+        for (let p = 1; p <= 24; p++) if (pastaMap[p].includes(nota)) pastas.push(p);
+        if (pastas.length === 0) return 1;
+        return pastas.reduce((prev, curr) => Math.abs(curr - posAtual) < Math.abs(prev - posAtual) ? curr : prev);
+    }
+
+    // =========================================================
+    // LÓGICA DE ANIMAÇÃO OTIMIZADA (USANDO CACHE)
+    // =========================================================
+    
+    // Atualiza a imagem no DOM e no Buffer do Canvas
+    function atualizarImagemSegura(tipo, url) {
+        // 1. Tenta pegar do cache
+        if (ASSET_CACHE[url]) {
+            domImages[tipo].src = url;
+            canvasBuffer[tipo] = ASSET_CACHE[url];
+        } else {
+            // Se não estiver no cache (playback sem gravar), carrega normal
+            const img = new Image();
+            img.src = url;
+            img.onload = () => {
+                domImages[tipo].src = url;
+                canvasBuffer[tipo] = img;
+                ASSET_CACHE[url] = img; // Salva para o futuro
+            };
+        }
+    }
+
+    function animarBaixo(nota, duracaoStep) {
+        if (nota === "x") {
+            if (ultimaNotaReal) {
+                const pasta = pastaFolderNames[posicaoAtualPasta] || "1F";
+                atualizarImagemSegura('tronco', `animacao/tronco_baixo/Pasta_${pasta}/${ultimaNotaReal}.png`);
+            }
+            animarMaoDireita(ultimaCordaUsada, duracaoStep);
+            return;
+        }
+        
+        posicaoAtualPasta = escolherMelhorPasta(nota, posicaoAtualPasta);
+        ultimaNotaReal = nota;
+        const pastaNome = pastaFolderNames[posicaoAtualPasta];
+        
+        // Atualiza Tronco
+        atualizarImagemSegura('tronco', `animacao/tronco_baixo/Pasta_${pastaNome}/${nota}.png`);
+        
+        const corda = getCordaDaNota(nota);
+        ultimaCordaUsada = corda;
+        
+        // Atualiza Antebraço
+        atualizarImagemSegura('antebraco', `animacao/antebraco/antebraco${corda}.png`);
+        
+        animarMaoDireita(corda, duracaoStep);
+    }
+
+    function animarMaoDireita(corda, duracaoTotal) {
+        clearInterval(rightHandTimer);
+        let frame = 1; 
+        const totalFrames = 5; 
+        const frameTime = Math.min(duracaoTotal / totalFrames, 40);
+        
+        rightHandTimer = setInterval(() => {
+            const url = `animacao/braco_direito/Corda_${corda}${frame}.png`;
+            atualizarImagemSegura('bracoDir', url);
+            frame++;
+            if (frame > totalFrames) {
+                clearInterval(rightHandTimer);
+                const resetUrl = `animacao/braco_direito/Corda_${corda}1.png`;
+                atualizarImagemSegura('bracoDir', resetUrl);
+            }
+        }, frameTime);
+    }
+
+    function stopRightHand() {
+        clearInterval(rightHandTimer);
+        const url = `animacao/braco_direito/Corda_${ultimaCordaUsada || 'E'}1.png`;
+        atualizarImagemSegura('bracoDir', url);
+    }
+
+    // =========================================================
+    // LOOPS DE DESENHO
+    // =========================================================
+    function startHeadLoop() {
+        if(headLoopTimer) clearInterval(headLoopTimer);
+        headLoopTimer = setInterval(() => {
+            headFrameIndex = (headFrameIndex + 1) % HEAD_CACHE.length;
+            // Atualiza visualização DOM
+            if (HEAD_CACHE[headFrameIndex]) {
+                 domImages.cabeca.src = HEAD_CACHE[headFrameIndex].src;
+            }
+        }, 33);
+    }
+
+    function startVisualLoop() {
+        const amplitude = 2.3, speed = 0.003; 
+        const frame = () => {
+            const now = Date.now();
+            if(isPlaying) {
+                pendulumAngle = Math.sin(now * speed * (bpmAtual / 120)) * amplitude;
+            } else {
+                pendulumAngle = pendulumAngle * 0.9;
+            }
+            
+            const wrapper = document.getElementById("bodyWrapperPendulo");
+            if(wrapper) wrapper.style.transform = `rotate(${pendulumAngle}deg)`;
+
+            drawFrameToCanvas();
+            reqAnimIdVisual = requestAnimationFrame(frame);
+        };
+        reqAnimIdVisual = requestAnimationFrame(frame);
+    }
+
+    function drawFrameToCanvas() {
+        ctx.fillStyle = "#111"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        if (domImages.pernas.complete) ctx.drawImage(domImages.pernas, 64, 332);
+        
+        ctx.save(); 
+        ctx.translate(260, 416); 
+        ctx.rotate(pendulumAngle * Math.PI / 180); 
+        ctx.translate(-260, -416);
+        
+        // ORDEM DE CAMADAS CORRIGIDA PARA VÍDEO
+        // 1. Cabeça Atrás
+        if (domImages.cabecaTras.complete) ctx.drawImage(domImages.cabecaTras, 100, 60);
+        
+        // 2. Antebraço (Atrás do tronco)
+        if (canvasBuffer.antebraco) ctx.drawImage(canvasBuffer.antebraco, -2, 179);
+        
+        // 3. Tronco
+        if (canvasBuffer.tronco) ctx.drawImage(canvasBuffer.tronco, 0, 132);
+        
+        // 4. Mão
+        if (canvasBuffer.bracoDir) ctx.drawImage(canvasBuffer.bracoDir, -5, 250);
+        
+        // 5. Cabeça Frente (Usa CACHE direto para evitar piscadas)
+        if (HEAD_CACHE[headFrameIndex]) {
+            ctx.drawImage(HEAD_CACHE[headFrameIndex], 70, 37);
+        } else if (domImages.cabeca.complete) {
+            ctx.drawImage(domImages.cabeca, 70, 37);
+        }
+        
+        ctx.restore();
+    }
+
+    // ... (Funções Auxiliares de Setup, WAV, Orientação mantidas) ...
     function audioBufferToWav(buffer, opt) {
         opt = opt || {};
         var numChannels = buffer.numberOfChannels;
@@ -410,8 +666,6 @@
         document.getElementById("playExportadoBtn").onclick = importarJSON;
         document.getElementById("exportWavBtn").onclick = exportarWAV;
     }
-
-    // ... (Funções de geração aleatória mantidas) ...
     function expandRhythm(patternArray, totalSteps) {
         const joined = patternArray.join(' ').replace(/\s+/g, ' ').trim();
         const tokens = joined.split(/\s+/).filter(t => t);
@@ -457,7 +711,7 @@
             const rootOffset = DEGREE_TO_ROOT[degree] || 0;
             const rootIdx = (keyIdx + rootOffset) % 12;
             const chordScale = groove.bassScale;
-            let noteIndices = chordScale.map(int => (rootIdx + (int===1?0 : int===3?3 : int===5?7 : 0)) % 12); // Simplificado
+            let noteIndices = chordScale.map(int => (rootIdx + (int===1?0 : int===3?3 : int===5?7 : 0)) % 12);
             const notesPerBar = Math.ceil(sixteenthsPerBar / noteIndices.length);
             
             for (let step = 0; step < sixteenthsPerBar; step++) {
@@ -485,44 +739,6 @@
             drumLines.forEach(d => { bateriaSeq[d.id].push(activeDrums.includes(d.id) ? d.id : "x"); });
         }
         renderGrids();
-    }
-
-    async function toggleRecording() {
-        const btn = document.getElementById("recordVideoBtn");
-        if (isRecording) {
-            if (mediaRecorder) mediaRecorder.stop();
-            isRecording = false; 
-            btn.innerText = "🔴 Gravar Vídeo"; 
-            btn.classList.remove("recording");
-        } else {
-            try {
-                if (audioContext.state === 'suspended') await audioContext.resume();
-                if(!isPlaying) drawFrameToCanvas(); // Render inicial
-
-                const canvasStream = canvas.captureStream(30); 
-                const videoTrack = canvasStream.getVideoTracks()[0];
-                const audioTrack = mediaStreamDestination.stream.getAudioTracks()[0];
-                
-                const combinedStream = new MediaStream([videoTrack, audioTrack]);
-                let mimeType = 'video/webm';
-                if (MediaRecorder.isTypeSupported('video/webm; codecs=vp9')) mimeType = 'video/webm; codecs=vp9';
-                
-                mediaRecorder = new MediaRecorder(combinedStream, { mimeType: mimeType, videoBitsPerSecond: 3000000 });
-                recordedChunks = [];
-                mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
-                mediaRecorder.onstop = () => {
-                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a'); a.style.display = 'none'; a.href = url; a.download = 'baixista_jam.webm';
-                    document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url);
-                };
-                mediaRecorder.start(); 
-                isRecording = true; 
-                btn.innerText = "⏹ Parar"; 
-                btn.classList.add("recording");
-                if (!isPlaying) togglePlay();
-            } catch (err) { alert("Erro gravação: " + err); }
-        }
     }
 
     async function getAudioBuffer(url) {
@@ -606,132 +822,6 @@
         stopRightHand();
         document.querySelectorAll(".playing-step").forEach(el => el.classList.remove("playing-step"));
         if(audioBaixoAtual) { try{audioBaixoAtual.stop();}catch(e){} audioBaixoAtual = null; }
-    }
-
-    // =========================================================
-    // ANIMAÇÃO E CORREÇÃO DE DESENHO
-    // =========================================================
-    function startVisualLoop() {
-        const amplitude = 2.3, speed = 0.003; 
-        const frame = () => {
-            const now = Date.now();
-            if(isPlaying) {
-                pendulumAngle = Math.sin(now * speed * (bpmAtual / 120)) * amplitude;
-            } else {
-                pendulumAngle = pendulumAngle * 0.9;
-            }
-            
-            const wrapper = document.getElementById("bodyWrapperPendulo");
-            if(wrapper) wrapper.style.transform = `rotate(${pendulumAngle}deg)`;
-
-            drawFrameToCanvas();
-            reqAnimIdVisual = requestAnimationFrame(frame);
-        };
-        reqAnimIdVisual = requestAnimationFrame(frame);
-    }
-
-    function drawFrameToCanvas() {
-        ctx.fillStyle = "#111"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-        if (domImages.pernas.complete) ctx.drawImage(domImages.pernas, 64, 332);
-        
-        ctx.save(); 
-        ctx.translate(260, 416); 
-        ctx.rotate(pendulumAngle * Math.PI / 180); 
-        ctx.translate(-260, -416);
-        
-        // ORDEM CORRIGIDA PARA O VÍDEO
-        // 1. Cabeça Atrás
-        if (domImages.cabecaTras.complete) ctx.drawImage(domImages.cabecaTras, 100, 60);
-        
-        // 2. Antebraço (Desenhado ANTES do tronco para ficar atrás)
-        // Usamos o buffer para garantir que não desenhe nada "quebrado"
-        if (canvasBuffer.antebraco && canvasBuffer.antebraco.complete) ctx.drawImage(canvasBuffer.antebraco, -2, 179);
-        
-        // 3. Tronco
-        if (canvasBuffer.tronco && canvasBuffer.tronco.complete) ctx.drawImage(canvasBuffer.tronco, 0, 132);
-        
-        // 4. Braço Mão
-        if (canvasBuffer.bracoDir && canvasBuffer.bracoDir.complete) ctx.drawImage(canvasBuffer.bracoDir, -5, 250);
-        
-        // 5. Cabeça Frente
-        if (domImages.cabeca.complete) ctx.drawImage(domImages.cabeca, 70, 37);
-        
-        ctx.restore();
-    }
-
-    function startHeadLoop() {
-        if(headLoopTimer) clearInterval(headLoopTimer);
-        headLoopTimer = setInterval(() => {
-            headFrameIndex = (headFrameIndex + 1) % headFrames.length;
-            if(headFrames[headFrameIndex]) domImages.cabeca.src = headFrames[headFrameIndex];
-        }, 33);
-    }
-
-    function animarBaixo(nota, duracaoStep) {
-        if (nota === "x") {
-            if (ultimaNotaReal) {
-                const pasta = pastaFolderNames[posicaoAtualPasta] || "1F";
-                // Troca usando buffer para evitar piscar
-                carregarImagemBuffer('tronco', `animacao/tronco_baixo/Pasta_${pasta}/${ultimaNotaReal}.png`);
-            }
-            animarMaoDireita(ultimaCordaUsada, duracaoStep);
-            return;
-        }
-        posicaoAtualPasta = escolherMelhorPasta(nota, posicaoAtualPasta);
-        ultimaNotaReal = nota;
-        const pastaNome = pastaFolderNames[posicaoAtualPasta];
-        
-        // Troca Segura de Imagem
-        carregarImagemBuffer('tronco', `animacao/tronco_baixo/Pasta_${pastaNome}/${nota}.png`);
-        
-        const corda = getCordaDaNota(nota);
-        ultimaCordaUsada = corda;
-        carregarImagemBuffer('antebraco', `animacao/antebraco/antebraco${corda}.png`);
-        
-        animarMaoDireita(corda, duracaoStep);
-    }
-
-    function getCordaDaNota(nota) {
-        const m = nota.match(/^(\d+)/);
-        if (!m) return "E";
-        const n = parseInt(m[1], 10);
-        if (n <= 20) return "E"; if (n <= 28) return "A"; if (n <= 36) return "D"; return "G";
-    }
-
-    function escolherMelhorPasta(nota, posAtual) {
-        const pastas = [];
-        for (let p = 1; p <= 24; p++) if (pastaMap[p].includes(nota)) pastas.push(p);
-        if (pastas.length === 0) return 1;
-        return pastas.reduce((prev, curr) => Math.abs(curr - posAtual) < Math.abs(prev - posAtual) ? curr : prev);
-    }
-
-    function animarMaoDireita(corda, duracaoTotal) {
-        clearInterval(rightHandTimer);
-        let frame = 1; const totalFrames = 5; const frameTime = Math.min(duracaoTotal / totalFrames, 40);
-        rightHandTimer = setInterval(() => {
-            const url = `animacao/braco_direito/Corda_${corda}${frame}.png`;
-            // Mão pode trocar direto pois é rápida, mas idealmente usaria buffer também
-            // Para simplicidade e performance em loop rápido, atualizamos direto mas o drawFrame usa o buffer da última válida se falhar? 
-            // Vamos usar update direto no buffer aqui para garantir.
-            const img = new Image();
-            img.src = url;
-            img.onload = () => { domImages.bracoDir.src = url; canvasBuffer.bracoDir = img; };
-            
-            frame++;
-            if (frame > totalFrames) {
-                clearInterval(rightHandTimer);
-                const resetUrl = `animacao/braco_direito/Corda_${corda}1.png`;
-                domImages.bracoDir.src = resetUrl;
-                // Pequeno hack para resetar buffer sem recarregar
-                const rImg = new Image(); rImg.src = resetUrl; canvasBuffer.bracoDir = rImg;
-            }
-        }, frameTime);
-    }
-
-    function stopRightHand() {
-        clearInterval(rightHandTimer);
-        const url = `animacao/braco_direito/Corda_${ultimaCordaUsada || 'E'}1.png`;
-        domImages.bracoDir.src = url;
     }
 
     function exportarWAV() {
@@ -861,7 +951,6 @@
     function verificarOrientacao() {
         document.getElementById("orientationOverlay").style.display = (window.innerWidth < window.innerHeight && window.innerWidth < 900) ? "flex" : "none";
     }
-    function preloadImages(srcs) { return Promise.all(srcs.map(s => new Promise(r => { const i = new Image(); i.onload=i.onerror=r; i.src=s; }))); }
   </script>
 </body>
 </html>
