@@ -252,60 +252,6 @@
       text-align: center;
     }
 
-    /* === ESTILOS DO PICKER DE NÚMEROS === */
-    #numberPicker {
-      display: none;
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      background: #1e1e1e;
-      border-top: 2px solid #5eead4;
-      padding: 20px;
-      box-shadow: 0 -4px 10px rgba(0,0,0,0.5);
-      z-index: 1000;
-      animation: slideUp 0.3s ease-out;
-      grid-template-columns: repeat(5, 1fr); /* 5 por linha em mobile fica melhor */
-      gap: 8px;
-      box-sizing: border-box;
-      max-height: 50vh;
-      overflow-y: auto;
-    }
-    @keyframes slideUp {
-      from { transform: translateY(100%); }
-      to { transform: translateY(0); }
-    }
-    #numberPicker h3 {
-      color: #5eead4;
-      text-align: center;
-      margin-top: 0;
-      margin-bottom: 15px;
-      grid-column: span 5;
-    }
-    .number-btn {
-      background: #333;
-      color: #e0e0e0;
-      border: 1px solid #444;
-      border-radius: 6px;
-      padding: 12px 0;
-      font-size: 1.1em;
-      cursor: pointer;
-      transition: all 0.1s ease;
-      touch-action: manipulation;
-    }
-    .number-btn:active {
-      transform: scale(0.95);
-      background: #5eead4;
-      color: #121212;
-    }
-    .close-btn {
-      grid-column: span 5;
-      background: #f44336;
-      color: white;
-      font-weight: bold;
-      margin-top: 10px;
-    }
-
     /* === OTIMIZAÇÃO PESADA PARA CELULAR === */
     @media (max-width: 768px) {
       body {
@@ -556,11 +502,6 @@
     </div>
   </div>
 
-  <div id="numberPicker">
-    <h3>Selecione uma nota</h3>
-    <div id="numberGrid"></div>
-  </div>
-
   <div class="panel" style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #333;">
     <h3 style="color: #5eead4; margin-top: 0;">🎲 Gerador de Progressão Aleatória</h3>
     <p style="color: #aaa; margin-bottom: 16px; font-size: 0.95em;">
@@ -644,8 +585,7 @@
         btnMelodyAdd: document.getElementById('btnMelodyAdd'),
         btnMelodyClear: document.getElementById('btnMelodyClear'),
         melodyInstrument: document.getElementById('melodyInstrument'),
-        numberPicker: document.getElementById('numberPicker'),
-        numberGrid: document.getElementById('numberGrid'),
+        // Picker elements removed
         btnSaveWAV: document.getElementById('btnSaveWAV'),
         chordProgression: document.getElementById('chordProgression'),
         btnOpenManual: document.getElementById('btnOpenManual')
@@ -1700,10 +1640,6 @@
             td.appendChild(input);
             inputRow.appendChild(td);
             if (isMobileDevice()) {
-                input.addEventListener('focus', (e) => {
-                    state.activeInput = e.target;
-                    showNumberPicker();
-                });
                 input.addEventListener('dblclick', (e) => { e.target.value = ''; });
             }
         }
@@ -1807,40 +1743,6 @@
         state.lastMelodyGain = g;
         src.finished = false;
         src.onended = () => { src.finished = true; };
-    }
-
-    function initializeNumberPicker() {
-        for (let i = 1; i <= 49; i++) {
-            const btn = document.createElement('button');
-            btn.className = 'number-btn';
-            btn.textContent = i;
-            btn.dataset.number = i;
-            btn.addEventListener('click', handleNumberSelection);
-            ui.numberGrid.appendChild(btn);
-        }
-        const closeBtn = document.createElement('button');
-        closeBtn.className = 'number-btn close-btn';
-        closeBtn.textContent = 'Fechar';
-        closeBtn.addEventListener('click', hideNumberPicker);
-        ui.numberGrid.appendChild(closeBtn);
-    }
-
-    function showNumberPicker() {
-        if (!isMobileDevice()) return;
-        ui.numberPicker.style.display = 'grid';
-    }
-    function hideNumberPicker() { ui.numberPicker.style.display = 'none'; }
-
-    function handleNumberSelection(e) {
-        const number = e.target.dataset.number;
-        if (state.activeInput) {
-            state.activeInput.value = number;
-            state.activeInput.dispatchEvent(new Event('input', { bubbles: true }));
-            state.activeInput.dispatchEvent(new Event('change', { bubbles: true }));
-            state.activeInput.blur();
-            state.activeInput = null;
-        }
-        hideNumberPicker();
     }
 
     function audioBufferToWav(buffer) {
@@ -2128,7 +2030,7 @@
             ui.btnOpenManual.addEventListener('click', () => { window.open('jam-on-composicao-manual.html', '_blank'); });
         }
         
-        if (isMobileDevice()) initializeNumberPicker();
+        // Mobile picker initialization removed here
         updateMelodyInstrumentSelect();
         
         const buttons = document.querySelectorAll('button');
