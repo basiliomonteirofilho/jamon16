@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <script src="https://cdn.jsdelivr.net/npm/audiobuffer-to-wav@1.0.0/index.min.js"></script>
   <meta charset="UTF-8" />
-  <title>Baixista Studio Pro - Gravação Otimizada</title>
+  <title>Baixista + Baterista Studio Pro</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
   <style>
@@ -15,8 +16,8 @@
       --grid-bg: #000;
       --cell-bg: #151515;
       --cell-border: #333;
-      --label-width: 75px;
-      --cell-size: 28px;
+      --label-width: 70px;
+      --cell-size: 26px;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -39,14 +40,38 @@
       background: radial-gradient(circle at top, #222 0%, #000 80%);
     }
 
-    /* Área da Animação */
     #topArea {
       flex: 1; display: flex; align-items: center; justify-content: center;
       position: relative; overflow: hidden;
     }
 
+    /* PALCOS */
+    #animacaoStageWrapper {
+      position: relative; width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* BATERISTA (Fica atrás, Z-Index menor) */
+    #bateristaStage {
+        position: absolute;
+        width: 520px; height: 520px;
+        transform-origin: center center;
+        z-index: 1; /* Atrás do baixista */
+        /* Ajuste de escala/posição se necessário para ficar "atrás" */
+        transform: scale(0.9) translateY(-20px); 
+    }
+    
+    #bateristaStage img {
+        position: absolute;
+        top: 0; left: 0;
+        pointer-events: none;
+    }
+
+    /* BAIXISTA (Fica na frente, Z-Index maior) */
     #baixistaStage {
-      position: relative; width: 520px; height: 520px; transform-origin: center center;
+      position: absolute; width: 520px; height: 520px;
+      transform-origin: center center;
+      z-index: 10; 
     }
 
     #recordingCanvas {
@@ -54,9 +79,8 @@
       pointer-events: none; visibility: hidden;
     }
 
-    /* CAMADAS CSS (Visualização Tela) */
-    #pernasLayer       { position: absolute; top: 332px; left: 64px; z-index: 1; pointer-events: none; }
-    
+    /* Camadas DOM Baixista */
+    #pernasLayer { position: absolute; top: 332px; left: 64px; z-index: 1; pointer-events: none; }
     #bodyWrapperPendulo {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5;
       transform-origin: 50% 80%; will-change: transform;
@@ -64,8 +88,8 @@
     #bodyWrapperPendulo img { position: absolute; image-rendering: pixelated; pointer-events: none; }
 
     #cabecaTrasLayer   { top: 60px;   left: 100px; z-index: 1; }
-    #antebracoLayer    { top: 179px;  left: -2px;  z-index: 2; } /* Atrás do tronco */
-    #troncoBaixoLayer  { top: 132px;  left: 0px;   z-index: 3; }
+    #troncoBaixoLayer  { top: 132px;  left: 0px;   z-index: 2; }
+    #antebracoLayer    { top: 179px;  left: -2px;  z-index: 3; }
     #bracoDireitoLayer { top: 250px;  left: -5px;  z-index: 4; }
     #cabecaLayer       { top: 37px;   left: 70px;  z-index: 5; }
 
@@ -73,7 +97,7 @@
     #bottomArea {
       flex: 0 0 50vh; max-height: 450px; min-height: 300px;
       display: flex; flex-direction: column; background: var(--panel-bg);
-      border-top: 1px solid #333; padding: 10px; z-index: 10;
+      border-top: 1px solid #333; padding: 10px; z-index: 20;
       box-shadow: 0 -5px 30px rgba(0,0,0,0.8);
     }
 
@@ -87,20 +111,18 @@
       display: flex; align-items: center; gap: 4px; white-space: nowrap;
     }
     button:hover { background: #333; border-color: #777; }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
 
     #playBtn { background: var(--accent-color); border-color: var(--highlight-color); font-weight: bold; color: #fff; }
-    
+    #playBtn:hover { background: #00c853; color: #000; }
+
+    #recordVideoBtn {
+        background: #263238; border: 1px solid #546e7a; color: #cfd8dc;
+    }
     #recordVideoBtn.recording {
         background: var(--record-color); color: white; border-color: #ff0000;
         animation: pulse 1.5s infinite; font-weight: bold;
     }
-    #recordVideoBtn.preparing {
-        background: #ff9800; color: #000; border-color: #ffb74d;
-        animation: pulse 0.5s infinite;
-    }
-
-    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(213, 0, 0, 0.7); } 70% { box-shadow: 0 0 0 8px rgba(213, 0, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(213, 0, 0, 0); } }
 
     #generationInfo {
         margin-left: auto; font-size: 0.7rem; color: var(--highlight-color);
@@ -116,7 +138,6 @@
     #progressContainer { width: 100%; height: 3px; background: #333; margin-bottom: 8px; }
     #progressBar { height: 100%; width: 0%; background: var(--highlight-color); transition: width 0.1s linear; }
 
-    /* Grids */
     #gridsArea { flex: 1; overflow: auto; border: 1px solid #333; background: var(--grid-bg); position: relative; }
     .rowContainer { display: flex; align-items: center; margin-bottom: 1px; width: max-content; min-width: 100%; position: relative; }
     .gridLabel {
@@ -129,13 +150,12 @@
     .delete-btn { width: var(--cell-size); height: 18px; font-size: 10px; background: #b71c1c; border: none; color: rgba(255,255,255,0.8); border-radius: 2px; cursor: pointer; }
     .delete-btn:hover { background: #f44336; color: #fff; }
 
-    .cell { background: var(--cell-bg); border: 1px solid var(--cell-border); border-radius: 2px; color: #fff; font-size: 0.65rem; display: flex; align-items: center; justify-content: center; cursor: pointer; width: var(--cell-size); height: var(--cell-size); user-select: none; }
+    .cell { background: var(--cell-bg); border: 1px solid var(--cell-border); border-radius: 2px; color: #fff; font-size: 0.65rem; display: flex; align-items: center; justify-content: center; cursor: pointer; width: var(--cell-size); height: var(--cell-size); }
     .cell.active { background: var(--accent-color); border-color: var(--highlight-color); }
     .cell.active-ghost { background: #880e4f; border-color: #f50057; }
     .cell.playing-step { background-color: #333 !important; border-color: #fff !important; }
     .cell.active.playing-step { background-color: #00e676 !important; color: #000; box-shadow: 0 0 12px #00e676; z-index: 2; }
 
-    /* Modal */
     #selectionOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 20000; display: none; align-items: center; justify-content: center; }
     #selectionOverlay.visible { display: flex; animation: fadeIn 0.15s ease-out; }
     #selectionPanel { background: #1a1a1a; border: 1px solid #444; padding: 20px; border-radius: 8px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
@@ -149,7 +169,8 @@
     
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
-    @media (max-width: 600px) { #bottomArea { flex-basis: 55vh; } :root { --label-width: 60px; --cell-size: 24px; } }
+    @media (max-width: 600px) { #bottomArea { flex-basis: 55vh; } :root { --label-width: 50px; --cell-size: 22px; } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   </style>
 </head>
 <body>
@@ -163,17 +184,33 @@
   <div class="appRoot">
     <div id="topArea">
       <div id="animacaoStageWrapper">
+        
+        <div id="bateristaStage">
+            <img id="bat_chimbal_base" src="jamon16/animacao/Baterista/Bateria_Chimbal/Bateria.png" />
+            <img id="bat_ataque" src="jamon16/animacao/Baterista/Ataque/Ataque0001.png" />
+            <img id="bat_conducao" src="jamon16/animacao/Baterista/Conducao/Conducao0001.png" />
+            
+            <img id="bat_perna_esq" src="jamon16/animacao/Baterista/Perna_esquerda/Pedal_chimbal/Baterista0001.png" />
+            <img id="bat_tronco" src="jamon16/animacao/Baterista/Perna_Direita/Parado/Tronco0001.png" />
+            
+            <img id="bat_cabeca" src="jamon16/animacao/Baterista/Cabeca/Cabeca_estavel/cabeca0024.png" />
+            
+            <img id="bat_braco_esq" src="jamon16/animacao/Baterista/Braco_Esquerdo/Caixa/braco_esquerda0001.png" />
+            <img id="bat_braco_dir" src="jamon16/animacao/Baterista/Braco_Direito/Caixa/braco_direito0003.png" />
+        </div>
+
         <div id="baixistaStage">
             <img id="pernasLayer" src="animacao/pernas/Pernas.png" alt="Pernas" />
             <div id="bodyWrapperPendulo">
                 <img id="cabecaTrasLayer" src="animacao/cabeca_tras/cabeca-parte-de-tras.png" />
-                <img id="antebracoLayer" src="animacao/antebraco/antebracoE.png" />
                 <img id="troncoBaixoLayer" src="animacao/tronco_baixo/Pasta_1F/1E.png" />
+                <img id="antebracoLayer" src="animacao/antebraco/antebracoE.png" />
                 <img id="bracoDireitoLayer" src="animacao/braco_direito/Corda_E1.png" />
                 <img id="cabecaLayer" src="animacao/cabeca/cabeca0001.png" />
             </div>
             <div id="countdownOverlay" class="countdownOverlay"><span id="countdownText">3</span></div>
         </div>
+
       </div>
     </div>
 
@@ -181,7 +218,7 @@
       <div id="playerControlsRow">
         <button id="playBtn">▶ Play</button>
         <button id="playAleatorioBtn">🎲 Aleatório (Smart)</button>
-        <button id="recordVideoBtn" title="Prepara assets antes de gravar">🔴 Gravar Vídeo</button>
+        <button id="recordVideoBtn" title="Grava baixista + baterista">🔴 Gravar (Auto)</button>
         <span id="generationInfo">Rock em Emaj</span>
         
         <span id="bpmDisplay" style="margin-left: auto;">120 BPM</span>
@@ -222,22 +259,58 @@
 
   <script>
     // =========================================================
-    // CACHE AVANÇADO PARA EVITAR GLITCHES
+    // DADOS VISUAIS (Baixista e Baterista)
     // =========================================================
-    const ASSET_CACHE = {}; // Armazena imagens de Tronco, Braço, Mão já carregadas
-    const HEAD_CACHE = [];  // Armazena os 100 frames da cabeça como Objetos Image prontos
-
-    // ... (Dados inalterados) ...
     const pastaMap = { 1: ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B"], 2: ["3FS","4G","5GS","6A","8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C"], 3: ["4G","5GS","6A","7AS","9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS"], 4: ["5GS","6A","7AS","8B","10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D"], 5: ["6A","7AS","8B","9C","11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS"], 6: ["7AS","8B","9C","10CS","12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E"], 7: ["8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F"], 8: ["9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS"], 9: ["10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G"], 10: ["11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS"], 11: ["12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A"], 12: ["13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS"], 13: ["14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B"], 14: ["15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C"], 15: ["16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS"], 16: ["17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D"], 17: ["18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS"], 18: ["19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E"], 19: ["20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F"], 20: ["21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS","36DS","37E","38F","39FS"], 21: ["22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D","37E","38F","39FS","40G"], 22: ["23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS","38F","39FS","40G","41GS"], 23: ["24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E","39FS","40G","41GS","42A"], 24: ["25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F","40G","41GS","42A","43AS"] };
     const pastaFolderNames = { 1:"1F", 2:"2FS", 3:"3G", 4:"4GS", 5:"5A", 6:"6AS", 7:"7B", 8:"8C", 9:"9CS", 10:"10D", 11:"11DS", 12:"12E", 13:"13F", 14:"14FS", 15:"15G", 16:"16GS", 17:"17A", 18:"18AS", 19:"19B", 20:"20C", 21:"21CS", 22:"22D", 23:"23DS", 24:"24E" };
     const notasValidas = ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B","21C","22CS","23D","24DS","25E","26F","27FS","28G","29GS","30A","31AS","32B","33C","34CS","35D","36DS","37E","38F","39FS","40G","41GS","42A","43AS"];
     const drumLines = [
       { id: "bumbo", label: "Bumbo", file: "bumbo.mp3" }, { id: "caixa", label: "Caixa", file: "caixa.mp3" }, { id: "caixaAro", label: "Aro", file: "caixaAro.mp3" }, { id: "chimbal", label: "HH", file: "chimbal.mp3" }, { id: "chimbal_pedal", label: "HH Ped", file: "chimbal-pedal.mp3" }, { id: "chimbalaberto", label: "HH Open", file: "chimbal-aberto.mp3" }, { id: "ataque", label: "Ataque", file: "ataque.mp3" }, { id: "tom1", label: "Tom 1", file: "tom-1.mp3" }, { id: "tom2", label: "Tom 2", file: "tom-2.mp3" }, { id: "surdo", label: "Surdo", file: "surdo.mp3" }, { id: "conducao", label: "Ride", file: "conducao.mp3" }, { id: "conducao_centro", label: "Ride C", file: "conducao-centro.mp3" }
     ];
+
+    // =========================================================
+    // DADOS MUSICAIS (CÉREBRO INTELIGENTE)
+    // =========================================================
     const PITCHES = ['A','AS','B','C','CS','D','DS','E','F','FS','G','GS'];
     const DEGREE_TO_ROOT = { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11 };
-    const STYLE_PROGRESSIONS = { Rock: [[1,4,5,1], [1,5,6,4], [6,4,1,5]], Rock2: [[4,5,1,5], [5,4,1,4], [7,4,1,1]], Rock3: [[1,4,5,1], [1,3,4,5]], Rock4: [[6,4,1,5,1,5,4,5], [1,4,5,1,4,5,4,5], [1,5,6,4,1,5,6,7]], Rock5: [[1,5,7,4], [1,4,5,6], [1,5,6,4]], Rock6: [[1,5,6,4], [1,4,5,1], [1,5,6,7]], Rock7: [[2,3,5,1], [1,4,7,1], [1,5,3,4]], Rock_Progressivo: [[4,5,1,1,4,5,7], [1,4,1,4,5,6,5], [1,4,5,6,3,5,4]], Blues: [[1,4,5,4,1,4,5,4,1,4,5,4], [1,4,5,1]], Forró: [[1,5,1,5,4,5,4,5]], Samba: [[2,5,1,1], [1,4,5,1]], Metal: [[1, 3, 5, 6, 1, 2, 3, 4], [1, 3, 4, 5], [2, 5, 1, 5]], Jazz: [[1,2,5,1], [2,5,1,4], [3,6,2,5]] };
-    const ALL_GROOVES = [ { name: "Rock", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch bu"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 8] }, { name: "Rock Drive", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 5] }, { name: "Metal", meter: "4/4", drumPattern: ["bch bu bch bu cch bu bch bu bch bu bch bu cch bu bch bu"], bassRhythm: ["bo bo bo bo bo bo bo bo bo bo bo bo bo bo bo bo"], bassScale: [1,1,1,1] }, { name: "Funk", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch -"], bassRhythm: ["bo - - - bo - bo x bo x bo x bo - x x"], bassScale: [1,8] }, { name: "Samba", meter: "2/4", drumPattern: ["bch - ch bu bch - ch bu"], bassRhythm: ["bo - x x bo - - x"], bassScale: [8, 5] } ];
+    
+    const STYLE_PROGRESSIONS = {
+        Rock: [[1,4,5,1], [1,5,6,4], [6,4,1,5]],
+        Rock2: [[4,5,1,5], [5,4,1,4], [7,4,1,1]],
+        Rock3: [[1,4,5,1], [1,3,4,5]],
+        Rock4: [[6,4,1,5,1,5,4,5], [1,4,5,1,4,5,4,5], [1,5,6,4,1,5,6,7]],
+        Rock5: [[1,5,7,4], [1,4,5,6], [1,5,6,4]],
+        Rock6: [[1,5,6,4], [1,4,5,1], [1,5,6,7]],
+        Rock7: [[2,3,5,1], [1,4,7,1], [1,5,3,4]],
+        Rock_Progressivo: [[4,5,1,1,4,5,7], [1,4,1,4,5,6,5], [1,4,5,6,3,5,4]],
+        Rock_Progressivo2: [[1,4,5,1,5], [4,5,3,1,3,1,4,5,7,5], [1,4,1,4,5]],
+        Rock_Progressivo3: [[1,4,5,1,5,7], [1,3,4,5,2,5]],
+        Rock_Progressivo4: [[4,5,1,1,4,5,7,5], [1,4,1,4,5,6,5,7], [1,4,5,6,3,5,4,5]],
+        Rock_Progressivo5: [[4,5,1,1,4,5,7], [1,4,1,4,5,6,5], [1,4,5,6,3,5,4]],
+        Rock_Progressivo6: [[1,4,5,6,3,5], [1,4,1,4,5,6,5]],
+        Rock_Progressivo7: [[4,5,1,1], [1,4,5,1]],
+        Blues: [[1,4,5,4,1,4,5,4,1,4,5,4], [1,4,5,1]],
+        Forró: [[1,5,1,5,4,5,4,5]],
+        Samba: [[2,5,1,1], [1,4,5,1]],
+        Metal: [[1, 3, 5, 6, 1, 2, 3, 4], [1, 3, 4, 5], [2, 5, 1, 5]],
+        Jazz: [[1,2,5,1], [2,5,1,4], [3,6,2,5]]
+    };
+
+    const ALL_GROOVES = [
+        { name: "Rock", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch bu"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 8] },
+        { name: "Rock2", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch -"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 5] },
+        { name: "Rock3", meter: "4/4", drumPattern: ["bch - ch bu cch bu ch - bch - ch - cch - ch -"], bassRhythm: ["bo - - bo - - bo - bo - bo - bo - bo -"], bassScale: [1, 1, 1, 1] },
+        { name: "Rock4", meter: "4/4", drumPattern: ["ba - co - cco - co - bco - co - cco bu bco bu"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 7, 8, 7, 5, 3] },
+        { name: "Rock5", meter: "4/4", drumPattern: ["bch ch ch ch cch ch ch ch bch ch ch ch cch ch ch -"], bassRhythm: ["bo - - bo - - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 1, 5] },
+        { name: "Rock6", meter: "4/4", drumPattern: ["bco co co co cco co co co bco co co co cco co co co"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [8, 8, 1, 1] },
+        { name: "Rock_Progressivo", meter: "7/4", drumPattern: ["bch - ch -  cch - ch - bch - ch - cch - ch bu bch - ch - cch - ch - bch - ch bu"], bassRhythm: ["bo - - - - - - - bo - - - - - - bo - - bo bo bo bo bo bo bo bo bo bo"], bassScale: [1, 1, 1, 3, 5, 8, 3, 5, 8, 3, 5, 8, 5] },
+        { name: "Blues", meter: "4/4", drumPattern: ["bch - ch ch cch - ch ch bch - ch ch cch - ch ch"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 6, 8, 6, 5, 3] },
+        { name: "Forró", meter: "2/4", drumPattern: ["bch - co - ch - ca -"], bassRhythm: ["bo - - - x - - -"], bassScale: [8, 1] },
+        { name: "Funk", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch -"], bassRhythm: ["bo - - - bo - bo x bo x bo x bo - x x"], bassScale: [1,8] },
+        { name: "Disco", meter: "4/4", drumPattern: ["bu - ch ch bu - ch ch bu - ch ch bu - ch ch"], bassRhythm: ["bo - x x bo - x x bo - x x bo - x x"], bassScale: [1] },
+        { name: "Metal", meter: "4/4", drumPattern: ["bch bu bch bu cch bu bch bu bch bu bch bu cch bu bch bu"], bassRhythm: ["bo bo bo bo bo bo bo bo bo bo bo bo bo bo bo bo"], bassScale: [1,1,1,1] },
+        { name: "Samba", meter: "2/4", drumPattern: ["bch - ch bu bch - ch bu"], bassRhythm: ["bo - x x bo - - x"], bassScale: [8, 5] },
+    ];
 
     // STATE
     let isPlaying = false, playbackInterval = null, bpmAtual = 120, atualPasso = 0;
@@ -247,9 +320,14 @@
 
     // Animation State
     let posicaoAtualPasta = 1, ultimaCordaUsada = "E", ultimaNotaReal = "1E";
-    let reqAnimIdVisual = null, headLoopTimer = null, rightHandTimer = null;
-    let headFrameIndex = 0;
-    let pendulumAngle = 0;
+    let reqAnimIdPendulo = null, headLoopTimer = null, rightHandTimer = null;
+    let headFrameIndex = 0, headFrames = [];
+    
+    // Drummer State
+    let lastDrumArm = 'right'; // 'left' or 'right'
+    let drumArmTimer = null;
+    let drumTorsoTimer = null;
+    let drumHeadState = 'estavel'; // 'estavel', 'direita', 'esquerda'
 
     // Canvas & Recording State
     const canvas = document.getElementById("recordingCanvas");
@@ -258,8 +336,9 @@
     const audioBuffers = {};
     const mediaStreamDestination = audioContext.createMediaStreamDestination();
     let mediaRecorder = null, recordedChunks = [], isRecording = false;
+    let pendulumAngle = 0;
 
-    // DOM Images Ref
+    // Imagens (DOM Elements) - Baixista
     const domImages = {
         pernas: document.getElementById("pernasLayer"),
         cabecaTras: document.getElementById("cabecaTrasLayer"),
@@ -269,387 +348,99 @@
         cabeca: document.getElementById("cabecaLayer")
     };
 
-    // Buffer de Desenho do Canvas (O que está pronto para ser desenhado)
-    let canvasBuffer = {
-        tronco: domImages.tronco,
-        antebraco: domImages.antebraco,
-        bracoDir: domImages.bracoDir,
-        cabeca: domImages.cabeca // Inicial, depois usa HEAD_CACHE
+    // Imagens (DOM Elements) - Baterista
+    const batImages = {
+        base: document.getElementById("bat_chimbal_base"),
+        ataque: document.getElementById("bat_ataque"),
+        conducao: document.getElementById("bat_conducao"),
+        pernaEsq: document.getElementById("bat_perna_esq"),
+        tronco: document.getElementById("bat_tronco"),
+        cabeca: document.getElementById("bat_cabeca"),
+        bracoEsq: document.getElementById("bat_braco_esq"),
+        bracoDir: document.getElementById("bat_braco_dir")
     };
 
+    // =========================================================
+    // HELPERS MUSICAIS & ANIMAÇÃO
+    // =========================================================
+    function meterToBeats(meter) { return Number(meter.split('/')[0]) || 4; }
+
+    function expandRhythm(patternArray, totalSteps) {
+        const joined = patternArray.join(' ').replace(/\s+/g, ' ').trim();
+        const tokens = joined.split(/\s+/).filter(t => t);
+        const out = []; let i = 0;
+        while (out.length < totalSteps) {
+            for (const token of tokens) { if (out.length >= totalSteps) break; out.push(token); }
+            if (i++ > 1000) break;
+        }
+        return out.slice(0, totalSteps);
+    }
+
+    function parsePattern(patternText) {
+        const result = { intro: [], loop: [] };
+        const loopMatch = patternText.match(/\((.*?)\)/);
+        if (loopMatch) result.loop = loopMatch[1].trim().split(/\s+/).filter(s => s);
+        else result.loop = patternText.trim().split(/\s+/).filter(s => s);
+        return result;
+    }
+
+    function mapNoteToAnimId(musicalNote) {
+        let cleanNote = musicalNote.replace(/[0-9]/g, '').replace('#', 'S');
+        const matches = notasValidas.filter(n => n.endsWith(cleanNote));
+        return matches.length > 0 ? matches[0] : "1E";
+    }
+
+    function playSpriteSequence(element, basePath, count, durationMs, resetTo = null) {
+        let frame = 1;
+        const frameTime = durationMs / count;
+        // Cancela animação anterior neste elemento
+        if(element._animTimer) clearInterval(element._animTimer);
+        
+        element._animTimer = setInterval(() => {
+            const num = String(frame).padStart(4, '0');
+            // Verifica se o caminho base termina com / ou não
+            const separator = basePath.endsWith('/') ? '' : '/';
+            // Extrai o nome do arquivo base (ex: braco_direito) do basePath se necessário, 
+            // mas aqui o basePath já deve vir com o prefixo correto. 
+            // O padrão do prompt é: jamon16/.../Braco_direito/Caixa/braco_direito0001.png
+            // Vou assumir que basePath é o caminho COMPLETO até o prefixo do arquivo.
+            // Ex: jamon16/animacao/Baterista/Braco_direito/Caixa/braco_direito
+            
+            element.src = `${basePath}${num}.png`;
+            frame++;
+            if (frame > count) {
+                clearInterval(element._animTimer);
+                if (resetTo) element.src = resetTo;
+            }
+        }, frameTime);
+    }
+
+    // =========================================================
+    // INIT
+    // =========================================================
     window.onload = async () => {
         verificarOrientacao();
         window.addEventListener("resize", verificarOrientacao);
+        for (let i = 1; i <= 100; i++) headFrames.push(`animacao/cabeca/cabeca${String(i).padStart(4, "0")}.png`);
+        preloadImages(headFrames).then(startHeadLoop);
         
-        // 1. Carregar todas as 100 imagens da cabeça na memória
-        const headUrls = [];
-        for (let i = 1; i <= 100; i++) headUrls.push(`animacao/cabeca/cabeca${String(i).padStart(4, "0")}.png`);
-        
-        document.getElementById("playBtn").innerText = "Carregando...";
-        document.getElementById("playBtn").disabled = true;
-
-        // Carrega Cabeça
-        await Promise.all(headUrls.map(url => new Promise(resolve => {
-            const img = new Image();
-            img.onload = img.onerror = () => {
-                 HEAD_CACHE.push(img); // Guarda o objeto imagem pronto
-                 resolve();
-            };
-            img.src = url;
-        })));
-        
-        // Inicia loop da cabeça e visual
-        startHeadLoop();
-        startVisualLoop();
-
-        document.getElementById("playBtn").innerText = "▶ Play";
-        document.getElementById("playBtn").disabled = false;
+        // Inicializa Baterista
+        resetBaterista();
 
         gerarAleatorio(); 
         renderGrids();
         setupListeners();
     };
 
-    // =========================================================
-    // SISTEMA DE PREPARAÇÃO DE ASSETS (Blindagem contra Bugs)
-    // =========================================================
-    
-    // Função auxiliar para carregar e decodificar imagem
-    function carregarAssetUnico(url) {
-        return new Promise((resolve, reject) => {
-            if (ASSET_CACHE[url]) return resolve(ASSET_CACHE[url]); // Já tem
-            const img = new Image();
-            img.src = url;
-            img.onload = () => {
-                // decode() força o browser a processar a imagem na GPU/Memória
-                img.decode().then(() => {
-                    ASSET_CACHE[url] = img;
-                    resolve(img);
-                }).catch(() => {
-                    ASSET_CACHE[url] = img; // Fallback se decode falhar
-                    resolve(img);
-                });
-            };
-            img.onerror = resolve; // Não trava se falhar
-        });
-    }
-
-    // Analisa a música atual e carrega TUDO que vai ser usado
-    async function prepararGravacao() {
-        const btn = document.getElementById("recordVideoBtn");
-        btn.innerText = "Preparando...";
-        btn.classList.add("preparing");
-        
-        // 1. Pausa se estiver tocando
-        if (isPlaying) pararPlayback();
-
-        // 2. Coleta URLs únicas necessárias
-        const urlsParaCarregar = new Set();
-
-        // Percorre a sequência do baixo
-        let lastValidNote = "1E";
-        let lastFolder = 1;
-
-        // Simula a execução para descobrir quais assets seriam chamados
-        // Precisamos de um estado simulado pois a escolha da pasta depende do estado anterior
-        let simPosFolder = 1;
-
-        for (let i = 0; i < baixoSeq.length; i++) {
-            const nota = baixoSeq[i];
-            if (!nota || nota === "") continue;
-            
-            let noteToUse = nota;
-            if (nota === "x") noteToUse = lastValidNote; // Muted usa a anterior visualmente
-            else lastValidNote = nota;
-
-            // Lógica de pasta (simplificada mas alinhada com animarBaixo)
-            simPosFolder = escolherMelhorPasta(noteToUse, simPosFolder);
-            const folderName = pastaFolderNames[simPosFolder];
-            
-            // Tronco
-            urlsParaCarregar.add(`animacao/tronco_baixo/Pasta_${folderName}/${noteToUse}.png`);
-            
-            // Braço/Mão
-            const corda = getCordaDaNota(noteToUse);
-            urlsParaCarregar.add(`animacao/antebraco/antebraco${corda}.png`);
-            // Mãos (todos os 5 frames)
-            for(let f=1; f<=5; f++) {
-                urlsParaCarregar.add(`animacao/braco_direito/Corda_${corda}${f}.png`);
-            }
-        }
-
-        // 3. Carrega tudo
-        const promessas = Array.from(urlsParaCarregar).map(url => carregarAssetUnico(url));
-        await Promise.all(promessas);
-
-        // 4. Pronto
-        btn.classList.remove("preparing");
-        return true;
-    }
-
-    async function toggleRecording() {
-        const btn = document.getElementById("recordVideoBtn");
-        
-        if (isRecording) {
-            // PARAR
-            if (mediaRecorder) mediaRecorder.stop();
-            isRecording = false; 
-            btn.innerText = "🔴 Gravar Vídeo"; 
-            btn.classList.remove("recording");
-        } else {
-            // INICIAR
-            // Passo 1: Preparar Assets (Tempo de Download)
-            await prepararGravacao();
-
-            try {
-                if (audioContext.state === 'suspended') await audioContext.resume();
-                if(!isPlaying) drawFrameToCanvas(); 
-
-                const canvasStream = canvas.captureStream(30); 
-                const videoTrack = canvasStream.getVideoTracks()[0];
-                const audioTrack = mediaStreamDestination.stream.getAudioTracks()[0];
-                
-                const combinedStream = new MediaStream([videoTrack, audioTrack]);
-                let mimeType = 'video/webm';
-                if (MediaRecorder.isTypeSupported('video/webm; codecs=vp9')) mimeType = 'video/webm; codecs=vp9';
-                
-                mediaRecorder = new MediaRecorder(combinedStream, { mimeType: mimeType, videoBitsPerSecond: 3000000 });
-                recordedChunks = [];
-                mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
-                mediaRecorder.onstop = () => {
-                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a'); a.style.display = 'none'; a.href = url; a.download = 'baixista_jam_pro.webm';
-                    document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url);
-                };
-                
-                mediaRecorder.start(); 
-                isRecording = true; 
-                btn.innerText = "⏹ Parar"; 
-                btn.classList.add("recording");
-                
-                // Auto-play
-                if (!isPlaying) togglePlay();
-
-            } catch (err) { 
-                alert("Erro gravação: " + err); 
-                btn.innerText = "🔴 Gravar Vídeo";
-                btn.classList.remove("preparing");
-            }
-        }
-    }
-
-    // ... (Resto das funções inalteradas: Audio, WAV, Playback, etc) ...
-    function getCordaDaNota(nota) {
-        const m = nota.match(/^(\d+)/);
-        if (!m) return "E";
-        const n = parseInt(m[1], 10);
-        if (n <= 20) return "E"; if (n <= 28) return "A"; if (n <= 36) return "D"; return "G";
-    }
-
-    function escolherMelhorPasta(nota, posAtual) {
-        const pastas = [];
-        for (let p = 1; p <= 24; p++) if (pastaMap[p].includes(nota)) pastas.push(p);
-        if (pastas.length === 0) return 1;
-        return pastas.reduce((prev, curr) => Math.abs(curr - posAtual) < Math.abs(prev - posAtual) ? curr : prev);
-    }
-
-    // =========================================================
-    // LÓGICA DE ANIMAÇÃO OTIMIZADA (USANDO CACHE)
-    // =========================================================
-    
-    // Atualiza a imagem no DOM e no Buffer do Canvas
-    function atualizarImagemSegura(tipo, url) {
-        // 1. Tenta pegar do cache
-        if (ASSET_CACHE[url]) {
-            domImages[tipo].src = url;
-            canvasBuffer[tipo] = ASSET_CACHE[url];
-        } else {
-            // Se não estiver no cache (playback sem gravar), carrega normal
-            const img = new Image();
-            img.src = url;
-            img.onload = () => {
-                domImages[tipo].src = url;
-                canvasBuffer[tipo] = img;
-                ASSET_CACHE[url] = img; // Salva para o futuro
-            };
-        }
-    }
-
-    function animarBaixo(nota, duracaoStep) {
-        if (nota === "x") {
-            if (ultimaNotaReal) {
-                const pasta = pastaFolderNames[posicaoAtualPasta] || "1F";
-                atualizarImagemSegura('tronco', `animacao/tronco_baixo/Pasta_${pasta}/${ultimaNotaReal}.png`);
-            }
-            animarMaoDireita(ultimaCordaUsada, duracaoStep);
-            return;
-        }
-        
-        posicaoAtualPasta = escolherMelhorPasta(nota, posicaoAtualPasta);
-        ultimaNotaReal = nota;
-        const pastaNome = pastaFolderNames[posicaoAtualPasta];
-        
-        // Atualiza Tronco
-        atualizarImagemSegura('tronco', `animacao/tronco_baixo/Pasta_${pastaNome}/${nota}.png`);
-        
-        const corda = getCordaDaNota(nota);
-        ultimaCordaUsada = corda;
-        
-        // Atualiza Antebraço
-        atualizarImagemSegura('antebraco', `animacao/antebraco/antebraco${corda}.png`);
-        
-        animarMaoDireita(corda, duracaoStep);
-    }
-
-    function animarMaoDireita(corda, duracaoTotal) {
-        clearInterval(rightHandTimer);
-        let frame = 1; 
-        const totalFrames = 5; 
-        const frameTime = Math.min(duracaoTotal / totalFrames, 40);
-        
-        rightHandTimer = setInterval(() => {
-            const url = `animacao/braco_direito/Corda_${corda}${frame}.png`;
-            atualizarImagemSegura('bracoDir', url);
-            frame++;
-            if (frame > totalFrames) {
-                clearInterval(rightHandTimer);
-                const resetUrl = `animacao/braco_direito/Corda_${corda}1.png`;
-                atualizarImagemSegura('bracoDir', resetUrl);
-            }
-        }, frameTime);
-    }
-
-    function stopRightHand() {
-        clearInterval(rightHandTimer);
-        const url = `animacao/braco_direito/Corda_${ultimaCordaUsada || 'E'}1.png`;
-        atualizarImagemSegura('bracoDir', url);
-    }
-
-    // =========================================================
-    // LOOPS DE DESENHO
-    // =========================================================
-    function startHeadLoop() {
-        if(headLoopTimer) clearInterval(headLoopTimer);
-        headLoopTimer = setInterval(() => {
-            headFrameIndex = (headFrameIndex + 1) % HEAD_CACHE.length;
-            // Atualiza visualização DOM
-            if (HEAD_CACHE[headFrameIndex]) {
-                 domImages.cabeca.src = HEAD_CACHE[headFrameIndex].src;
-            }
-        }, 33);
-    }
-
-    function startVisualLoop() {
-        const amplitude = 2.3, speed = 0.003; 
-        const frame = () => {
-            const now = Date.now();
-            if(isPlaying) {
-                pendulumAngle = Math.sin(now * speed * (bpmAtual / 120)) * amplitude;
-            } else {
-                pendulumAngle = pendulumAngle * 0.9;
-            }
-            
-            const wrapper = document.getElementById("bodyWrapperPendulo");
-            if(wrapper) wrapper.style.transform = `rotate(${pendulumAngle}deg)`;
-
-            drawFrameToCanvas();
-            reqAnimIdVisual = requestAnimationFrame(frame);
-        };
-        reqAnimIdVisual = requestAnimationFrame(frame);
-    }
-
-    function drawFrameToCanvas() {
-        ctx.fillStyle = "#111"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-        if (domImages.pernas.complete) ctx.drawImage(domImages.pernas, 64, 332);
-        
-        ctx.save(); 
-        ctx.translate(260, 416); 
-        ctx.rotate(pendulumAngle * Math.PI / 180); 
-        ctx.translate(-260, -416);
-        
-        // ORDEM DE CAMADAS CORRIGIDA PARA VÍDEO
-        // 1. Cabeça Atrás
-        if (domImages.cabecaTras.complete) ctx.drawImage(domImages.cabecaTras, 100, 60);
-        
-        // 2. Antebraço (Atrás do tronco)
-        if (canvasBuffer.antebraco) ctx.drawImage(canvasBuffer.antebraco, -2, 179);
-        
-        // 3. Tronco
-        if (canvasBuffer.tronco) ctx.drawImage(canvasBuffer.tronco, 0, 132);
-        
-        // 4. Mão
-        if (canvasBuffer.bracoDir) ctx.drawImage(canvasBuffer.bracoDir, -5, 250);
-        
-        // 5. Cabeça Frente (Usa CACHE direto para evitar piscadas)
-        if (HEAD_CACHE[headFrameIndex]) {
-            ctx.drawImage(HEAD_CACHE[headFrameIndex], 70, 37);
-        } else if (domImages.cabeca.complete) {
-            ctx.drawImage(domImages.cabeca, 70, 37);
-        }
-        
-        ctx.restore();
-    }
-
-    // ... (Funções Auxiliares de Setup, WAV, Orientação mantidas) ...
-    function audioBufferToWav(buffer, opt) {
-        opt = opt || {};
-        var numChannels = buffer.numberOfChannels;
-        var sampleRate = buffer.sampleRate;
-        var format = opt.float32 ? 3 : 1;
-        var bitDepth = format === 3 ? 32 : 16;
-        var result;
-        if (numChannels === 2) {
-            result = interleave(buffer.getChannelData(0), buffer.getChannelData(1));
-        } else {
-            result = buffer.getChannelData(0);
-        }
-        return encodeWAV(result, format, sampleRate, numChannels, bitDepth);
-    }
-    function encodeWAV(samples, format, sampleRate, numChannels, bitDepth) {
-        var bytesPerSample = bitDepth / 8;
-        var blockAlign = numChannels * bytesPerSample;
-        var buffer = new ArrayBuffer(44 + samples.length * bytesPerSample);
-        var view = new DataView(buffer);
-        writeString(view, 0, 'RIFF');
-        view.setUint32(4, 36 + samples.length * bytesPerSample, true);
-        writeString(view, 8, 'WAVE');
-        writeString(view, 12, 'fmt ');
-        view.setUint32(16, 16, true);
-        view.setUint16(20, format, true);
-        view.setUint16(22, numChannels, true);
-        view.setUint32(24, sampleRate, true);
-        view.setUint32(28, sampleRate * blockAlign, true);
-        view.setUint16(32, blockAlign, true);
-        view.setUint16(34, bitDepth, true);
-        writeString(view, 36, 'data');
-        view.setUint32(40, samples.length * bytesPerSample, true);
-        if (format === 1) floatTo16BitPCM(view, 44, samples);
-        else writeFloat32(view, 44, samples);
-        return buffer;
-    }
-    function interleave(inputL, inputR) {
-        var length = inputL.length + inputR.length;
-        var result = new Float32Array(length);
-        var index = 0, inputIndex = 0;
-        while (index < length) {
-            result[index++] = inputL[inputIndex];
-            result[index++] = inputR[inputIndex];
-            inputIndex++;
-        }
-        return result;
-    }
-    function writeFloat32(output, offset, input) {
-        for (var i = 0; i < input.length; i++, offset += 4) output.setFloat32(offset, input[i], true);
-    }
-    function floatTo16BitPCM(output, offset, input) {
-        for (var i = 0; i < input.length; i++, offset += 2) {
-            var s = Math.max(-1, Math.min(1, input[i]));
-            output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
-        }
-    }
-    function writeString(view, offset, string) {
-        for (var i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i));
+    function resetBaterista() {
+        batImages.ataque.src = "jamon16/animacao/Baterista/Ataque/Ataque0001.png";
+        batImages.base.src = "jamon16/animacao/Baterista/Bateria_Chimbal/Bateria.png";
+        batImages.bracoDir.src = "jamon16/animacao/Baterista/Braco_Direito/Caixa/braco_direito0003.png";
+        batImages.bracoEsq.src = "jamon16/animacao/Baterista/Braco_Esquerdo/Caixa/braco_esquerda0001.png";
+        batImages.cabeca.src = "jamon16/animacao/Baterista/Cabeca/Cabeca_estavel/cabeca0024.png";
+        batImages.conducao.src = "jamon16/animacao/Baterista/Conducao/Conducao0001.png";
+        batImages.pernaEsq.src = "jamon16/animacao/Baterista/Perna_esquerda/Pedal_chimbal/Baterista0001.png";
+        batImages.tronco.src = "jamon16/animacao/Baterista/Perna_Direita/Parado/Tronco0001.png";
     }
 
     function setupListeners() {
@@ -666,22 +457,130 @@
         document.getElementById("playExportadoBtn").onclick = importarJSON;
         document.getElementById("exportWavBtn").onclick = exportarWAV;
     }
-    function expandRhythm(patternArray, totalSteps) {
-        const joined = patternArray.join(' ').replace(/\s+/g, ' ').trim();
-        const tokens = joined.split(/\s+/).filter(t => t);
-        const out = []; let i = 0;
-        while (out.length < totalSteps) {
-            for (const token of tokens) { if (out.length >= totalSteps) break; out.push(token); }
-            if (i++ > 1000) break;
+
+    function deleteColumn(idx) {
+        if (baixoSeq.length <= 1) return;
+        baixoSeq.splice(idx, 1);
+        Object.keys(bateriaSeq).forEach(key => bateriaSeq[key].splice(idx, 1));
+        renderGrids();
+    }
+
+    // =========================================================
+    // CANVAS RECORDER (DRAW LOOP)
+    // =========================================================
+    function drawFrameToCanvas() {
+        ctx.fillStyle = "#111"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // 1. DESENHA BATERISTA (Fundo) - Usando coordenadas relativas do CSS
+        // O Baterista está escalado e transladado no CSS, precisamos simular isso ou desenhar direto.
+        // Vou desenhar direto assumindo 520x520 base.
+        if(batImages.base.complete) ctx.drawImage(batImages.base, 0, 0);
+        if(batImages.pernaEsq.complete) ctx.drawImage(batImages.pernaEsq, 0, 0);
+        if(batImages.tronco.complete) ctx.drawImage(batImages.tronco, 0, 0);
+        if(batImages.cabeca.complete) ctx.drawImage(batImages.cabeca, 0, 0);
+        if(batImages.bracoEsq.complete) ctx.drawImage(batImages.bracoEsq, 0, 0);
+        if(batImages.bracoDir.complete) ctx.drawImage(batImages.bracoDir, 0, 0);
+        if(batImages.ataque.complete) ctx.drawImage(batImages.ataque, 0, 0);
+        if(batImages.conducao.complete) ctx.drawImage(batImages.conducao, 0, 0);
+
+        // 2. DESENHA BAIXISTA (Frente)
+        if (domImages.pernas.complete) ctx.drawImage(domImages.pernas, 64, 332);
+        ctx.save(); ctx.translate(260, 416); ctx.rotate(pendulumAngle * Math.PI / 180); ctx.translate(-260, -416);
+        if (domImages.cabecaTras.complete) ctx.drawImage(domImages.cabecaTras, 100, 60);
+        if (domImages.tronco.complete) ctx.drawImage(domImages.tronco, 0, 132);
+        if (domImages.antebraco.complete) ctx.drawImage(domImages.antebraco, -2, 179);
+        if (domImages.bracoDir.complete) ctx.drawImage(domImages.bracoDir, -5, 250);
+        if (domImages.cabeca.complete) ctx.drawImage(domImages.cabeca, 70, 37);
+        ctx.restore();
+    }
+
+    // =========================================================
+    // LÓGICA DE ANIMAÇÃO BATERISTA
+    // =========================================================
+    function animarBateria(drumId, durationMs) {
+        const resetTime = durationMs * 0.9;
+        
+        // TRONCO (KICK)
+        if (drumId === 'bumbo') {
+            // Pedal duplo se for rápido
+            if (durationMs < 200) {
+               playSpriteSequence(batImages.pernaEsq, 'jamon16/animacao/Baterista/Perna_esquerda/Pedal_duplo/Baterista', 3, durationMs, 'jamon16/animacao/Baterista/Perna_esquerda/Pedal_chimbal/Baterista0001.png'); 
+            }
+            // Tronco move
+            playSpriteSequence(batImages.tronco, 'jamon16/animacao/Baterista/Perna_Direita/Tocando/Tronco', 40, 1000, 'jamon16/animacao/Baterista/Perna_Direita/Parado/Tronco0001.png');
         }
-        return out.slice(0, totalSteps);
+
+        // PEÇAS (BRAÇOS)
+        let arm = lastDrumArm === 'right' ? 'left' : 'right';
+        // Se o intervalo for longo, reseta para direita (mão dominante)
+        if (durationMs > 300) arm = 'right';
+        
+        // Define caminhos
+        let path = '';
+        let frames = 4;
+        let el = arm === 'right' ? batImages.bracoDir : batImages.bracoEsq;
+        let prefix = arm === 'right' ? 'braco_direito' : 'braco_esquerda';
+        
+        // Mapeamento de peça para pasta
+        if (drumId === 'caixa' || drumId === 'ataque') {
+            path = `jamon16/animacao/Baterista/${arm === 'right' ? 'Braco_direito' : 'Braco_esquerdo'}/Caixa/${prefix}`;
+            if (drumId === 'ataque') {
+               // Ataque move o prato também
+               playSpriteSequence(batImages.ataque, 'jamon16/animacao/Baterista/Ataque/Ataque', 7, 300, 'jamon16/animacao/Baterista/Ataque/Ataque0001.png');
+               // Braço vai no ataque
+               path = `jamon16/animacao/Baterista/${arm === 'right' ? 'Braco_direito' : 'Braco_esquerdo'}/Ataque/${prefix}`;
+               frames = (arm === 'right') ? 4 : 4; 
+            }
+        } 
+        else if (drumId === 'chimbal' || drumId === 'chimbalaberto') {
+            path = `jamon16/animacao/Baterista/${arm === 'right' ? 'Braco_direito' : 'Braco_esquerdo'}/Chimbal/${prefix}`;
+            // Cabeça vira esquerda
+            if (drumHeadState !== 'esquerda') {
+                playSpriteSequence(batImages.cabeca, 'jamon16/animacao/Baterista/Cabeca/Virada_para_esquerda/cabeca', 9, 200);
+                drumHeadState = 'esquerda';
+            }
+        }
+        else if (drumId === 'conducao' || drumId === 'conducao_centro') {
+            path = `jamon16/animacao/Baterista/${arm === 'right' ? 'Braco_direito' : 'Braco_esquerdo'}/Conducao/${prefix}`;
+            playSpriteSequence(batImages.conducao, 'jamon16/animacao/Baterista/Conducao/Conducao', 6, 300, 'jamon16/animacao/Baterista/Conducao/Conducao0001.png');
+        }
+        else if (drumId === 'tom1') {
+            path = `jamon16/animacao/Baterista/${arm === 'right' ? 'Braco_direito' : 'Braco_esquerdo'}/Tom_1/${prefix}`;
+        }
+        else if (drumId === 'tom2') {
+            path = `jamon16/animacao/Baterista/${arm === 'right' ? 'Braco_direito' : 'Braco_esquerdo'}/Tom_2/${prefix}`;
+             // Cabeça vira direita
+            if (drumHeadState !== 'direita') {
+                playSpriteSequence(batImages.cabeca, 'jamon16/animacao/Baterista/Cabeca/Virada_para_direita/cabeca', 10, 200);
+                drumHeadState = 'direita';
+            }
+        }
+        else if (drumId === 'surdo') {
+            path = `jamon16/animacao/Baterista/${arm === 'right' ? 'Braco_direito' : 'Braco_esquerdo'}/Surdo/${prefix}`;
+             // Cabeça vira direita
+             if (drumHeadState !== 'direita') {
+                playSpriteSequence(batImages.cabeca, 'jamon16/animacao/Baterista/Cabeca/Virada_para_direita/cabeca', 10, 200);
+                drumHeadState = 'direita';
+            }
+        }
+
+        // Executa animação do braço
+        if (path) {
+            playSpriteSequence(el, path, frames, durationMs * 0.8); // um pouco mais rápido que a nota
+            lastDrumArm = arm;
+        }
+        
+        // Retorno da cabeça se não estiver tocando lateral
+        if (drumId !== 'chimbal' && drumId !== 'tom2' && drumId !== 'surdo' && drumHeadState !== 'estavel') {
+             // Lógica simples de retorno
+             batImages.cabeca.src = "jamon16/animacao/Baterista/Cabeca/Cabeca_estavel/cabeca0024.png";
+             drumHeadState = 'estavel';
+        }
     }
-    function mapNoteToAnimId(musicalNote) {
-        let cleanNote = musicalNote.replace(/[0-9]/g, '').replace('#', 'S');
-        const matches = notasValidas.filter(n => n.endsWith(cleanNote));
-        return matches.length > 0 ? matches[0] : "1E";
-    }
-    function meterToBeats(meter) { return Number(meter.split('/')[0]) || 4; }
+
+    // =========================================================
+    // GERAÇÃO ALEATÓRIA
+    // =========================================================
     function gerarAleatorio() {
         const groove = ALL_GROOVES[Math.floor(Math.random() * ALL_GROOVES.length)];
         const keyIdx = Math.floor(Math.random() * PITCHES.length);
@@ -692,10 +591,18 @@
         
         document.getElementById("bpmSlider").value = bpmAtual;
         document.getElementById("bpmDisplay").textContent = bpmAtual + " BPM";
-        document.getElementById("generationInfo").style.display = "inline";
-        document.getElementById("generationInfo").textContent = `${groove.name} em ${PITCHES[keyIdx]}${quality === 'min' ? 'm' : ''}`;
 
-        const styleKey = groove.name.includes("Samba") ? "Samba" : groove.name.includes("Blues") ? "Blues" : "Rock";
+        const infoEl = document.getElementById("generationInfo");
+        infoEl.style.display = "inline";
+        infoEl.textContent = `${groove.name} em ${PITCHES[keyIdx]}${quality === 'min' ? 'm' : ''}`;
+
+        let styleKey = "Rock";
+        if (groove.name.includes("Samba")) styleKey = "Samba";
+        else if (groove.name.includes("Jazz")) styleKey = "Jazz";
+        else if (groove.name.includes("Forró")) styleKey = "Forró";
+        else if (groove.name.includes("Metal")) styleKey = "Metal";
+        else if (groove.name.includes("Blues")) styleKey = "Blues";
+
         const progressions = STYLE_PROGRESSIONS[styleKey] || STYLE_PROGRESSIONS.Rock;
         const progression = progressions[Math.floor(Math.random() * progressions.length)];
 
@@ -703,17 +610,25 @@
         const sixteenthsPerBar = beats * 4;
         const totalBars = Math.min(progression.length, 4); 
         const totalSteps = sixteenthsPerBar * totalBars;
+
         const rhythmPattern = expandRhythm(groove.bassRhythm, totalSteps);
-        
         const newBassSeq = [];
+
         for (let bar = 0; bar < totalBars; bar++) {
             const degree = progression[bar];
-            const rootOffset = DEGREE_TO_ROOT[degree] || 0;
+            const rootOffset = DEGREE_TO_ROOT[degree];
             const rootIdx = (keyIdx + rootOffset) % 12;
             const chordScale = groove.bassScale;
-            let noteIndices = chordScale.map(int => (rootIdx + (int===1?0 : int===3?3 : int===5?7 : 0)) % 12);
+            let noteIndices = [];
+
+            if (Array.isArray(chordScale)) {
+                const isMinor = (quality === 'min' && [1,4,5].includes(degree)) || degree === 2 || degree === 3 || degree === 6;
+                const intervals = isMinor ? {1:0, 2:2, 3:3, 4:5, 5:7, 6:8, 7:10, 8:12} : {1:0, 2:2, 3:4, 4:5, 5:7, 6:9, 7:11, 8:12};
+                noteIndices = chordScale.map(int => (rootIdx + (intervals[int]||0)) % 12);
+            } else {
+                noteIndices = [rootIdx];
+            }
             const notesPerBar = Math.ceil(sixteenthsPerBar / noteIndices.length);
-            
             for (let step = 0; step < sixteenthsPerBar; step++) {
                 const globalStep = bar * sixteenthsPerBar + step;
                 const sym = rhythmPattern[globalStep] || '-';
@@ -725,58 +640,98 @@
                 }
             }
         }
+
         baixoSeq = newBassSeq;
 
-        const drumParsed = groove.drumPattern.join(' ').split(/\s+/);
+        const drumParsed = parsePattern(groove.drumPattern.join(' '));
+        const loopSeq = drumParsed.loop;
         drumLines.forEach(d => bateriaSeq[d.id] = []);
+
         for (let i = 0; i < baixoSeq.length; i++) {
-            const token = drumParsed[i % drumParsed.length];
+            const token = loopSeq[i % loopSeq.length];
             let activeDrums = [];
-            if (token.includes('bu')) activeDrums.push('bumbo');
-            if (token.includes('ch')) activeDrums.push('chimbal');
-            if (token.includes('ca')) activeDrums.push('caixa');
-            if (token.includes('co')) activeDrums.push('conducao');
+            if (token === 'bu' || token === 'bumbo' || token === 'bch' || token === 'ba' || token === 'bco') activeDrums.push('bumbo');
+            if (token === 'ca' || token === 'caixa' || token === 'cch' || token === 'cco') activeDrums.push('caixa');
+            if (token === 'ch' || token === 'chimbal' || token === 'bch' || token === 'cch') activeDrums.push('chimbal');
+            if (token === 'co' || token === 'conducao' || token === 'bco' || token === 'cco') activeDrums.push('conducao');
+            if (token === 'ba') activeDrums.push('ataque');
+            if (token === 'to1') activeDrums.push('tom1');
             drumLines.forEach(d => { bateriaSeq[d.id].push(activeDrums.includes(d.id) ? d.id : "x"); });
         }
         renderGrids();
     }
 
-    async function getAudioBuffer(url) {
-        if (audioBuffers[url]) return audioBuffers[url];
-        try {
-            const response = await fetch(url);
-            if(!response.ok) throw new Error("404");
-            const arrayBuffer = await response.arrayBuffer();
-            const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-            audioBuffers[url] = audioBuffer;
-            return audioBuffer;
-        } catch(e) { console.warn("Audio missing: " + url); return null; }
-    }
-
-    async function tocarAudioBuffer(path, vol) {
-        const buffer = await getAudioBuffer(path);
-        if(!buffer) return;
-        const source = audioContext.createBufferSource();
-        source.buffer = buffer;
-        const gainNode = audioContext.createGain();
-        gainNode.gain.value = vol;
-        source.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        gainNode.connect(mediaStreamDestination);
-        source.start();
-
-        if (path.includes("BaixoMelodia") || path.includes("bass-muted")) {
-            if(audioBaixoAtual) { try { audioBaixoAtual.stop(audioContext.currentTime + 0.05); } catch(e){} }
-            audioBaixoAtual = source;
+    // =========================================================
+    // REC & AUDIO ENGINE
+    // =========================================================
+    async function toggleRecording() {
+        const btn = document.getElementById("recordVideoBtn");
+        if (isRecording) {
+            mediaRecorder.stop(); isRecording = false; btn.innerText = "🔴 Gravar (Auto)"; btn.classList.remove("recording");
+        } else {
+            try {
+                if (audioContext.state === 'suspended') await audioContext.resume();
+                const canvasStream = canvas.captureStream(30);
+                const videoTrack = canvasStream.getVideoTracks()[0];
+                const audioTrack = mediaStreamDestination.stream.getAudioTracks()[0];
+                const combinedStream = new MediaStream([videoTrack, audioTrack]);
+                let mimeType = 'video/webm';
+                if (MediaRecorder.isTypeSupported('video/webm; codecs=vp9')) mimeType = 'video/webm; codecs=vp9';
+                mediaRecorder = new MediaRecorder(combinedStream, { mimeType: mimeType, videoBitsPerSecond: 2500000 });
+                recordedChunks = [];
+                mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a'); a.style.display = 'none'; a.href = url; a.download = 'jam_session_completa.webm';
+                    document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url);
+                };
+                mediaRecorder.start(); isRecording = true; btn.innerText = "⏹ Parar"; btn.classList.add("recording");
+                if (!isPlaying) togglePlay();
+            } catch (err) { alert("Erro gravação: " + err); }
         }
     }
 
+    async function getAudioBuffer(url) {
+        if (audioBuffers[url]) return audioBuffers[url];
+        const response = await fetch(url);
+        const arrayBuffer = await response.arrayBuffer();
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        audioBuffers[url] = audioBuffer;
+        return audioBuffer;
+    }
+
+    async function tocarAudioBuffer(path, vol) {
+        try {
+            const buffer = await getAudioBuffer(path);
+            const source = audioContext.createBufferSource();
+            source.buffer = buffer;
+            const gainNode = audioContext.createGain();
+            gainNode.gain.value = vol;
+            source.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            gainNode.connect(mediaStreamDestination);
+            source.start();
+
+            if (path.includes("BaixoMelodia") || path.includes("bass-muted")) {
+                if(audioBaixoAtual) {
+                    try { 
+                         audioBaixoAtual.stop(audioContext.currentTime + 0.05); 
+                    } catch(e){}
+                }
+                audioBaixoAtual = source;
+            }
+        } catch (e) {}
+    }
+
+    // =========================================================
+    // PLAYBACK LOOP
+    // =========================================================
     function togglePlay() {
         if (isPlaying) pararPlayback();
         else {
-            if (audioContext.state === 'suspended') audioContext.resume();
             const overlay = document.getElementById("countdownOverlay"), txt = document.getElementById("countdownText");
-            overlay.style.display = "flex"; let count = 3; txt.innerText = count;
+            overlay.style.display = "flex"; let count = 4; txt.innerText = count;
             const countInt = setInterval(() => {
                 count--; if(count > 0) txt.innerText = count;
                 else { clearInterval(countInt); overlay.style.display = "none"; iniciarPlayback(); }
@@ -785,9 +740,10 @@
     }
 
     function iniciarPlayback() {
+        if (audioContext.state === 'suspended') audioContext.resume();
         isPlaying = true; atualPasso = 0;
         document.getElementById("playBtn").innerText = "⏸ Pause"; document.getElementById("playBtn").style.background = "#e65100";
-        
+        startPenduloAnim();
         const msPorStep = (60000 / bpmAtual) / 4;
         const loop = () => {
             if (!isPlaying) return;
@@ -806,6 +762,7 @@
             drumLines.forEach(line => {
                 if (bateriaSeq[line.id] && bateriaSeq[line.id][atualPasso] === line.id) {
                     tocarAudioBuffer(`assets/${line.file}`, bateriaVolumeGlobal);
+                    animarBateria(line.id, msPorStep);
                 }
             });
             
@@ -819,64 +776,144 @@
     function pararPlayback() {
         isPlaying = false; clearInterval(playbackInterval);
         document.getElementById("playBtn").innerText = "▶ Play"; document.getElementById("playBtn").style.background = "";
-        stopRightHand();
+        stopPenduloAnim(); stopRightHand();
+        resetBaterista(); // Reseta postura batera
         document.querySelectorAll(".playing-step").forEach(el => el.classList.remove("playing-step"));
         if(audioBaixoAtual) { try{audioBaixoAtual.stop();}catch(e){} audioBaixoAtual = null; }
     }
 
-    function exportarWAV() {
-        const btn = document.getElementById("exportWavBtn"); btn.innerText = "..."; btn.disabled = true;
-        setTimeout(async () => {
-            try {
-                const totalSteps = baixoSeq.length;
-                const secPerStep = (60 / bpmAtual) / 4;
-                const totalDur = totalSteps * secPerStep + 2;
-                const ctxOffline = new OfflineAudioContext(2, 44100 * totalDur, 44100);
-                for (let i = 0; i < totalSteps; i++) {
-                    const n = baixoSeq[i];
-                    if (n !== "" && n !== null) {
-                        const start = i * secPerStep;
-                        let url = n === "x" ? "assets/bass-muted.mp3" : `assets/BaixoMelodia/${n}.mp3`;
-                        const buf = await getAudioBuffer(url);
-                        if(buf) {
-                            const src = ctxOffline.createBufferSource(); src.buffer = buf;
-                            const g = ctxOffline.createGain(); g.gain.value = baixoVolumeGlobal;
-                            src.connect(g); g.connect(ctxOffline.destination);
-                            let durSteps = 1; for (let j = i + 1; j < totalSteps; j++) { if (baixoSeq[j] !== "") break; durSteps++; }
-                            const dur = durSteps * secPerStep; src.start(start); src.stop(start + dur);
-                        }
-                    }
-                }
-                for (const l of drumLines) {
-                    const s = bateriaSeq[l.id];
-                    if (s) for (let i = 0; i < totalSteps; i++) {
-                        if (s[i] === l.id) {
-                            const buf = await getAudioBuffer(`assets/${l.file}`);
-                            if(buf) {
-                                const src = ctxOffline.createBufferSource(); src.buffer = buf;
-                                const g = ctxOffline.createGain(); g.gain.value = bateriaVolumeGlobal;
-                                src.connect(g); g.connect(ctxOffline.destination);
-                                src.start(i * secPerStep);
-                            }
-                        }
-                    }
-                }
-                const rendered = await ctxOffline.startRendering();
-                const wav = audioBufferToWav(rendered);
-                const blob = new Blob([wav], { type: 'audio/wav' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a'); a.href = url; a.download = 'composicao.wav'; a.click();
-            } catch (e) { alert("Erro exportação: " + e); }
-            btn.innerText = "💾 WAV"; btn.disabled = false;
-        }, 100);
+    // =========================================================
+    // ANIMAÇÃO BAIXISTA
+    // =========================================================
+    function startPenduloAnim() {
+        const wrapper = document.getElementById("bodyWrapperPendulo");
+        const amplitude = 2.3, speed = 0.003; 
+        const frame = () => {
+            if (!isPlaying) return;
+            const now = Date.now();
+            pendulumAngle = Math.sin(now * speed * (bpmAtual / 120)) * amplitude;
+            wrapper.style.transform = `rotate(${pendulumAngle}deg)`;
+            drawFrameToCanvas();
+            reqAnimIdPendulo = requestAnimationFrame(frame);
+        };
+        reqAnimIdPendulo = requestAnimationFrame(frame);
     }
 
-    function deleteColumn(idx) {
-        if (baixoSeq.length <= 1) return;
-        baixoSeq.splice(idx, 1);
-        Object.keys(bateriaSeq).forEach(key => bateriaSeq[key].splice(idx, 1));
-        renderGrids();
+    function stopPenduloAnim() {
+        cancelAnimationFrame(reqAnimIdPendulo);
+        const wrapper = document.getElementById("bodyWrapperPendulo");
+        if(wrapper) wrapper.style.transform = "rotate(0deg)";
+        pendulumAngle = 0;
+        drawFrameToCanvas();
     }
+
+    function startHeadLoop() {
+        if(headLoopTimer) clearInterval(headLoopTimer);
+        headLoopTimer = setInterval(() => {
+            headFrameIndex = (headFrameIndex + 1) % headFrames.length;
+            if(headFrames[headFrameIndex]) domImages.cabeca.src = headFrames[headFrameIndex];
+        }, 33);
+    }
+
+    function animarBaixo(nota, duracaoStep) {
+        if (nota === "x") {
+            if (ultimaNotaReal) {
+                const pasta = pastaFolderNames[posicaoAtualPasta] || "1F";
+                domImages.tronco.src = `animacao/tronco_baixo/Pasta_${pasta}/${ultimaNotaReal}.png`;
+            }
+            animarMaoDireita(ultimaCordaUsada, duracaoStep);
+            return;
+        }
+        posicaoAtualPasta = escolherMelhorPasta(nota, posicaoAtualPasta);
+        ultimaNotaReal = nota;
+        const pastaNome = pastaFolderNames[posicaoAtualPasta];
+        domImages.tronco.src = `animacao/tronco_baixo/Pasta_${pastaNome}/${nota}.png`;
+        const corda = getCordaDaNota(nota);
+        ultimaCordaUsada = corda;
+        domImages.antebraco.src = `animacao/antebraco/antebraco${corda}.png`;
+        animarMaoDireita(corda, duracaoStep);
+    }
+
+    function getCordaDaNota(nota) {
+        const m = nota.match(/^(\d+)/);
+        if (!m) return "E";
+        const n = parseInt(m[1], 10);
+        if (n <= 20) return "E"; if (n <= 28) return "A"; if (n <= 36) return "D"; return "G";
+    }
+
+    function escolherMelhorPasta(nota, posAtual) {
+        const pastas = [];
+        for (let p = 1; p <= 24; p++) if (pastaMap[p].includes(nota)) pastas.push(p);
+        if (pastas.length === 0) return 1;
+        return pastas.reduce((prev, curr) => Math.abs(curr - posAtual) < Math.abs(prev - posAtual) ? curr : prev);
+    }
+
+    function animarMaoDireita(corda, duracaoTotal) {
+        clearInterval(rightHandTimer);
+        let frame = 1; const totalFrames = 5; const frameTime = Math.min(duracaoTotal / totalFrames, 40);
+        rightHandTimer = setInterval(() => {
+            domImages.bracoDir.src = `animacao/braco_direito/Corda_${corda}${frame}.png`;
+            frame++;
+            if (frame > totalFrames) {
+                clearInterval(rightHandTimer);
+                domImages.bracoDir.src = `animacao/braco_direito/Corda_${corda}1.png`;
+            }
+        }, frameTime);
+    }
+
+    function stopRightHand() {
+        clearInterval(rightHandTimer);
+        domImages.bracoDir.src = `animacao/braco_direito/Corda_${ultimaCordaUsada || 'E'}1.png`;
+    }
+
+    // =========================================================
+    // EXPORT WAV & UI
+    // =========================================================
+    async function exportarWAV() {
+        const btn = document.getElementById("exportWavBtn"); btn.innerText = "..."; btn.disabled = true;
+        try {
+            const totalSteps = baixoSeq.length;
+            const secPerStep = (60 / bpmAtual) / 4;
+            const totalDur = totalSteps * secPerStep + 2;
+            const ctx = new OfflineAudioContext(2, 44100 * totalDur, 44100);
+
+            for (let i = 0; i < totalSteps; i++) {
+                const n = baixoSeq[i];
+                if (n !== "" && n !== null) {
+                    const start = i * secPerStep;
+                    let url = n === "x" ? "assets/bass-muted.mp3" : `assets/BaixoMelodia/${n}.mp3`;
+                    const buf = await getAudioBuffer(url);
+                    const src = ctx.createBufferSource(); src.buffer = buf;
+                    const g = ctx.createGain(); g.gain.value = baixoVolumeGlobal;
+                    src.connect(g); g.connect(ctx.destination);
+                    
+                    let durSteps = 1;
+                    for (let j = i + 1; j < totalSteps; j++) { if (baixoSeq[j] !== "") break; durSteps++; }
+                    const dur = durSteps * secPerStep;
+                    src.start(start); src.stop(start + dur);
+                }
+            }
+            for (const l of drumLines) {
+                const s = bateriaSeq[l.id];
+                if (s) for (let i = 0; i < totalSteps; i++) {
+                    if (s[i] === l.id) {
+                        const buf = await getAudioBuffer(`assets/${l.file}`);
+                        const src = ctx.createBufferSource(); src.buffer = buf;
+                        const g = ctx.createGain(); g.gain.value = bateriaVolumeGlobal;
+                        src.connect(g); g.connect(ctx.destination);
+                        src.start(i * secPerStep);
+                    }
+                }
+            }
+            const rendered = await ctx.startRendering();
+            const wav = audioBufferToWav(rendered);
+            const blob = new Blob([wav], { type: 'audio/wav' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = 'composicao.wav'; a.click();
+        } catch (e) { alert("Erro exportação"); }
+        btn.innerText = "💾 WAV"; btn.disabled = false;
+    }
+
     function renderGrids() {
         const delC = document.getElementById("deleteGrid"), bxC = document.getElementById("baixoGrid"), drW = document.getElementById("drumGridWrapper");
         delC.innerHTML = "";
@@ -890,9 +927,7 @@
             if (n === "x") { c.textContent = "X"; c.classList.add("active-ghost"); }
             else if (n !== "") { c.textContent = n.replace("S", "#"); c.classList.add("active"); }
             else c.style.opacity = "0.3";
-            c.onclick = () => abrirSelecaoNota(idx, c);
-            c.ondblclick = (e) => { e.stopPropagation(); e.preventDefault(); baixoSeq[idx] = ""; renderGrids(); };
-            bxC.appendChild(c);
+            c.onclick = () => abrirSelecaoNota(idx, c); bxC.appendChild(c);
         });
         drW.innerHTML = "";
         drumLines.forEach(l => {
@@ -913,6 +948,7 @@
             row.appendChild(grid); drW.appendChild(row);
         });
     }
+
     function highlightGridStep(s) {
         document.querySelectorAll(".playing-step").forEach(e => e.classList.remove("playing-step"));
         if(document.getElementById("baixoGrid").children[s]) {
@@ -921,6 +957,7 @@
         }
         document.querySelectorAll("#drumGridWrapper .trackGrid").forEach(r => { if(r.children[s]) r.children[s].classList.add("playing-step"); });
     }
+
     function abrirSelecaoNota(idx) {
         const ov = document.getElementById("selectionOverlay"), op = document.getElementById("selectionOptions");
         op.innerHTML = "";
@@ -935,6 +972,7 @@
         ov.classList.add("visible");
         ov.onclick = (e) => { if(e.target === ov) ov.classList.remove("visible"); };
     }
+
     function importarJSON() {
         const i = document.createElement("input"); i.type = "file"; i.accept = ".json";
         i.onchange = (e) => {
@@ -951,6 +989,7 @@
     function verificarOrientacao() {
         document.getElementById("orientationOverlay").style.display = (window.innerWidth < window.innerHeight && window.innerWidth < 900) ? "flex" : "none";
     }
+    function preloadImages(srcs) { return Promise.all(srcs.map(s => new Promise(r => { const i = new Image(); i.onload=i.onerror=r; i.src=s; }))); }
   </script>
 </body>
 </html>
