@@ -195,8 +195,8 @@
             
             <img id="bat_cabeca" src="jamon16/animacao/Baterista/Cabeca/Cabeca_estavel/cabeca0024.png" />
             
-            <img id="bat_braco_esq" src="jamon16/animacao/Baterista/Braco_Esquerdo/Caixa/braco_esquerda0001.png" />
-            <img id="bat_braco_dir" src="jamon16/animacao/Baterista/Braco_Direito/Caixa/braco_direito0003.png" />
+            <img id="bat_braco_esq" src="jamon16/animacao/Baterista/Braco_esquerdo/Caixa/braco_esquerda0001.png" />
+            <img id="bat_braco_dir" src="jamon16/animacao/Baterista/Braco_direito/Caixa/Braco_direito0003.png" />
         </div>
 
         <div id="baixistaStage">
@@ -205,7 +205,7 @@
                 <img id="cabecaTrasLayer" src="animacao/cabeca_tras/cabeca-parte-de-tras.png" />
                 <img id="troncoBaixoLayer" src="animacao/tronco_baixo/Pasta_1F/1E.png" />
                 <img id="antebracoLayer" src="animacao/antebraco/antebracoE.png" />
-                <img id="bracoDireitoLayer" src="animacao/braco_direito/Corda_E1.png" />
+                <img id="bracoDireitoLayer" src="animacao/Braco_direito/Corda_E1.png" />
                 <img id="cabecaLayer" src="animacao/cabeca/cabeca0001.png" />
             </div>
             <div id="countdownOverlay" class="countdownOverlay"><span id="countdownText">3</span></div>
@@ -400,11 +400,11 @@
             const num = String(frame).padStart(4, '0');
             // Verifica se o caminho base termina com / ou não
             const separator = basePath.endsWith('/') ? '' : '/';
-            // Extrai o nome do arquivo base (ex: braco_direito) do basePath se necessário, 
+            // Extrai o nome do arquivo base (ex: Braco_direito) do basePath se necessário, 
             // mas aqui o basePath já deve vir com o prefixo correto. 
-            // O padrão do prompt é: jamon16/.../Braco_direito/Caixa/braco_direito0001.png
+            // O padrão do prompt é: jamon16/.../Braco_direito/Caixa/Braco_direito0001.png
             // Vou assumir que basePath é o caminho COMPLETO até o prefixo do arquivo.
-            // Ex: jamon16/animacao/Baterista/Braco_direito/Caixa/braco_direito
+            // Ex: jamon16/animacao/Baterista/Braco_direito/Caixa/Braco_direito
             
             element.src = `${basePath}${num}.png`;
             frame++;
@@ -435,8 +435,8 @@
     function resetBaterista() {
         batImages.ataque.src = "jamon16/animacao/Baterista/Ataque/Ataque0001.png";
         batImages.base.src = "jamon16/animacao/Baterista/Bateria_Chimbal/Bateria.png";
-        batImages.bracoDir.src = "jamon16/animacao/Baterista/Braco_Direito/Caixa/braco_direito0003.png";
-        batImages.bracoEsq.src = "jamon16/animacao/Baterista/Braco_Esquerdo/Caixa/braco_esquerda0001.png";
+        batImages.bracoDir.src = "jamon16/animacao/Baterista/Braco_direito/Caixa/Braco_direito0003.png";
+        batImages.bracoEsq.src = "jamon16/animacao/Baterista/Braco_esquerdo/Caixa/braco_esquerda0001.png";
         batImages.cabeca.src = "jamon16/animacao/Baterista/Cabeca/Cabeca_estavel/cabeca0024.png";
         batImages.conducao.src = "jamon16/animacao/Baterista/Conducao/Conducao0001.png";
         batImages.pernaEsq.src = "jamon16/animacao/Baterista/Perna_esquerda/Pedal_chimbal/Baterista0001.png";
@@ -519,7 +519,7 @@
         let path = '';
         let frames = 4;
         let el = arm === 'right' ? batImages.bracoDir : batImages.bracoEsq;
-        let prefix = arm === 'right' ? 'braco_direito' : 'braco_esquerda';
+        let prefix = arm === 'right' ? 'Braco_direito' : 'braco_esquerda';
         
         // Mapeamento de peça para pasta
         if (drumId === 'caixa' || drumId === 'ataque') {
@@ -852,18 +852,18 @@
         clearInterval(rightHandTimer);
         let frame = 1; const totalFrames = 5; const frameTime = Math.min(duracaoTotal / totalFrames, 40);
         rightHandTimer = setInterval(() => {
-            domImages.bracoDir.src = `animacao/braco_direito/Corda_${corda}${frame}.png`;
+            domImages.bracoDir.src = `animacao/Braco_direito/Corda_${corda}${frame}.png`;
             frame++;
             if (frame > totalFrames) {
                 clearInterval(rightHandTimer);
-                domImages.bracoDir.src = `animacao/braco_direito/Corda_${corda}1.png`;
+                domImages.bracoDir.src = `animacao/Braco_direito/Corda_${corda}1.png`;
             }
         }, frameTime);
     }
 
     function stopRightHand() {
         clearInterval(rightHandTimer);
-        domImages.bracoDir.src = `animacao/braco_direito/Corda_${ultimaCordaUsada || 'E'}1.png`;
+        domImages.bracoDir.src = `animacao/Braco_direito/Corda_${ultimaCordaUsada || 'E'}1.png`;
     }
 
     // =========================================================
@@ -993,3 +993,4 @@
   </script>
 </body>
 </html>
+
