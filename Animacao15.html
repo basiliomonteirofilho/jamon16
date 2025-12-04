@@ -184,14 +184,15 @@
       <div id="animacaoStageWrapper">
         
         <div id="bateristaStage">
-            <img id="bat_Conducao" src="jamon16/animacao/Baterista/Conducao/Conducao0001.png" />
-            <img id="bat_PernaEsq" src="jamon16/animacao/Baterista/Perna_esquerda/Pedal_chimbal/Baterista0001.png" />
-            <img id="bat_Tronco"   src="jamon16/animacao/Baterista/Perna_Direita/Parado/Tronco0001.png" />
-            <img id="bat_Cabeca"   src="jamon16/animacao/Baterista/Cabeca/Cabeca_estavel/cabeca0024.png" />
-            <img id="bat_Bateria"  src="jamon16/animacao/Baterista/Bateria_Chimbal/Bateria.png" /> <img id="bat_BracoDir" src="jamon16/animacao/Baterista/Braco_Direito/Caixa/braco_direito0003.png" />
-            <img id="bat_BracoEsq" src="jamon16/animacao/Baterista/Braco_Esquerdo/Caixa/braco_esquerda0001.png" />
-            <img id="bat_Ataque"   src="jamon16/animacao/Baterista/Ataque/Ataque0001.png" />
-        </div>
+    <img id="bat_Conducao" src="animacao/Baterista/Conducao/Conducao0001.png" />
+    <img id="bat_PernaEsq" src="animacao/Baterista/Perna_esquerda/Pedal_chimbal/Baterista0001.png" />
+    <img id="bat_Tronco"   src="animacao/Baterista/Perna_Direita/Parado/Tronco0001.png" />
+    <img id="bat_Cabeca"   src="animacao/Baterista/Cabeca/Cabeca_estavel/cabeca0024.png" />
+    <img id="bat_Bateria"  src="animacao/Baterista/Bateria_Chimbal/Bateria.png" />
+    <img id="bat_BracoDir" src="animacao/Baterista/Braco_direito/Caixa/braco_direito0003.png" />
+    <img id="bat_BracoEsq" src="animacao/Baterista/Braco_esquerdo/Caixa/braco_esquerda0001.png" />
+    <img id="bat_Ataque"   src="animacao/Baterista/Ataque/Ataque0001.png" />
+</div>
 
         <div id="baixistaStage">
             <img id="pernasLayer" src="animacao/pernas/Pernas.png" />
@@ -238,27 +239,31 @@
 
   <script>
     // =========================================================
-    // DADOS & CAMINHOS (ASSETS)
+    // DADOS & CAMINHOS (ASSETS) - CORRIGIDO
     // =========================================================
     const PASTA_BAT = "jamon16/animacao/Baterista/";
     
-    // Caminhos da Baterista
+    // Caminhos da Baterista Ajustados para a Lista de Arquivos Real
     const DRUM_ASSETS = {
         idle: {
             ataque: PASTA_BAT + "Ataque/Ataque0001.png",
-            bracoDir: PASTA_BAT + "Braco_Direito/Caixa/braco_direito0003.png",
-            bracoEsq: PASTA_BAT + "Braco_Esquerdo/Caixa/braco_esquerda0001.png",
+            // Correção: Braco_Direito -> Braco_direito
+            bracoDir: PASTA_BAT + "Braco_direito/Caixa/braco_direito0003.png",
+            // Correção: Braco_Esquerdo -> Braco_esquerdo
+            bracoEsq: PASTA_BAT + "Braco_esquerdo/Caixa/braco_esquerda0001.png",
             cabeca: PASTA_BAT + "Cabeca/Cabeca_estavel/cabeca0024.png",
             conducao: PASTA_BAT + "Conducao/Conducao0001.png",
             pernaEsq: PASTA_BAT + "Perna_esquerda/Pedal_chimbal/Baterista0001.png",
-            tronco: PASTA_BAT + "Perna_Direita/Parado/Tronco0001.png"
+            // Suposição: Ajustado para Perna_direita (minúsculo) para seguir o padrão
+            tronco: PASTA_BAT + "Perna_direita/Parado/Tronco0001.png"
         },
         anim: {
-            troncoTocando: Array.from({length:40}, (_,i) => PASTA_BAT + `Perna_Direita/Tocando/Tronco${String(i+1).padStart(4,'0')}.png`),
+            // Tronco (Ajustado para Perna_direita)
+            troncoTocando: Array.from({length:40}, (_,i) => PASTA_BAT + `Perna_direita/Tocando/Tronco${String(i+1).padStart(4,'0')}.png`),
             ataquePrato: Array.from({length:7}, (_,i) => PASTA_BAT + `Ataque/Ataque${String(i+1).padStart(4,'0')}.png`),
             conducaoPrato: Array.from({length:6}, (_,i) => PASTA_BAT + `Conducao/Conducao${String(i+1).padStart(4,'0')}.png`),
             
-            // Braço Direito
+            // Braço Direito (Pasta: Braco_direito)
             bd_ataque: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_direito/Ataque/braco_direito${String(i+5).padStart(4,'0')}.png`),
             bd_caixa: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_direito/Caixa/braco_direito${String(i+1).padStart(4,'0')}.png`),
             bd_chimbal: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_direito/Chimbal/braco_direito${String(i+1).padStart(4,'0')}.png`),
@@ -267,7 +272,7 @@
             bd_tom1: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_direito/Tom_1/braco_direito${String(i+13).padStart(4,'0')}.png`),
             bd_tom2: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_direito/Tom_2/braco_direito${String(i+17).padStart(4,'0')}.png`),
 
-            // Braço Esquerdo
+            // Braço Esquerdo (Pasta: Braco_esquerdo, Arquivo: braco_esquerda...)
             be_ataque: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_esquerdo/Ataque/braco_esquerda${String(i+9).padStart(4,'0')}.png`),
             be_caixa: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_esquerdo/Caixa/braco_esquerda${String(i+1).padStart(4,'0')}.png`),
             be_chimbal: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_esquerdo/Chimbal/braco_esquerda${String(i+5).padStart(4,'0')}.png`),
@@ -281,7 +286,7 @@
             cabeca_esquerda: Array.from({length:9}, (_,i) => PASTA_BAT + `Cabeca/Virada_para_esquerda/cabeca${String(i+39).padStart(4,'0')}.png`),
             cabeca_estavel: Array.from({length:26}, (_,i) => PASTA_BAT + `Cabeca/Cabeca_estavel/cabeca${String(i+1).padStart(4,'0')}.png`),
             
-            // Perna
+            // Perna (Pasta: Perna_esquerda)
             perna_duplo: [PASTA_BAT+"Perna_esquerda/Pedal_duplo/Baterista0002.png", PASTA_BAT+"Perna_esquerda/Pedal_duplo/Baterista0003.png"]
         }
     };
