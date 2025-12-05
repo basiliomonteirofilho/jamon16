@@ -30,6 +30,21 @@
       overflow: hidden;
     }
 
+    /* TELA DE CARREGAMENTO */
+    #loadingOverlay {
+      position: fixed; inset: 0; background: #000; z-index: 50000;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      color: var(--highlight-color); font-weight: bold;
+      transition: opacity 0.5s;
+    }
+    #loadingText { margin-bottom: 10px; font-family: monospace; font-size: 1.2rem; }
+    #loadingBarContainer {
+      width: 300px; height: 6px; background: #333; border-radius: 3px; overflow: hidden;
+    }
+    #loadingBar {
+      height: 100%; background: var(--highlight-color); width: 0%; transition: width 0.1s linear;
+    }
+
     #orientationOverlay {
       position: fixed; inset: 0; background: rgba(0,0,0,0.95); color: #fff;
       display: none; justify-content: center; align-items: center; z-index: 10000;
@@ -45,20 +60,20 @@
       position: relative; overflow: hidden;
     }
 
-    /* Wrapper Geral */
     #animacaoStageWrapper {
       position: relative; width: 100%; height: 100%;
       display: flex; align-items: center; justify-content: center;
     }
 
     /* =========================================
-       ESTILO DA BATERISTA (Camada de Fundo)
+       ESTILO DA BATERISTA
        ========================================= */
     #bateristaStage {
       position: absolute;
       width: 520px; height: 520px;
       transform-origin: center center;
-      z-index: 1; /* Atrás da baixista */
+      z-index: 1; 
+      /* Ajuste de posição e tamanho */
       transform: scale(0.45) translate(350px, -180px);
       pointer-events: none;
     }
@@ -68,26 +83,29 @@
       image-rendering: pixelated;
     }
 
-    /* Camadas Baterista */
-    #bat_Bateria      { top: 0; left: 0; z-index: 5; } 
+    /* ORDEM DE CAMADAS (Z-INDEX)
+       Regra: Tronco < Braços < Bateria/Pratos
+    */
     #bat_PernaEsq     { top: 0; left: 0; z-index: 2; }
     #bat_Tronco       { top: 0; left: 0; z-index: 3; }
     #bat_Cabeca       { top: 0; left: 0; z-index: 4; }
     
-    /* Braço Esquerdo (6) atrás do Direito (7) */
-    #bat_BracoEsq     { top: 0; left: 0; z-index: 6; }
-    #bat_BracoDir     { top: 0; left: 0; z-index: 7; }
-    
-    #bat_Conducao     { top: 0; left: 0; z-index: 1; }
-    #bat_Ataque       { top: 0; left: 0; z-index: 8; }
+    /* Braços: Frente do tronco (3), Atrás da bateria (20) */
+    #bat_BracoEsq     { top: 0; left: 0; z-index: 10; }
+    #bat_BracoDir     { top: 0; left: 0; z-index: 11; }
+
+    /* Bateria e Pratos: À frente de tudo na baterista */
+    #bat_Bateria      { top: 0; left: 0; z-index: 20; } 
+    #bat_Conducao     { top: 0; left: 0; z-index: 21; } 
+    #bat_Ataque       { top: 0; left: 0; z-index: 22; }
 
     /* =========================================
-       ESTILO DA BAIXISTA (Camada da Frente)
+       ESTILO DA BAIXISTA
        ========================================= */
     #baixistaStage {
       position: relative; width: 520px; height: 520px;
       transform-origin: center center;
-      z-index: 10;
+      z-index: 100; /* Sempre à frente da bateria */
     }
 
     #pernasLayer { position: absolute; top: 332px; left: 64px; z-index: 1; }
@@ -103,16 +121,14 @@
     #bracoDireitoLayer { top: 250px;  left: -5px;  z-index: 4; }
     #cabecaLayer       { top: 37px;   left: 70px;  z-index: 5; }
 
-    /* Canvas de Gravação (Invisível) */
     #recordingCanvas {
       position: absolute; top: -9999px; left: -9999px; visibility: hidden;
     }
 
-    /* Área de Controles */
     #bottomArea {
       flex: 0 0 50vh; max-height: 450px; min-height: 300px;
       display: flex; flex-direction: column; background: var(--panel-bg);
-      border-top: 1px solid #333; padding: 10px; z-index: 20;
+      border-top: 1px solid #333; padding: 10px; z-index: 200;
       box-shadow: 0 -5px 30px rgba(0,0,0,0.8);
     }
 
@@ -123,6 +139,8 @@
       display: flex; align-items: center; gap: 4px; white-space: nowrap;
     }
     button:hover { background: #333; border-color: #777; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    
     #playBtn { background: var(--accent-color); border-color: var(--highlight-color); font-weight: bold; color: #fff; }
     
     #recordVideoBtn.recording {
@@ -179,6 +197,11 @@
 </head>
 <body>
 
+  <div id="loadingOverlay">
+    <div id="loadingText">Carregando Baterista...</div>
+    <div id="loadingBarContainer"><div id="loadingBar"></div></div>
+  </div>
+
   <div id="orientationOverlay"><div><h1>🎵 Melhor Experiência 🎸</h1><p>Gire o dispositivo.</p></div></div>
   <canvas id="recordingCanvas" width="520" height="520"></canvas>
 
@@ -216,8 +239,8 @@
 
     <div id="bottomArea">
       <div id="playerControlsRow">
-        <button id="playBtn">▶ Play</button>
-        <button id="playAleatorioBtn">🎲 Aleatório (Smart)</button>
+        <button id="playBtn" disabled>⏳ Carregando...</button>
+        <button id="playAleatorioBtn" disabled>🎲 Aleatório (Smart)</button>
         <button id="recordVideoBtn">🔴 Gravar (Auto)</button>
         <span id="generationInfo"></span>
         <span id="bpmDisplay" style="margin-left:auto">120 BPM</span>
@@ -259,9 +282,9 @@
             tronco: PASTA_BAT + "Tronco_Perna_direita/Parado/Tronco0001.png"
         },
         anim: {
-            // Tronco tocando
             troncoTocando: Array.from({length:39}, (_,i) => PASTA_BAT + `Tronco_Perna_direita/Tocando/Tronco${String(i+2).padStart(4,'0')}.png`),
-            // Pratos
+            
+            // ANIMACAO DOS PRATOS (Corrigido)
             ataquePrato: Array.from({length:7}, (_,i) => PASTA_BAT + `Ataque/Ataque${String(i+1).padStart(4,'0')}.png`),
             conducaoPrato: Array.from({length:6}, (_,i) => PASTA_BAT + `Conducao/Conducao${String(i+1).padStart(4,'0')}.png`),
             
@@ -283,10 +306,10 @@
             be_tom1: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_esquerdo/Tom_1/braco_esquerda${String(i+13).padStart(4,'0')}.png`),
             be_tom2: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_esquerdo/Tom_2/braco_esquerda${String(i+17).padStart(4,'0')}.png`),
 
-            // CABEÇA ESTÁVEL (Loop ao tocar)
+            // CABEÇA ESTÁVEL
             cabeca_estavel: Array.from({length:26}, (_,i) => PASTA_BAT + `Cabeca/Cabeca_estavel/cabeca${String(i+1).padStart(4,'0')}.png`),
             
-            // PEDAL DUPLO (Kick) - Apenas frames de ação
+            // PEDAL DUPLO
             perna_duplo: [
                 PASTA_BAT+"Perna_esquerda/Pedal_duplo/Baterista0002.png", 
                 PASTA_BAT+"Perna_esquerda/Pedal_duplo/Baterista0003.png"
@@ -294,7 +317,7 @@
         }
     };
 
-    // Dados Baixista (Mantidos)
+    // Dados Baixista
     const pastaMap = { 1: ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B"], 2: ["3FS","4G","5GS","6A","8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C"], 3: ["4G","5GS","6A","7AS","9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS"], 4: ["5GS","6A","7AS","8B","10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D"], 5: ["6A","7AS","8B","9C","11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS"], 6: ["7AS","8B","9C","10CS","12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E"], 7: ["8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F"], 8: ["9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS"], 9: ["10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G"], 10: ["11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS"], 11: ["12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A"], 12: ["13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS"], 13: ["14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B"], 14: ["15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C"], 15: ["16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS"], 16: ["17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D"], 17: ["18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS"], 18: ["19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E"], 19: ["20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F"], 20: ["21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS","36DS","37E","38F","39FS"], 21: ["22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D","37E","38F","39FS","40G"], 22: ["23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS","38F","39FS","40G","41GS"], 23: ["24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E","39FS","40G","41GS","42A"], 24: ["25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F","40G","41GS","42A","43AS"] };
     const pastaFolderNames = { 1:"1F", 2:"2FS", 3:"3G", 4:"4GS", 5:"5A", 6:"6AS", 7:"7B", 8:"8C", 9:"9CS", 10:"10D", 11:"11DS", 12:"12E", 13:"13F", 14:"14FS", 15:"15G", 16:"16GS", 17:"17A", 18:"18AS", 19:"19B", 20:"20C", 21:"21CS", 22:"22D", 23:"23DS", 24:"24E" };
     const notasValidas = ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B","21C","22CS","23D","24DS","25E","26F","27FS","28G","29GS","30A","31AS","32B","33C","34CS","35D","36DS","37E","38F","39FS","40G","41GS","42A","43AS"];
@@ -326,10 +349,10 @@
     let reqAnimIdPendulo = null, headLoopTimer = null, rightHandTimer = null;
     let headFrameIndex = 0, headFrames = [];
 
-    // Variáveis da Baterista para Lógica de Braços/Pernas
+    // Variáveis da Baterista
     let drumTimers = {}; 
-    let lastDrumStep = {}; // Rastreia o passo anterior de cada instrumento
-    let lastArmUsed = {};  // Rastreia qual braço usou por último ('left' ou 'right')
+    let lastDrumStep = {}; 
+    let lastArmUsed = {};  
 
     const canvas = document.getElementById("recordingCanvas");
     const ctx = canvas.getContext("2d");
@@ -357,19 +380,67 @@
         bt_kit: document.getElementById("bat_Bateria")
     };
 
+    // =========================================================
+    // STARTUP COM PRÉ-CARREGAMENTO
+    // =========================================================
     window.onload = async () => {
         verificarOrientacao();
         window.addEventListener("resize", verificarOrientacao);
-        for (let i = 1; i <= 100; i++) headFrames.push(`animacao/cabeca/cabeca${String(i).padStart(4, "0")}.png`);
-        preloadImages(headFrames).then(startHeadLoop);
         
-        const troncoFrames = DRUM_ASSETS.anim.troncoTocando;
-        preloadImages(troncoFrames);
-
+        // Carrega frames da cabeça da baixista
+        for (let i = 1; i <= 100; i++) headFrames.push(`animacao/cabeca/cabeca${String(i).padStart(4, "0")}.png`);
+        
+        // Inicia Pré-Carregamento Geral
+        await preloadAllAssets();
+        
+        startHeadLoop();
         gerarAleatorio();
         renderGrids();
         setupListeners();
     };
+
+    async function preloadAllAssets() {
+        const toLoad = [];
+        
+        // 1. Assets do Objeto DRUM_ASSETS (Flatten)
+        const collectPaths = (obj) => {
+            Object.values(obj).forEach(val => {
+                if (typeof val === 'string') toLoad.push(val);
+                else if (Array.isArray(val)) val.forEach(v => toLoad.push(v));
+                else if (typeof val === 'object') collectPaths(val);
+            });
+        };
+        collectPaths(DRUM_ASSETS);
+
+        // 2. Cabeça Baixista
+        headFrames.forEach(f => toLoad.push(f));
+
+        // Processo de Carregamento
+        const total = toLoad.length;
+        let loaded = 0;
+        const progressBar = document.getElementById("loadingBar");
+        const playBtn = document.getElementById("playBtn");
+        const aleatorioBtn = document.getElementById("playAleatorioBtn");
+
+        await Promise.all(toLoad.map(src => new Promise(resolve => {
+            const img = new Image();
+            img.onload = img.onerror = () => {
+                loaded++;
+                const pct = (loaded / total) * 100;
+                progressBar.style.width = pct + "%";
+                resolve();
+            };
+            img.src = src;
+        })));
+
+        // Finaliza Loading
+        document.getElementById("loadingOverlay").style.opacity = "0";
+        setTimeout(() => { 
+            document.getElementById("loadingOverlay").style.display = "none"; 
+            playBtn.disabled = false; playBtn.innerText = "▶ Play";
+            aleatorioBtn.disabled = false;
+        }, 500);
+    }
 
     function setupListeners() {
         document.getElementById("playBtn").onclick = togglePlay;
@@ -393,28 +464,34 @@
         renderGrids();
     }
 
+    // =========================================================
+    // CANVAS DRAW
+    // =========================================================
     function drawFrameToCanvas() {
         ctx.fillStyle = "#111"; ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        // BATERISTA (FUNDO) - Atualizado Scale e Translate para bater com CSS
         ctx.save();
         ctx.scale(0.45, 0.45); 
         ctx.translate(350, -180); 
         
-        if (domImages.bt_conducao.complete) ctx.drawImage(domImages.bt_conducao, 0, 0);
+        // Ordem visual no Canvas (deve refletir o CSS Z-Index)
+        // 1. Fundo
+        if (domImages.bt_conducao.complete) ctx.drawImage(domImages.bt_conducao, 0, 0); // Ride Back
         if (domImages.bt_pernaEsq.complete) ctx.drawImage(domImages.bt_pernaEsq, 0, 0);
         if (domImages.bt_tronco.complete) ctx.drawImage(domImages.bt_tronco, 0, 0);
         if (domImages.bt_cabeca.complete) ctx.drawImage(domImages.bt_cabeca, 0, 0);
-        if (domImages.bt_kit.complete) ctx.drawImage(domImages.bt_kit, 0, 0);
         
-        // Ordem Braços: Esquerdo atrás (primeiro), depois Direito
+        // 2. Braços (Atrás do Kit)
         if (domImages.bt_bracoEsq.complete) ctx.drawImage(domImages.bt_bracoEsq, 0, 0);
         if (domImages.bt_bracoDir.complete) ctx.drawImage(domImages.bt_bracoDir, 0, 0);
         
+        // 3. Kit e Pratos (Frente)
+        if (domImages.bt_kit.complete) ctx.drawImage(domImages.bt_kit, 0, 0);
         if (domImages.bt_ataque.complete) ctx.drawImage(domImages.bt_ataque, 0, 0);
+        
         ctx.restore();
 
-        // BAIXISTA (FRENTE)
+        // BAIXISTA (Frente Total)
         if (domImages.bx_pernas.complete) ctx.drawImage(domImages.bx_pernas, 64, 332);
         ctx.save(); ctx.translate(260, 416); ctx.rotate(pendulumAngle * Math.PI / 180); ctx.translate(-260, -416);
         if (domImages.bx_cabecaTras.complete) ctx.drawImage(domImages.bx_cabecaTras, 100, 60);
@@ -426,41 +503,33 @@
     }
 
     // =========================================================
-    // LÓGICA ANIMAÇÃO BATERIA (Refinada: Alternância e Pedal)
+    // LÓGICA ANIMAÇÃO BATERIA
     // =========================================================
     function playDrumAnimation(drumType, currentStep) {
         const fps = 40; 
         
-        // --- 1. Movimento do TRONCO (Ginga) ---
+        // Movimento Tronco
         if (!drumTimers.tronco && isPlaying) {
-            let tIdx = 0;
-            const tFrames = DRUM_ASSETS.anim.troncoTocando;
+            let tIdx = 0; const tFrames = DRUM_ASSETS.anim.troncoTocando;
             drumTimers.tronco = setInterval(() => {
-                domImages.bt_tronco.src = tFrames[tIdx];
-                tIdx = (tIdx + 1) % tFrames.length;
+                domImages.bt_tronco.src = tFrames[tIdx]; tIdx = (tIdx + 1) % tFrames.length;
             }, 30);
         }
-
-        // --- 2. Movimento da CABEÇA (Loop Estável) ---
+        // Movimento Cabeça
         if (!drumTimers.cabeca && isPlaying) {
-            let cIdx = 0;
-            const cFrames = DRUM_ASSETS.anim.cabeca_estavel;
+            let cIdx = 0; const cFrames = DRUM_ASSETS.anim.cabeca_estavel;
             drumTimers.cabeca = setInterval(() => {
-                domImages.bt_cabeca.src = cFrames[cIdx];
-                cIdx = (cIdx + 1) % cFrames.length;
+                domImages.bt_cabeca.src = cFrames[cIdx]; cIdx = (cIdx + 1) % cFrames.length;
             }, 40); 
         }
 
         if (drumType === 'start') return;
 
-        // --- 3. BUMBO (Pedal Duplo se for consecutivo) ---
+        // BUMBO
         if (drumType === 'bumbo') {
-            // Verifica se o bumbo foi tocado no passo anterior
             const prevStepIndex = (currentStep === 0) ? baixoSeq.length - 1 : currentStep - 1;
             const isConsecutive = (bateriaSeq['bumbo'][prevStepIndex] === 'bumbo');
-
             if (isConsecutive) {
-                // Animação de Pedal Duplo (Esquerda)
                 domImages.bt_pernaEsq.src = DRUM_ASSETS.anim.perna_duplo[0];
                 setTimeout(() => { domImages.bt_pernaEsq.src = DRUM_ASSETS.anim.perna_duplo[1]; }, 40);
                 setTimeout(() => { domImages.bt_pernaEsq.src = DRUM_ASSETS.idle.pernaEsq; }, 90);
@@ -468,30 +537,25 @@
             return;
         }
 
-        // --- 4. BRAÇOS (Lógica de Alternância para Viradas) ---
-        
-        // Verifica se é o mesmo tambor tocado na célula anterior
+        // LÓGICA DE BRAÇOS
         const prevHitStep = lastDrumStep[drumType];
         const isRapidRepeat = (prevHitStep !== undefined && (currentStep - prevHitStep === 1 || (currentStep===0 && prevHitStep === baixoSeq.length-1)));
 
-        // DEFINIR BRAÇO PADRÃO POR INSTRUMENTO (CORREÇÃO CRÍTICA)
         let armToUse = 'right';
-        if (drumType === 'caixa' || drumType === 'caixaAro') {
-            armToUse = 'left'; // Caixa padrão mão esquerda
-        }
+        if (drumType === 'caixa' || drumType === 'caixaAro') armToUse = 'left'; // Caixa = Esquerda
 
-        // Se for repetição rápida, inverte o último usado
         if (isRapidRepeat && lastArmUsed[drumType]) {
             armToUse = (lastArmUsed[drumType] === 'right') ? 'left' : 'right';
         }
 
-        // Atualiza estado para a próxima verificação
         lastDrumStep[drumType] = currentStep;
         lastArmUsed[drumType] = armToUse;
 
-        // Mapeamento de Frames
+        // Frames
         let frames = [];
-        if (armToUse === 'right') {
+        const isLeft = (armToUse === 'left');
+        
+        if (!isLeft) { // RIGHT
             if(drumType === 'caixa' || drumType === 'caixaAro') frames = DRUM_ASSETS.anim.bd_caixa;
             else if(drumType === 'ataque') frames = DRUM_ASSETS.anim.bd_ataque;
             else if(drumType === 'chimbal' || drumType === 'chimbalaberto') frames = DRUM_ASSETS.anim.bd_chimbal;
@@ -500,8 +564,7 @@
             else if(drumType === 'tom1') frames = DRUM_ASSETS.anim.bd_tom1;
             else if(drumType === 'tom2') frames = DRUM_ASSETS.anim.bd_tom2;
             else frames = DRUM_ASSETS.anim.bd_caixa; 
-        } else {
-            // Left Arm
+        } else { // LEFT
             if(drumType === 'caixa' || drumType === 'caixaAro') frames = DRUM_ASSETS.anim.be_caixa;
             else if(drumType === 'ataque') frames = DRUM_ASSETS.anim.be_ataque;
             else if(drumType === 'chimbal' || drumType === 'chimbalaberto') frames = DRUM_ASSETS.anim.be_chimbal;
@@ -512,13 +575,12 @@
             else frames = DRUM_ASSETS.anim.be_caixa;
         }
 
-        // Animação do Objeto (Prato balançando)
+        // Animação dos Pratos
         if(drumType === 'ataque') animateProp(domImages.bt_ataque, DRUM_ASSETS.anim.ataquePrato, DRUM_ASSETS.idle.ataque);
         if(drumType === 'conducao') animateProp(domImages.bt_conducao, DRUM_ASSETS.anim.conducaoPrato, DRUM_ASSETS.idle.conducao);
 
-        // Executar Animação do Braço
-        const imgEl = (armToUse === 'right') ? domImages.bt_bracoDir : domImages.bt_bracoEsq;
-        const timerKey = (armToUse === 'right') ? 'bracoDir' : 'bracoEsq';
+        const imgEl = !isLeft ? domImages.bt_bracoDir : domImages.bt_bracoEsq;
+        const timerKey = !isLeft ? 'bracoDir' : 'bracoEsq';
         
         clearInterval(drumTimers[timerKey]);
         let fIdx = 0;
@@ -529,7 +591,7 @@
                 fIdx++;
             } else {
                 clearInterval(drumTimers[timerKey]);
-                imgEl.src = (armToUse==='right') ? DRUM_ASSETS.idle.bracoDir : DRUM_ASSETS.idle.bracoEsq;
+                imgEl.src = !isLeft ? DRUM_ASSETS.idle.bracoDir : DRUM_ASSETS.idle.bracoEsq;
             }
         }, 1000/fps);
     }
@@ -539,13 +601,13 @@
         const t = setInterval(() => {
             if(i < frames.length) { el.src = frames[i]; i++; }
             else { clearInterval(t); el.src = idleSrc; }
-        }, 30);
+        }, 35);
     }
 
     function resetDrummer() {
         Object.values(drumTimers).forEach(t => clearInterval(t));
         drumTimers = {};
-        lastDrumStep = {}; // Reseta histórico
+        lastDrumStep = {};
         
         domImages.bt_tronco.src = DRUM_ASSETS.idle.tronco;
         domImages.bt_pernaEsq.src = DRUM_ASSETS.idle.pernaEsq;
@@ -574,7 +636,7 @@
     function iniciarPlayback() {
         if (audioContext.state === 'suspended') audioContext.resume();
         isPlaying = true; atualPasso = 0;
-        lastDrumStep = {}; // Reseta ao iniciar
+        lastDrumStep = {};
         document.getElementById("playBtn").innerText = "⏸ Pause"; document.getElementById("playBtn").style.background = "#e65100";
         
         startPenduloAnim();
@@ -813,6 +875,7 @@
     }
     function importarJSON(){const i=document.createElement("input");i.type="file";i.accept=".json";i.onchange=(e)=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=(ev)=>{try{const d=JSON.parse(ev.target.result);if(d.baixo)baixoSeq=d.baixo;if(d.bateria)bateriaSeq=d.bateria;if(d.bpm)bpmAtual=d.bpm;renderGrids()}catch(e){alert("Erro JSON")}};r.readAsText(f)};i.click()}
     function verificarOrientacao(){document.getElementById("orientationOverlay").style.display=(window.innerWidth<window.innerHeight&&window.innerWidth<900)?"flex":"none"}
+    // PreloadImages: usada no pré-carregamento geral
     function preloadImages(s){return Promise.all(s.map(u=>new Promise(r=>{const i=new Image();i.onload=i.onerror=r;i.src=u})))}
   </script>
 </body>
