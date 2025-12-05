@@ -59,7 +59,8 @@
       width: 520px; height: 520px;
       transform-origin: center center;
       z-index: 1; /* Atrás da baixista */
-      transform: scale(0.9) translate(-50px, -20px); /* Ligeiramente menor e deslocada */
+      /* CORREÇÃO: Escala reduzida para 0.6 e movida para a direita/cima */
+      transform: scale(0.6) translate(250px, -100px);
       pointer-events: none;
     }
     
@@ -184,15 +185,15 @@
       <div id="animacaoStageWrapper">
         
         <div id="bateristaStage">
-    <img id="bat_Conducao" src="animacao/Baterista/Conducao/Conducao0001.png" />
-    <img id="bat_PernaEsq" src="animacao/Baterista/Perna_esquerda/Pedal_chimbal/Baterista0001.png" />
-    <img id="bat_Tronco"   src="animacao/Baterista/Perna_Direita/Parado/Tronco0001.png" />
-    <img id="bat_Cabeca"   src="animacao/Baterista/Cabeca/Cabeca_estavel/cabeca0024.png" />
-    <img id="bat_Bateria"  src="animacao/Baterista/Bateria_Chimbal/Bateria.png" />
-    <img id="bat_BracoDir" src="animacao/Baterista/Braco_direito/Caixa/braco_direito0003.png" />
-    <img id="bat_BracoEsq" src="animacao/Baterista/Braco_esquerdo/Caixa/braco_esquerda0001.png" />
-    <img id="bat_Ataque"   src="animacao/Baterista/Ataque/Ataque0001.png" />
-</div>
+            <img id="bat_Conducao" src="animacao/Baterista/Conducao/Conducao0001.png" />
+            <img id="bat_PernaEsq" src="animacao/Baterista/Perna_esquerda/Pedal_chimbal/Baterista0001.png" />
+            <img id="bat_Tronco"   src="animacao/Baterista/Tronco_Perna_direita/Parado/Tronco0001.png" />
+            <img id="bat_Cabeca"   src="animacao/Baterista/Cabeca/Cabeca_estavel/cabeca0024.png" />
+            <img id="bat_Bateria"  src="animacao/Baterista/Bateria_Chimbal/Bateria.png" />
+            <img id="bat_BracoDir" src="animacao/Baterista/Braco_direito/Caixa/braco_direito0003.png" />
+            <img id="bat_BracoEsq" src="animacao/Baterista/Braco_esquerdo/Caixa/braco_esquerda0001.png" />
+            <img id="bat_Ataque"   src="animacao/Baterista/Ataque/Ataque0001.png" />
+        </div>
 
         <div id="baixistaStage">
             <img id="pernasLayer" src="animacao/pernas/Pernas.png" />
@@ -239,31 +240,32 @@
 
   <script>
     // =========================================================
-    // DADOS & CAMINHOS (ASSETS) - CORRIGIDO
+    // DADOS & CAMINHOS (ASSETS) - CORRIGIDO INTEGRAL
     // =========================================================
     const PASTA_BAT = "jamon16/animacao/Baterista/";
     
     // Caminhos da Baterista Ajustados para a Lista de Arquivos Real
+    // Correções: Tronco_Perna_direita, Braco_direito (minúsculo) e loops
     const DRUM_ASSETS = {
         idle: {
             ataque: PASTA_BAT + "Ataque/Ataque0001.png",
-            // Correção: Braco_Direito -> Braco_direito
             bracoDir: PASTA_BAT + "Braco_direito/Caixa/braco_direito0003.png",
-            // Correção: Braco_Esquerdo -> Braco_esquerdo
             bracoEsq: PASTA_BAT + "Braco_esquerdo/Caixa/braco_esquerda0001.png",
             cabeca: PASTA_BAT + "Cabeca/Cabeca_estavel/cabeca0024.png",
             conducao: PASTA_BAT + "Conducao/Conducao0001.png",
             pernaEsq: PASTA_BAT + "Perna_esquerda/Pedal_chimbal/Baterista0001.png",
-            // Suposição: Ajustado para Perna_direita (minúsculo) para seguir o padrão
-            tronco: PASTA_BAT + "Perna_direita/Parado/Tronco0001.png"
+            // Correção aqui: Tronco_Perna_direita
+            tronco: PASTA_BAT + "Tronco_Perna_direita/Parado/Tronco0001.png"
         },
         anim: {
-            // Tronco (Ajustado para Perna_direita)
-            troncoTocando: Array.from({length:40}, (_,i) => PASTA_BAT + `Perna_direita/Tocando/Tronco${String(i+1).padStart(4,'0')}.png`),
+            // Correção Loop Tronco: Pasta 'Tronco_Perna_direita/Tocando'
+            // Arquivos vão de Tronco0002.png até Tronco0040.png (total 39 frames)
+            troncoTocando: Array.from({length:39}, (_,i) => PASTA_BAT + `Tronco_Perna_direita/Tocando/Tronco${String(i+2).padStart(4,'0')}.png`),
+            
             ataquePrato: Array.from({length:7}, (_,i) => PASTA_BAT + `Ataque/Ataque${String(i+1).padStart(4,'0')}.png`),
             conducaoPrato: Array.from({length:6}, (_,i) => PASTA_BAT + `Conducao/Conducao${String(i+1).padStart(4,'0')}.png`),
             
-            // Braço Direito (Pasta: Braco_direito)
+            // Braço Direito (Pasta: Braco_direito, prefixo: braco_direito)
             bd_ataque: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_direito/Ataque/braco_direito${String(i+5).padStart(4,'0')}.png`),
             bd_caixa: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_direito/Caixa/braco_direito${String(i+1).padStart(4,'0')}.png`),
             bd_chimbal: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_direito/Chimbal/braco_direito${String(i+1).padStart(4,'0')}.png`),
@@ -272,7 +274,7 @@
             bd_tom1: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_direito/Tom_1/braco_direito${String(i+13).padStart(4,'0')}.png`),
             bd_tom2: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_direito/Tom_2/braco_direito${String(i+17).padStart(4,'0')}.png`),
 
-            // Braço Esquerdo (Pasta: Braco_esquerdo, Arquivo: braco_esquerda...)
+            // Braço Esquerdo (Pasta: Braco_esquerdo, prefixo: braco_esquerda)
             be_ataque: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_esquerdo/Ataque/braco_esquerda${String(i+9).padStart(4,'0')}.png`),
             be_caixa: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_esquerdo/Caixa/braco_esquerda${String(i+1).padStart(4,'0')}.png`),
             be_chimbal: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_esquerdo/Chimbal/braco_esquerda${String(i+5).padStart(4,'0')}.png`),
@@ -291,7 +293,7 @@
         }
     };
 
-    // Dados Baixista
+    // Dados Baixista (Mantidos inalterados)
     const pastaMap = { 1: ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B"], 2: ["3FS","4G","5GS","6A","8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C"], 3: ["4G","5GS","6A","7AS","9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS"], 4: ["5GS","6A","7AS","8B","10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D"], 5: ["6A","7AS","8B","9C","11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS"], 6: ["7AS","8B","9C","10CS","12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E"], 7: ["8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F"], 8: ["9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS"], 9: ["10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G"], 10: ["11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS"], 11: ["12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A"], 12: ["13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS"], 13: ["14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B"], 14: ["15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C"], 15: ["16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS"], 16: ["17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D"], 17: ["18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS"], 18: ["19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E"], 19: ["20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F"], 20: ["21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS","36DS","37E","38F","39FS"], 21: ["22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D","37E","38F","39FS","40G"], 22: ["23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS","38F","39FS","40G","41GS"], 23: ["24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E","39FS","40G","41GS","42A"], 24: ["25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F","40G","41GS","42A","43AS"] };
     const pastaFolderNames = { 1:"1F", 2:"2FS", 3:"3G", 4:"4GS", 5:"5A", 6:"6AS", 7:"7B", 8:"8C", 9:"9CS", 10:"10D", 11:"11DS", 12:"12E", 13:"13F", 14:"14FS", 15:"15G", 16:"16GS", 17:"17A", 18:"18AS", 19:"19B", 20:"20C", 21:"21CS", 22:"22D", 23:"23DS", 24:"24E" };
     const notasValidas = ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B","21C","22CS","23D","24DS","25E","26F","27FS","28G","29GS","30A","31AS","32B","33C","34CS","35D","36DS","37E","38F","39FS","40G","41GS","42A","43AS"];
@@ -299,7 +301,7 @@
       { id: "bumbo", label: "Bumbo", file: "bumbo.mp3" }, { id: "caixa", label: "Caixa", file: "caixa.mp3" }, { id: "caixaAro", label: "Aro", file: "caixaAro.mp3" }, { id: "chimbal", label: "HH", file: "chimbal.mp3" }, { id: "chimbal_pedal", label: "HH Ped", file: "chimbal-pedal.mp3" }, { id: "chimbalaberto", label: "HH Open", file: "chimbal-aberto.mp3" }, { id: "ataque", label: "Ataque", file: "ataque.mp3" }, { id: "tom1", label: "Tom 1", file: "tom-1.mp3" }, { id: "tom2", label: "Tom 2", file: "tom-2.mp3" }, { id: "surdo", label: "Surdo", file: "surdo.mp3" }, { id: "conducao", label: "Ride", file: "conducao.mp3" }, { id: "conducao_centro", label: "Ride C", file: "conducao-centro.mp3" }
     ];
 
-    // Cérebro Musical (Index)
+    // Cérebro Musical
     const PITCHES = ['A','AS','B','C','CS','D','DS','E','F','FS','G','GS'];
     const DEGREE_TO_ROOT = { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11 };
     const STYLE_PROGRESSIONS = {
@@ -330,7 +332,6 @@
 
     // Animação Baterista
     let drumTimers = {}; // { tronco, cabeca, bracoDir, bracoEsq, etc. }
-    let batHeadIndex = 0;
 
     // Canvas & Recording
     const canvas = document.getElementById("recordingCanvas");
@@ -370,7 +371,7 @@
         for (let i = 1; i <= 100; i++) headFrames.push(`animacao/cabeca/cabeca${String(i).padStart(4, "0")}.png`);
         preloadImages(headFrames).then(startHeadLoop);
         
-        // Pré-carrega assets da bateria (tronco principal)
+        // Pré-carrega assets da bateria
         const troncoFrames = DRUM_ASSETS.anim.troncoTocando;
         preloadImages(troncoFrames);
 
@@ -407,9 +408,11 @@
     function drawFrameToCanvas() {
         ctx.fillStyle = "#111"; ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        // BATERISTA (FUNDO)
+        // BATERISTA (FUNDO) - Ajuste de escala e posição para o vídeo
         ctx.save();
-        ctx.scale(0.9, 0.9); ctx.translate(-50, -20);
+        ctx.scale(0.6, 0.6); // Escala igual ao CSS
+        ctx.translate(250, -100); // Posição aproximada igual ao CSS
+        
         if (domImages.bt_conducao.complete) ctx.drawImage(domImages.bt_conducao, 0, 0);
         if (domImages.bt_pernaEsq.complete) ctx.drawImage(domImages.bt_pernaEsq, 0, 0);
         if (domImages.bt_tronco.complete) ctx.drawImage(domImages.bt_tronco, 0, 0);
@@ -448,11 +451,7 @@
         }
 
         // --- 2. Decisão de BRAÇO e CABEÇA ---
-        // Lógica simples: Chimbal/Condução/Surdo/Toms = Direito (ou esquerdo se ocupado)
-        // Caixa/Ataque = Esquerdo (ou direito se ocupado)
-        
         if (drumType === 'bumbo') {
-            // Perna esquerda
             domImages.bt_pernaEsq.src = DRUM_ASSETS.anim.perna_duplo[0];
             setTimeout(() => { domImages.bt_pernaEsq.src = DRUM_ASSETS.anim.perna_duplo[1]; }, 50);
             setTimeout(() => { domImages.bt_pernaEsq.src = DRUM_ASSETS.idle.pernaEsq; }, 100);
@@ -461,7 +460,7 @@
 
         let armToUse = 'right'; 
         let frames = [];
-        let headLook = 'stable'; // left, right, stable
+        let headLook = 'stable'; 
 
         switch(drumType) {
             case 'caixa': 
@@ -483,11 +482,9 @@
                 break;
         }
 
-        // Animação do Prato (se houver impacto)
         if(drumType === 'ataque') animateProp(domImages.bt_ataque, DRUM_ASSETS.anim.ataquePrato, DRUM_ASSETS.idle.ataque);
         if(drumType === 'conducao') animateProp(domImages.bt_conducao, DRUM_ASSETS.anim.conducaoPrato, DRUM_ASSETS.idle.conducao);
 
-        // Animação do Braço
         const imgEl = (armToUse === 'right') ? domImages.bt_bracoDir : domImages.bt_bracoEsq;
         const timerKey = (armToUse === 'right') ? 'bracoDir' : 'bracoEsq';
         
@@ -499,19 +496,13 @@
                 fIdx++;
             } else {
                 clearInterval(drumTimers[timerKey]);
-                // Retorna à posição neutra (Caixa)
                 imgEl.src = (armToUse==='right') ? DRUM_ASSETS.idle.bracoDir : DRUM_ASSETS.idle.bracoEsq;
             }
         }, 1000/fps);
 
-        // Animação da Cabeça
         if (headLook !== 'stable') {
             const hFrames = (headLook === 'left') ? DRUM_ASSETS.anim.cabeca_esquerda : DRUM_ASSETS.anim.cabeca_direita;
-            // Apenas troca se não estiver já animando
-            // Simplificação: troca o src para um frame da direção
             domImages.bt_cabeca.src = hFrames[Math.floor(Math.random()*hFrames.length)]; 
-        } else {
-             // Retorna ao loop normal (gerido por startHeadLoopBaterista se quisesse, mas aqui deixamos estavel ou aleatorio)
         }
     }
 
@@ -524,11 +515,9 @@
     }
 
     function resetDrummer() {
-        // Para todos os timers da bateria
         Object.values(drumTimers).forEach(t => clearInterval(t));
         drumTimers = {};
         
-        // Restaura imagens estáticas
         domImages.bt_tronco.src = DRUM_ASSETS.idle.tronco;
         domImages.bt_pernaEsq.src = DRUM_ASSETS.idle.pernaEsq;
         domImages.bt_bracoDir.src = DRUM_ASSETS.idle.bracoDir;
@@ -560,7 +549,7 @@
         
         startPenduloAnim();
         // Inicia gingado da baterista
-        playDrumAnimation('start'); // Apenas inicia o timer do tronco
+        playDrumAnimation('start'); 
 
         const msPorStep = (60000 / bpmAtual) / 4;
         const loop = () => {
@@ -582,7 +571,6 @@
             drumLines.forEach(line => {
                 if (bateriaSeq[line.id] && bateriaSeq[line.id][atualPasso] === line.id) {
                     tocarAudioBuffer(`assets/${line.file}`, bateriaVolumeGlobal);
-                    // Dispara animação visual
                     playDrumAnimation(line.id);
                 }
             });
@@ -600,7 +588,7 @@
         
         stopPenduloAnim(); 
         stopRightHand();
-        resetDrummer(); // Para baterista
+        resetDrummer(); 
 
         document.querySelectorAll(".playing-step").forEach(el => el.classList.remove("playing-step"));
         if(audioBaixoAtual) { try{audioBaixoAtual.stop();}catch(e){} audioBaixoAtual = null; }
@@ -667,7 +655,6 @@
     }
 
     async function exportarWAV() {
-        // Mesma lógica de exportação (omitida para brevidade, mantém a anterior)
         alert("Exportação WAV pronta (simulação).");
     }
 
@@ -699,14 +686,8 @@
     function startHeadLoop() {
         if(headLoopTimer) clearInterval(headLoopTimer);
         headLoopTimer = setInterval(() => {
-            // Cabeça Baixista
             headFrameIndex = (headFrameIndex + 1) % headFrames.length;
             if(headFrames[headFrameIndex]) domImages.bx_cabeca.src = headFrames[headFrameIndex];
-            
-            // Cabeça Baterista (se idle)
-            if (!isPlaying) {
-                // Pode adicionar um loop idle aqui se quiser
-            }
         }, 33);
     }
 
@@ -729,7 +710,6 @@
         animarMaoDireita(corda, duracaoStep);
     }
 
-    // Helpers de harmonia, escalas e UI (iguais ao anterior)
     function meterToBeats(m){return Number(m.split('/')[0])||4}
     function expandRhythm(p,t){const j=p.join(' ').replace(/\s+/g,' ').trim().split(/\s+/);const o=[];while(o.length<t)for(const k of j){if(o.length>=t)break;o.push(k)}return o.slice(0,t)}
     function parsePattern(p){const r={intro:[],loop:[]},m=p.match(/\((.*?)\)/);if(m)r.loop=m[1].trim().split(/\s+/);else r.loop=p.trim().split(/\s+/);return r}
