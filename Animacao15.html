@@ -465,20 +465,23 @@
                 setTimeout(() => { domImages.bt_pernaEsq.src = DRUM_ASSETS.anim.perna_duplo[1]; }, 40);
                 setTimeout(() => { domImages.bt_pernaEsq.src = DRUM_ASSETS.idle.pernaEsq; }, 90);
             } 
-            // Se for bumbo isolado, não move perna esquerda (pé direito toca invisível)
             return;
         }
 
-        // --- 4. BRAÇOS (Alternância em repetição) ---
+        // --- 4. BRAÇOS (Lógica de Alternância para Viradas) ---
         
         // Verifica se é o mesmo tambor tocado na célula anterior
         const prevHitStep = lastDrumStep[drumType];
-        // Se a distância for 1 (sequência), alterna o braço. Se não, reseta pra direita.
-        // Considerando wrap-around do loop se necessário, mas aqui simplificado para "consecutivo linear"
         const isRapidRepeat = (prevHitStep !== undefined && (currentStep - prevHitStep === 1 || (currentStep===0 && prevHitStep === baixoSeq.length-1)));
 
+        // DEFINIR BRAÇO PADRÃO POR INSTRUMENTO (CORREÇÃO CRÍTICA)
         let armToUse = 'right';
-        if (isRapidRepeat) {
+        if (drumType === 'caixa' || drumType === 'caixaAro') {
+            armToUse = 'left'; // Caixa padrão mão esquerda
+        }
+
+        // Se for repetição rápida, inverte o último usado
+        if (isRapidRepeat && lastArmUsed[drumType]) {
             armToUse = (lastArmUsed[drumType] === 'right') ? 'left' : 'right';
         }
 
@@ -595,7 +598,6 @@
             drumLines.forEach(line => {
                 if (bateriaSeq[line.id] && bateriaSeq[line.id][atualPasso] === line.id) {
                     tocarAudioBuffer(`assets/${line.file}`, bateriaVolumeGlobal);
-                    // Passa o passo atual para verificar repetição
                     playDrumAnimation(line.id, atualPasso);
                 }
             });
