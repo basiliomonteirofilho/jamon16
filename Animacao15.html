@@ -59,8 +59,12 @@
       width: 520px; height: 520px;
       transform-origin: center center;
       z-index: 1; /* Atrás da baixista */
-      /* Escala ajustada para não ficar gigante */
-      transform: scale(0.6) translate(250px, -100px);
+      
+      /* CORREÇÃO PEDIDA:
+         1. scale(0.45) -> Deixa ela bem menor.
+         2. translate(350px, -180px) -> Move ela para cima e direita.
+      */
+      transform: scale(0.45) translate(350px, -180px);
       pointer-events: none;
     }
     
@@ -74,8 +78,11 @@
     #bat_PernaEsq     { top: 0; left: 0; z-index: 2; }
     #bat_Tronco       { top: 0; left: 0; z-index: 3; }
     #bat_Cabeca       { top: 0; left: 0; z-index: 4; }
-    #bat_BracoEsq     { top: 0; left: 0; z-index: 7; }
-    #bat_BracoDir     { top: 0; left: 0; z-index: 6; }
+    
+    /* CORREÇÃO PEDIDA: Braço Esquerdo (6) atrás do Direito (7) */
+    #bat_BracoEsq     { top: 0; left: 0; z-index: 6; }
+    #bat_BracoDir     { top: 0; left: 0; z-index: 7; }
+    
     #bat_Conducao     { top: 0; left: 0; z-index: 1; } /* Prato atrás */
     #bat_Ataque       { top: 0; left: 0; z-index: 8; } /* Prato frente */
 
@@ -240,9 +247,9 @@
 
   <script>
     // =========================================================
-    // DADOS & CAMINHOS (ASSETS) - CORRIGIDO
+    // DADOS & CAMINHOS (ASSETS)
     // =========================================================
-    // CORREÇÃO CRÍTICA: Removido "jamon16/" do início para evitar caminho duplo
+    // CORREÇÃO CRÍTICA: Sem "jamon16/" no início
     const PASTA_BAT = "animacao/Baterista/";
     
     const DRUM_ASSETS = {
@@ -256,9 +263,7 @@
             tronco: PASTA_BAT + "Tronco_Perna_direita/Parado/Tronco0001.png"
         },
         anim: {
-            // Tronco tocando: Tronco0002 até Tronco0040 (total 39 frames)
             troncoTocando: Array.from({length:39}, (_,i) => PASTA_BAT + `Tronco_Perna_direita/Tocando/Tronco${String(i+2).padStart(4,'0')}.png`),
-            
             ataquePrato: Array.from({length:7}, (_,i) => PASTA_BAT + `Ataque/Ataque${String(i+1).padStart(4,'0')}.png`),
             conducaoPrato: Array.from({length:6}, (_,i) => PASTA_BAT + `Conducao/Conducao${String(i+1).padStart(4,'0')}.png`),
             
@@ -285,7 +290,6 @@
             cabeca_esquerda: Array.from({length:9}, (_,i) => PASTA_BAT + `Cabeca/Virada_para_esquerda/cabeca${String(i+39).padStart(4,'0')}.png`),
             cabeca_estavel: Array.from({length:26}, (_,i) => PASTA_BAT + `Cabeca/Cabeca_estavel/cabeca${String(i+1).padStart(4,'0')}.png`),
             
-            // Perna
             perna_duplo: [PASTA_BAT+"Perna_esquerda/Pedal_duplo/Baterista0002.png", PASTA_BAT+"Perna_esquerda/Pedal_duplo/Baterista0003.png"]
         }
     };
@@ -298,7 +302,6 @@
       { id: "bumbo", label: "Bumbo", file: "bumbo.mp3" }, { id: "caixa", label: "Caixa", file: "caixa.mp3" }, { id: "caixaAro", label: "Aro", file: "caixaAro.mp3" }, { id: "chimbal", label: "HH", file: "chimbal.mp3" }, { id: "chimbal_pedal", label: "HH Ped", file: "chimbal-pedal.mp3" }, { id: "chimbalaberto", label: "HH Open", file: "chimbal-aberto.mp3" }, { id: "ataque", label: "Ataque", file: "ataque.mp3" }, { id: "tom1", label: "Tom 1", file: "tom-1.mp3" }, { id: "tom2", label: "Tom 2", file: "tom-2.mp3" }, { id: "surdo", label: "Surdo", file: "surdo.mp3" }, { id: "conducao", label: "Ride", file: "conducao.mp3" }, { id: "conducao_centro", label: "Ride C", file: "conducao-centro.mp3" }
     ];
 
-    // Cérebro Musical
     const PITCHES = ['A','AS','B','C','CS','D','DS','E','F','FS','G','GS'];
     const DEGREE_TO_ROOT = { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11 };
     const STYLE_PROGRESSIONS = {
@@ -314,23 +317,18 @@
         { name: "Samba", meter: "2/4", drumPattern: ["bch - ch bu bch - ch bu"], bassRhythm: ["bo - x x bo - - x"], bassScale: [8, 5] },
     ];
 
-    // =========================================================
-    // ESTADO GLOBAL
-    // =========================================================
     let isPlaying = false, playbackInterval = null, bpmAtual = 120, atualPasso = 0;
     let baixoSeq = Array(16).fill(""), bateriaSeq = {};
     drumLines.forEach(d => bateriaSeq[d.id] = Array(16).fill("x"));
     let baixoVolumeGlobal = 0.9, bateriaVolumeGlobal = 0.9, audioBaixoAtual = null;
 
-    // Animação Baixista
     let posicaoAtualPasta = 1, ultimaCordaUsada = "E", ultimaNotaReal = "1E";
     let reqAnimIdPendulo = null, headLoopTimer = null, rightHandTimer = null;
     let headFrameIndex = 0, headFrames = [];
 
     // Animação Baterista
-    let drumTimers = {}; // { tronco, cabeca, bracoDir, bracoEsq, etc. }
+    let drumTimers = {}; 
 
-    // Canvas & Recording
     const canvas = document.getElementById("recordingCanvas");
     const ctx = canvas.getContext("2d");
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -339,7 +337,6 @@
     let mediaRecorder = null, recordedChunks = [], isRecording = false;
     let pendulumAngle = 0;
 
-    // Elementos DOM
     const domImages = {
         bx_pernas: document.getElementById("pernasLayer"),
         bx_cabecaTras: document.getElementById("cabecaTrasLayer"),
@@ -348,7 +345,6 @@
         bx_bracoDir: document.getElementById("bracoDireitoLayer"),
         bx_cabeca: document.getElementById("cabecaLayer"),
         
-        // Baterista
         bt_ataque: document.getElementById("bat_Ataque"),
         bt_bracoDir: document.getElementById("bat_BracoDir"),
         bt_bracoEsq: document.getElementById("bat_BracoEsq"),
@@ -359,16 +355,12 @@
         bt_kit: document.getElementById("bat_Bateria")
     };
 
-    // =========================================================
-    // INIT
-    // =========================================================
     window.onload = async () => {
         verificarOrientacao();
         window.addEventListener("resize", verificarOrientacao);
         for (let i = 1; i <= 100; i++) headFrames.push(`animacao/cabeca/cabeca${String(i).padStart(4, "0")}.png`);
         preloadImages(headFrames).then(startHeadLoop);
         
-        // Pré-carrega assets da bateria
         const troncoFrames = DRUM_ASSETS.anim.troncoTocando;
         preloadImages(troncoFrames);
 
@@ -399,24 +391,24 @@
         renderGrids();
     }
 
-    // =========================================================
-    // CANVAS DRAW (BAIXISTA + BATERISTA)
-    // =========================================================
     function drawFrameToCanvas() {
         ctx.fillStyle = "#111"; ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        // BATERISTA (FUNDO) - Ajuste de escala e posição para o vídeo
+        // BATERISTA (FUNDO) - Atualizado Scale e Translate para bater com CSS
         ctx.save();
-        ctx.scale(0.6, 0.6); // Escala igual ao CSS
-        ctx.translate(250, -100); // Posição aproximada igual ao CSS
+        ctx.scale(0.45, 0.45); 
+        ctx.translate(350, -180); 
         
         if (domImages.bt_conducao.complete) ctx.drawImage(domImages.bt_conducao, 0, 0);
         if (domImages.bt_pernaEsq.complete) ctx.drawImage(domImages.bt_pernaEsq, 0, 0);
         if (domImages.bt_tronco.complete) ctx.drawImage(domImages.bt_tronco, 0, 0);
         if (domImages.bt_cabeca.complete) ctx.drawImage(domImages.bt_cabeca, 0, 0);
         if (domImages.bt_kit.complete) ctx.drawImage(domImages.bt_kit, 0, 0);
-        if (domImages.bt_bracoDir.complete) ctx.drawImage(domImages.bt_bracoDir, 0, 0);
+        
+        // Ordem Braços: Esquerdo atrás (primeiro), depois Direito
         if (domImages.bt_bracoEsq.complete) ctx.drawImage(domImages.bt_bracoEsq, 0, 0);
+        if (domImages.bt_bracoDir.complete) ctx.drawImage(domImages.bt_bracoDir, 0, 0);
+        
         if (domImages.bt_ataque.complete) ctx.drawImage(domImages.bt_ataque, 0, 0);
         ctx.restore();
 
@@ -435,7 +427,7 @@
     // LÓGICA ANIMAÇÃO BATERIA
     // =========================================================
     function playDrumAnimation(drumType) {
-        const fps = 40; // Velocidade da animação dos braços
+        const fps = 40; 
         
         // --- 1. Movimento do TRONCO (Ginga) ---
         if (!drumTimers.tronco && isPlaying) {
@@ -447,7 +439,21 @@
             }, 30);
         }
 
-        // --- 2. Decisão de BRAÇO e CABEÇA ---
+        // --- 2. Movimento da CABEÇA (Groove/Aleatório) ---
+        // Adicionado: Animação de cabeça "estável" em loop enquanto toca
+        if (!drumTimers.cabeca && isPlaying) {
+            let cIdx = 0;
+            const cFrames = DRUM_ASSETS.anim.cabeca_estavel;
+            drumTimers.cabeca = setInterval(() => {
+                // Loopa os frames de 0 a 25
+                domImages.bt_cabeca.src = cFrames[cIdx];
+                cIdx = (cIdx + 1) % cFrames.length;
+            }, 40); // Velocidade suave
+        }
+
+        if (drumType === 'start') return; // Se foi só pra iniciar o groove, para aqui.
+
+        // --- 3. Decisão de BRAÇO e CABEÇA (Ação de tocar) ---
         if (drumType === 'bumbo') {
             domImages.bt_pernaEsq.src = DRUM_ASSETS.anim.perna_duplo[0];
             setTimeout(() => { domImages.bt_pernaEsq.src = DRUM_ASSETS.anim.perna_duplo[1]; }, 50);
@@ -496,10 +502,27 @@
                 imgEl.src = (armToUse==='right') ? DRUM_ASSETS.idle.bracoDir : DRUM_ASSETS.idle.bracoEsq;
             }
         }, 1000/fps);
-
+        
+        // Se for virada, interrompe o loop suave da cabeça e faz o movimento específico
         if (headLook !== 'stable') {
+            clearInterval(drumTimers.cabeca); // Para o groove
+            delete drumTimers.cabeca;
+            
             const hFrames = (headLook === 'left') ? DRUM_ASSETS.anim.cabeca_esquerda : DRUM_ASSETS.anim.cabeca_direita;
-            domImages.bt_cabeca.src = hFrames[Math.floor(Math.random()*hFrames.length)]; 
+            domImages.bt_cabeca.src = hFrames[Math.floor(Math.random()*hFrames.length)];
+            
+            // Retorna ao groove após um tempo curto
+            setTimeout(() => {
+               if(isPlaying && !drumTimers.cabeca) {
+                   // Reinicia groove se ainda estiver tocando
+                   let cIdx = 0;
+                   const cFrames = DRUM_ASSETS.anim.cabeca_estavel;
+                   drumTimers.cabeca = setInterval(() => {
+                       domImages.bt_cabeca.src = cFrames[cIdx];
+                       cIdx = (cIdx + 1) % cFrames.length;
+                   }, 40);
+               }
+            }, 300);
         }
     }
 
@@ -545,7 +568,6 @@
         document.getElementById("playBtn").innerText = "⏸ Pause"; document.getElementById("playBtn").style.background = "#e65100";
         
         startPenduloAnim();
-        // Inicia gingado da baterista
         playDrumAnimation('start'); 
 
         const msPorStep = (60000 / bpmAtual) / 4;
@@ -554,7 +576,6 @@
             if (atualPasso >= baixoSeq.length) atualPasso = 0;
             highlightGridStep(atualPasso);
             
-            // BAIXO
             const notaBaixo = baixoSeq[atualPasso];
             if (notaBaixo !== "") {
                 let file = (notaBaixo === "x") ? "assets/bass-muted.mp3" : `assets/BaixoMelodia/${notaBaixo}.mp3`;
@@ -564,7 +585,6 @@
                 stopRightHand();
             }
 
-            // BATERIA
             drumLines.forEach(line => {
                 if (bateriaSeq[line.id] && bateriaSeq[line.id][atualPasso] === line.id) {
                     tocarAudioBuffer(`assets/${line.file}`, bateriaVolumeGlobal);
