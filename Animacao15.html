@@ -59,9 +59,7 @@
       width: 520px; height: 520px;
       transform-origin: center center;
       z-index: 1; /* Atrás da baixista */
-      
-      /* AJUSTE SOLICITADO: Bem menor e mais para cima/direita */
-      transform: scale(0.25) translate(350px, -180px);
+      transform: scale(0.45) translate(350px, -180px);
       pointer-events: none;
     }
     
@@ -71,17 +69,17 @@
     }
 
     /* Camadas Baterista */
-    #bat_Bateria      { top: 0; left: 0; z-index: 5; } /* Kit Fixo */
+    #bat_Bateria      { top: 0; left: 0; z-index: 5; } 
     #bat_PernaEsq     { top: 0; left: 0; z-index: 2; }
     #bat_Tronco       { top: 0; left: 0; z-index: 3; }
     #bat_Cabeca       { top: 0; left: 0; z-index: 4; }
     
-    /* AJUSTE SOLICITADO: Braço Esquerdo (6) atrás do Direito (7) */
+    /* Braço Esquerdo (6) atrás do Direito (7) */
     #bat_BracoEsq     { top: 0; left: 0; z-index: 6; }
     #bat_BracoDir     { top: 0; left: 0; z-index: 7; }
     
-    #bat_Conducao     { top: 0; left: 0; z-index: 1; } /* Prato atrás */
-    #bat_Ataque       { top: 0; left: 0; z-index: 8; } /* Prato frente */
+    #bat_Conducao     { top: 0; left: 0; z-index: 1; }
+    #bat_Ataque       { top: 0; left: 0; z-index: 8; }
 
     /* =========================================
        ESTILO DA BAIXISTA (Camada da Frente)
@@ -89,7 +87,7 @@
     #baixistaStage {
       position: relative; width: 520px; height: 520px;
       transform-origin: center center;
-      z-index: 10; /* Na frente da bateria */
+      z-index: 10;
     }
 
     #pernasLayer { position: absolute; top: 332px; left: 64px; z-index: 1; }
@@ -194,8 +192,10 @@
             <img id="bat_Tronco"   src="animacao/Baterista/Tronco_Perna_direita/Parado/Tronco0001.png" />
             <img id="bat_Cabeca"   src="animacao/Baterista/Cabeca/Cabeca_estavel/cabeca0024.png" />
             <img id="bat_Bateria"  src="animacao/Baterista/Bateria_Chimbal/Bateria.png" />
+            
             <img id="bat_BracoDir" src="animacao/Baterista/Braco_direito/Caixa/braco_direito0003.png" />
             <img id="bat_BracoEsq" src="animacao/Baterista/Braco_esquerdo/Caixa/braco_esquerda0001.png" />
+            
             <img id="bat_Ataque"   src="animacao/Baterista/Ataque/Ataque0001.png" />
         </div>
 
@@ -248,7 +248,6 @@
     // =========================================================
     const PASTA_BAT = "animacao/Baterista/";
     
-    // Configuração EXATA conforme solicitado
     const DRUM_ASSETS = {
         idle: {
             ataque: PASTA_BAT + "Ataque/Ataque0001.png",
@@ -284,10 +283,10 @@
             be_tom1: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_esquerdo/Tom_1/braco_esquerda${String(i+13).padStart(4,'0')}.png`),
             be_tom2: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_esquerdo/Tom_2/braco_esquerda${String(i+17).padStart(4,'0')}.png`),
 
-            // CABEÇA ESTÁVEL (Loop ao tocar) - 0001 a 0026
+            // CABEÇA ESTÁVEL (Loop ao tocar)
             cabeca_estavel: Array.from({length:26}, (_,i) => PASTA_BAT + `Cabeca/Cabeca_estavel/cabeca${String(i+1).padStart(4,'0')}.png`),
             
-            // PEDAL DUPLO (Kick)
+            // PEDAL DUPLO (Kick) - Apenas frames de ação
             perna_duplo: [
                 PASTA_BAT+"Perna_esquerda/Pedal_duplo/Baterista0002.png", 
                 PASTA_BAT+"Perna_esquerda/Pedal_duplo/Baterista0003.png"
@@ -327,9 +326,10 @@
     let reqAnimIdPendulo = null, headLoopTimer = null, rightHandTimer = null;
     let headFrameIndex = 0, headFrames = [];
 
-    // Variáveis da Baterista
+    // Variáveis da Baterista para Lógica de Braços/Pernas
     let drumTimers = {}; 
-    let ultimoBracoUsado = 'right'; // Estado para alternar em viradas
+    let lastDrumStep = {}; // Rastreia o passo anterior de cada instrumento
+    let lastArmUsed = {};  // Rastreia qual braço usou por último ('left' ou 'right')
 
     const canvas = document.getElementById("recordingCanvas");
     const ctx = canvas.getContext("2d");
@@ -426,10 +426,9 @@
     }
 
     // =========================================================
-    // LÓGICA ANIMAÇÃO BATERIA (Corrigida e Melhorada)
+    // LÓGICA ANIMAÇÃO BATERIA (Refinada: Alternância e Pedal)
     // =========================================================
-    function playDrumAnimation(drumType) {
-        // Velocidade da animação dos braços (3º frame é o impacto)
+    function playDrumAnimation(drumType, currentStep) {
         const fps = 40; 
         
         // --- 1. Movimento do TRONCO (Ginga) ---
@@ -454,33 +453,41 @@
 
         if (drumType === 'start') return;
 
-        // --- 3. BUMBO (Pedal Duplo Exclusivo) ---
+        // --- 3. BUMBO (Pedal Duplo se for consecutivo) ---
         if (drumType === 'bumbo') {
-            domImages.bt_pernaEsq.src = DRUM_ASSETS.anim.perna_duplo[0];
-            setTimeout(() => { domImages.bt_pernaEsq.src = DRUM_ASSETS.anim.perna_duplo[1]; }, 40);
-            setTimeout(() => { domImages.bt_pernaEsq.src = DRUM_ASSETS.idle.pernaEsq; }, 90);
+            // Verifica se o bumbo foi tocado no passo anterior
+            const prevStepIndex = (currentStep === 0) ? baixoSeq.length - 1 : currentStep - 1;
+            const isConsecutive = (bateriaSeq['bumbo'][prevStepIndex] === 'bumbo');
+
+            if (isConsecutive) {
+                // Animação de Pedal Duplo (Esquerda)
+                domImages.bt_pernaEsq.src = DRUM_ASSETS.anim.perna_duplo[0];
+                setTimeout(() => { domImages.bt_pernaEsq.src = DRUM_ASSETS.anim.perna_duplo[1]; }, 40);
+                setTimeout(() => { domImages.bt_pernaEsq.src = DRUM_ASSETS.idle.pernaEsq; }, 90);
+            } 
+            // Se for bumbo isolado, não move perna esquerda (pé direito toca invisível)
             return;
         }
 
-        // --- 4. BRAÇOS (Lógica de Alternância para Viradas) ---
-        let armToUse = 'right'; 
-        let frames = [];
+        // --- 4. BRAÇOS (Alternância em repetição) ---
         
-        // Define se é uma peça que deve alternar mãos (Virada/Fill)
-        const isAlternatingPiece = ['caixa', 'caixaAro', 'tom1', 'tom2', 'surdo', 'ataque'].includes(drumType);
+        // Verifica se é o mesmo tambor tocado na célula anterior
+        const prevHitStep = lastDrumStep[drumType];
+        // Se a distância for 1 (sequência), alterna o braço. Se não, reseta pra direita.
+        // Considerando wrap-around do loop se necessário, mas aqui simplificado para "consecutivo linear"
+        const isRapidRepeat = (prevHitStep !== undefined && (currentStep - prevHitStep === 1 || (currentStep===0 && prevHitStep === baixoSeq.length-1)));
 
-        if (isAlternatingPiece) {
-            // Se for peça de virada, inverte o último braço usado
-            armToUse = (ultimoBracoUsado === 'right') ? 'left' : 'right';
-            ultimoBracoUsado = armToUse;
-        } else {
-            // Chimbal e Condução padrão na direita
-            armToUse = 'right';
-            // Se for muito rápido, poderiamos alternar, mas vamos manter o padrão destro
-            if(drumType === 'chimbal_pedal') return; // Sem animação de braço para pedal
+        let armToUse = 'right';
+        if (isRapidRepeat) {
+            armToUse = (lastArmUsed[drumType] === 'right') ? 'left' : 'right';
         }
 
-        // Mapeamento de Frames (Dependendo do braço escolhido)
+        // Atualiza estado para a próxima verificação
+        lastDrumStep[drumType] = currentStep;
+        lastArmUsed[drumType] = armToUse;
+
+        // Mapeamento de Frames
+        let frames = [];
         if (armToUse === 'right') {
             if(drumType === 'caixa' || drumType === 'caixaAro') frames = DRUM_ASSETS.anim.bd_caixa;
             else if(drumType === 'ataque') frames = DRUM_ASSETS.anim.bd_ataque;
@@ -489,7 +496,7 @@
             else if(drumType === 'surdo') frames = DRUM_ASSETS.anim.bd_surdo;
             else if(drumType === 'tom1') frames = DRUM_ASSETS.anim.bd_tom1;
             else if(drumType === 'tom2') frames = DRUM_ASSETS.anim.bd_tom2;
-            else frames = DRUM_ASSETS.anim.bd_caixa; // fallback
+            else frames = DRUM_ASSETS.anim.bd_caixa; 
         } else {
             // Left Arm
             if(drumType === 'caixa' || drumType === 'caixaAro') frames = DRUM_ASSETS.anim.be_caixa;
@@ -513,7 +520,6 @@
         clearInterval(drumTimers[timerKey]);
         let fIdx = 0;
         
-        // Inicia loop dos 4 frames (Lembrando: frame 2 (índice 2) é o impacto)
         drumTimers[timerKey] = setInterval(() => {
             if(fIdx < frames.length) {
                 imgEl.src = frames[fIdx];
@@ -536,6 +542,7 @@
     function resetDrummer() {
         Object.values(drumTimers).forEach(t => clearInterval(t));
         drumTimers = {};
+        lastDrumStep = {}; // Reseta histórico
         
         domImages.bt_tronco.src = DRUM_ASSETS.idle.tronco;
         domImages.bt_pernaEsq.src = DRUM_ASSETS.idle.pernaEsq;
@@ -564,10 +571,11 @@
     function iniciarPlayback() {
         if (audioContext.state === 'suspended') audioContext.resume();
         isPlaying = true; atualPasso = 0;
+        lastDrumStep = {}; // Reseta ao iniciar
         document.getElementById("playBtn").innerText = "⏸ Pause"; document.getElementById("playBtn").style.background = "#e65100";
         
         startPenduloAnim();
-        playDrumAnimation('start'); 
+        playDrumAnimation('start', 0); 
 
         const msPorStep = (60000 / bpmAtual) / 4;
         const loop = () => {
@@ -587,7 +595,8 @@
             drumLines.forEach(line => {
                 if (bateriaSeq[line.id] && bateriaSeq[line.id][atualPasso] === line.id) {
                     tocarAudioBuffer(`assets/${line.file}`, bateriaVolumeGlobal);
-                    playDrumAnimation(line.id);
+                    // Passa o passo atual para verificar repetição
+                    playDrumAnimation(line.id, atualPasso);
                 }
             });
             
@@ -806,4 +815,3 @@
   </script>
 </body>
 </html>
-
