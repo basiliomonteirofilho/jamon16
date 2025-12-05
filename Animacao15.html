@@ -59,7 +59,7 @@
       width: 520px; height: 520px;
       transform-origin: center center;
       z-index: 1; /* Atrás da baixista */
-      /* CORREÇÃO: Escala reduzida para 0.6 e movida para a direita/cima */
+      /* Escala ajustada para não ficar gigante */
       transform: scale(0.6) translate(250px, -100px);
       pointer-events: none;
     }
@@ -240,12 +240,11 @@
 
   <script>
     // =========================================================
-    // DADOS & CAMINHOS (ASSETS) - CORRIGIDO INTEGRAL
+    // DADOS & CAMINHOS (ASSETS) - CORRIGIDO
     // =========================================================
-    const PASTA_BAT = "jamon16/animacao/Baterista/";
+    // CORREÇÃO CRÍTICA: Removido "jamon16/" do início para evitar caminho duplo
+    const PASTA_BAT = "animacao/Baterista/";
     
-    // Caminhos da Baterista Ajustados para a Lista de Arquivos Real
-    // Correções: Tronco_Perna_direita, Braco_direito (minúsculo) e loops
     const DRUM_ASSETS = {
         idle: {
             ataque: PASTA_BAT + "Ataque/Ataque0001.png",
@@ -254,18 +253,16 @@
             cabeca: PASTA_BAT + "Cabeca/Cabeca_estavel/cabeca0024.png",
             conducao: PASTA_BAT + "Conducao/Conducao0001.png",
             pernaEsq: PASTA_BAT + "Perna_esquerda/Pedal_chimbal/Baterista0001.png",
-            // Correção aqui: Tronco_Perna_direita
             tronco: PASTA_BAT + "Tronco_Perna_direita/Parado/Tronco0001.png"
         },
         anim: {
-            // Correção Loop Tronco: Pasta 'Tronco_Perna_direita/Tocando'
-            // Arquivos vão de Tronco0002.png até Tronco0040.png (total 39 frames)
+            // Tronco tocando: Tronco0002 até Tronco0040 (total 39 frames)
             troncoTocando: Array.from({length:39}, (_,i) => PASTA_BAT + `Tronco_Perna_direita/Tocando/Tronco${String(i+2).padStart(4,'0')}.png`),
             
             ataquePrato: Array.from({length:7}, (_,i) => PASTA_BAT + `Ataque/Ataque${String(i+1).padStart(4,'0')}.png`),
             conducaoPrato: Array.from({length:6}, (_,i) => PASTA_BAT + `Conducao/Conducao${String(i+1).padStart(4,'0')}.png`),
             
-            // Braço Direito (Pasta: Braco_direito, prefixo: braco_direito)
+            // Braço Direito
             bd_ataque: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_direito/Ataque/braco_direito${String(i+5).padStart(4,'0')}.png`),
             bd_caixa: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_direito/Caixa/braco_direito${String(i+1).padStart(4,'0')}.png`),
             bd_chimbal: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_direito/Chimbal/braco_direito${String(i+1).padStart(4,'0')}.png`),
@@ -274,7 +271,7 @@
             bd_tom1: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_direito/Tom_1/braco_direito${String(i+13).padStart(4,'0')}.png`),
             bd_tom2: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_direito/Tom_2/braco_direito${String(i+17).padStart(4,'0')}.png`),
 
-            // Braço Esquerdo (Pasta: Braco_esquerdo, prefixo: braco_esquerda)
+            // Braço Esquerdo
             be_ataque: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_esquerdo/Ataque/braco_esquerda${String(i+9).padStart(4,'0')}.png`),
             be_caixa: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_esquerdo/Caixa/braco_esquerda${String(i+1).padStart(4,'0')}.png`),
             be_chimbal: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_esquerdo/Chimbal/braco_esquerda${String(i+5).padStart(4,'0')}.png`),
@@ -288,12 +285,12 @@
             cabeca_esquerda: Array.from({length:9}, (_,i) => PASTA_BAT + `Cabeca/Virada_para_esquerda/cabeca${String(i+39).padStart(4,'0')}.png`),
             cabeca_estavel: Array.from({length:26}, (_,i) => PASTA_BAT + `Cabeca/Cabeca_estavel/cabeca${String(i+1).padStart(4,'0')}.png`),
             
-            // Perna (Pasta: Perna_esquerda)
+            // Perna
             perna_duplo: [PASTA_BAT+"Perna_esquerda/Pedal_duplo/Baterista0002.png", PASTA_BAT+"Perna_esquerda/Pedal_duplo/Baterista0003.png"]
         }
     };
 
-    // Dados Baixista (Mantidos inalterados)
+    // Dados Baixista (Mantidos)
     const pastaMap = { 1: ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B"], 2: ["3FS","4G","5GS","6A","8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C"], 3: ["4G","5GS","6A","7AS","9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS"], 4: ["5GS","6A","7AS","8B","10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D"], 5: ["6A","7AS","8B","9C","11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS"], 6: ["7AS","8B","9C","10CS","12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E"], 7: ["8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F"], 8: ["9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS"], 9: ["10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G"], 10: ["11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS"], 11: ["12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A"], 12: ["13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS"], 13: ["14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B"], 14: ["15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C"], 15: ["16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS"], 16: ["17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D"], 17: ["18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS"], 18: ["19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E"], 19: ["20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F"], 20: ["21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS","36DS","37E","38F","39FS"], 21: ["22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D","37E","38F","39FS","40G"], 22: ["23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS","38F","39FS","40G","41GS"], 23: ["24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E","39FS","40G","41GS","42A"], 24: ["25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F","40G","41GS","42A","43AS"] };
     const pastaFolderNames = { 1:"1F", 2:"2FS", 3:"3G", 4:"4GS", 5:"5A", 6:"6AS", 7:"7B", 8:"8C", 9:"9CS", 10:"10D", 11:"11DS", 12:"12E", 13:"13F", 14:"14FS", 15:"15G", 16:"16GS", 17:"17A", 18:"18AS", 19:"19B", 20:"20C", 21:"21CS", 22:"22D", 23:"23DS", 24:"24E" };
     const notasValidas = ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B","21C","22CS","23D","24DS","25E","26F","27FS","28G","29GS","30A","31AS","32B","33C","34CS","35D","36DS","37E","38F","39FS","40G","41GS","42A","43AS"];
