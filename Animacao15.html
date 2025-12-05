@@ -60,11 +60,8 @@
       transform-origin: center center;
       z-index: 1; /* Atrás da baixista */
       
-      /* CORREÇÃO PEDIDA:
-         1. scale(0.30) -> Deixa ela bem menor.
-         2. translate(800px, -180px) -> Move ela para cima e direita.
-      */
-      transform: scale(0.25) translate(300px, -300px);
+      /* AJUSTE SOLICITADO: Bem menor e mais para cima/direita */
+      transform: scale(0.45) translate(350px, -180px);
       pointer-events: none;
     }
     
@@ -74,12 +71,12 @@
     }
 
     /* Camadas Baterista */
-    #bat_Bateria      { top: 0; left: 0; z-index: 9; } /* Kit Fixo */
+    #bat_Bateria      { top: 0; left: 0; z-index: 5; } /* Kit Fixo */
     #bat_PernaEsq     { top: 0; left: 0; z-index: 2; }
     #bat_Tronco       { top: 0; left: 0; z-index: 3; }
     #bat_Cabeca       { top: 0; left: 0; z-index: 4; }
     
-    /* CORREÇÃO PEDIDA: Braço Esquerdo (6) atrás do Direito (7) */
+    /* AJUSTE SOLICITADO: Braço Esquerdo (6) atrás do Direito (7) */
     #bat_BracoEsq     { top: 0; left: 0; z-index: 6; }
     #bat_BracoDir     { top: 0; left: 0; z-index: 7; }
     
@@ -249,9 +246,9 @@
     // =========================================================
     // DADOS & CAMINHOS (ASSETS)
     // =========================================================
-    // CORREÇÃO CRÍTICA: Sem "jamon16/" no início
     const PASTA_BAT = "animacao/Baterista/";
     
+    // Configuração EXATA conforme solicitado
     const DRUM_ASSETS = {
         idle: {
             ataque: PASTA_BAT + "Ataque/Ataque0001.png",
@@ -263,11 +260,13 @@
             tronco: PASTA_BAT + "Tronco_Perna_direita/Parado/Tronco0001.png"
         },
         anim: {
+            // Tronco tocando
             troncoTocando: Array.from({length:39}, (_,i) => PASTA_BAT + `Tronco_Perna_direita/Tocando/Tronco${String(i+2).padStart(4,'0')}.png`),
+            // Pratos
             ataquePrato: Array.from({length:7}, (_,i) => PASTA_BAT + `Ataque/Ataque${String(i+1).padStart(4,'0')}.png`),
             conducaoPrato: Array.from({length:6}, (_,i) => PASTA_BAT + `Conducao/Conducao${String(i+1).padStart(4,'0')}.png`),
             
-            // Braço Direito
+            // BRAÇO DIREITO
             bd_ataque: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_direito/Ataque/braco_direito${String(i+5).padStart(4,'0')}.png`),
             bd_caixa: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_direito/Caixa/braco_direito${String(i+1).padStart(4,'0')}.png`),
             bd_chimbal: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_direito/Chimbal/braco_direito${String(i+1).padStart(4,'0')}.png`),
@@ -276,7 +275,7 @@
             bd_tom1: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_direito/Tom_1/braco_direito${String(i+13).padStart(4,'0')}.png`),
             bd_tom2: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_direito/Tom_2/braco_direito${String(i+17).padStart(4,'0')}.png`),
 
-            // Braço Esquerdo
+            // BRAÇO ESQUERDO
             be_ataque: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_esquerdo/Ataque/braco_esquerda${String(i+9).padStart(4,'0')}.png`),
             be_caixa: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_esquerdo/Caixa/braco_esquerda${String(i+1).padStart(4,'0')}.png`),
             be_chimbal: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_esquerdo/Chimbal/braco_esquerda${String(i+5).padStart(4,'0')}.png`),
@@ -285,12 +284,14 @@
             be_tom1: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_esquerdo/Tom_1/braco_esquerda${String(i+13).padStart(4,'0')}.png`),
             be_tom2: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_esquerdo/Tom_2/braco_esquerda${String(i+17).padStart(4,'0')}.png`),
 
-            // Cabeça
-            cabeca_direita: Array.from({length:10}, (_,i) => PASTA_BAT + `Cabeca/Virada_para_direita/cabeca${String(i+51).padStart(4,'0')}.png`),
-            cabeca_esquerda: Array.from({length:9}, (_,i) => PASTA_BAT + `Cabeca/Virada_para_esquerda/cabeca${String(i+39).padStart(4,'0')}.png`),
+            // CABEÇA ESTÁVEL (Loop ao tocar) - 0001 a 0026
             cabeca_estavel: Array.from({length:26}, (_,i) => PASTA_BAT + `Cabeca/Cabeca_estavel/cabeca${String(i+1).padStart(4,'0')}.png`),
             
-            perna_duplo: [PASTA_BAT+"Perna_esquerda/Pedal_duplo/Baterista0002.png", PASTA_BAT+"Perna_esquerda/Pedal_duplo/Baterista0003.png"]
+            // PEDAL DUPLO (Kick)
+            perna_duplo: [
+                PASTA_BAT+"Perna_esquerda/Pedal_duplo/Baterista0002.png", 
+                PASTA_BAT+"Perna_esquerda/Pedal_duplo/Baterista0003.png"
+            ]
         }
     };
 
@@ -326,8 +327,9 @@
     let reqAnimIdPendulo = null, headLoopTimer = null, rightHandTimer = null;
     let headFrameIndex = 0, headFrames = [];
 
-    // Animação Baterista
+    // Variáveis da Baterista
     let drumTimers = {}; 
+    let ultimoBracoUsado = 'right'; // Estado para alternar em viradas
 
     const canvas = document.getElementById("recordingCanvas");
     const ctx = canvas.getContext("2d");
@@ -424,9 +426,10 @@
     }
 
     // =========================================================
-    // LÓGICA ANIMAÇÃO BATERIA
+    // LÓGICA ANIMAÇÃO BATERIA (Corrigida e Melhorada)
     // =========================================================
     function playDrumAnimation(drumType) {
+        // Velocidade da animação dos braços (3º frame é o impacto)
         const fps = 40; 
         
         // --- 1. Movimento do TRONCO (Ginga) ---
@@ -439,60 +442,78 @@
             }, 30);
         }
 
-        // --- 2. Movimento da CABEÇA (Groove/Aleatório) ---
-        // Adicionado: Animação de cabeça "estável" em loop enquanto toca
+        // --- 2. Movimento da CABEÇA (Loop Estável) ---
         if (!drumTimers.cabeca && isPlaying) {
             let cIdx = 0;
             const cFrames = DRUM_ASSETS.anim.cabeca_estavel;
             drumTimers.cabeca = setInterval(() => {
-                // Loopa os frames de 0 a 25
                 domImages.bt_cabeca.src = cFrames[cIdx];
                 cIdx = (cIdx + 1) % cFrames.length;
-            }, 40); // Velocidade suave
+            }, 40); 
         }
 
-        if (drumType === 'start') return; // Se foi só pra iniciar o groove, para aqui.
+        if (drumType === 'start') return;
 
-        // --- 3. Decisão de BRAÇO e CABEÇA (Ação de tocar) ---
+        // --- 3. BUMBO (Pedal Duplo Exclusivo) ---
         if (drumType === 'bumbo') {
             domImages.bt_pernaEsq.src = DRUM_ASSETS.anim.perna_duplo[0];
-            setTimeout(() => { domImages.bt_pernaEsq.src = DRUM_ASSETS.anim.perna_duplo[1]; }, 50);
-            setTimeout(() => { domImages.bt_pernaEsq.src = DRUM_ASSETS.idle.pernaEsq; }, 100);
+            setTimeout(() => { domImages.bt_pernaEsq.src = DRUM_ASSETS.anim.perna_duplo[1]; }, 40);
+            setTimeout(() => { domImages.bt_pernaEsq.src = DRUM_ASSETS.idle.pernaEsq; }, 90);
             return;
         }
 
+        // --- 4. BRAÇOS (Lógica de Alternância para Viradas) ---
         let armToUse = 'right'; 
         let frames = [];
-        let headLook = 'stable'; 
+        
+        // Define se é uma peça que deve alternar mãos (Virada/Fill)
+        const isAlternatingPiece = ['caixa', 'caixaAro', 'tom1', 'tom2', 'surdo', 'ataque'].includes(drumType);
 
-        switch(drumType) {
-            case 'caixa': 
-            case 'ataque': 
-                armToUse = 'left'; headLook = 'left'; 
-                frames = (drumType==='caixa') ? DRUM_ASSETS.anim.be_caixa : DRUM_ASSETS.anim.be_ataque;
-                break;
-            case 'chimbal':
-            case 'conducao':
-            case 'surdo':
-            case 'tom1':
-            case 'tom2':
-                armToUse = 'right'; headLook = 'right';
-                if(drumType === 'chimbal') { frames = DRUM_ASSETS.anim.bd_chimbal; headLook = 'left'; }
-                else if(drumType === 'conducao') frames = DRUM_ASSETS.anim.bd_conducao;
-                else if(drumType === 'surdo') frames = DRUM_ASSETS.anim.bd_surdo;
-                else if(drumType === 'tom1') frames = DRUM_ASSETS.anim.bd_tom1;
-                else frames = DRUM_ASSETS.anim.bd_tom2;
-                break;
+        if (isAlternatingPiece) {
+            // Se for peça de virada, inverte o último braço usado
+            armToUse = (ultimoBracoUsado === 'right') ? 'left' : 'right';
+            ultimoBracoUsado = armToUse;
+        } else {
+            // Chimbal e Condução padrão na direita
+            armToUse = 'right';
+            // Se for muito rápido, poderiamos alternar, mas vamos manter o padrão destro
+            if(drumType === 'chimbal_pedal') return; // Sem animação de braço para pedal
         }
 
+        // Mapeamento de Frames (Dependendo do braço escolhido)
+        if (armToUse === 'right') {
+            if(drumType === 'caixa' || drumType === 'caixaAro') frames = DRUM_ASSETS.anim.bd_caixa;
+            else if(drumType === 'ataque') frames = DRUM_ASSETS.anim.bd_ataque;
+            else if(drumType === 'chimbal' || drumType === 'chimbalaberto') frames = DRUM_ASSETS.anim.bd_chimbal;
+            else if(drumType === 'conducao' || drumType === 'conducao_centro') frames = DRUM_ASSETS.anim.bd_conducao;
+            else if(drumType === 'surdo') frames = DRUM_ASSETS.anim.bd_surdo;
+            else if(drumType === 'tom1') frames = DRUM_ASSETS.anim.bd_tom1;
+            else if(drumType === 'tom2') frames = DRUM_ASSETS.anim.bd_tom2;
+            else frames = DRUM_ASSETS.anim.bd_caixa; // fallback
+        } else {
+            // Left Arm
+            if(drumType === 'caixa' || drumType === 'caixaAro') frames = DRUM_ASSETS.anim.be_caixa;
+            else if(drumType === 'ataque') frames = DRUM_ASSETS.anim.be_ataque;
+            else if(drumType === 'chimbal' || drumType === 'chimbalaberto') frames = DRUM_ASSETS.anim.be_chimbal;
+            else if(drumType === 'conducao' || drumType === 'conducao_centro') frames = DRUM_ASSETS.anim.be_conducao;
+            else if(drumType === 'surdo') frames = DRUM_ASSETS.anim.be_surdo;
+            else if(drumType === 'tom1') frames = DRUM_ASSETS.anim.be_tom1;
+            else if(drumType === 'tom2') frames = DRUM_ASSETS.anim.be_tom2;
+            else frames = DRUM_ASSETS.anim.be_caixa;
+        }
+
+        // Animação do Objeto (Prato balançando)
         if(drumType === 'ataque') animateProp(domImages.bt_ataque, DRUM_ASSETS.anim.ataquePrato, DRUM_ASSETS.idle.ataque);
         if(drumType === 'conducao') animateProp(domImages.bt_conducao, DRUM_ASSETS.anim.conducaoPrato, DRUM_ASSETS.idle.conducao);
 
+        // Executar Animação do Braço
         const imgEl = (armToUse === 'right') ? domImages.bt_bracoDir : domImages.bt_bracoEsq;
         const timerKey = (armToUse === 'right') ? 'bracoDir' : 'bracoEsq';
         
         clearInterval(drumTimers[timerKey]);
         let fIdx = 0;
+        
+        // Inicia loop dos 4 frames (Lembrando: frame 2 (índice 2) é o impacto)
         drumTimers[timerKey] = setInterval(() => {
             if(fIdx < frames.length) {
                 imgEl.src = frames[fIdx];
@@ -502,28 +523,6 @@
                 imgEl.src = (armToUse==='right') ? DRUM_ASSETS.idle.bracoDir : DRUM_ASSETS.idle.bracoEsq;
             }
         }, 1000/fps);
-        
-        // Se for virada, interrompe o loop suave da cabeça e faz o movimento específico
-        if (headLook !== 'stable') {
-            clearInterval(drumTimers.cabeca); // Para o groove
-            delete drumTimers.cabeca;
-            
-            const hFrames = (headLook === 'left') ? DRUM_ASSETS.anim.cabeca_esquerda : DRUM_ASSETS.anim.cabeca_direita;
-            domImages.bt_cabeca.src = hFrames[Math.floor(Math.random()*hFrames.length)];
-            
-            // Retorna ao groove após um tempo curto
-            setTimeout(() => {
-               if(isPlaying && !drumTimers.cabeca) {
-                   // Reinicia groove se ainda estiver tocando
-                   let cIdx = 0;
-                   const cFrames = DRUM_ASSETS.anim.cabeca_estavel;
-                   drumTimers.cabeca = setInterval(() => {
-                       domImages.bt_cabeca.src = cFrames[cIdx];
-                       cIdx = (cIdx + 1) % cFrames.length;
-                   }, 40);
-               }
-            }, 300);
-        }
     }
 
     function animateProp(el, frames, idleSrc) {
@@ -807,10 +806,3 @@
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
