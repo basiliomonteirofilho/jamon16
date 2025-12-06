@@ -3,7 +3,7 @@
 <head>
   <script src="https://cdn.jsdelivr.net/npm/audiobuffer-to-wav@1.0.0/index.min.js"></script>
   <meta charset="UTF-8" />
-  <title>Jam On - Mãos Fixas (Dir e Esq)</title>
+  <title>Jam On - Sync Perfeito Esq/Dir</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
   <style>
@@ -270,6 +270,7 @@
     
     // CONFIGURAÇÃO DE SINCRONIA
     const DRUM_FPS = 40; // FPS fixo para calcular delay
+    // Impacto no frame index 2 (terceira imagem: 0, 1, 2). 
     const DRUM_IMPACT_FRAME = 2; 
     const DRUM_MS_PER_FRAME = 1000 / DRUM_FPS;
     const DRUM_PREROLL_MS = DRUM_IMPACT_FRAME * DRUM_MS_PER_FRAME;
@@ -290,6 +291,7 @@
             ataquePrato: Array.from({length:7}, (_,i) => PASTA_BAT + `Ataque/Ataque${String(i+1).padStart(4,'0')}.png`),
             conducaoPrato: Array.from({length:6}, (_,i) => PASTA_BAT + `Conducao/Conducao${String(i+1).padStart(4,'0')}.png`),
             
+            // BRAÇO DIREITO
             bd_ataque: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_direito/Ataque/braco_direito${String(i+5).padStart(4,'0')}.png`),
             bd_caixa: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_direito/Caixa/braco_direito${String(i+1).padStart(4,'0')}.png`),
             bd_chimbal: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_direito/Chimbal/braco_direito${String(i+1).padStart(4,'0')}.png`),
@@ -298,13 +300,49 @@
             bd_tom1: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_direito/Tom_1/braco_direito${String(i+13).padStart(4,'0')}.png`),
             bd_tom2: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_direito/Tom_2/braco_direito${String(i+17).padStart(4,'0')}.png`),
 
-            be_ataque: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_esquerdo/Ataque/braco_esquerda${String(i+9).padStart(4,'0')}.png`),
-            be_caixa: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_esquerdo/Caixa/braco_esquerda${String(i+1).padStart(4,'0')}.png`),
-            be_chimbal: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_esquerdo/Chimbal/braco_esquerda${String(i+5).padStart(4,'0')}.png`),
-            be_conducao: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_esquerdo/Conducao/braco_esquerda${String(i+25).padStart(4,'0')}.png`),
-            be_surdo: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_esquerdo/Surdo/braco_esquerda${String(i+21).padStart(4,'0')}.png`),
-            be_tom1: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_esquerdo/Tom_1/braco_esquerda${String(i+13).padStart(4,'0')}.png`),
-            be_tom2: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_esquerdo/Tom_2/braco_esquerda${String(i+17).padStart(4,'0')}.png`),
+            // BRAÇO ESQUERDO (Definição Explícita conforme pedido)
+            be_ataque: [
+                PASTA_BAT + "Braco_esquerdo/Ataque/braco_esquerda0009.png",
+                PASTA_BAT + "Braco_esquerdo/Ataque/braco_esquerda0010.png",
+                PASTA_BAT + "Braco_esquerdo/Ataque/braco_esquerda0011.png",
+                PASTA_BAT + "Braco_esquerdo/Ataque/braco_esquerda0012.png"
+            ],
+            be_caixa: [
+                PASTA_BAT + "Braco_esquerdo/Caixa/braco_esquerda0001.png",
+                PASTA_BAT + "Braco_esquerdo/Caixa/braco_esquerda0002.png",
+                PASTA_BAT + "Braco_esquerdo/Caixa/braco_esquerda0003.png",
+                PASTA_BAT + "Braco_esquerdo/Caixa/braco_esquerda0004.png"
+            ],
+            be_chimbal: [
+                PASTA_BAT + "Braco_esquerdo/Chimbal/braco_esquerda0005.png",
+                PASTA_BAT + "Braco_esquerdo/Chimbal/braco_esquerda0006.png",
+                PASTA_BAT + "Braco_esquerdo/Chimbal/braco_esquerda0007.png",
+                PASTA_BAT + "Braco_esquerdo/Chimbal/braco_esquerda0008.png"
+            ],
+            be_conducao: [
+                PASTA_BAT + "Braco_esquerdo/Conducao/braco_esquerda0025.png",
+                PASTA_BAT + "Braco_esquerdo/Conducao/braco_esquerda0026.png",
+                PASTA_BAT + "Braco_esquerdo/Conducao/braco_esquerda0027.png",
+                PASTA_BAT + "Braco_esquerdo/Conducao/braco_esquerda0028.png"
+            ],
+            be_surdo: [
+                PASTA_BAT + "Braco_esquerdo/Surdo/braco_esquerda0021.png",
+                PASTA_BAT + "Braco_esquerdo/Surdo/braco_esquerda0022.png",
+                PASTA_BAT + "Braco_esquerdo/Surdo/braco_esquerda0023.png",
+                PASTA_BAT + "Braco_esquerdo/Surdo/braco_esquerda0024.png"
+            ],
+            be_tom1: [
+                PASTA_BAT + "Braco_esquerdo/Tom_1/braco_esquerda0013.png",
+                PASTA_BAT + "Braco_esquerdo/Tom_1/braco_esquerda0014.png",
+                PASTA_BAT + "Braco_esquerdo/Tom_1/braco_esquerda0015.png",
+                PASTA_BAT + "Braco_esquerdo/Tom_1/braco_esquerda0016.png"
+            ],
+            be_tom2: [
+                PASTA_BAT + "Braco_esquerdo/Tom_2/braco_esquerda0017.png",
+                PASTA_BAT + "Braco_esquerdo/Tom_2/braco_esquerda0018.png",
+                PASTA_BAT + "Braco_esquerdo/Tom_2/braco_esquerda0019.png",
+                PASTA_BAT + "Braco_esquerdo/Tom_2/braco_esquerda0020.png"
+            ],
 
             cabeca_estavel: Array.from({length:26}, (_,i) => PASTA_BAT + `Cabeca/Cabeca_estavel/cabeca${String(i+1).padStart(4,'0')}.png`),
             perna_duplo: [ PASTA_BAT+"Perna_esquerda/Pedal_duplo/Baterista0002.png", PASTA_BAT+"Perna_esquerda/Pedal_duplo/Baterista0003.png" ]
@@ -581,7 +619,7 @@
         const isLeft = (armToUse === 'left');
         const imgEl = isLeft ? domImages.bt_bracoEsq : domImages.bt_bracoDir;
         
-        // MUDANÇA PRINCIPAL: idleSrc é null para ambos os braços (fixa a imagem no fim)
+        // IDLE é null para manter a mão congelada no último frame
         const idleSrc = null; 
         
         if (isLeft) {
@@ -597,6 +635,7 @@
         if(drumType === 'chimbalaberto') key = 'chimbal';
         if(drumType === 'caixaAro') key = 'caixa';
         if(drumType === 'conducao_centro') key = 'conducao';
+        
         if (DRUM_ASSETS.anim[mapName + key]) {
             frames = DRUM_ASSETS.anim[mapName + key];
         } else {
@@ -710,6 +749,7 @@
         const now = audioContext.currentTime;
         const delayVisualBase = Math.max(0, (timeToPlay - now) * 1000);
         
+        // PREROLL BATERIA: 2 frames (~50ms) antes do audio
         let delayDrumVisual = (timeToPlay - now) * 1000 - DRUM_PREROLL_MS;
         if (delayDrumVisual < 0) delayDrumVisual = 0;
 
