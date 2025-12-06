@@ -4,7 +4,7 @@
   <link rel="icon" href="data:,">
   
   <meta charset="UTF-8" />
-  <title>Jam On - Sync Otimizado (Mobile + HD + Fix Cabeça)</title>
+  <title>Jam On - Sync Otimizado (Recording Safe)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
   <style>
@@ -191,12 +191,10 @@
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
     
-    /* ADAPTAÇÕES MOBILE */
     @media (max-width: 800px) {
         #animacaoStageWrapper { transform: scale(0.65); }
         #topArea { overflow: visible; }
     }
-    
     @media (max-width: 600px) { 
         #bottomArea { flex-basis: 60vh; } 
         :root { --label-width: 50px; --cell-size: 22px; } 
@@ -210,7 +208,7 @@
 <body>
 
   <div id="loadingOverlay">
-    <div id="loadingText">Carregando Estúdio Completo...</div>
+    <div id="loadingText">Carregando Estúdio...</div>
     <div id="loadingBarContainer"><div id="loadingBar"></div></div>
   </div>
 
@@ -221,7 +219,6 @@
   <div class="appRoot">
     <div id="topArea">
       <div id="animacaoStageWrapper">
-        
         <div id="bateristaStage">
             <img id="bat_Conducao" src="" />
             <img id="bat_PernaEsq" src="" />
@@ -232,7 +229,6 @@
             <img id="bat_BracoEsq" src="" />
             <img id="bat_Ataque"   src="" />
         </div>
-
         <div id="baixistaStage">
             <img id="pernasLayer" src="animacao/pernas/Pernas.png" />
             <div id="bodyWrapperPendulo">
@@ -247,7 +243,6 @@
                 <div id="loadingStatusMini"></div>
             </div>
         </div>
-
       </div>
     </div>
 
@@ -280,22 +275,14 @@
   <div id="selectionOverlay"><div id="selectionPanel"><div id="selectionTitle">Nota</div><div id="selectionOptions"></div></div></div>
 
   <script>
-    // =========================================================
-    // DADOS & CAMINHOS (ASSETS)
-    // =========================================================
     const PASTA_BAT = "animacao/Baterista/";
     const imgCache = new Map();
-    
-    // CONFIGURAÇÃO DE SINCRONIA
     const DRUM_FPS = 40; 
-    const DRUM_IMPACT_FRAME = 2; // Frame index 2 (Terceira imagem) é o impacto
+    const DRUM_IMPACT_FRAME = 2; 
     const DRUM_MS_PER_FRAME = 1000 / DRUM_FPS;
-    const DRUM_PREROLL_MS = DRUM_IMPACT_FRAME * DRUM_MS_PER_FRAME; // ~50ms
-    
-    // COMPENSACAO DE LATENCIA (Correção do Atraso)
+    const DRUM_PREROLL_MS = DRUM_IMPACT_FRAME * DRUM_MS_PER_FRAME; 
     const VISUAL_OFFSET_MS = 25; 
 
-    // NOVO: Animações da cabeça
     const CABECA_ANIMATIONS = {
         virada_direita: Array.from({length:10}, (_,i) => PASTA_BAT + `Cabeca/Virada_para_direita/cabeca${String(i+51).padStart(4,'0')}.png`),
         virada_esquerda: Array.from({length:8}, (_,i) => PASTA_BAT + `Cabeca/Virada_para_esquerda/cabeca${String(i+39).padStart(4,'0')}.png`),
@@ -371,21 +358,15 @@
     let posicaoAtualPasta = 1, ultimaCordaUsada = "E", ultimaNotaReal = "1E";
     let headLoopTimer = null, headFrameIndex = 0, headFrames = [];
 
-    // Animation Controllers (RAF)
     let activeAnimations = {}; 
     let lastDrumStep = {}; 
     let lastArmUsed = {};  
     let pendulumStartTime = 0;
     
-    // NOVO: Controle de virada da cabeça
     let lastHeadAnimation = null;
     let headAnimationTimeout = null;
     let currentHeadStyle = 'estavel'; 
-    
-    // NOVO: Controle de animação dos braços
     let armAnimationTimers = {};
-    
-    // NOVO: Controle da última posição do braço direito
     let lastRightArmFrame = null;
     let lastRightArmFrames = null;
     
@@ -418,12 +399,10 @@
         verificarOrientacao();
         window.addEventListener("resize", verificarOrientacao);
         
-        // GERA LISTA DE FRAMES DA CABEÇA DO BAIXISTA
         for (let i = 1; i <= 100; i++) {
             headFrames.push(`animacao/cabeca/cabeca${String(i).padStart(4, "0")}.png`);
         }
 
-        // CARREGA TUDO ANTES DE INICIAR
         await preloadBaseAssets();
         
         startHeadLoop();
@@ -473,8 +452,6 @@
         toLoad.push("animacao/pernas/Pernas.png");
         toLoad.push("animacao/cabeca_tras/cabeca-parte-de-tras.png");
         toLoad.push("animacao/antebraco/antebracoE.png");
-        
-        // CORREÇÃO: Adiciona os 100 frames da cabeça para carregar AGORA
         headFrames.forEach(frame => toLoad.push(frame));
 
         const total = toLoad.length;
@@ -551,15 +528,10 @@
         renderGrids();
     }
 
-    // ========================================================
-    // RENDERIZAÇÃO NO CANVAS (GRAVAÇÃO) - HD 1280x720
-    // ========================================================
     function canvasRenderLoop() {
-        // Limpa e preenche fundo
         ctx.fillStyle = "#111"; 
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        // --- DESENHA O BATERISTA (FUNDO ESQUERDA) ---
         ctx.save();
         ctx.translate(400, 150); 
         ctx.scale(0.55, 0.55);   
@@ -575,14 +547,11 @@
         drawImg(domImages.bt_ataque);
         ctx.restore();
 
-        // --- DESENHA O BAIXISTA (FRENTE DIREITA) ---
         ctx.save();
         ctx.translate(550, 100); 
 
-        // Desenha pernas (fixas no layout original)
         if (domImages.bx_pernas.complete) ctx.drawImage(domImages.bx_pernas, 64, 332);
 
-        // Grupo do tronco com balanço (Pêndulo)
         ctx.save(); 
         ctx.translate(260, 416); 
         
@@ -595,25 +564,22 @@
         }
         ctx.rotate(angle * Math.PI / 180);
         
-        // Aplica o rotate no DIV visual também
         document.getElementById("bodyWrapperPendulo").style.transform = `rotate(${angle}deg)`;
         
-        ctx.translate(-260, -416); // Retorna a origem
+        ctx.translate(-260, -416); 
         
-        // Desenha partes do corpo
         if (domImages.bx_cabecaTras.complete) ctx.drawImage(domImages.bx_cabecaTras, 100, 60);
         if (domImages.bx_tronco.complete) ctx.drawImage(domImages.bx_tronco, 0, 132);
         if (domImages.bx_antebraco.complete) ctx.drawImage(domImages.bx_antebraco, -2, 179);
         if (domImages.bx_bracoDir.complete) ctx.drawImage(domImages.bx_bracoDir, -5, 250);
         if (domImages.bx_cabeca.complete) ctx.drawImage(domImages.bx_cabeca, 70, 37);
         
-        ctx.restore(); // Fim do grupo pendulo
-        ctx.restore(); // Fim do grupo baixista
+        ctx.restore();
+        ctx.restore(); 
 
         requestAnimationFrame(canvasRenderLoop);
     }
 
-    // Função runFrameAnimation
     function runFrameAnimation(elementId, frames, idleFrame, fps = 30, loop = false, startFrame = 0, keepLastFrame = false) {
         const el = typeof elementId === 'string' ? document.getElementById(elementId) : elementId;
         const frameDuration = 1000 / fps;
@@ -872,29 +838,44 @@
         currentHeadStyle = 'estavel'; 
     }
 
+    // NOVA LÓGICA DE PLAYBACK E GRAVAÇÃO
     function togglePlay() {
+        if (isRecording) {
+            // Se estiver gravando e clicar em Pause, para a gravação também.
+            toggleRecording(); 
+            return;
+        }
+
         if (isPlaying) {
             pararPlayback();
         } else {
-            const overlay = document.getElementById("countdownOverlay");
-            const txt = document.getElementById("countdownText");
-            overlay.style.display = "flex"; 
-            prepararAssetsDaSequencia().then(() => {
-                let count = 4; 
-                txt.innerText = count;
-                const ms = 60000 / bpmAtual;
-                const countInt = setInterval(() => {
-                    count--; 
-                    if(count > 0) {
-                        txt.innerText = count;
-                    } else { 
-                        clearInterval(countInt); 
-                        overlay.style.display = "none"; 
-                        iniciarPlayback(); 
-                    }
-                }, ms);
-            });
+            iniciarContagemEPlay();
         }
+    }
+
+    function iniciarContagemEPlay(callback) {
+        const overlay = document.getElementById("countdownOverlay");
+        const txt = document.getElementById("countdownText");
+        overlay.style.display = "flex"; 
+        
+        prepararAssetsDaSequencia().then(() => {
+            let count = 4; 
+            txt.innerText = count;
+            // Usa tempo fixo para contagem (mais previsível para UI) ou baseado em BPM
+            const ms = 60000 / bpmAtual; 
+            
+            const countInt = setInterval(() => {
+                count--; 
+                if(count > 0) {
+                    txt.innerText = count;
+                } else { 
+                    clearInterval(countInt); 
+                    overlay.style.display = "none"; 
+                    if(callback) callback(); // Se for gravação, executa o callback
+                    iniciarPlayback(); 
+                }
+            }, ms);
+        });
     }
 
     function iniciarPlayback() {
@@ -1000,33 +981,69 @@
         return audioBuffer;
     }
 
+    // NOVA LÓGICA DE GRAVAÇÃO COM SEGURANÇA
     async function toggleRecording() {
         const btn = document.getElementById("recordVideoBtn");
+        
         if (isRecording) {
-            mediaRecorder.stop(); isRecording = false; btn.innerText = "🔴 Gravar Vídeo"; btn.classList.remove("recording");
+            // -- PARAR GRAVAÇÃO --
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop(); 
+            }
+            isRecording = false; 
+            btn.innerText = "🔴 Gravar Vídeo"; 
+            btn.classList.remove("recording");
+            
+            // Também para o playback automaticamente ao parar a gravação
+            if (isPlaying) pararPlayback();
+
         } else {
+            // -- INICIAR GRAVAÇÃO --
+            
+            // 1. Para qualquer som/animação atual para limpar o estado
+            if (isPlaying) pararPlayback();
+            
             try {
                 if (audioContext.state === 'suspended') await audioContext.resume();
+                
+                // Configura o gravador
                 const canvasStream = canvas.captureStream(30);
                 const videoTrack = canvasStream.getVideoTracks()[0];
                 const audioTrack = mediaStreamDestination.stream.getAudioTracks()[0];
                 const combinedStream = new MediaStream([videoTrack, audioTrack]);
+                
                 let mimeType = 'video/webm';
                 if (MediaRecorder.isTypeSupported('video/webm; codecs=vp9')) mimeType = 'video/webm; codecs=vp9';
+                
                 mediaRecorder = new MediaRecorder(combinedStream, { mimeType: mimeType, videoBitsPerSecond: 2500000 });
                 recordedChunks = [];
+                
                 mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+                
                 mediaRecorder.onstop = () => {
                     const blob = new Blob(recordedChunks, { type: 'video/webm' });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a'); a.style.display = 'none'; a.href = url; a.download = 'jam_session.webm';
                     document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url);
                 };
-                mediaRecorder.start(); isRecording = true; btn.innerText = "⏹ Parar"; btn.classList.add("recording");
-                if (!isPlaying) togglePlay();
-            } catch (err) { alert("Erro gravação: " + err); }
+
+                // 2. Inicia o MediaRecorder (mas o playback espera a contagem)
+                mediaRecorder.start(); 
+                isRecording = true; 
+                btn.innerText = "⏹ Parar"; 
+                btn.classList.add("recording");
+
+                // 3. Chama a contagem regressiva e SÓ DEPOIS dá o play
+                iniciarContagemEPlay();
+
+            } catch (err) { 
+                alert("Erro gravação: " + err); 
+                isRecording = false;
+                btn.innerText = "🔴 Gravar Vídeo";
+            }
         }
     }
+    
     async function exportarWAV() { alert("Exportação WAV pronta (simulação)."); }
 
     function meterToBeats(m){return Number(m.split('/')[0])||4}
