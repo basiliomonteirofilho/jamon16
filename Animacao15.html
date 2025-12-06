@@ -622,15 +622,15 @@
         requestAnimationFrame(canvasRenderLoop);
     }
 
-    // CORRIGIDO: Função runFrameAnimation melhorada
-    function runFrameAnimation(elementId, frames, idleFrame, fps = 30, loop = false) {
+    // CORRIGIDO: Função runFrameAnimation melhorada com startFrame
+    function runFrameAnimation(elementId, frames, idleFrame, fps = 30, loop = false, startFrame = 0) {
         const el = typeof elementId === 'string' ? document.getElementById(elementId) : elementId;
-        const start = performance.now();
         const frameDuration = 1000 / fps;
         
         // Cancela animação anterior se existir
         if (activeAnimations[el.id]) {
             cancelAnimationFrame(activeAnimations[el.id]);
+            delete activeAnimations[el.id];
         }
         
         // Limpa timer se existir
@@ -639,6 +639,12 @@
             delete armAnimationTimers[el.id];
         }
         
+        // CORREÇÃO CRÍTICA: Se startFrame > 0, começa já no frame desejado
+        if (startFrame > 0 && startFrame < frames.length) {
+            setCachedSrc(el, frames[startFrame]);
+        }
+        
+        const start = performance.now() - (startFrame * frameDuration); // Ajusta o tempo inicial
         const animate = (now) => {
             const elapsed = now - start;
             let index = Math.floor(elapsed / frameDuration);
@@ -657,7 +663,7 @@
                         setCachedSrc(el, idleFrame);
                     }
                     
-                    // IMPORTANTE: Remove da lista de animações ativas
+                    // Remove da lista de animações ativas
                     delete activeAnimations[el.id];
                     
                     // Ajusta z-index se for braço esquerdo
@@ -672,7 +678,8 @@
         
         // Para animações não-looping, programa um timer para limpar o estado
         if (!loop) {
-            const totalDuration = frames.length * frameDuration;
+            const remainingFrames = frames.length - startFrame;
+            const totalDuration = remainingFrames * frameDuration;
             armAnimationTimers[el.id] = setTimeout(() => {
                 if (activeAnimations[el.id]) {
                     cancelAnimationFrame(activeAnimations[el.id]);
@@ -686,6 +693,20 @@
                 }
                 delete armAnimationTimers[el.id];
             }, totalDuration + 50); // +50ms de margem
+        }
+    }
+
+    // Função especial para tocar a caixa começando no frame 3
+    function playCaixaAnimation(imgEl, isLeft, currentStep) {
+        const frames = isLeft ? DRUM_ASSETS.anim.be_caixa : DRUM_ASSETS.anim.bd_caixa;
+        const idleSrc = isLeft ? DRUM_ASSETS.idle.bracoEsq : DRUM_ASSETS.idle.bracoDir;
+        
+        // CORREÇÃO: Para caixa, começa no frame 3 (impacto) instantaneamente
+        runFrameAnimation(imgEl, frames, idleSrc, DRUM_FPS, false, 2); // startFrame = 2 (terceiro frame)
+        
+        // Ajusta z-index se for braço esquerdo
+        if (isLeft) {
+            imgEl.style.zIndex = 10; // Caixa não precisa de z-index alto
         }
     }
 
@@ -803,10 +824,9 @@
         const isLeft = (armToUse === 'left');
         const imgEl = isLeft ? domImages.bt_bracoEsq : domImages.bt_bracoDir;
         
-        // CORRIGIDO: Define o idle frame correto para cada braço
+        // Define o idle frame correto para cada braço
         let idleSrc = null;
         if (isLeft) {
-            // Braço esquerdo volta para o frame 1 (idle)
             idleSrc = DRUM_ASSETS.idle.bracoEsq;
             
             // Ajusta z-index para diferentes tipos de instrumentos
@@ -816,25 +836,29 @@
                 imgEl.style.zIndex = 10;
             }
         } else {
-            // Braço direito volta para o frame 3 (idle)
             idleSrc = DRUM_ASSETS.idle.bracoDir;
         }
         
-        let frames = [];
-        const mapName = isLeft ? 'be_' : 'bd_';
-        let key = drumType;
-        if(drumType === 'chimbalaberto') key = 'chimbal';
-        if(drumType === 'caixaAro') key = 'caixa';
-        if(drumType === 'conducao_centro') key = 'conducao';
-        
-        if (DRUM_ASSETS.anim[mapName + key]) {
-            frames = DRUM_ASSETS.anim[mapName + key];
+        // CORREÇÃO: Para caixa, usa a função especial que começa no frame 3
+        if (drumType === 'caixa' || drumType === 'caixaAro') {
+            playCaixaAnimation(imgEl, isLeft, currentStep);
         } else {
-            frames = isLeft ? DRUM_ASSETS.anim.be_caixa : DRUM_ASSETS.anim.bd_caixa;
+            let frames = [];
+            const mapName = isLeft ? 'be_' : 'bd_';
+            let key = drumType;
+            if(drumType === 'chimbalaberto') key = 'chimbal';
+            if(drumType === 'caixaAro') key = 'caixa';
+            if(drumType === 'conducao_centro') key = 'conducao';
+            
+            if (DRUM_ASSETS.anim[mapName + key]) {
+                frames = DRUM_ASSETS.anim[mapName + key];
+            } else {
+                frames = isLeft ? DRUM_ASSETS.anim.be_caixa : DRUM_ASSETS.anim.bd_caixa;
+            }
+            
+            // Para outros instrumentos, começa do frame 0 normalmente
+            runFrameAnimation(imgEl, frames, idleSrc, DRUM_FPS);
         }
-        
-        // Ajuste de timing para o terceiro frame (índice 2) coincidir com o som
-        runFrameAnimation(imgEl, frames, idleSrc, DRUM_FPS);
         
         if(drumType === 'ataque') runFrameAnimation(domImages.bt_ataque, DRUM_ASSETS.anim.ataquePrato, DRUM_ASSETS.idle.ataque, 30);
         if(drumType.includes('conducao')) runFrameAnimation(domImages.bt_conducao, DRUM_ASSETS.anim.conducaoPrato, DRUM_ASSETS.idle.conducao, 30);
