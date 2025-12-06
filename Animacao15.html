@@ -783,20 +783,117 @@
             bateria: PASTA_BAT + "Bateria_Chimbal/Bateria.png"
         },
         anim: {
-            // ... mantido igual ao original
             troncoTocando: Array.from({length:39}, (_,i) => PASTA_BAT + `Tronco_Perna_direita/Tocando/Tronco${String(i+2).padStart(4,'0')}.png`),
-            // ... resto das animações mantidas
+            ataquePrato: Array.from({length:7}, (_,i) => PASTA_BAT + `Ataque/Ataque${String(i+1).padStart(4,'0')}.png`),
+            conducaoPrato: Array.from({length:6}, (_,i) => PASTA_BAT + `Conducao/Conducao${String(i+1).padStart(4,'0')}.png`),
+            
+            bd_ataque: [
+                PASTA_BAT + "Braco_direito/Ataque/braco_direito0005.png",
+                PASTA_BAT + "Braco_direito/Ataque/braco_direito0006.png",
+                PASTA_BAT + "Braco_direito/Ataque/braco_direito0007.png", // IMPACTO
+                PASTA_BAT + "Braco_direito/Ataque/braco_direito0008.png"
+            ],
+            bd_caixa: [
+                PASTA_BAT + "Braco_direito/Caixa/braco_direito0001.png",
+                PASTA_BAT + "Braco_direito/Caixa/braco_direito0002.png",
+                PASTA_BAT + "Braco_direito/Caixa/braco_direito0003.png", // IMPACTO
+                PASTA_BAT + "Braco_direito/Caixa/braco_direito0004.png"
+            ],
+            bd_chimbal: [
+                PASTA_BAT + "Braco_direito/Chimbal/braco_direito0001.png",
+                PASTA_BAT + "Braco_direito/Chimbal/braco_direito0002.png",
+                PASTA_BAT + "Braco_direito/Chimbal/braco_direito0003.png", // IMPACTO
+                PASTA_BAT + "Braco_direito/Chimbal/braco_direito0004.png"
+            ],
+            bd_conducao: [
+                PASTA_BAT + "Braco_direito/Conducao/braco_direito0025.png",
+                PASTA_BAT + "Braco_direito/Conducao/braco_direito0026.png",
+                PASTA_BAT + "Braco_direito/Conducao/braco_direito0027.png", // IMPACTO
+                PASTA_BAT + "Braco_direito/Conducao/braco_direito0028.png"
+            ],
+            bd_surdo: [
+                PASTA_BAT + "Braco_direito/Surdo/braco_direito0021.png",
+                PASTA_BAT + "Braco_direito/Surdo/braco_direito0022.png",
+                PASTA_BAT + "Braco_direito/Surdo/braco_direito0023.png", // IMPACTO
+                PASTA_BAT + "Braco_direito/Surdo/braco_direito0024.png"
+            ],
+            bd_tom1: [
+                PASTA_BAT + "Braco_direito/Tom_1/braco_direito0013.png",
+                PASTA_BAT + "Braco_direito/Tom_1/braco_direito0014.png",
+                PASTA_BAT + "Braco_direito/Tom_1/braco_direito0015.png", // IMPACTO
+                PASTA_BAT + "Braco_direito/Tom_1/braco_direito0016.png"
+            ],
+            bd_tom2: [
+                PASTA_BAT + "Braco_direito/Tom_2/braco_direito0017.png",
+                PASTA_BAT + "Braco_direito/Tom_2/braco_direito0018.png",
+                PASTA_BAT + "Braco_direito/Tom_2/braco_direito0019.png", // IMPACTO
+                PASTA_BAT + "Braco_direito/Tom_2/braco_direito0020.png"
+            ],
+
+            be_ataque: [
+                PASTA_BAT + "Braco_esquerdo/Ataque/braco_esquerda0009.png",
+                PASTA_BAT + "Braco_esquerdo/Ataque/braco_esquerda0010.png",
+                PASTA_BAT + "Braco_esquerdo/Ataque/braco_esquerda0011.png", // IMPACTO
+                PASTA_BAT + "Braco_esquerdo/Ataque/braco_esquerda0012.png"
+            ],
+            be_caixa: [
+                PASTA_BAT + "Braco_esquerdo/Caixa/braco_esquerda0001.png",
+                PASTA_BAT + "Braco_esquerdo/Caixa/braco_esquerda0002.png",
+                PASTA_BAT + "Braco_esquerdo/Caixa/braco_esquerda0003.png", // IMPACTO
+                PASTA_BAT + "Braco_esquerdo/Caixa/braco_esquerda0004.png"
+            ],
+            be_chimbal: [
+                PASTA_BAT + "Braco_esquerdo/Chimbal/braco_esquerda0005.png",
+                PASTA_BAT + "Braco_esquerdo/Chimbal/braco_esquerda0006.png",
+                PASTA_BAT + "Braco_esquerdo/Chimbal/braco_esquerda0007.png", // IMPACTO
+                PASTA_BAT + "Braco_esquerdo/Chimbal/braco_esquerda0008.png"
+            ],
+            be_conducao: [
+                PASTA_BAT + "Braco_esquerdo/Conducao/braco_esquerda0025.png",
+                PASTA_BAT + "Braco_esquerdo/Conducao/braco_esquerda0026.png",
+                PASTA_BAT + "Braco_esquerdo/Conducao/braco_esquerda0027.png", // IMPACTO
+                PASTA_BAT + "Braco_esquerdo/Conducao/braco_esquerda0028.png"
+            ],
+            be_surdo: [
+                PASTA_BAT + "Braco_esquerdo/Surdo/braco_esquerda0021.png",
+                PASTA_BAT + "Braco_esquerdo/Surdo/braco_esquerda0022.png",
+                PASTA_BAT + "Braco_esquerdo/Surdo/braco_esquerda0023.png", // IMPACTO
+                PASTA_BAT + "Braco_esquerdo/Surdo/braco_esquerda0024.png"
+            ],
+            be_tom1: [
+                PASTA_BAT + "Braco_esquerdo/Tom_1/braco_esquerda0013.png",
+                PASTA_BAT + "Braco_esquerdo/Tom_1/braco_esquerda0014.png",
+                PASTA_BAT + "Braco_esquerdo/Tom_1/braco_esquerda0015.png", // IMPACTO
+                PASTA_BAT + "Braco_esquerdo/Tom_1/braco_esquerda0016.png"
+            ],
+            be_tom2: [
+                PASTA_BAT + "Braco_esquerdo/Tom_2/braco_esquerda0017.png",
+                PASTA_BAT + "Braco_esquerdo/Tom_2/braco_esquerda0018.png",
+                PASTA_BAT + "Braco_esquerdo/Tom_2/braco_esquerda0019.png", // IMPACTO
+                PASTA_BAT + "Braco_esquerdo/Tom_2/braco_esquerda0020.png"
+            ],
+
+            perna_duplo: [ PASTA_BAT+"Perna_esquerda/Pedal_duplo/Baterista0002.png", PASTA_BAT+"Perna_esquerda/Pedal_duplo/Baterista0003.png" ]
         }
     };
 
-    const pastaMap = { 1: ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B"], /* ... */ };
+    const pastaMap = { 1: ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B"], 2: ["3FS","4G","5GS","6A","8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C"], 3: ["4G","5GS","6A","7AS","9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS"], 4: ["5GS","6A","7AS","8B","10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D"], 5: ["6A","7AS","8B","9C","11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS"], 6: ["7AS","8B","9C","10CS","12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E"], 7: ["8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F"], 8: ["9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS"], 9: ["10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G"], 10: ["11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS"], 11: ["12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A"], 12: ["13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS"], 13: ["14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B"], 14: ["15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C"], 15: ["16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS"], 16: ["17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D"], 17: ["18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS"], 18: ["19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E"], 19: ["20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F"], 20: ["21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS","36DS","37E","38F","39FS"], 21: ["22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D","37E","38F","39FS","40G"], 22: ["23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS","38F","39FS","40G","41GS"], 23: ["24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E","39FS","40G","41GS","42A"], 24: ["25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F","40G","41GS","42A","43AS"] };
     const pastaFolderNames = { 1:"1F", 2:"2FS", 3:"3G", 4:"4GS", 5:"5A", 6:"6AS", 7:"7B", 8:"8C", 9:"9CS", 10:"10D", 11:"11DS", 12:"12E", 13:"13F", 14:"14FS", 15:"15G", 16:"16GS", 17:"17A", 18:"18AS", 19:"19B", 20:"20C", 21:"21CS", 22:"22D", 23:"23DS", 24:"24E" };
     const notasValidas = ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B","21C","22CS","23D","24DS","25E","26F","27FS","28G","29GS","30A","31AS","32B","33C","34CS","35D","36DS","37E","38F","39FS","40G","41GS","42A","43AS"];
     
     const drumLines = [
       { id: "bumbo", label: "Bumbo", file: "bumbo.mp3" }, 
       { id: "caixa", label: "Caixa", file: "caixa.mp3" },
-      // ... resto mantido
+      { id: "caixaAro", label: "Aro", file: "caixaAro.mp3" }, 
+      { id: "chimbal", label: "HH", file: "chimbal.mp3" }, 
+      { id: "chimbal_pedal", label: "HH Ped", file: "chimbal-pedal.mp3" }, 
+      { id: "chimbalaberto", label: "HH Open", file: "chimbal-aberto.mp3" }, 
+      { id: "ataque", label: "Ataque", file: "ataque.mp3" }, 
+      { id: "tom1", label: "Tom 1", file: "tom-1.mp3" }, 
+      { id: "tom2", label: "Tom 2", file: "tom-2.mp3" }, 
+      { id: "surdo", label: "Surdo", file: "surdo.mp3" }, 
+      { id: "conducao", label: "Ride", file: "conducao.mp3" }, 
+      { id: "conducao_centro", label: "Ride C", file: "conducao-centro.mp3" }
     ];
 
     const PITCHES = ['A','AS','B','C','CS','D','DS','E','F','FS','G','GS'];
@@ -807,7 +904,12 @@
     
     const ALL_GROOVES = [
         { name: "Rock", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch bu"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 8] },
-        // ... resto mantido
+        { name: "Blues", meter: "4/4", drumPattern: ["bch - ch ch cch - ch ch bch - ch ch cch - ch ch"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 6, 8, 6, 5, 3] },
+        { name: "Forró", meter: "2/4", drumPattern: ["bch - co - ch - ca -"], bassRhythm: ["bo - - - x - - -"], bassScale: [8, 1] },
+        { name: "Funk", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch -"], bassRhythm: ["bo - - - bo - bo x bo x bo x bo - x x"], bassScale: [1,8] },
+        { name: "Disco", meter: "4/4", drumPattern: ["bu - ch ch bu - ch ch bu - ch ch bu - ch ch"], bassRhythm: ["bo - x x bo - x x bo - x x bo - x x"], bassScale: [1] },
+        { name: "Metal", meter: "4/4", drumPattern: ["bch bu bch bu cch bu bch bu bch bu bch bu cch bu bch bu"], bassRhythm: ["bo bo bo bo bo bo bo bo bo bo bo bo bo bo bo bo"], bassScale: [1] },
+        { name: "Samba", meter: "2/4", drumPattern: ["bch - ch bu bch - ch bu"], bassRhythm: ["bo - x x bo - - x"], bassScale: [8, 5] },
     ];
 
     let isPlaying = false, playbackInterval = null, bpmAtual = 120, atualPasso = 0;
@@ -858,6 +960,16 @@
         bt_tronco: document.getElementById("bat_Tronco"),
         bt_kit: document.getElementById("bat_Bateria")
     };
+
+    // ADICIONANDO A FUNÇÃO FALTANTE
+    function verificarOrientacao() {
+        const orientationOverlay = document.getElementById("orientationOverlay");
+        if (window.innerWidth < window.innerHeight && window.innerWidth < 900) {
+            orientationOverlay.style.display = "flex";
+        } else {
+            orientationOverlay.style.display = "none";
+        }
+    }
 
     // FUNÇÃO DE RENDERIZAÇÃO DO CANVAS MODIFICADA
     function canvasRenderLoop() {
@@ -1100,46 +1212,7 @@
         }
     }
 
-    window.onload = async () => {
-        // Detecta dispositivo
-        isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        isPortrait = window.innerHeight > window.innerWidth;
-        
-        verificarOrientacao();
-        window.addEventListener("resize", () => {
-            isPortrait = window.innerHeight > window.innerWidth;
-            verificarOrientacao();
-            adjustForMobile();
-        });
-        
-        // Ajusta layout inicial
-        adjustForMobile();
-        
-        // Resto do carregamento...
-        for (let i = 1; i <= 100; i++) headFrames.push(`animacao/cabeca/cabeca${String(i).padStart(4, "0")}.png`);
-        await preloadBaseAssets();
-        startHeadLoop();
-        gerarAleatorio();
-        
-        // Inicializa imagens
-        setCachedSrc(domImages.bt_kit, DRUM_ASSETS.idle.bateria);
-        setCachedSrc(domImages.bt_tronco, DRUM_ASSETS.idle.tronco);
-        setCachedSrc(domImages.bt_cabeca, DRUM_ASSETS.idle.cabeca);
-        setCachedSrc(domImages.bt_bracoDir, DRUM_ASSETS.idle.bracoDir);
-        setCachedSrc(domImages.bt_bracoEsq, DRUM_ASSETS.idle.bracoEsq);
-        setCachedSrc(domImages.bt_pernaEsq, DRUM_ASSETS.idle.pernaEsq);
-        setCachedSrc(domImages.bt_conducao, DRUM_ASSETS.idle.conducao);
-        setCachedSrc(domImages.bt_ataque, DRUM_ASSETS.idle.ataque);
-        setCachedSrc(domImages.bx_tronco, `animacao/tronco_baixo/Pasta_1F/1E.png`);
-        
-        renderGrids();
-        setupListeners();
-        requestAnimationFrame(canvasRenderLoop);
-    };
-
-    // Resto das funções mantidas (loadAndCache, setCachedSrc, preloadBaseAssets, etc.)
-    // ... (todas as outras funções permanecem iguais)
-    
+    // ADICIONANDO OUTRAS FUNÇÕES FALTANTES DO CÓDIGO ORIGINAL
     function loadAndCache(url) {
         if (imgCache.has(url)) return Promise.resolve(imgCache.get(url));
         return new Promise((resolve) => {
@@ -1181,9 +1254,172 @@
         }, 500);
     }
 
-    // ... (restante do código JavaScript mantido igual)
+    function startHeadLoop(){
+        if(headLoopTimer) clearInterval(headLoopTimer);
+        headLoopTimer = setInterval(() => {
+            headFrameIndex = (headFrameIndex + 1) % headFrames.length;
+            if(headFrames[headFrameIndex]) setCachedSrc(domImages.bx_cabeca, headFrames[headFrameIndex]);
+        }, 33);
+    }
 
-    // Apenas adicionando o event listener para redimensionamento
+    // ADICIONANDO FUNÇÕES BÁSICAS FALTANTES
+    function meterToBeats(m){return Number(m.split('/')[0])||4}
+    function expandRhythm(p,t){const j=p.join(' ').replace(/\s+/g,' ').trim().split(/\s+/);const o=[];while(o.length<t)for(const k of j){if(o.length>=t)break;o.push(k)}return o.slice(0,t)}
+    function parsePattern(p){const r={intro:[],loop:[]},m=p.match(/\((.*?)\)/);if(m)r.loop=m[1].trim().split(/\s+/);else r.loop=p.trim().split(/\s+/);return r}
+    function mapNoteToAnimId(n){let c=n.replace(/[0-9]/g,'').replace('#','S');const m=notasValidas.filter(x=>x.endsWith(c));return m.length>0?m[0]:"1E"}
+    function getCordaDaNota(n){const m=n.match(/^(\d+)/);if(!m)return"E";const i=parseInt(m[1]);if(i<=20)return"E";if(i<=28)return"A";if(i<=36)return"D";return"G"}
+    function escolherMelhorPasta(n,p){const l=[];for(let i=1;i<=24;i++)if(pastaMap[i].includes(n))l.push(i);if(!l.length)return 1;return l.reduce((a,b)=>Math.abs(b-p)<Math.abs(a-p)?b:a)}
+    
+    function setupListeners() {
+        document.getElementById("playBtn").onclick = togglePlay;
+        document.getElementById("recordVideoBtn").onclick = toggleRecording;
+        document.getElementById("bpmSlider").oninput = (e) => { 
+            bpmAtual = parseInt(e.target.value); 
+            document.getElementById("bpmDisplay").textContent = bpmAtual + " BPM"; 
+        };
+        document.getElementById("baixoVolume").oninput = (e) => baixoVolumeGlobal = parseFloat(e.target.value);
+        document.getElementById("drumVolume").oninput = (e) => bateriaVolumeGlobal = parseFloat(e.target.value);
+        document.getElementById("addBaixoCol").onclick = () => { baixoSeq.push(""); renderGrids(); };
+        document.getElementById("addCol").onclick = () => { baixoSeq.push(""); Object.keys(bateriaSeq).forEach(k => bateriaSeq[k].push("x")); renderGrids(); };
+        document.getElementById("duplicateSeq").onclick = () => { baixoSeq = [...baixoSeq, ...baixoSeq]; Object.keys(bateriaSeq).forEach(k => bateriaSeq[k] = [...bateriaSeq[k], ...bateriaSeq[k]]); renderGrids(); };
+        document.getElementById("clearAll").onclick = () => { baixoSeq.fill(""); Object.keys(bateriaSeq).forEach(k => bateriaSeq[k].fill("x")); renderGrids(); };
+        document.getElementById("playAleatorioBtn").onclick = gerarAleatorio;
+        document.getElementById("playExportadoBtn").onclick = importarJSON;
+        document.getElementById("exportWavBtn").onclick = exportarWAV;
+    }
+
+    function renderGrids(){
+        const bG=document.getElementById("baixoGrid"),dG=document.getElementById("drumGridWrapper"),dl=document.getElementById("deleteGrid");
+        bG.innerHTML=""; dl.innerHTML=""; dG.innerHTML="";
+        baixoSeq.forEach((n,i)=>{
+            const b=document.createElement("button");b.className="delete-btn";b.innerText="×";b.onclick=()=>deleteColumn(i);dl.appendChild(b);
+            const c=document.createElement("div");c.className="cell";
+            if(n==="x"){c.innerText="X";c.classList.add("active-ghost")}else if(n!==""){c.innerText=n.replace("S","#");c.classList.add("active")}else c.style.opacity="0.3";
+            c.onclick=()=>abrirSelecaoNota(i);bG.appendChild(c);
+        });
+        drumLines.forEach(l=>{
+            const r=document.createElement("div");r.className="rowContainer";
+            const lb=document.createElement("div");lb.className="gridLabel";lb.innerText=l.label;r.appendChild(lb);
+            const g=document.createElement("div");g.className="trackGrid";
+            while(bateriaSeq[l.id].length<baixoSeq.length)bateriaSeq[l.id].push("x");
+            bateriaSeq[l.id].forEach((v,i)=>{
+                const c=document.createElement("div");c.className="cell";
+                if(v===l.id)c.classList.add("active");
+                c.onclick=()=>{bateriaSeq[l.id][i]=(bateriaSeq[l.id][i]==="x")?l.id:"x";if(bateriaSeq[l.id][i]!== "x")tocarAudioBuffer(`assets/${l.file}`,1.0);renderGrids()};
+                g.appendChild(c);
+            });
+            r.appendChild(g);dG.appendChild(r);
+        });
+    }
+
+    window.onload = async () => {
+        // Detecta dispositivo
+        isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        isPortrait = window.innerHeight > window.innerWidth;
+        
+        verificarOrientacao();
+        window.addEventListener("resize", () => {
+            isPortrait = window.innerHeight > window.innerWidth;
+            verificarOrientacao();
+            adjustForMobile();
+        });
+        
+        // Ajusta layout inicial
+        adjustForMobile();
+        
+        // Resto do carregamento...
+        for (let i = 1; i <= 100; i++) headFrames.push(`animacao/cabeca/cabeca${String(i).padStart(4, "0")}.png`);
+        await preloadBaseAssets();
+        startHeadLoop();
+        gerarAleatorio();
+        
+        // Inicializa imagens
+        setCachedSrc(domImages.bt_kit, DRUM_ASSETS.idle.bateria);
+        setCachedSrc(domImages.bt_tronco, DRUM_ASSETS.idle.tronco);
+        setCachedSrc(domImages.bt_cabeca, DRUM_ASSETS.idle.cabeca);
+        setCachedSrc(domImages.bt_bracoDir, DRUM_ASSETS.idle.bracoDir);
+        setCachedSrc(domImages.bt_bracoEsq, DRUM_ASSETS.idle.bracoEsq);
+        setCachedSrc(domImages.bt_pernaEsq, DRUM_ASSETS.idle.pernaEsq);
+        setCachedSrc(domImages.bt_conducao, DRUM_ASSETS.idle.conducao);
+        setCachedSrc(domImages.bt_ataque, DRUM_ASSETS.idle.ataque);
+        setCachedSrc(domImages.bx_tronco, `animacao/tronco_baixo/Pasta_1F/1E.png`);
+        
+        renderGrids();
+        setupListeners();
+        requestAnimationFrame(canvasRenderLoop);
+    };
+
+    // ADICIONANDO MAIS FUNÇÕES FALTANTES
+    function deleteColumn(idx) {
+        if (baixoSeq.length <= 1) return;
+        baixoSeq.splice(idx, 1);
+        Object.keys(bateriaSeq).forEach(key => bateriaSeq[key].splice(idx, 1));
+        renderGrids();
+    }
+
+    function highlightGridStep(s){
+        document.querySelectorAll(".playing-step").forEach(e=>e.classList.remove("playing-step"));
+        if(document.getElementById("baixoGrid").children[s]) document.getElementById("baixoGrid").children[s].classList.add("playing-step");
+        document.querySelectorAll(".trackGrid").forEach(g=>{
+            if(g.children[s]) g.children[s].classList.add("playing-step")
+        });
+    }
+
+    function abrirSelecaoNota(i){
+        const o=document.getElementById("selectionOverlay"),ops=document.getElementById("selectionOptions");
+        ops.innerHTML="";
+        const ad=(l,v,c)=>{
+            const d=document.createElement("div");
+            d.className="selection-option "+(c||"");
+            d.innerText=l;
+            d.onclick=()=>{
+                baixoSeq[i]=v;
+                o.style.display="none";
+                renderGrids();
+                if(v&&v!=="x") tocarAudioBuffer(`assets/BaixoMelodia/${v}.mp3`,1);
+            };
+            ops.appendChild(d);
+        };
+        ad("—","");
+        ad("X","x","ghost");
+        notasValidas.forEach(n=>ad(n.replace("S","#"),n));
+        o.style.display="flex";
+        o.onclick=(e)=>{if(e.target===o)o.style.display="none"};
+    }
+
+    // Funções de áudio
+    async function tocarAudioBufferAgendado(path, vol, time) {
+        try {
+            const buffer = await getAudioBuffer(path); 
+            const source = audioContext.createBufferSource();
+            source.buffer = buffer;
+            const gainNode = audioContext.createGain();
+            gainNode.gain.value = vol;
+            source.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            gainNode.connect(mediaStreamDestination);
+            source.start(time); 
+            if (path.includes("BaixoMelodia") || path.includes("bass-muted")) {
+                if(audioBaixoAtual) try{audioBaixoAtual.stop(time + 0.1);}catch(e){}
+                audioBaixoAtual = source;
+            }
+        } catch (e) {}
+    }
+
+    async function tocarAudioBuffer(path, vol) { 
+        tocarAudioBufferAgendado(path, vol, audioContext.currentTime); 
+    }
+
+    async function getAudioBuffer(url) {
+        if (audioBuffers[url]) return audioBuffers[url];
+        const response = await fetch(url);
+        const arrayBuffer = await response.arrayBuffer();
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        audioBuffers[url] = audioBuffer;
+        return audioBuffer;
+    }
+
+    // Adicionando event listener para redimensionamento
     window.addEventListener('resize', adjustForMobile);
     
     // Inicializa o ajuste
