@@ -81,20 +81,20 @@
     #bateristaStage img {
       position: absolute;
       image-rendering: pixelated;
+      will-change: transform, src; /* Otimização de performance */
     }
 
-    /* ORDEM DE CAMADAS (Z-INDEX)
-       Regra: Tronco < Braços < Bateria/Pratos
-    */
+    /* ORDEM DE CAMADAS (Z-INDEX) INICIAL */
     #bat_PernaEsq     { top: 0; left: 0; z-index: 2; }
     #bat_Tronco       { top: 0; left: 0; z-index: 3; }
     #bat_Cabeca       { top: 0; left: 0; z-index: 4; }
     
-    /* Braços: Frente do tronco (3), Atrás da bateria (20) */
-    #bat_BracoEsq     { top: 0; left: 0; z-index: 10; }
+    /* Braço Esquerdo (Padrão: 10) - Atrás do Direito */
+    #bat_BracoEsq     { top: 0; left: 0; z-index: 10; transition: z-index 0.1s; }
+    /* Braço Direito (Padrão: 11) - Frente do Esquerdo */
     #bat_BracoDir     { top: 0; left: 0; z-index: 11; }
 
-    /* Bateria e Pratos: À frente de tudo na baterista */
+    /* Bateria e Pratos: À frente dos braços e corpo */
     #bat_Bateria      { top: 0; left: 0; z-index: 20; } 
     #bat_Conducao     { top: 0; left: 0; z-index: 21; } 
     #bat_Ataque       { top: 0; left: 0; z-index: 22; }
@@ -475,17 +475,27 @@
         ctx.translate(350, -180); 
         
         // Ordem visual no Canvas (deve refletir o CSS Z-Index)
-        // 1. Fundo
-        if (domImages.bt_conducao.complete) ctx.drawImage(domImages.bt_conducao, 0, 0); // Ride Back
+        
+        // 1. Fundo (Pernas, Tronco, Cabeça)
+        if (domImages.bt_conducao.complete) ctx.drawImage(domImages.bt_conducao, 0, 0); // Ride base
         if (domImages.bt_pernaEsq.complete) ctx.drawImage(domImages.bt_pernaEsq, 0, 0);
         if (domImages.bt_tronco.complete) ctx.drawImage(domImages.bt_tronco, 0, 0);
         if (domImages.bt_cabeca.complete) ctx.drawImage(domImages.bt_cabeca, 0, 0);
         
-        // 2. Braços (Atrás do Kit)
-        if (domImages.bt_bracoEsq.complete) ctx.drawImage(domImages.bt_bracoEsq, 0, 0);
-        if (domImages.bt_bracoDir.complete) ctx.drawImage(domImages.bt_bracoDir, 0, 0);
+        // 2. Braços (A ordem depende do Z-Index lógico)
+        const zEsq = parseInt(domImages.bt_bracoEsq.style.zIndex || 10);
+        const zDir = 11; // Direito é fixo em 11 (frente do tronco)
+
+        // Se Esquerdo estiver > Direito, desenha Direito primeiro
+        if (zEsq > zDir) {
+             if (domImages.bt_bracoDir.complete) ctx.drawImage(domImages.bt_bracoDir, 0, 0);
+             if (domImages.bt_bracoEsq.complete) ctx.drawImage(domImages.bt_bracoEsq, 0, 0);
+        } else {
+             if (domImages.bt_bracoEsq.complete) ctx.drawImage(domImages.bt_bracoEsq, 0, 0);
+             if (domImages.bt_bracoDir.complete) ctx.drawImage(domImages.bt_bracoDir, 0, 0);
+        }
         
-        // 3. Kit e Pratos (Frente)
+        // 3. Kit e Pratos (Frente de tudo)
         if (domImages.bt_kit.complete) ctx.drawImage(domImages.bt_kit, 0, 0);
         if (domImages.bt_ataque.complete) ctx.drawImage(domImages.bt_ataque, 0, 0);
         
@@ -542,7 +552,7 @@
         const isRapidRepeat = (prevHitStep !== undefined && (currentStep - prevHitStep === 1 || (currentStep===0 && prevHitStep === baixoSeq.length-1)));
 
         let armToUse = 'right';
-        if (drumType === 'caixa' || drumType === 'caixaAro') armToUse = 'left'; // Caixa = Esquerda
+        if (drumType === 'caixa' || drumType === 'caixaAro') armToUse = 'left'; 
 
         if (isRapidRepeat && lastArmUsed[drumType]) {
             armToUse = (lastArmUsed[drumType] === 'right') ? 'left' : 'right';
@@ -550,6 +560,20 @@
 
         lastDrumStep[drumType] = currentStep;
         lastArmUsed[drumType] = armToUse;
+
+        // MANIPULAÇÃO DE Z-INDEX (ESQUERDA)
+        // Se Esquerda for usada para Toms/Pratos, coloca à frente do Direito (12)
+        // Caso contrário (Caixa/Repouso), volta para trás (10)
+        if (armToUse === 'left') {
+            if (['ataque', 'tom1', 'tom2', 'surdo', 'conducao', 'conducao_centro'].includes(drumType)) {
+                domImages.bt_bracoEsq.style.zIndex = 12; // Frente do Direito (11)
+            } else {
+                domImages.bt_bracoEsq.style.zIndex = 10; // Atrás do Direito
+            }
+        } else {
+            // Se usou direito, reseta esquerda para trás por segurança
+            domImages.bt_bracoEsq.style.zIndex = 10;
+        }
 
         // Frames
         let frames = [];
@@ -577,7 +601,7 @@
 
         // Animação dos Pratos
         if(drumType === 'ataque') animateProp(domImages.bt_ataque, DRUM_ASSETS.anim.ataquePrato, DRUM_ASSETS.idle.ataque);
-        if(drumType === 'conducao') animateProp(domImages.bt_conducao, DRUM_ASSETS.anim.conducaoPrato, DRUM_ASSETS.idle.conducao);
+        if(drumType === 'conducao' || drumType === 'conducao_centro') animateProp(domImages.bt_conducao, DRUM_ASSETS.anim.conducaoPrato, DRUM_ASSETS.idle.conducao);
 
         const imgEl = !isLeft ? domImages.bt_bracoDir : domImages.bt_bracoEsq;
         const timerKey = !isLeft ? 'bracoDir' : 'bracoEsq';
@@ -592,6 +616,8 @@
             } else {
                 clearInterval(drumTimers[timerKey]);
                 imgEl.src = !isLeft ? DRUM_ASSETS.idle.bracoDir : DRUM_ASSETS.idle.bracoEsq;
+                // Ao terminar animação, se for braço esquerdo, volta para trás do direito
+                if (isLeft) domImages.bt_bracoEsq.style.zIndex = 10;
             }
         }, 1000/fps);
     }
@@ -613,6 +639,8 @@
         domImages.bt_pernaEsq.src = DRUM_ASSETS.idle.pernaEsq;
         domImages.bt_bracoDir.src = DRUM_ASSETS.idle.bracoDir;
         domImages.bt_bracoEsq.src = DRUM_ASSETS.idle.bracoEsq;
+        domImages.bt_bracoEsq.style.zIndex = 10; // Reset Z
+        
         domImages.bt_cabeca.src = DRUM_ASSETS.idle.cabeca;
         domImages.bt_ataque.src = DRUM_ASSETS.idle.ataque;
         domImages.bt_conducao.src = DRUM_ASSETS.idle.conducao;
