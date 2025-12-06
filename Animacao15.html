@@ -3,7 +3,7 @@
 <head>
   <script src="https://cdn.jsdelivr.net/npm/audiobuffer-to-wav@1.0.0/index.min.js"></script>
   <meta charset="UTF-8" />
-  <title>Jam On - Sync Perfeito (Pre-Roll)</title>
+  <title>Jam On - Mãos Fixas (Dir e Esq)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
   <style>
@@ -270,11 +270,9 @@
     
     // CONFIGURAÇÃO DE SINCRONIA
     const DRUM_FPS = 40; // FPS fixo para calcular delay
-    // Impacto no frame index 2 (terceira imagem). 
-    // Ex: Frame 0 (0ms) -> Frame 1 (25ms) -> Frame 2 (50ms - IMPACTO/SOM)
     const DRUM_IMPACT_FRAME = 2; 
     const DRUM_MS_PER_FRAME = 1000 / DRUM_FPS;
-    const DRUM_PREROLL_MS = DRUM_IMPACT_FRAME * DRUM_MS_PER_FRAME; // ~50ms de antecipação
+    const DRUM_PREROLL_MS = DRUM_IMPACT_FRAME * DRUM_MS_PER_FRAME;
 
     const DRUM_ASSETS = {
         idle: {
@@ -544,9 +542,11 @@
                     setCachedSrc(el, frames[index]);
                     activeAnimations[el.id] = requestAnimationFrame(animate);
                 } else {
-                    if (idleFrame) setCachedSrc(el, idleFrame);
+                    if (idleFrame) {
+                        setCachedSrc(el, idleFrame);
+                        if(el.id === 'bat_BracoEsq') el.style.zIndex = 10;
+                    }
                     delete activeAnimations[el.id];
-                    if(el.id === 'bat_BracoEsq') el.style.zIndex = 10;
                 }
             }
         };
@@ -580,7 +580,10 @@
         lastArmUsed[drumType] = armToUse;
         const isLeft = (armToUse === 'left');
         const imgEl = isLeft ? domImages.bt_bracoEsq : domImages.bt_bracoDir;
-        const idleSrc = isLeft ? DRUM_ASSETS.idle.bracoEsq : DRUM_ASSETS.idle.bracoDir;
+        
+        // MUDANÇA PRINCIPAL: idleSrc é null para ambos os braços (fixa a imagem no fim)
+        const idleSrc = null; 
+        
         if (isLeft) {
             if (['ataque', 'tom1', 'tom2', 'surdo', 'conducao', 'conducao_centro'].includes(drumType)) {
                 domImages.bt_bracoEsq.style.zIndex = 12;
@@ -599,7 +602,6 @@
         } else {
             frames = isLeft ? DRUM_ASSETS.anim.be_caixa : DRUM_ASSETS.anim.bd_caixa;
         }
-        // Usando DRUM_FPS constante para garantir sincronia
         runFrameAnimation(imgEl, frames, idleSrc, DRUM_FPS);
         if(drumType === 'ataque') runFrameAnimation(domImages.bt_ataque, DRUM_ASSETS.anim.ataquePrato, DRUM_ASSETS.idle.ataque, 30);
         if(drumType.includes('conducao')) runFrameAnimation(domImages.bt_conducao, DRUM_ASSETS.anim.conducaoPrato, DRUM_ASSETS.idle.conducao, 30);
@@ -693,7 +695,6 @@
 
         const scheduler = () => {
             if (!isPlaying) return;
-            // Lookahead de 0.15s para garantir que pegamos o tempo de pré-roll da bateria
             while (nextStepTime < audioContext.currentTime + 0.15) {
                 runStep(atualPasso, nextStepTime);
                 nextStepTime += secondsPerStep;
@@ -706,19 +707,12 @@
     }
 
     function runStep(stepIndex, timeToPlay) {
-        // CORREÇÃO DE SINCRONIA:
-        // delayVisualBase: Tempo até o áudio tocar (para Baixo e Barra de Progresso)
-        // delayDrumVisual: Tempo até o áudio tocar MENOS o tempo que leva para a baqueta chegar no tambor.
-        
         const now = audioContext.currentTime;
         const delayVisualBase = Math.max(0, (timeToPlay - now) * 1000);
         
-        // Se a animação leva 50ms para chegar no impacto, começamos 50ms antes do som.
-        // Se já estamos atrasados (delay negativo), começa imediatamente (0).
         let delayDrumVisual = (timeToPlay - now) * 1000 - DRUM_PREROLL_MS;
         if (delayDrumVisual < 0) delayDrumVisual = 0;
 
-        // 1. Agenda BATERIA (Com Pre-Roll)
         setTimeout(() => {
             if(!isPlaying) return;
             drumLines.forEach(line => {
@@ -728,7 +722,6 @@
             });
         }, delayDrumVisual);
 
-        // 2. Agenda BAIXO e UI (Sincronia Exata)
         setTimeout(() => {
             if(!isPlaying) return;
             highlightGridStep(stepIndex);
@@ -743,7 +736,6 @@
             }
         }, delayVisualBase);
 
-        // 3. Agenda ÁUDIO (Web Audio API)
         const notaBaixo = baixoSeq[stepIndex];
         if (notaBaixo !== "") {
             let file = (notaBaixo === "x") ? "assets/bass-muted.mp3" : `assets/BaixoMelodia/${notaBaixo}.mp3`;
