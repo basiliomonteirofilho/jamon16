@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <script src="https://cdn.jsdelivr.net/npm/audiobuffer-to-wav@1.0.0/index.min.js"></script>
+  <link rel="icon" href="data:,">
+  
   <meta charset="UTF-8" />
-  <title>Jam On - Sync Perfeito Esq/Dir</title>
+  <title>Jam On - Sync Otimizado (Sem Erros)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
   <style>
@@ -269,11 +270,14 @@
     const imgCache = new Map();
     
     // CONFIGURAÇÃO DE SINCRONIA
-    const DRUM_FPS = 40; // FPS fixo para calcular delay
-    // Impacto no frame index 2 (terceira imagem: 0, 1, 2). 
-    const DRUM_IMPACT_FRAME = 2; 
+    const DRUM_FPS = 40; 
+    const DRUM_IMPACT_FRAME = 2; // Frame index 2 (Terceira imagem) é o impacto
     const DRUM_MS_PER_FRAME = 1000 / DRUM_FPS;
-    const DRUM_PREROLL_MS = DRUM_IMPACT_FRAME * DRUM_MS_PER_FRAME;
+    const DRUM_PREROLL_MS = DRUM_IMPACT_FRAME * DRUM_MS_PER_FRAME; // ~50ms
+    
+    // COMPENSACAO DE LATENCIA (Correção do Atraso)
+    // O navegador leva um tempo para "pintar" o DOM. Subtraímos isso.
+    const VISUAL_OFFSET_MS = 25; 
 
     const DRUM_ASSETS = {
         idle: {
@@ -300,7 +304,7 @@
             bd_tom1: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_direito/Tom_1/braco_direito${String(i+13).padStart(4,'0')}.png`),
             bd_tom2: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_direito/Tom_2/braco_direito${String(i+17).padStart(4,'0')}.png`),
 
-            // BRAÇO ESQUERDO (Definição Explícita conforme pedido)
+            // BRAÇO ESQUERDO
             be_ataque: [
                 PASTA_BAT + "Braco_esquerdo/Ataque/braco_esquerda0009.png",
                 PASTA_BAT + "Braco_esquerdo/Ataque/braco_esquerda0010.png",
@@ -747,10 +751,11 @@
 
     function runStep(stepIndex, timeToPlay) {
         const now = audioContext.currentTime;
-        const delayVisualBase = Math.max(0, (timeToPlay - now) * 1000);
+        // Compensação visual: VISUAL_OFFSET_MS (25ms) ajuda a corrigir a latência de pintura do navegador
+        const delayVisualBase = Math.max(0, (timeToPlay - now) * 1000 - VISUAL_OFFSET_MS);
         
-        // PREROLL BATERIA: 2 frames (~50ms) antes do audio
-        let delayDrumVisual = (timeToPlay - now) * 1000 - DRUM_PREROLL_MS;
+        // PREROLL BATERIA: ~50ms antes do audio + Compensação visual
+        let delayDrumVisual = (timeToPlay - now) * 1000 - DRUM_PREROLL_MS - VISUAL_OFFSET_MS;
         if (delayDrumVisual < 0) delayDrumVisual = 0;
 
         setTimeout(() => {
