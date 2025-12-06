@@ -4,7 +4,7 @@
   <link rel="icon" href="data:,">
   
   <meta charset="UTF-8" />
-  <title>Jam On - Sync Otimizado (Recording Safe)</title>
+  <title>Jam On - Sync Otimizado (Final Version)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
   <style>
@@ -68,7 +68,7 @@
     }
 
     /* =========================================
-       ESTILO DA BATERISTA
+       ESTILO DA BATERISTA (VISUALIZAÇÃO TELA)
        ========================================= */
     #bateristaStage {
       position: absolute;
@@ -96,7 +96,7 @@
     #bat_Ataque       { top: 0; left: 0; z-index: 22; }
 
     /* =========================================
-       ESTILO DA BAIXISTA
+       ESTILO DA BAIXISTA (VISUALIZAÇÃO TELA)
        ========================================= */
     #baixistaStage {
       position: relative; width: 520px; height: 520px;
@@ -117,7 +117,7 @@
     #bracoDireitoLayer { top: 250px;  left: -5px;  z-index: 4; }
     #cabecaLayer       { top: 37px;   left: 70px;  z-index: 5; }
 
-    /* CANVAS HD OCULTO */
+    /* CANVAS HD OCULTO (1280x720) */
     #recordingCanvas {
       position: absolute; top: -9999px; left: -9999px; visibility: hidden;
     }
@@ -329,7 +329,6 @@
     };
 
     const pastaMap = { 1: ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B"], 2: ["3FS","4G","5GS","6A","8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C"], 3: ["4G","5GS","6A","7AS","9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS"], 4: ["5GS","6A","7AS","8B","10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D"], 5: ["6A","7AS","8B","9C","11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS"], 6: ["7AS","8B","9C","10CS","12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E"], 7: ["8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F"], 8: ["9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS"], 9: ["10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G"], 10: ["11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS"], 11: ["12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A"], 12: ["13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS"], 13: ["14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B"], 14: ["15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C"], 15: ["16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS"], 16: ["17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D"], 17: ["18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS"], 18: ["19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E"], 19: ["20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F"], 20: ["21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS","36DS","37E","38F","39FS"], 21: ["22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D","37E","38F","39FS","40G"], 22: ["23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS","38F","39FS","40G","41GS"], 23: ["24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E","39FS","40G","41GS","42A"], 24: ["25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F","40G","41GS","42A","43AS"] };
-    const pastaFolderNames = { 1:"1F", 2:"2FS", 3:"3G", 4:"4GS", 5:"5A", 6:"6AS", 7:"7B", 8:"8C", 9:"9CS", 10:"10D", 11:"11DS", 12:"12E", 13:"13F", 14:"14FS", 15:"15G", 16:"16GS", 17:"17A", 18:"18AS", 19:"19B", 20:"20C", 21:"21CS", 22:"22D", 23:"23DS", 24:"24E" };
     const notasValidas = ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B","21C","22CS","23D","24DS","25E","26F","27FS","28G","29GS","30A","31AS","32B","33C","34CS","35D","36DS","37E","38F","39FS","40G","41GS","42A","43AS"];
     const drumLines = [
       { id: "bumbo", label: "Bumbo", file: "bumbo.mp3" }, { id: "caixa", label: "Caixa", file: "caixa.mp3" }, { id: "caixaAro", label: "Aro", file: "caixaAro.mp3" }, { id: "chimbal", label: "HH", file: "chimbal.mp3" }, { id: "chimbal_pedal", label: "HH Ped", file: "chimbal-pedal.mp3" }, { id: "chimbalaberto", label: "HH Open", file: "chimbal-aberto.mp3" }, { id: "ataque", label: "Ataque", file: "ataque.mp3" }, { id: "tom1", label: "Tom 1", file: "tom-1.mp3" }, { id: "tom2", label: "Tom 2", file: "tom-2.mp3" }, { id: "surdo", label: "Surdo", file: "surdo.mp3" }, { id: "conducao", label: "Ride", file: "conducao.mp3" }, { id: "conducao_centro", label: "Ride C", file: "conducao-centro.mp3" }
@@ -528,27 +527,104 @@
         renderGrids();
     }
 
+    // ========================================================
+    // A CENA ESTATICA (WARM-UP)
+    // ========================================================
+    function desenharCenaEstatica() {
+        ctx.fillStyle = "#111"; 
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Fundo Gradiente
+        const gradient = ctx.createRadialGradient(640, 360, 100, 640, 360, 600);
+        gradient.addColorStop(0, "#222");
+        gradient.addColorStop(1, "#000");
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // --- Desenha Baterista (Parado) ---
+        ctx.save();
+        ctx.translate(280, 100); 
+        ctx.scale(0.65, 0.65);
+        
+        const draw = (img) => { if(img && img.complete) ctx.drawImage(img, 0, 0); };
+        draw(domImages.bt_conducao);
+        draw(domImages.bt_pernaEsq);
+        draw(domImages.bt_tronco);
+        draw(domImages.bt_cabeca);
+        draw(domImages.bt_bracoEsq);
+        draw(domImages.bt_bracoDir);
+        draw(domImages.bt_kit);
+        draw(domImages.bt_ataque);
+        ctx.restore();
+
+        // --- Desenha Baixista (Parado) ---
+        ctx.save();
+        ctx.translate(680, 80); 
+        ctx.scale(0.9, 0.9);
+
+        if (domImages.bx_pernas.complete) ctx.drawImage(domImages.bx_pernas, 64, 332);
+        
+        ctx.save();
+        ctx.translate(260, 416); // Pivot
+        ctx.translate(-260, -416); // Retorna
+        
+        if (domImages.bx_cabecaTras.complete) ctx.drawImage(domImages.bx_cabecaTras, 100, 60);
+        if (domImages.bx_tronco.src && domImages.bx_tronco.complete) {
+            ctx.drawImage(domImages.bx_tronco, 0, 132);
+        } else {
+             const img = new Image(); img.src = `animacao/tronco_baixo/Pasta_1F/1E.png`;
+             if(img.complete) ctx.drawImage(img, 0, 132);
+        }
+        if (domImages.bx_antebraco.complete) ctx.drawImage(domImages.bx_antebraco, -2, 179);
+        if (domImages.bx_bracoDir.complete) ctx.drawImage(domImages.bx_bracoDir, -5, 250);
+        if (domImages.bx_cabeca.complete) ctx.drawImage(domImages.bx_cabeca, 70, 37);
+        
+        ctx.restore();
+        ctx.restore();
+    }
+
+    // ========================================================
+    // RENDERIZAÇÃO DA "CÂMERA VIRTUAL" (GRAVAÇÃO)
+    // ========================================================
     function canvasRenderLoop() {
         ctx.fillStyle = "#111"; 
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
+        const gradient = ctx.createRadialGradient(640, 360, 100, 640, 360, 600);
+        gradient.addColorStop(0, "#222");
+        gradient.addColorStop(1, "#000");
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // --- CAMADA 1: BATERISTA ---
         ctx.save();
-        ctx.translate(400, 150); 
-        ctx.scale(0.55, 0.55);   
+        ctx.translate(280, 100); 
+        ctx.scale(0.65, 0.65);   
 
         const drawImg = (el) => { if (el && el.complete && el.naturalWidth > 0) ctx.drawImage(el, 0, 0); };
+        
         drawImg(domImages.bt_conducao);
         drawImg(domImages.bt_pernaEsq);
         drawImg(domImages.bt_tronco);
         drawImg(domImages.bt_cabeca);
+        
         const zEsq = parseInt(domImages.bt_bracoEsq.style.zIndex || 10);
-        if (zEsq > 11) { drawImg(domImages.bt_bracoDir); drawImg(domImages.bt_bracoEsq); } else { drawImg(domImages.bt_bracoEsq); drawImg(domImages.bt_bracoDir); }
+        if (zEsq > 11) { 
+            drawImg(domImages.bt_bracoDir); 
+            drawImg(domImages.bt_bracoEsq); 
+        } else { 
+            drawImg(domImages.bt_bracoEsq); 
+            drawImg(domImages.bt_bracoDir); 
+        }
+        
         drawImg(domImages.bt_kit);
         drawImg(domImages.bt_ataque);
         ctx.restore();
 
+        // --- CAMADA 2: BAIXISTA ---
         ctx.save();
-        ctx.translate(550, 100); 
+        ctx.translate(680, 80); 
+        ctx.scale(0.9, 0.9); 
 
         if (domImages.bx_pernas.complete) ctx.drawImage(domImages.bx_pernas, 64, 332);
 
@@ -569,12 +645,15 @@
         ctx.translate(-260, -416); 
         
         if (domImages.bx_cabecaTras.complete) ctx.drawImage(domImages.bx_cabecaTras, 100, 60);
-        if (domImages.bx_tronco.complete) ctx.drawImage(domImages.bx_tronco, 0, 132);
+        if (domImages.bx_tronco.complete && domImages.bx_tronco.src) {
+            ctx.drawImage(domImages.bx_tronco, 0, 132);
+        }
+        
         if (domImages.bx_antebraco.complete) ctx.drawImage(domImages.bx_antebraco, -2, 179);
         if (domImages.bx_bracoDir.complete) ctx.drawImage(domImages.bx_bracoDir, -5, 250);
         if (domImages.bx_cabeca.complete) ctx.drawImage(domImages.bx_cabeca, 70, 37);
         
-        ctx.restore();
+        ctx.restore(); 
         ctx.restore(); 
 
         requestAnimationFrame(canvasRenderLoop);
@@ -981,7 +1060,7 @@
         return audioBuffer;
     }
 
-    // NOVA LÓGICA DE GRAVAÇÃO COM SEGURANÇA
+    // NOVA LÓGICA DE GRAVAÇÃO COM SEGURANÇA E WARM-UP
     async function toggleRecording() {
         const btn = document.getElementById("recordVideoBtn");
         
@@ -1006,16 +1085,22 @@
             try {
                 if (audioContext.state === 'suspended') await audioContext.resume();
                 
+                // 2. WARM-UP: Desenha a cena estática no canvas ANTES de começar a gravar
+                desenharCenaEstatica();
+
                 // Configura o gravador
                 const canvasStream = canvas.captureStream(30);
                 const videoTrack = canvasStream.getVideoTracks()[0];
                 const audioTrack = mediaStreamDestination.stream.getAudioTracks()[0];
                 const combinedStream = new MediaStream([videoTrack, audioTrack]);
                 
-                let mimeType = 'video/webm';
-                if (MediaRecorder.isTypeSupported('video/webm; codecs=vp9')) mimeType = 'video/webm; codecs=vp9';
+                // OTIMIZAÇÃO: Usa VP8 e bitrate menor para mobile
+                let options = { mimeType: 'video/webm; codecs=vp8', videoBitsPerSecond: 1500000 };
+                if (!MediaRecorder.isTypeSupported('video/webm; codecs=vp8')) {
+                    options = { mimeType: 'video/webm', videoBitsPerSecond: 1500000 };
+                }
                 
-                mediaRecorder = new MediaRecorder(combinedStream, { mimeType: mimeType, videoBitsPerSecond: 2500000 });
+                mediaRecorder = new MediaRecorder(combinedStream, options);
                 recordedChunks = [];
                 
                 mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
@@ -1027,14 +1112,16 @@
                     document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url);
                 };
 
-                // 2. Inicia o MediaRecorder (mas o playback espera a contagem)
+                // 3. Inicia o MediaRecorder
                 mediaRecorder.start(); 
                 isRecording = true; 
                 btn.innerText = "⏹ Parar"; 
                 btn.classList.add("recording");
 
-                // 3. Chama a contagem regressiva e SÓ DEPOIS dá o play
-                iniciarContagemEPlay();
+                // 4. Espera 500ms antes de iniciar a contagem/play
+                setTimeout(() => {
+                    iniciarContagemEPlay();
+                }, 500);
 
             } catch (err) { 
                 alert("Erro gravação: " + err); 
