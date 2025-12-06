@@ -442,6 +442,10 @@
     // NOVO: Controle de animação dos braços
     let armAnimationTimers = {};
     
+    // NOVO: Controle da última posição do braço direito
+    let lastRightArmFrame = null;
+    let lastRightArmFrames = null;
+    
     const canvas = document.getElementById("recordingCanvas");
     const ctx = canvas.getContext("2d");
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -622,8 +626,8 @@
         requestAnimationFrame(canvasRenderLoop);
     }
 
-    // CORRIGIDO: Função runFrameAnimation melhorada com startFrame
-    function runFrameAnimation(elementId, frames, idleFrame, fps = 30, loop = false, startFrame = 0) {
+    // CORRIGIDO: Função runFrameAnimation melhorada
+    function runFrameAnimation(elementId, frames, idleFrame, fps = 30, loop = false, startFrame = 0, keepLastFrame = false) {
         const el = typeof elementId === 'string' ? document.getElementById(elementId) : elementId;
         const frameDuration = 1000 / fps;
         
@@ -658,8 +662,15 @@
                     setCachedSrc(el, frames[index]);
                     activeAnimations[el.id] = requestAnimationFrame(animate);
                 } else {
-                    // Quando a animação termina, volta para o frame idle
-                    if (idleFrame !== null) {
+                    // Quando a animação termina
+                    if (keepLastFrame && el.id === 'bat_BracoDir') {
+                        // BRAÇO DIREITO: Mantém o último frame
+                        setCachedSrc(el, frames[frames.length - 1]);
+                        // Guarda a referência para poder restaurar se necessário
+                        lastRightArmFrame = frames[frames.length - 1];
+                        lastRightArmFrames = frames;
+                    } else if (idleFrame !== null) {
+                        // Outros elementos: volta para o frame idle
                         setCachedSrc(el, idleFrame);
                     }
                     
@@ -685,9 +696,16 @@
                     cancelAnimationFrame(activeAnimations[el.id]);
                     delete activeAnimations[el.id];
                 }
-                if (idleFrame !== null) {
+                
+                // Aplica a mesma lógica de manter o frame
+                if (keepLastFrame && el.id === 'bat_BracoDir') {
+                    setCachedSrc(el, frames[frames.length - 1]);
+                    lastRightArmFrame = frames[frames.length - 1];
+                    lastRightArmFrames = frames;
+                } else if (idleFrame !== null && !keepLastFrame) {
                     setCachedSrc(el, idleFrame);
                 }
+                
                 if(el.id === 'bat_BracoEsq') {
                     el.style.zIndex = 10;
                 }
@@ -701,13 +719,22 @@
         const frames = isLeft ? DRUM_ASSETS.anim.be_caixa : DRUM_ASSETS.anim.bd_caixa;
         const idleSrc = isLeft ? DRUM_ASSETS.idle.bracoEsq : DRUM_ASSETS.idle.bracoDir;
         
+        // Para o braço direito, mantém o último frame
+        const keepLastFrame = !isLeft; // Apenas para braço direito
+        
         // CORREÇÃO: Para caixa, começa no frame 3 (impacto) instantaneamente
-        runFrameAnimation(imgEl, frames, idleSrc, DRUM_FPS, false, 2); // startFrame = 2 (terceiro frame)
+        runFrameAnimation(imgEl, frames, idleSrc, DRUM_FPS, false, 2, keepLastFrame);
         
         // Ajusta z-index se for braço esquerdo
         if (isLeft) {
             imgEl.style.zIndex = 10; // Caixa não precisa de z-index alto
         }
+    }
+
+    // Função para braço direito que mantém a posição final
+    function playRightArmAnimation(frames, idleFrame, startFrame = 0) {
+        // Para o braço direito, sempre mantém o último frame
+        runFrameAnimation(domImages.bt_bracoDir, frames, idleFrame, DRUM_FPS, false, startFrame, true);
     }
 
     // NOVO: Função para animação de cabeça com estilo aleatório
@@ -856,8 +883,13 @@
                 frames = isLeft ? DRUM_ASSETS.anim.be_caixa : DRUM_ASSETS.anim.bd_caixa;
             }
             
-            // Para outros instrumentos, começa do frame 0 normalmente
-            runFrameAnimation(imgEl, frames, idleSrc, DRUM_FPS);
+            // Se for braço direito, usa a função especial que mantém o último frame
+            if (!isLeft) {
+                playRightArmAnimation(frames, idleSrc);
+            } else {
+                // Braço esquerdo: comportamento normal
+                runFrameAnimation(imgEl, frames, idleSrc, DRUM_FPS);
+            }
         }
         
         if(drumType === 'ataque') runFrameAnimation(domImages.bt_ataque, DRUM_ASSETS.anim.ataquePrato, DRUM_ASSETS.idle.ataque, 30);
@@ -916,7 +948,12 @@
         
         setCachedSrc(domImages.bt_tronco, DRUM_ASSETS.idle.tronco);
         setCachedSrc(domImages.bt_pernaEsq, DRUM_ASSETS.idle.pernaEsq);
+        
+        // BRAÇO DIREITO: Volta para a posição idle normal no reset
         setCachedSrc(domImages.bt_bracoDir, DRUM_ASSETS.idle.bracoDir);
+        lastRightArmFrame = null;
+        lastRightArmFrames = null;
+        
         setCachedSrc(domImages.bt_bracoEsq, DRUM_ASSETS.idle.bracoEsq);
         domImages.bt_bracoEsq.style.zIndex = 10;
         setCachedSrc(domImages.bt_cabeca, DRUM_ASSETS.idle.cabeca);
