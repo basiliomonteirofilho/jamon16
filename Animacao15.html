@@ -1,2336 +1,906 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/RecordRTC/5.6.2/RecordRTC.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/audiobuffer-to-wav@1.0.0/index.min.js"></script>
   <meta charset="UTF-8" />
-  <title>JAM ON - Animação Baixista + Baterista</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jam On - Sync Perfeito (Pre-Roll)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
   <style>
     :root {
-      --bg-color: #0b1020;
-      --bg-panel: #151b30;
-      --bg-panel-light: #1f2840;
-      --border-color: #313a5c;
-      --text-color: #f5f5f5;
-      --muted-text: #9aa4c4;
-      --accent-color-soft: #4fc3f7;
-      --accent-color: #00b0ff;
-      --accent-color-strong: #29b6f6;
-      --accent-color-stronger: #03a9f4;
-      --accent-color-2: #ffb74d;
-      --accent-color-3: #ff7043;
-      --accent-color-4: #ffca28;
-      --danger: #ef5350;
-      --success: #66bb6a;
-      --shadow-soft: 0 18px 35px rgba(0,0,0,0.35);
-      --radius-lg: 18px;
-      --radius-md: 12px;
-      --radius-sm: 8px;
+      --bg-color: #111;
+      --panel-bg: rgba(10, 10, 10, 0.98);
+      --highlight-color: #00e676;
+      --accent-color: #2e7d32;
+      --record-color: #d50000;
+      --grid-bg: #000;
+      --cell-bg: #151515;
+      --cell-border: #333;
+      --label-width: 70px;
+      --cell-size: 26px;
     }
 
-    * {
-      box-sizing: border-box;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
     body {
       margin: 0;
-      padding: 0;
-      background: radial-gradient(circle at top, #1a237e 0, #0b1020 45%, #000 100%);
-      color: var(--text-color);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      justify-content: flex-start;
-      overflow-x: hidden;
-    }
-
-    .app-container {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      padding: 12px 10px 16px;
-      max-width: 1400px;
-      margin: 0 auto;
-    }
-
-    header {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      padding: 8px 10px 0;
-    }
-
-    header h1 {
-      margin: 0;
-      font-size: 1.4rem;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: #e3f2fd;
-      text-shadow: 0 0 12px rgba(33,150,243,0.8);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    header h1 span.logo-pill {
-      background: linear-gradient(120deg, #00bcd4, #3f51b5);
-      padding: 3px 10px;
-      border-radius: 999px;
-      font-size: 0.78rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: #e3f2fd;
-    }
-
-    header p {
-      margin: 0;
-      font-size: 0.82rem;
-      color: var(--muted-text);
-      max-width: 780px;
-    }
-
-    .main-layout {
-      display: grid;
-      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.1fr);
-      gap: 14px;
-      align-items: flex-start;
-    }
-
-    .panel {
-      background: radial-gradient(circle at top left, rgba(63,81,181,0.25), rgba(11,16,32,0.96));
-      border-radius: var(--radius-lg);
-      padding: 10px;
-      border: 1px solid rgba(120,144,156,0.3);
-      box-shadow: var(--shadow-soft);
-      position: relative;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #000;
+      color: #f5f5f5;
       overflow: hidden;
     }
 
-    .panel-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 6px;
+    /* TELA DE CARREGAMENTO */
+    #loadingOverlay {
+      position: fixed; inset: 0; background: #000; z-index: 50000;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      color: var(--highlight-color); font-weight: bold;
+      transition: opacity 0.5s;
+    }
+    #loadingText { margin-bottom: 10px; font-family: monospace; font-size: 1.2rem; }
+    #loadingBarContainer {
+      width: 300px; height: 6px; background: #333; border-radius: 3px; overflow: hidden;
+    }
+    #loadingBar {
+      height: 100%; background: var(--highlight-color); width: 0%; transition: width 0.1s linear;
     }
 
-    .panel-title {
-      display: flex;
-      align-items: baseline;
-      gap: 8px;
+    #orientationOverlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.95); color: #fff;
+      display: none; justify-content: center; align-items: center; z-index: 10000;
     }
 
-    .panel-title h2 {
-      margin: 0;
-      font-size: 0.98rem;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: #e8eaf6;
+    .appRoot {
+      width: 100vw; height: 100vh; display: flex; flex-direction: column;
+      background: radial-gradient(circle at top, #222 0%, #000 80%);
     }
 
-    .panel-title span {
-      font-size: 0.72rem;
-      padding: 1px 8px;
-      border-radius: 999px;
-      background: rgba(25, 118, 210, 0.18);
-      color: #90caf9;
-      border: 1px solid rgba(100, 181, 246, 0.35);
-    }
-
-    .panel-tools {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.7rem;
-      color: var(--muted-text);
-    }
-
-    .badge {
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 0.7rem;
-      border: 1px solid rgba(120, 144, 156, 0.5);
-      background: rgba(38, 50, 56, 0.6);
-      color: #eceff1;
-    }
-
-    .badge.green {
-      border-color: rgba(129, 199, 132, 0.8);
-      background: rgba(27, 94, 32, 0.75);
-      color: #e8f5e9;
-    }
-
-    .badge.accent {
-      border-color: rgba(100, 181, 246, 0.85);
-      background: rgba(21, 101, 192, 0.7);
-      color: #e3f2fd;
-    }
-
-    .grid-container {
-      display: grid;
-      grid-template-columns: 1.1fr minmax(0, 1.15fr);
-      gap: 10px;
+    #topArea {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      position: relative; overflow: hidden;
     }
 
     #animacaoStageWrapper {
-      position: relative;
-      background: radial-gradient(circle at 10% 0%, rgba(0, 188, 212, 0.25), transparent 55%), radial-gradient(circle at 90% 0%, rgba(156, 39, 176, 0.25), transparent 55%), linear-gradient(to bottom, rgba(13, 16, 28, 0.98), #05070f 70%);
-      border-radius: 16px;
-      border: 1px solid rgba(84, 110, 122, 0.7);
-      box-shadow: inset 0 0 0 1px rgba(3, 169, 244, 0.12), 0 16px 40px rgba(0, 0, 0, 0.75);
-      padding: 10px;
-      overflow: hidden;
-      min-height: 320px;
+      position: relative; width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
     }
 
-    #animacaoStageInner {
-      position: relative;
-      width: 100%;
-      padding-top: 60%;
-      border-radius: 12px;
-      background: radial-gradient(circle at 50% 120%, #263238 0, #111 60%, #000 100%);
-      box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.85);
-      overflow: hidden;
-    }
-
-    #animacaoStage {
+    /* =========================================
+       ESTILO DA BATERISTA
+       ========================================= */
+    #bateristaStage {
       position: absolute;
-      inset: 0;
-      transform-origin: center bottom;
+      width: 520px; height: 520px;
+      transform-origin: center center;
+      z-index: 1; 
+      transform: scale(0.35) translate(250px, -300px);
+      pointer-events: none;
     }
-
-    #animacaoStage img {
+    
+    #bateristaStage img {
       position: absolute;
       image-rendering: pixelated;
-      image-rendering: crisp-edges;
-      transform-origin: center center;
-      pointer-events: none;
+      will-change: transform, src; 
     }
 
-    #recordingCanvasContainer {
-      margin-top: 6px;
-      background: radial-gradient(circle at top, rgba(25, 118, 210, 0.35), rgba(13, 71, 161, 0.6) 35%, rgba(2, 0, 36, 0.95) 100%);
-      border-radius: 12px;
-      padding: 6px;
-      border: 1px solid rgba(66, 165, 245, 0.6);
-      box-shadow: 0 12px 26px rgba(0, 0, 0, 0.85);
-      position: relative;
+    /* ORDEM DE CAMADAS (Z-INDEX) */
+    #bat_PernaEsq     { top: 0; left: 0; z-index: 2; }
+    #bat_Tronco       { top: 0; left: 0; z-index: 3; }
+    #bat_Cabeca       { top: 0; left: 0; z-index: 4; }
+    #bat_BracoEsq     { top: 0; left: 0; z-index: 10; transition: z-index 0.05s; }
+    #bat_BracoDir     { top: 0; left: 0; z-index: 11; }
+    #bat_Bateria      { top: 0; left: 0; z-index: 20; } 
+    #bat_Conducao     { top: 0; left: 0; z-index: 21; } 
+    #bat_Ataque       { top: 0; left: 0; z-index: 22; }
+
+    /* =========================================
+       ESTILO DA BAIXISTA
+       ========================================= */
+    #baixistaStage {
+      position: relative; width: 520px; height: 520px;
+      transform-origin: center center;
+      z-index: 100; 
     }
+
+    #pernasLayer { position: absolute; top: 332px; left: 64px; z-index: 1; }
+    #bodyWrapperPendulo {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5;
+      transform-origin: 50% 80%; will-change: transform;
+    }
+    #bodyWrapperPendulo img { position: absolute; image-rendering: pixelated; }
+
+    #cabecaTrasLayer   { top: 60px;   left: 100px; z-index: 1; }
+    #troncoBaixoLayer  { top: 132px;  left: 0px;   z-index: 3; }
+    #antebracoLayer    { top: 179px;  left: -2px;  z-index: 2; }
+    #bracoDireitoLayer { top: 250px;  left: -5px;  z-index: 4; }
+    #cabecaLayer       { top: 37px;   left: 70px;  z-index: 5; }
 
     #recordingCanvas {
-      width: 100%;
-      border-radius: 10px;
-      background: #000;
-      display: block;
+      position: absolute; top: -9999px; left: -9999px; visibility: hidden;
     }
 
-    .bpm-row {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.8rem;
-      margin-top: 4px;
+    #bottomArea {
+      flex: 0 0 50vh; max-height: 450px; min-height: 300px;
+      display: flex; flex-direction: column; background: var(--panel-bg);
+      border-top: 1px solid #333; padding: 10px; z-index: 200;
+      box-shadow: 0 -5px 30px rgba(0,0,0,0.8);
     }
 
-    .bpm-row label {
-      color: var(--muted-text);
-      font-size: 0.78rem;
-    }
-
-    .bpm-row input[type="number"] {
-      width: 70px;
-      padding: 3px 6px;
-      border-radius: 6px;
-      border: 1px solid rgba(120, 144, 156, 0.8);
-      background: rgba(15, 22, 35, 0.95);
-      color: #e3f2fd;
-      font-size: 0.8rem;
-      outline: none;
-    }
-
-    .bpm-row input[type="number"]:focus {
-      border-color: rgba(129, 212, 250, 0.9);
-      box-shadow: 0 0 0 1px rgba(129, 212, 250, 0.8);
-    }
-
-    .volume-group {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 0.76rem;
-      color: var(--muted-text);
-    }
-
-    .volume-group input[type="range"] {
-      flex: 1;
-      accent-color: var(--accent-color);
-    }
-
-    .btn-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 6px;
-    }
-
+    #playerControlsRow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
     button {
-      border-radius: 999px;
-      border: none;
-      padding: 6px 12px;
-      font-size: 0.78rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.11em;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      color: #e3f2fd;
-      background: linear-gradient(135deg, #283593, #1e88e5);
-      box-shadow: 0 8px 18px rgba(0,0,0,0.4);
-      transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease, background 0.12s ease;
-      white-space: nowrap;
-    }
-
-    button span.icon {
-      font-size: 1rem;
-      line-height: 0;
-    }
-
-    button.secondary {
-      background: linear-gradient(135deg, #004d40, #00796b);
-    }
-
-    button.outline {
-      background: transparent;
-      border: 1px solid rgba(129, 212, 250, 0.6);
-      box-shadow: none;
-      color: #bbdefb;
-    }
-
-    button.record {
-      background: linear-gradient(135deg, #b71c1c, #d32f2f);
-    }
-
-    button.small {
-      padding: 4px 9px;
-      font-size: 0.72rem;
-    }
-
-    button:disabled {
-      opacity: 0.6;
-      cursor: default;
-      box-shadow: none;
-      transform: none;
-    }
-
-    button:not(:disabled):hover {
-      transform: translateY(-1px);
-      box-shadow: 0 10px 22px rgba(0,0,0,0.6);
-      filter: brightness(1.05);
-    }
-
-    button:not(:disabled):active {
-      transform: translateY(0);
-      box-shadow: 0 4px 10px rgba(0,0,0,0.6);
-      filter: brightness(0.97);
-    }
-
-    .progress-bar-container {
-      margin-top: 6px;
-      background: rgba(25, 32, 52, 0.9);
-      border-radius: 999px;
-      overflow: hidden;
-      border: 1px solid rgba(84, 110, 122, 0.9);
-      position: relative;
-      height: 14px;
-    }
-
-    .progress-bar {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, #00e5ff, #00c853);
-      box-shadow: 0 0 10px rgba(0, 229, 255, 0.8);
-      transition: width 0.1s linear;
-    }
-
-    .progress-label {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.7rem;
-      color: rgba(224, 242, 241, 0.85);
-      pointer-events: none;
-    }
-
-    .seq-panel {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .tab-row {
-      display: flex;
-      gap: 4px;
-      border-radius: 999px;
-      background: rgba(21, 25, 45, 0.95);
-      padding: 3px;
-      align-self: flex-start;
-    }
-
-    .tab-row button {
-      flex: 1;
-      padding: 4px 10px;
-      font-size: 0.7rem;
-      border-radius: 999px;
-      background: transparent;
-      border: none;
-      color: var(--muted-text);
-      box-shadow: none;
-      letter-spacing: 0.08em;
-    }
-
-    .tab-row button.active {
-      background: linear-gradient(135deg, #1565c0, #00bcd4);
-      color: #e3f2fd;
-      box-shadow: 0 6px 16px rgba(0,0,0,0.5);
-    }
-
-    .grid-section {
-      background: linear-gradient(180deg, rgba(13, 19, 32, 0.98), rgba(9, 12, 20, 0.98));
-      border-radius: 12px;
-      border: 1px solid rgba(69, 90, 100, 0.85);
-      padding: 6px 6px 8px;
-      box-shadow: inset 0 0 0 1px rgba(144,164,174,0.12);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .grid-section::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(circle at 10% 0, rgba(33, 150, 243, 0.17), transparent 55%), radial-gradient(circle at 90% 0, rgba(0, 188, 212, 0.13), transparent 55%);
-      opacity: 0.75;
-      pointer-events: none;
-    }
-
-    .grid-section-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      gap: 10px;
-      margin-bottom: 4px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .grid-section-header h3 {
-      margin: 0;
-      font-size: 0.82rem;
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      color: #c5cae9;
-    }
-
-    .grid-section-header span {
-      font-size: 0.72rem;
-      color: var(--muted-text);
-    }
-
-    .grid-wrapper {
-      border-radius: 9px;
-      background: rgba(0, 0, 0, 0.65);
-      padding: 6px 4px 4px;
-      border: 1px solid rgba(120, 144, 156, 0.8);
-      position: relative;
-      z-index: 1;
-      overflow-x: auto;
-      overflow-y: hidden;
-    }
-
-    .seq-grid {
-      border-collapse: collapse;
-      width: 100%;
-      min-width: 420px;
-      font-size: 0.78rem;
-      color: #eceff1;
-    }
-
-    .seq-grid thead th {
-      font-weight: 500;
-      padding: 4px 0;
-      text-align: center;
-      color: var(--muted-text);
-      font-size: 0.7rem;
-      border-bottom: 1px solid rgba(84, 110, 122, 0.8);
-    }
-
-    .seq-grid tbody td {
-      padding: 4px;
-      text-align: center;
-      cursor: pointer;
-      border-bottom: 1px solid rgba(55, 71, 79, 0.9);
-      border-right: 1px solid rgba(55, 71, 79, 0.7);
-      position: relative;
-    }
-
-    .seq-grid tbody td:last-child {
-      border-right: none;
-    }
-
-    .seq-grid tbody tr:last-child td {
-      border-bottom: none;
-    }
-
-    .seq-grid tbody td span.note-label {
-      display: inline-block;
-      padding: 2px 6px;
-      border-radius: 999px;
-      font-size: 0.7rem;
-      background: rgba(33, 150, 243, 0.1);
-      border: 1px solid rgba(100, 181, 246, 0.6);
-      color: #bbdefb;
-      min-width: 22px;
-    }
-
-    .seq-grid tbody td.active span.note-label {
-      background: linear-gradient(135deg, #29b6f6, #00e5ff);
-      border-color: rgba(178, 235, 242, 0.95);
-      color: #0d47a1;
-      box-shadow: 0 0 12px rgba(0, 229, 255, 0.8);
-    }
-
-    .seq-grid tbody td.active-drum {
-      background: radial-gradient(circle at center, rgba(0, 230, 118, 0.32), rgba(0, 0, 0, 0.75));
-      box-shadow: inset 0 0 0 1px rgba(129, 199, 132, 0.85);
-    }
-
-    .seq-grid tbody td.row-label {
-      background: rgba(25, 32, 52, 0.96);
-      text-align: left;
-      padding-left: 8px;
-      font-size: 0.72rem;
-      color: #cfd8dc;
-      position: sticky;
-      left: 0;
-      z-index: 2;
-      box-shadow: 4px 0 6px rgba(0, 0, 0, 0.6);
-    }
-
-    .seq-grid tbody td.row-label span {
-      opacity: 0.9;
-    }
-
-    .seq-grid tbody td.step-index {
-      font-size: 0.7rem;
-      color: rgba(144, 164, 174, 0.9);
-      width: 24px;
-      background: rgba(18, 24, 38, 0.98);
-      position: sticky;
-      left: 62px;
-      z-index: 1;
-      box-shadow: 2px 0 4px rgba(0, 0, 0, 0.7);
-    }
-
-    .seq-grid tbody td.step-index.highlight {
-      color: #e3f2fd;
-      background: linear-gradient(180deg, rgba(33, 150, 243, 0.3), rgba(21, 24, 35, 0.95));
-      box-shadow: 0 0 12px rgba(33, 150, 243, 0.7);
-    }
-
-    .seq-grid tbody td.highlight {
-      background: linear-gradient(180deg, rgba(0, 188, 212, 0.25), rgba(0, 0, 0, 0.9));
-      box-shadow: inset 0 0 0 1px rgba(0, 188, 212, 0.9);
-    }
-
-    .grid-footer {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 4px;
-      font-size: 0.7rem;
-      color: var(--muted-text);
-    }
-
-    .grid-footer .tip {
-      opacity: 0.9;
-    }
-
-    .grid-footer .status-pill {
-      padding: 2px 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(129, 212, 250, 0.7);
-      background: rgba(21, 101, 192, 0.6);
-      color: #e3f2fd;
-    }
-
-    .controls-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 4px;
-      align-items: center;
-      justify-content: flex-start;
-    }
-
-    .controls-row .group {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 0.74rem;
-      color: var(--muted-text);
-    }
-
-    .controls-row select {
-      padding: 4px 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(120, 144, 156, 0.9);
-      background: rgba(9, 16, 28, 0.95);
-      color: #e3f2fd;
-      font-size: 0.75rem;
-      outline: none;
-    }
-
-    .controls-row select:focus {
-      border-color: rgba(129, 212, 250, 0.9);
-      box-shadow: 0 0 0 1px rgba(129, 212, 250, 0.8);
-    }
-
-    .note-input-row {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      margin-top: 4px;
-      font-size: 0.74rem;
-      color: var(--muted-text);
-    }
-
-    .note-input-row input[type="text"] {
-      flex: 1;
-      padding: 4px 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(120, 144, 156, 0.9);
-      background: rgba(9, 16, 28, 0.96);
-      color: #e3f2fd;
-      font-size: 0.75rem;
-    }
-
-    .note-input-row input[type="text"]:focus {
-      border-color: rgba(129, 212, 250, 0.9);
-      box-shadow: 0 0 0 1px rgba(129, 212, 250, 0.8);
-    }
-
-    .note-input-row .hint {
-      font-size: 0.7rem;
-      color: rgba(144, 164, 174, 0.9);
-    }
-
-    .bottom-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 8px;
-      font-size: 0.77rem;
-      color: var(--muted-text);
-      align-items: center;
-    }
-
-    .bottom-actions .info {
-      flex: 1;
-      min-width: 160px;
-    }
-
-    .bottom-actions .info span {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .bottom-actions .info span .dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 999px;
-      background: var(--accent-color-soft);
-      box-shadow: 0 0 6px rgba(3, 169, 244, 0.8);
-    }
-
-    .bottom-actions .btn-group-alt {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-    }
-
-    .countdown-overlay {
-      position: fixed;
-      inset: 0;
-      background: radial-gradient(circle at center, rgba(13, 71, 161, 0.92), rgba(10, 14, 26, 0.98));
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-    }
-
-    .countdown-inner {
-      text-align: center;
-      padding: 26px 24px 24px;
-      background: radial-gradient(circle at top, rgba(33, 150, 243, 0.4), rgba(26, 35, 126, 0.98));
-      border-radius: 18px;
-      border: 1px solid rgba(129, 212, 250, 0.85);
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.75);
-      min-width: 220px;
-    }
-
-    .countdown-inner h2 {
-      margin: 0 0 8px;
-      font-size: 0.95rem;
-      letter-spacing: 0.11em;
-      text-transform: uppercase;
-      color: #e3f2fd;
-    }
-
-    .countdown-inner p {
-      margin: 0 0 12px;
-      font-size: 0.78rem;
-      color: rgba(197, 202, 233, 0.92);
-    }
-
-    .countdown-number {
-      font-size: 3.4rem;
-      font-weight: 800;
-      color: #e3f2fd;
-      text-shadow: 0 0 25px rgba(3, 169, 244, 0.95);
-    }
-
-    .recording-indicator {
-      position: absolute;
-      top: 8px;
-      right: 10px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.75rem;
-      color: #ffebee;
-      background: rgba(183, 28, 28, 0.9);
-      padding: 4px 8px;
-      border-radius: 999px;
-      box-shadow: 0 0 18px rgba(244, 67, 54, 0.85);
-      opacity: 0;
-      pointer-events: none;
-      transform: translateY(-6px);
-      transition: opacity 0.15s ease, transform 0.15s ease;
-    }
-
-    .recording-indicator.active {
-      opacity: 1;
-      pointer-events: auto;
-      transform: translateY(0);
-    }
-
-    .recording-indicator span.dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 999px;
-      background: #ffebee;
-      box-shadow: 0 0 12px rgba(255, 205, 210, 0.95);
-    }
-
-    .tiny-label {
-      font-size: 0.7rem;
-      color: var(--muted-text);
-    }
-
-    .legend-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      font-size: 0.7rem;
-      margin-top: 4px;
-      color: var(--muted-text);
-    }
-
-    .legend-row span {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    .legend-color {
-      width: 18px;
-      height: 10px;
-      border-radius: 999px;
-      background: radial-gradient(circle at center, rgba(0, 188, 212, 0.65), rgba(12, 18, 30, 0.9));
-      border: 1px solid rgba(100, 181, 246, 0.9);
-    }
-
-    .legend-color.drum {
-      background: radial-gradient(circle at center, rgba(129, 199, 132, 0.65), rgba(12, 18, 30, 0.9));
-      border-color: rgba(165, 214, 167, 0.9);
-    }
-
-    .legend-color.highlight {
-      background: radial-gradient(circle at center, rgba(255, 238, 88, 0.85), rgba(12, 18, 30, 0.9));
-      border-color: rgba(255, 241, 118, 0.9);
-    }
-
-    .anim-hint {
-      position: absolute;
-      bottom: 8px;
-      right: 12px;
-      font-size: 0.75rem;
-      color: rgba(179, 229, 252, 0.9);
-      background: rgba(13, 71, 161, 0.85);
-      padding: 4px 10px;
-      border-radius: 999px;
-      backdrop-filter: blur(4px);
-      border: 1px solid rgba(129, 212, 250, 0.85);
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .anim-hint span.dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 999px;
-      background: #e3f2fd;
-      box-shadow: 0 0 10px rgba(227, 242, 253, 0.95);
-    }
-
-    .orientation-warning {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(3, 7, 18, 0.96);
-      z-index: 99999;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-
-    .orientation-warning-inner {
-      max-width: 420px;
-      padding: 18px 18px 16px;
-      background: linear-gradient(145deg, #101624, #02030a);
-      border-radius: 16px;
-      border: 1px solid rgba(120, 144, 156, 0.85);
-      box-shadow: 0 24px 70px rgba(0,0,0,0.9);
-      color: #eceff1;
-      text-align: center;
-    }
-
-    .orientation-warning-inner h2 {
-      margin: 0 0 8px;
-      font-size: 1rem;
-      text-transform: uppercase;
-      letter-spacing: 0.16em;
-      color: #bbdefb;
-    }
-
-    .orientation-warning-inner p {
-      margin: 6px 0;
-      font-size: 0.85rem;
-      color: #cfd8dc;
-    }
-
-    .orientation-warning-inner .icon {
-      font-size: 2.6rem;
-      margin-bottom: 8px;
-      text-shadow: 0 0 24px rgba(33, 150, 243, 0.9);
-    }
-
-    .orientation-warning-inner button {
-      margin-top: 10px;
-      font-size: 0.78rem;
-      padding: 6px 14px;
-    }
-
-    @media (max-width: 980px) {
-      .main-layout {
-        grid-template-columns: minmax(0, 1fr);
-      }
-
-      .grid-container {
-        grid-template-columns: minmax(0, 1fr);
-      }
-    }
-
-    @media (max-width: 720px) {
-      .app-container {
-        padding: 10px 8px 14px;
-      }
-
-      .panel {
-        padding: 9px;
-        border-radius: 14px;
-      }
-
-      header h1 {
-        font-size: 1.1rem;
-      }
-
-      header p {
-        font-size: 0.8rem;
-      }
-
-      .panel-title h2 {
-        font-size: 0.9rem;
-      }
-
-      .seq-grid {
-        font-size: 0.72rem;
-      }
-    }
-
-    .upper-row-flex {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 4px;
-    }
+      padding: 6px 12px; border-radius: 4px; border: 1px solid #444;
+      background: #222; color: #eee; font-size: 0.75rem; cursor: pointer;
+      display: flex; align-items: center; gap: 4px; white-space: nowrap;
+    }
+    button:hover { background: #333; border-color: #777; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    
+    #playBtn { background: var(--accent-color); border-color: var(--highlight-color); font-weight: bold; color: #fff; }
+    
+    #recordVideoBtn.recording {
+        background: var(--record-color); color: white; border-color: #ff0000;
+        animation: pulse 1.5s infinite; font-weight: bold;
+    }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(213, 0, 0, 0.7); } 70% { box-shadow: 0 0 0 8px rgba(213, 0, 0, 0); } }
+
+    #generationInfo {
+        margin-left: auto; font-size: 0.7rem; color: var(--highlight-color);
+        background: rgba(0,230,118, 0.1); padding: 4px 8px; border-radius: 4px;
+        border: 1px solid var(--accent-color); display: none; white-space: nowrap;
+    }
+
+    .sliderGroup { display: flex; align-items: center; gap: 5px; background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; }
+    .sliderGroup label { font-size: 0.7rem; color: #ccc; }
+    input[type="range"] { width: 70px; cursor: pointer; accent-color: var(--highlight-color); }
+    #bpmDisplay { font-family: monospace; font-weight: bold; min-width: 65px; text-align: center; font-size: 0.8rem;}
+
+    #progressContainer { width: 100%; height: 3px; background: #333; margin-bottom: 8px; }
+    #progressBar { height: 100%; width: 0%; background: var(--highlight-color); transition: width 0.1s linear; }
+
+    #gridsArea { flex: 1; overflow: auto; border: 1px solid #333; background: var(--grid-bg); position: relative; }
+    .rowContainer { display: flex; align-items: center; margin-bottom: 1px; width: max-content; min-width: 100%; position: relative; }
+    .gridLabel {
+      position: sticky; left: 0; z-index: 10; width: var(--label-width); min-width: var(--label-width);
+      font-size: 0.65rem; text-align: right; padding-right: 8px; color: #aaa; background: #000;
+      border-right: 1px solid #333; height: var(--cell-size); display: flex; align-items: center; justify-content: flex-end;
+    }
+    .trackGrid { display: grid; grid-auto-flow: column; grid-auto-columns: var(--cell-size); grid-template-rows: var(--cell-size); gap: 1px; padding-left: 1px; }
+    .delete-btn { width: var(--cell-size); height: 18px; font-size: 10px; background: #b71c1c; border: none; color: white; cursor: pointer; }
+    
+    .cell { background: var(--cell-bg); border: 1px solid var(--cell-border); border-radius: 2px; color: #fff; font-size: 0.65rem; display: flex; align-items: center; justify-content: center; cursor: pointer; width: var(--cell-size); height: var(--cell-size); }
+    .cell.active { background: var(--accent-color); border-color: var(--highlight-color); }
+    .cell.active-ghost { background: #880e4f; border-color: #f50057; }
+    .cell.playing-step { background-color: #333 !important; border-color: #fff !important; }
+    .cell.active.playing-step { background-color: #00e676 !important; color: #000; box-shadow: 0 0 12px #00e676; z-index: 2; }
+
+    #selectionOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 20000; display: none; align-items: center; justify-content: center; }
+    #selectionOverlay.visible { display: flex; }
+    #selectionPanel { background: #1a1a1a; border: 1px solid #444; padding: 20px; border-radius: 8px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
+    #selectionTitle { margin-bottom: 15px; font-weight: bold; color: #fff; text-align: center; }
+    #selectionOptions { display: grid; grid-template-columns: repeat(auto-fill, minmax(45px, 1fr)); gap: 6px; }
+    .selection-option { padding: 10px 0; background: #2c2c2c; text-align: center; border-radius: 4px; font-size: 0.8rem; cursor: pointer; border: 1px solid transparent; }
+    .selection-option.active { background: var(--accent-color); border-color: var(--highlight-color); }
+    .selection-option.ghost { color: #ff80ab; border-color: #880e4f; }
+
+    .countdownOverlay { position: absolute; inset: 0; display: none; justify-content: center; align-items: center; z-index: 50; background: rgba(0,0,0,0.7); font-size: 5rem; font-weight: 900; color: var(--highlight-color); }
+    #loadingStatusMini { position: absolute; bottom: 20px; font-size: 1rem; color: #fff; font-weight: normal; }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+    @media (max-width: 600px) { #bottomArea { flex-basis: 55vh; } :root { --label-width: 50px; --cell-size: 22px; } }
   </style>
 </head>
 <body>
-  <div id="orientationWarning" class="orientation-warning">
-    <div class="orientation-warning-inner">
-      <div class="icon">📱↔️</div>
-      <h2>MELHOR EM PAISAGEM</h2>
-      <p>Para visualizar a animação da baixista e baterista, use o celular na horizontal.</p>
-      <p>Se estiver no computador, maximize a janela para aproveitar todo o espaço.</p>
-      <button onclick="fecharAvisoOrientacao()">Entendi</button>
-    </div>
+
+  <div id="loadingOverlay">
+    <div id="loadingText">Carregando Estúdio...</div>
+    <div id="loadingBarContainer"><div id="loadingBar"></div></div>
   </div>
 
-  <div class="countdown-overlay" id="countdownOverlay">
-    <div class="countdown-inner">
-      <h2>PREPARANDO PLAYBACK</h2>
-      <p>O Jam On está sincronizando áudio e animação…</p>
-      <div class="countdown-number" id="countdownText">4</div>
-    </div>
-  </div>
+  <div id="orientationOverlay"><div><h1>🎵 Melhor Experiência 🎸</h1><p>Gire o dispositivo.</p></div></div>
+  <canvas id="recordingCanvas" width="520" height="520"></canvas>
 
-  <div class="app-container">
-    <header>
-      <h1>
-        <span class="logo-pill">Jam On</span>
-        Baixista + Baterista
-      </h1>
-      <p>
-        Sequenciador visual onde a animação das musicistas acompanha, quadro a quadro, o que está sendo tocado
-        no baixo e na bateria. Agora com carregamento antecipado de PNGs e buffers de áudio para manter a
-        sincronia mesmo na primeira volta.
-      </p>
-    </header>
-
-    <div class="main-layout">
-      <section class="panel">
-        <div class="panel-header">
-          <div class="panel-title">
-            <h2>Palco de Animação</h2>
-            <span>Baixista + Baterista</span>
-          </div>
-          <div class="panel-tools">
-            <span class="badge accent">SYNC ON</span>
-          </div>
+  <div class="appRoot">
+    <div id="topArea">
+      <div id="animacaoStageWrapper">
+        
+        <div id="bateristaStage">
+            <img id="bat_Conducao" src="" />
+            <img id="bat_PernaEsq" src="" />
+            <img id="bat_Tronco"   src="" />
+            <img id="bat_Cabeca"   src="" />
+            <img id="bat_Bateria"  src="" />
+            <img id="bat_BracoDir" src="" />
+            <img id="bat_BracoEsq" src="" />
+            <img id="bat_Ataque"   src="" />
         </div>
 
-        <div class="grid-container">
-          <div>
-            <div id="animacaoStageWrapper">
-              <div id="animacaoStageInner">
-                <div id="animacaoStage"></div>
-                <div class="anim-hint">
-                  <span class="dot"></span>
-                  Animação sincronizada com cada nota e batida
-                </div>
-              </div>
-              <div class="bpm-row">
-                <div class="volume-group">
-                  <label for="bpmInput">BPM</label>
-                  <input type="number" id="bpmInput" value="90" min="40" max="220" />
-                </div>
-                <div class="volume-group">
-                  Baixo
-                  <input type="range" id="baixoVolumeRange" min="0" max="1" step="0.05" value="0.9" />
-                </div>
-                <div class="volume-group">
-                  Bateria
-                  <input type="range" id="bateriaVolumeRange" min="0" max="1" step="0.05" value="0.9" />
-                </div>
-              </div>
-              <div class="btn-row">
-                <button id="playBtn" onclick="togglePlay()">
-                  <span class="icon">▶</span> Play
-                </button>
-                <button class="secondary" onclick="gerarAleatorio()">
-                  <span class="icon">🎲</span> Baixo Aleatório
-                </button>
-                <button class="outline small" onclick="apagarTudo()">
-                  Limpar
-                </button>
-              </div>
-              <div class="progress-bar-container">
-                <div id="progressBar" class="progress-bar"></div>
-                <div class="progress-label">Loop de 16 passos</div>
-              </div>
-              <div class="legend-row">
-                <span>
-                  <span class="legend-color"></span> Notas do baixo
-                </span>
-                <span>
-                  <span class="legend-color drum"></span> Golpes da bateria
-                </span>
-                <span>
-                  <span class="legend-color highlight"></span> Passo atual no loop
-                </span>
-              </div>
+        <div id="baixistaStage">
+            <img id="pernasLayer" src="animacao/pernas/Pernas.png" />
+            <div id="bodyWrapperPendulo">
+                <img id="cabecaTrasLayer" src="animacao/cabeca_tras/cabeca-parte-de-tras.png" />
+                <img id="troncoBaixoLayer" src="" />
+                <img id="antebracoLayer" src="animacao/antebraco/antebracoE.png" />
+                <img id="bracoDireitoLayer" src="animacao/braco_direito/Corda_E1.png" />
+                <img id="cabecaLayer" src="animacao/cabeca/cabeca0001.png" />
             </div>
-
-            <div id="recordingCanvasContainer">
-              <canvas id="recordingCanvas" width="640" height="360"></canvas>
-              <div id="recordingIndicator" class="recording-indicator">
-                <span class="dot"></span>
-                Gravando vídeo da animação...
-              </div>
-              <div class="bottom-actions">
-                <div class="info">
-                  <span>
-                    <span class="dot"></span>
-                    O canvas captura a animação em tempo real. Use o gravador para gerar um vídeo da execução.
-                  </span>
-                </div>
-                <div class="btn-group-alt">
-                  <button id="startRecordingBtn" class="record small" onclick="startRecording()">
-                    ⬤ Gravar
-                  </button>
-                  <button id="stopRecordingBtn" class="outline small" onclick="stopRecording()" disabled>
-                    ⏹ Parar &amp; Baixar
-                  </button>
-                </div>
-              </div>
+            <div id="countdownOverlay" class="countdownOverlay">
+                <span id="countdownText">3</span>
+                <div id="loadingStatusMini"></div>
             </div>
-          </div>
-
-          <div class="seq-panel">
-            <div class="tab-row">
-              <button class="active" id="tabBaixo" onclick="trocarTab('baixo')">Baixo</button>
-              <button id="tabBateria" onclick="trocarTab('bateria')">Bateria</button>
-            </div>
-
-            <div class="grid-section">
-              <div class="grid-section-header">
-                <div>
-                  <h3>Sequência do Baixo</h3>
-                  <span>16 passos, qualquer nota do campo cromático</span>
-                </div>
-                <div class="tiny-label">Clique nas células para definir as notas</div>
-              </div>
-              <div class="grid-wrapper">
-                <table id="baixoGrid" class="seq-grid">
-                  <thead>
-                    <tr id="baixoGridHeader"></tr>
-                  </thead>
-                  <tbody id="baixoGridBody"></tbody>
-                </table>
-              </div>
-              <div class="controls-row">
-                <div class="group">
-                  <span>Escala / Nota</span>
-                  <select id="notaBaseSelect">
-                    <option value="">Livre</option>
-                    <option value="E">Tonalidade em E</option>
-                    <option value="A">Tonalidade em A</option>
-                    <option value="D">Tonalidade em D</option>
-                    <option value="G">Tonalidade em G</option>
-                  </select>
-                </div>
-                <div class="group">
-                  <span>Variação</span>
-                  <select id="padraoBaixoSelect">
-                    <option value="aleatorio">Aleatório</option>
-                    <option value="quadrado">Quadrado (1,5,9,13)</option>
-                    <option value="walking">Walking simples</option>
-                  </select>
-                </div>
-              </div>
-              <div class="note-input-row">
-                <span>Digitar sequência (separado por vírgula):</span>
-                <input type="text" id="manualSeqInput" placeholder="Ex: 1E, 2F, 3FS, x, 5A..." />
-                <button class="small outline" onclick="aplicarSequenciaManual()">Aplicar</button>
-              </div>
-              <div class="grid-footer">
-                <div class="tip">Use "x" para ghost notes (muted) no baixo.</div>
-                <div class="status-pill" id="baixoStatusLabel">Pronto</div>
-              </div>
-            </div>
-
-            <div class="grid-section" style="margin-top: 8px;">
-              <div class="grid-section-header">
-                <div>
-                  <h3>Sequência da Bateria</h3>
-                  <span>Bumbo, caixa, chimbal, toms, surdo, ataque e condução</span>
-                </div>
-                <div class="tiny-label">Clique nas células de cada linha para ligar/desligar a batida</div>
-              </div>
-              <div class="grid-wrapper">
-                <table id="bateriaGrid" class="seq-grid">
-                  <thead>
-                    <tr id="bateriaGridHeader"></tr>
-                  </thead>
-                  <tbody id="bateriaGridBody"></tbody>
-                </table>
-              </div>
-              <div class="grid-footer">
-                <div class="tip">Cada linha representa uma peça da bateria da musicista.</div>
-                <div class="status-pill" id="bateriaStatusLabel">Pronto</div>
-              </div>
-            </div>
-
-          </div>
         </div>
-      </section>
+
+      </div>
+    </div>
+
+    <div id="bottomArea">
+      <div id="playerControlsRow">
+        <button id="playBtn" disabled>⏳ Carregando...</button>
+        <button id="playAleatorioBtn" disabled>🎲 Aleatório (Smart)</button>
+        <button id="recordVideoBtn">🔴 Gravar (Auto)</button>
+        <span id="generationInfo"></span>
+        <span id="bpmDisplay" style="margin-left:auto">120 BPM</span>
+        <input type="range" id="bpmSlider" min="60" max="180" value="120" />
+        <div class="sliderGroup"><label>Bx</label><input type="range" id="baixoVolume" min="0" max="1" step="0.05" value="0.9" /></div>
+        <div class="sliderGroup"><label>Dr</label><input type="range" id="drumVolume" min="0" max="1" step="0.05" value="0.9" /></div>
+        <button id="playExportadoBtn">📁</button>
+        <button id="exportWavBtn">💾 WAV</button>
+        <button id="addBaixoCol">+1</button>
+        <button id="addCol">+All</button>
+        <button id="duplicateSeq">x2</button>
+        <button id="clearAll">Limpar</button>
+      </div>
+      <div id="progressContainer"><div id="progressBar"></div></div>
+      <div id="gridsArea">
+        <div class="rowContainer"><div class="gridLabel" style="background:transparent;border:none"></div><div id="deleteGrid" class="trackGrid"></div></div>
+        <div class="rowContainer"><div class="gridLabel" style="color:var(--highlight-color)">BAIXO</div><div id="baixoGrid" class="trackGrid"></div></div>
+        <div id="drumGridWrapper"></div>
+      </div>
     </div>
   </div>
+
+  <div id="selectionOverlay"><div id="selectionPanel"><div id="selectionTitle">Nota</div><div id="selectionOptions"></div></div></div>
 
   <script>
-    function verificarOrientacao() {
-      const aviso = document.getElementById("orientationWarning");
-      const isMobile = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      if (isMobile && window.innerHeight > window.innerWidth) {
-        aviso.style.display = "flex";
-      } else {
-        aviso.style.display = "none";
-      }
-    }
-
-    function fecharAvisoOrientacao() {
-      document.getElementById("orientationWarning").style.display = "none";
-    }
-
-    const doc = document;
-
-    const PASTA_POSICOES = [
-      "1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS",
-      "11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B","21C","22CS"
-    ];
-
-    const pastaFolderNames = {
-      1:"1F", 2:"2FS", 3:"3G", 4:"4GS", 5:"5A", 6:"6AS", 7:"7B", 8:"8C",
-      9:"9CS", 10:"10D", 11:"11DS", 12:"12E", 13:"13F", 14:"14FS", 15:"15G",
-      16:"16GS", 17:"17A", 18:"18AS", 19:"19B", 20:"20C", 21:"21CS"
-    };
-
-    const CABECA_TOTAL_FRAMES = 809;
-    const headFrames = [];
-    let headFrameIndex = 0;
-    let headInterval = null;
+    // =========================================================
+    // DADOS & CAMINHOS (ASSETS)
+    // =========================================================
+    const PASTA_BAT = "animacao/Baterista/";
+    const imgCache = new Map();
+    
+    // CONFIGURAÇÃO DE SINCRONIA
+    const DRUM_FPS = 40; // FPS fixo para calcular delay
+    // Impacto no frame index 2 (terceira imagem). 
+    // Ex: Frame 0 (0ms) -> Frame 1 (25ms) -> Frame 2 (50ms - IMPACTO/SOM)
+    const DRUM_IMPACT_FRAME = 2; 
+    const DRUM_MS_PER_FRAME = 1000 / DRUM_FPS;
+    const DRUM_PREROLL_MS = DRUM_IMPACT_FRAME * DRUM_MS_PER_FRAME; // ~50ms de antecipação
 
     const DRUM_ASSETS = {
-      idle: {
-        tronco: "animacao/tronco_baixo/tronco_baixo.png",
-        pernaEsq: "animacao/pernas/pernas.png",
-        bracoDir: "animacao/bateria/braco_dir_idle.png",
-        bracoEsq: "animacao/bateria/braco_esq_idle.png",
-        cabeca: "animacao/bateria/cabeca.png",
-        ataque: "animacao/bateria/ataque_idle.png",
-        conducao: "animacao/bateria/conducao_idle.png"
-      },
-      anim: {
-        troncoTocando: [
-          "animacao/bateria/tronco1.png",
-          "animacao/bateria/tronco2.png",
-          "animacao/bateria/tronco3.png"
-        ],
-        cabeca_estavel: [
-          "animacao/bateria/cabeca1.png",
-          "animacao/bateria/cabeca2.png",
-          "animacao/bateria/cabeca3.png",
-          "animacao/bateria/cabeca2.png"
-        ],
-        perna_duplo: [
-          "animacao/bateria/perna_duplo1.png",
-          "animacao/bateria/perna_duplo2.png"
-        ],
-        bd_caixa: [
-          "animacao/bateria/bd_caixa1.png",
-          "animacao/bateria/bd_caixa2.png",
-          "animacao/bateria/bd_caixa3.png",
-          "animacao/bateria/bd_caixa2.png"
-        ],
-        be_caixa: [
-          "animacao/bateria/be_caixa1.png",
-          "animacao/bateria/be_caixa2.png",
-          "animacao/bateria/be_caixa3.png",
-          "animacao/bateria/be_caixa2.png"
-        ],
-        bd_ataque: [
-          "animacao/bateria/bd_ataque1.png",
-          "animacao/bateria/bd_ataque2.png",
-          "animacao/bateria/bd_ataque3.png",
-          "animacao/bateria/bd_ataque2.png"
-        ],
-        be_ataque: [
-          "animacao/bateria/be_ataque1.png",
-          "animacao/bateria/be_ataque2.png",
-          "animacao/bateria/be_ataque3.png",
-          "animacao/bateria/be_ataque2.png"
-        ],
-        bd_chimbal: [
-          "animacao/bateria/bd_chimbal1.png",
-          "animacao/bateria/bd_chimbal2.png",
-          "animacao/bateria/bd_chimbal3.png",
-          "animacao/bateria/bd_chimbal2.png"
-        ],
-        be_chimbal: [
-          "animacao/bateria/be_chimbal1.png",
-          "animacao/bateria/be_chimbal2.png",
-          "animacao/bateria/be_chimbal3.png",
-          "animacao/bateria/be_chimbal2.png"
-        ],
-        bd_conducao: [
-          "animacao/bateria/bd_conducao1.png",
-          "animacao/bateria/bd_conducao2.png",
-          "animacao/bateria/bd_conducao3.png",
-          "animacao/bateria/bd_conducao2.png"
-        ],
-        be_conducao: [
-          "animacao/bateria/be_conducao1.png",
-          "animacao/bateria/be_conducao2.png",
-          "animacao/bateria/be_conducao3.png",
-          "animacao/bateria/be_conducao2.png"
-        ],
-        bd_surdo: [
-          "animacao/bateria/bd_surdo1.png",
-          "animacao/bateria/bd_surdo2.png",
-          "animacao/bateria/bd_surdo3.png",
-          "animacao/bateria/bd_surdo2.png"
-        ],
-        be_surdo: [
-          "animacao/bateria/be_surdo1.png",
-          "animacao/bateria/be_surdo2.png",
-          "animacao/bateria/be_surdo3.png",
-          "animacao/bateria/be_surdo2.png"
-        ],
-        bd_tom1: [
-          "animacao/bateria/bd_tom1_1.png",
-          "animacao/bateria/bd_tom1_2.png",
-          "animacao/bateria/bd_tom1_3.png",
-          "animacao/bateria/bd_tom1_2.png"
-        ],
-        be_tom1: [
-          "animacao/bateria/be_tom1_1.png",
-          "animacao/bateria/be_tom1_2.png",
-          "animacao/bateria/be_tom1_3.png",
-          "animacao/bateria/be_tom1_2.png"
-        ],
-        bd_tom2: [
-          "animacao/bateria/bd_tom2_1.png",
-          "animacao/bateria/bd_tom2_2.png",
-          "animacao/bateria/bd_tom2_3.png",
-          "animacao/bateria/bd_tom2_2.png"
-        ],
-        be_tom2: [
-          "animacao/bateria/be_tom2_1.png",
-          "animacao/bateria/be_tom2_2.png",
-          "animacao/bateria/be_tom2_3.png",
-          "animacao/bateria/be_tom2_2.png"
-        ],
-        ataquePrato: [
-          "animacao/bateria/ataquePrato1.png",
-          "animacao/bateria/ataquePrato2.png",
-          "animacao/bateria/ataquePrato3.png",
-          "animacao/bateria/ataquePrato2.png"
-        ],
-        conducaoPrato: [
-          "animacao/bateria/conducaoPrato1.png",
-          "animacao/bateria/conducaoPrato2.png",
-          "animacao/bateria/conducaoPrato3.png",
-          "animacao/bateria/conducaoPrato2.png"
-        ]
-      }
+        idle: {
+            ataque: PASTA_BAT + "Ataque/Ataque0001.png",
+            bracoDir: PASTA_BAT + "Braco_direito/Caixa/braco_direito0003.png",
+            bracoEsq: PASTA_BAT + "Braco_esquerdo/Caixa/braco_esquerda0001.png",
+            cabeca: PASTA_BAT + "Cabeca/Cabeca_estavel/cabeca0024.png",
+            conducao: PASTA_BAT + "Conducao/Conducao0001.png",
+            pernaEsq: PASTA_BAT + "Perna_esquerda/Pedal_chimbal/Baterista0001.png",
+            tronco: PASTA_BAT + "Tronco_Perna_direita/Parado/Tronco0001.png",
+            bateria: PASTA_BAT + "Bateria_Chimbal/Bateria.png"
+        },
+        anim: {
+            troncoTocando: Array.from({length:39}, (_,i) => PASTA_BAT + `Tronco_Perna_direita/Tocando/Tronco${String(i+2).padStart(4,'0')}.png`),
+            ataquePrato: Array.from({length:7}, (_,i) => PASTA_BAT + `Ataque/Ataque${String(i+1).padStart(4,'0')}.png`),
+            conducaoPrato: Array.from({length:6}, (_,i) => PASTA_BAT + `Conducao/Conducao${String(i+1).padStart(4,'0')}.png`),
+            
+            bd_ataque: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_direito/Ataque/braco_direito${String(i+5).padStart(4,'0')}.png`),
+            bd_caixa: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_direito/Caixa/braco_direito${String(i+1).padStart(4,'0')}.png`),
+            bd_chimbal: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_direito/Chimbal/braco_direito${String(i+1).padStart(4,'0')}.png`),
+            bd_conducao: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_direito/Conducao/braco_direito${String(i+25).padStart(4,'0')}.png`),
+            bd_surdo: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_direito/Surdo/braco_direito${String(i+21).padStart(4,'0')}.png`),
+            bd_tom1: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_direito/Tom_1/braco_direito${String(i+13).padStart(4,'0')}.png`),
+            bd_tom2: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_direito/Tom_2/braco_direito${String(i+17).padStart(4,'0')}.png`),
+
+            be_ataque: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_esquerdo/Ataque/braco_esquerda${String(i+9).padStart(4,'0')}.png`),
+            be_caixa: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_esquerdo/Caixa/braco_esquerda${String(i+1).padStart(4,'0')}.png`),
+            be_chimbal: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_esquerdo/Chimbal/braco_esquerda${String(i+5).padStart(4,'0')}.png`),
+            be_conducao: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_esquerdo/Conducao/braco_esquerda${String(i+25).padStart(4,'0')}.png`),
+            be_surdo: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_esquerdo/Surdo/braco_esquerda${String(i+21).padStart(4,'0')}.png`),
+            be_tom1: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_esquerdo/Tom_1/braco_esquerda${String(i+13).padStart(4,'0')}.png`),
+            be_tom2: Array.from({length:4}, (_,i) => PASTA_BAT + `Braco_esquerdo/Tom_2/braco_esquerda${String(i+17).padStart(4,'0')}.png`),
+
+            cabeca_estavel: Array.from({length:26}, (_,i) => PASTA_BAT + `Cabeca/Cabeca_estavel/cabeca${String(i+1).padStart(4,'0')}.png`),
+            perna_duplo: [ PASTA_BAT+"Perna_esquerda/Pedal_duplo/Baterista0002.png", PASTA_BAT+"Perna_esquerda/Pedal_duplo/Baterista0003.png" ]
+        }
     };
 
-    const domImages = {
-      bx_troncoBaixo: null,
-      bx_cabeca: null,
-      bx_pernas: null,
-      bx_bracoDir: null,
-      bx_maoEsq: null,
-      bt_tronco: null,
-      bt_pernaEsq: null,
-      bt_bracoDir: null,
-      bt_bracoEsq: null,
-      bt_cabeca: null,
-      bt_ataque: null,
-      bt_conducao: null
-    };
+    const pastaMap = { 1: ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B"], 2: ["3FS","4G","5GS","6A","8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C"], 3: ["4G","5GS","6A","7AS","9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS"], 4: ["5GS","6A","7AS","8B","10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D"], 5: ["6A","7AS","8B","9C","11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS"], 6: ["7AS","8B","9C","10CS","12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E"], 7: ["8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F"], 8: ["9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS"], 9: ["10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G"], 10: ["11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS"], 11: ["12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A"], 12: ["13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS"], 13: ["14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B"], 14: ["15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C"], 15: ["16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS"], 16: ["17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D"], 17: ["18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS"], 18: ["19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E"], 19: ["20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F"], 20: ["21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS","36DS","37E","38F","39FS"], 21: ["22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D","37E","38F","39FS","40G"], 22: ["23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS","38F","39FS","40G","41GS"], 23: ["24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E","39FS","40G","41GS","42A"], 24: ["25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F","40G","41GS","42A","43AS"] };
+    const pastaFolderNames = { 1:"1F", 2:"2FS", 3:"3G", 4:"4GS", 5:"5A", 6:"6AS", 7:"7B", 8:"8C", 9:"9CS", 10:"10D", 11:"11DS", 12:"12E", 13:"13F", 14:"14FS", 15:"15G", 16:"16GS", 17:"17A", 18:"18AS", 19:"19B", 20:"20C", 21:"21CS", 22:"22D", 23:"23DS", 24:"24E" };
+    const notasValidas = ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B","21C","22CS","23D","24DS","25E","26F","27FS","28G","29GS","30A","31AS","32B","33C","34CS","35D","36DS","37E","38F","39FS","40G","41GS","42A","43AS"];
+    const drumLines = [
+      { id: "bumbo", label: "Bumbo", file: "bumbo.mp3" }, { id: "caixa", label: "Caixa", file: "caixa.mp3" }, { id: "caixaAro", label: "Aro", file: "caixaAro.mp3" }, { id: "chimbal", label: "HH", file: "chimbal.mp3" }, { id: "chimbal_pedal", label: "HH Ped", file: "chimbal-pedal.mp3" }, { id: "chimbalaberto", label: "HH Open", file: "chimbal-aberto.mp3" }, { id: "ataque", label: "Ataque", file: "ataque.mp3" }, { id: "tom1", label: "Tom 1", file: "tom-1.mp3" }, { id: "tom2", label: "Tom 2", file: "tom-2.mp3" }, { id: "surdo", label: "Surdo", file: "surdo.mp3" }, { id: "conducao", label: "Ride", file: "conducao.mp3" }, { id: "conducao_centro", label: "Ride C", file: "conducao-centro.mp3" }
+    ];
 
+    const PITCHES = ['A','AS','B','C','CS','D','DS','E','F','FS','G','GS'];
+    const DEGREE_TO_ROOT = { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11 };
+    const STYLE_PROGRESSIONS = {
+        Rock: [[1,4,5,1], [1,5,6,4]], Rock2: [[4,5,1,5], [5,4,1,4]], Rock3: [[1,4,5,1], [1,3,4,5]], Rock4: [[6,4,1,5], [1,4,5,1]], Rock5: [[1,5,7,4]], Rock6: [[1,5,6,4]], Rock7: [[2,3,5,1]], Rock_Progressivo: [[4,5,1,1]], Blues: [[1,4,5,4]], Forró: [[1,5,1,5]], Samba: [[2,5,1,1]], Metal: [[1,3,5,6]], Jazz: [[1,2,5,1]]
+    };
+    const ALL_GROOVES = [
+        { name: "Rock", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch bu"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 8] },
+        { name: "Blues", meter: "4/4", drumPattern: ["bch - ch ch cch - ch ch bch - ch ch cch - ch ch"], bassRhythm: ["bo - bo - bo - bo - bo - bo - bo - bo -"], bassScale: [1, 3, 5, 6, 8, 6, 5, 3] },
+        { name: "Forró", meter: "2/4", drumPattern: ["bch - co - ch - ca -"], bassRhythm: ["bo - - - x - - -"], bassScale: [8, 1] },
+        { name: "Funk", meter: "4/4", drumPattern: ["bch - ch - cch - ch - bch - ch - cch - ch -"], bassRhythm: ["bo - - - bo - bo x bo x bo x bo - x x"], bassScale: [1,8] },
+        { name: "Disco", meter: "4/4", drumPattern: ["bu - ch ch bu - ch ch bu - ch ch bu - ch ch"], bassRhythm: ["bo - x x bo - x x bo - x x bo - x x"], bassScale: [1] },
+        { name: "Metal", meter: "4/4", drumPattern: ["bch bu bch bu cch bu bch bu bch bu bch bu cch bu bch bu"], bassRhythm: ["bo bo bo bo bo bo bo bo bo bo bo bo bo bo bo bo"], bassScale: [1] },
+        { name: "Samba", meter: "2/4", drumPattern: ["bch - ch bu bch - ch bu"], bassRhythm: ["bo - x x bo - - x"], bassScale: [8, 5] },
+    ];
+
+    let isPlaying = false, playbackInterval = null, bpmAtual = 120, atualPasso = 0;
+    let baixoSeq = Array(16).fill(""), bateriaSeq = {};
+    drumLines.forEach(d => bateriaSeq[d.id] = Array(16).fill("x"));
+    let baixoVolumeGlobal = 0.9, bateriaVolumeGlobal = 0.9, audioBaixoAtual = null;
+
+    let posicaoAtualPasta = 1, ultimaCordaUsada = "E", ultimaNotaReal = "1E";
+    let headLoopTimer = null, headFrameIndex = 0, headFrames = [];
+
+    // Animation Controllers (RAF)
+    let activeAnimations = {}; 
+    let lastDrumStep = {}; 
+    let lastArmUsed = {};  
+    let pendulumStartTime = 0;
+    
     const canvas = document.getElementById("recordingCanvas");
     const ctx = canvas.getContext("2d");
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const audioBuffers = {};
     const mediaStreamDestination = audioContext.createMediaStreamDestination();
-    let mediaRecorder = null;
-    let recordedChunks = [];
+    let mediaRecorder = null, recordedChunks = [], isRecording = false;
 
-    const drumLines = [
-      { id: "bumbo", label: "Bumbo", file: "bumbo.mp3" },
-      { id: "caixa", label: "Caixa", file: "caixa.mp3" },
-      { id: "caixaAro", label: "Aro", file: "caixaAro.mp3" },
-      { id: "chimbal", label: "HH Fechado", file: "chimbal.mp3" },
-      { id: "chimbalaberto", label: "HH Open", file: "chimbal-aberto.mp3" },
-      { id: "chimbalpedal", label: "HH Pedal", file: "chimbal-pedal.mp3" },
-      { id: "ataque", label: "Ataque", file: "ataque.mp3" },
-      { id: "conducao", label: "Condução", file: "conducao.mp3" },
-      { id: "conducao_centro", label: "Ride C", file: "conducao-centro.mp3" },
-      { id: "tom1", label: "Tom 1", file: "tom-1.mp3" },
-      { id: "tom2", label: "Tom 2", file: "tom-2.mp3" },
-      { id: "surdo", label: "Surdo", file: "surdo.mp3" }
-    ];
+    const domImages = {
+        bx_pernas: document.getElementById("pernasLayer"),
+        bx_cabecaTras: document.getElementById("cabecaTrasLayer"),
+        bx_tronco: document.getElementById("troncoBaixoLayer"),
+        bx_antebraco: document.getElementById("antebracoLayer"),
+        bx_bracoDir: document.getElementById("bracoDireitoLayer"),
+        bx_cabeca: document.getElementById("cabecaLayer"),
+        
+        bt_ataque: document.getElementById("bat_Ataque"),
+        bt_bracoDir: document.getElementById("bat_BracoDir"),
+        bt_bracoEsq: document.getElementById("bat_BracoEsq"),
+        bt_cabeca: document.getElementById("bat_Cabeca"),
+        bt_conducao: document.getElementById("bat_Conducao"),
+        bt_pernaEsq: document.getElementById("bat_PernaEsq"),
+        bt_tronco: document.getElementById("bat_Tronco"),
+        bt_kit: document.getElementById("bat_Bateria")
+    };
 
-    const PITCHES = ['A','AS','B','C','CS','D','DS','E','F','FS','G','GS'];
-    const NOTE_NUMBERS = Array.from({length: 49}, (_,i) => i+1);
+    window.onload = async () => {
+        verificarOrientacao();
+        window.addEventListener("resize", verificarOrientacao);
+        for (let i = 1; i <= 100; i++) headFrames.push(`animacao/cabeca/cabeca${String(i).padStart(4, "0")}.png`);
+        await preloadBaseAssets();
+        startHeadLoop();
+        gerarAleatorio();
+        setCachedSrc(domImages.bt_kit, DRUM_ASSETS.idle.bateria);
+        setCachedSrc(domImages.bt_tronco, DRUM_ASSETS.idle.tronco);
+        setCachedSrc(domImages.bt_cabeca, DRUM_ASSETS.idle.cabeca);
+        setCachedSrc(domImages.bt_bracoDir, DRUM_ASSETS.idle.bracoDir);
+        setCachedSrc(domImages.bt_bracoEsq, DRUM_ASSETS.idle.bracoEsq);
+        setCachedSrc(domImages.bt_pernaEsq, DRUM_ASSETS.idle.pernaEsq);
+        setCachedSrc(domImages.bt_conducao, DRUM_ASSETS.idle.conducao);
+        setCachedSrc(domImages.bt_ataque, DRUM_ASSETS.idle.ataque);
+        setCachedSrc(domImages.bx_tronco, `animacao/tronco_baixo/Pasta_1F/1E.png`);
+        renderGrids();
+        setupListeners();
+        requestAnimationFrame(canvasRenderLoop);
+    };
 
-    let currentTab = "baixo";
-    let isPlaying = false;
-    let playbackInterval = null;
-    let bpmAtual = 90;
-    let steps = 16, atualPasso = 0;
-    let baixoSeq = Array(16).fill(""), bateriaSeq = {};
-    drumLines.forEach(d => bateriaSeq[d.id] = Array(16).fill("x"));
-    let baixoVolumeGlobal = 0.9, bateriaVolumeGlobal = 0.9, audioBaixoAtual = null;
-
-    let posicaoAtualPasta = 1, ultimaCordaUsada = "E", rightHandTimer = null;
-    let penduloTimer = null;
-    let drumTimers = {};
-    let lastDrumStep = {};
-    let lastArmUsed = {};
-
-    const animacaoStage = document.getElementById("animacaoStage");
-    function initAnimacaoStage() {
-      animacaoStage.innerHTML = "";
-
-      const bx_pernas = document.createElement("img");
-      bx_pernas.id = "bx_pernas";
-      bx_pernas.src = "animacao/pernas/pernas.png";
-      bx_pernas.style.left = "50%";
-      bx_pernas.style.bottom = "7%";
-      bx_pernas.style.transform = "translateX(-50%)";
-      bx_pernas.style.zIndex = "4";
-
-      const bx_troncoBaixo = document.createElement("img");
-      bx_troncoBaixo.id = "bx_troncoBaixo";
-      bx_troncoBaixo.src = "animacao/tronco_baixo/tronco_baixo.png";
-      bx_troncoBaixo.style.left = "50%";
-      bx_troncoBaixo.style.bottom = "7%";
-      bx_troncoBaixo.style.transform = "translateX(-50%)";
-      bx_troncoBaixo.style.zIndex = "5";
-
-      const bx_cabeca = document.createElement("img");
-      bx_cabeca.id = "bx_cabeca";
-      bx_cabeca.src = "animacao/cabeca/cabeca0001.png";
-      bx_cabeca.style.left = "50%";
-      bx_cabeca.style.bottom = "53%";
-      bx_cabeca.style.transform = "translateX(-50%)";
-      bx_cabeca.style.zIndex = "8";
-
-      const bx_bracoDir = document.createElement("img");
-      bx_bracoDir.id = "bx_bracoDir";
-      bx_bracoDir.src = "animacao/braco_direito/Corda_E1.png";
-      bx_bracoDir.style.left = "54%";
-      bx_bracoDir.style.bottom = "40%";
-      bx_bracoDir.style.zIndex = "7";
-
-      const bx_maoEsq = document.createElement("img");
-      bx_maoEsq.id = "bx_maoEsq";
-      bx_maoEsq.src = "animacao/tronco_baixo/Pasta_1F/1E.png";
-      bx_maoEsq.style.left = "46%";
-      bx_maoEsq.style.bottom = "27%";
-      bx_maoEsq.style.zIndex = "6";
-
-      const bt_pernaEsq = document.createElement("img");
-      bt_pernaEsq.id = "bt_pernaEsq";
-      bt_pernaEsq.src = DRUM_ASSETS.idle.pernaEsq;
-      bt_pernaEsq.style.left = "22%";
-      bt_pernaEsq.style.bottom = "7%";
-      bt_pernaEsq.style.zIndex = "3";
-
-      const bt_tronco = document.createElement("img");
-      bt_tronco.id = "bt_tronco";
-      bt_tronco.src = DRUM_ASSETS.idle.tronco;
-      bt_tronco.style.left = "22%";
-      bt_tronco.style.bottom = "7%";
-      bt_tronco.style.zIndex = "4";
-
-      const bt_cabeca = document.createElement("img");
-      bt_cabeca.id = "bt_cabeca";
-      bt_cabeca.src = DRUM_ASSETS.idle.cabeca;
-      bt_cabeca.style.left = "22%";
-      bt_cabeca.style.bottom = "42%";
-      bt_cabeca.style.zIndex = "6";
-
-      const bt_bracoDir = document.createElement("img");
-      bt_bracoDir.id = "bt_bracoDir";
-      bt_bracoDir.src = DRUM_ASSETS.idle.bracoDir;
-      bt_bracoDir.style.left = "26%";
-      bt_bracoDir.style.bottom = "36%";
-      bt_bracoDir.style.zIndex = "11";
-
-      const bt_bracoEsq = document.createElement("img");
-      bt_bracoEsq.id = "bt_bracoEsq";
-      bt_bracoEsq.src = DRUM_ASSETS.idle.bracoEsq;
-      bt_bracoEsq.style.left = "18%";
-      bt_bracoEsq.style.bottom = "36%";
-      bt_bracoEsq.style.zIndex = "10";
-
-      const bt_ataque = document.createElement("img");
-      bt_ataque.id = "bt_ataque";
-      bt_ataque.src = DRUM_ASSETS.idle.ataque;
-      bt_ataque.style.left = "8%";
-      bt_ataque.style.bottom = "48%";
-      bt_ataque.style.zIndex = "2";
-
-      const bt_conducao = document.createElement("img");
-      bt_conducao.id = "bt_conducao";
-      bt_conducao.src = DRUM_ASSETS.idle.conducao;
-      bt_conducao.style.left = "32%";
-      bt_conducao.style.bottom = "49%";
-      bt_conducao.style.zIndex = "2";
-
-      animacaoStage.appendChild(bx_pernas);
-      animacaoStage.appendChild(bx_troncoBaixo);
-      animacaoStage.appendChild(bx_cabeca);
-      animacaoStage.appendChild(bx_bracoDir);
-      animacaoStage.appendChild(bx_maoEsq);
-
-      animacaoStage.appendChild(bt_pernaEsq);
-      animacaoStage.appendChild(bt_tronco);
-      animacaoStage.appendChild(bt_cabeca);
-      animacaoStage.appendChild(bt_bracoDir);
-      animacaoStage.appendChild(bt_bracoEsq);
-      animacaoStage.appendChild(bt_ataque);
-      animacaoStage.appendChild(bt_conducao);
-
-      domImages.bx_troncoBaixo = bx_troncoBaixo;
-      domImages.bx_cabeca = bx_cabeca;
-      domImages.bx_pernas = bx_pernas;
-      domImages.bx_bracoDir = bx_bracoDir;
-      domImages.bx_maoEsq = bx_maoEsq;
-
-      domImages.bt_tronco = bt_tronco;
-      domImages.bt_pernaEsq = bt_pernaEsq;
-      domImages.bt_bracoDir = bt_bracoDir;
-      domImages.bt_bracoEsq = bt_bracoEsq;
-      domImages.bt_cabeca = bt_cabeca;
-      domImages.bt_ataque = bt_ataque;
-      domImages.bt_conducao = bt_conducao;
-    }
-
-    function startHeadLoop() {
-      if (headInterval) clearInterval(headInterval);
-      headInterval = setInterval(() => {
-        headFrameIndex = (headFrameIndex + 1) % CABECA_TOTAL_FRAMES;
-        const frameNumber = String(headFrameIndex + 1).padStart(4, "0");
-        if (domImages.bx_cabeca) {
-          domImages.bx_cabeca.src = `animacao/cabeca/cabeca${frameNumber}.png`;
-        }
-      }, 60);
-    }
-
-    function startPenduloAnim() {
-      if (penduloTimer) clearInterval(penduloTimer);
-      let t = 0;
-      const amplitude = 3;
-      const velocidade = 0.065;
-      const pendulares = [domImages.bx_troncoBaixo, domImages.bx_cabeca, domImages.bx_pernas];
-
-      penduloTimer = setInterval(() => {
-        t += velocidade;
-        const ang = Math.sin(t) * amplitude;
-        const rot = "rotate(" + ang + "deg)";
-        pendulares.forEach(el => {
-          if (el) el.style.transform = `translateX(-50%) ${rot}`;
+    function loadAndCache(url) {
+        if (imgCache.has(url)) return Promise.resolve(imgCache.get(url));
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => { imgCache.set(url, img); resolve(img); };
+            img.onerror = () => { console.warn("Fail load", url); resolve(null); };
+            img.src = url;
         });
-      }, 30);
     }
 
-    function stopPenduloAnim() {
-      clearInterval(penduloTimer);
-      penduloTimer = null;
-      [domImages.bx_troncoBaixo, domImages.bx_cabeca, domImages.bx_pernas].forEach(el => {
-        if (el) el.style.transform = "translateX(-50%) rotate(0deg)";
-      });
+    function setCachedSrc(element, url) {
+        if (!url) return;
+        if (imgCache.has(url)) {
+            const cached = imgCache.get(url);
+            if(element.src !== cached.src) element.src = cached.src;
+        } else {
+            element.src = url;
+        }
     }
 
-    function escolherMelhorPasta(nota, posAtual) {
-      const idx = PASTA_POSICOES.indexOf(nota);
-      if (idx < 0) return posAtual;
-      const targetPos = idx + 1;
-      return targetPos;
+    async function preloadBaseAssets() {
+        const toLoad = Object.values(DRUM_ASSETS.idle);
+        toLoad.push("animacao/pernas/Pernas.png");
+        toLoad.push("animacao/cabeca_tras/cabeca-parte-de-tras.png");
+        toLoad.push("animacao/antebraco/antebracoE.png");
+        const total = toLoad.length;
+        let loaded = 0;
+        const progressBar = document.getElementById("loadingBar");
+        await Promise.all(toLoad.map(src => loadAndCache(src).then(() => {
+            loaded++;
+            progressBar.style.width = (loaded/total)*100 + "%";
+        })));
+        document.getElementById("loadingOverlay").style.opacity = "0";
+        setTimeout(() => { 
+            document.getElementById("loadingOverlay").style.display = "none"; 
+            document.getElementById("playBtn").disabled = false; document.getElementById("playBtn").innerText = "▶ Play";
+            document.getElementById("playAleatorioBtn").disabled = false;
+        }, 500);
     }
 
-    function animarBaixo(nota, duracaoMs) {
-      if (!nota || nota === "") {
-        stopRightHand();
-        return;
-      }
-
-      const idx = PASTA_POSICOES.indexOf(nota);
-      if (idx === -1) return;
-
-      let proximaPasta = escolherMelhorPasta(nota, posicaoAtualPasta);
-      posicaoAtualPasta = proximaPasta;
-      ultimaCordaUsada = detectarCorda(nota);
-
-      const pastaNome = pastaFolderNames[posicaoAtualPasta] || "1F";
-      domImages.bx_maoEsq.src = `animacao/tronco_baixo/Pasta_${pastaNome}/${nota}.png`;
-
-      animarMaoDireita(ultimaCordaUsada, duracaoMs);
+    async function prepararAssetsDaSequencia() {
+        const miniStatus = document.getElementById("loadingStatusMini");
+        miniStatus.innerText = "Preparando Animação...";
+        const assetsNecessarios = new Set();
+        let pastaCalc = 1;
+        for (let i = 0; i < baixoSeq.length; i++) {
+            const nota = baixoSeq[i];
+            if (nota !== "" && nota !== "x") {
+                pastaCalc = escolherMelhorPasta(nota, pastaCalc);
+                const pastaNome = pastaFolderNames[pastaCalc];
+                assetsNecessarios.add(`animacao/tronco_baixo/Pasta_${pastaNome}/${nota}.png`);
+                assetsNecessarios.add(`animacao/antebraco/antebraco${getCordaDaNota(nota)}.png`);
+                const c = getCordaDaNota(nota);
+                for(let f=1; f<=5; f++) assetsNecessarios.add(`animacao/braco_direito/Corda_${c}${f}.png`);
+            }
+        }
+        const allDrumKeys = Object.keys(bateriaSeq);
+        for (let k of allDrumKeys) {
+            const line = bateriaSeq[k];
+            if (line.some(x => x !== "x")) {
+                if(k === 'bumbo') DRUM_ASSETS.anim.perna_duplo.forEach(u => assetsNecessarios.add(u));
+                else {
+                    if(DRUM_ASSETS.anim['bd_'+k]) DRUM_ASSETS.anim['bd_'+k].forEach(u => assetsNecessarios.add(u));
+                    if(DRUM_ASSETS.anim['be_'+k]) DRUM_ASSETS.anim['be_'+k].forEach(u => assetsNecessarios.add(u));
+                }
+            }
+        }
+        DRUM_ASSETS.anim.troncoTocando.forEach(u => assetsNecessarios.add(u));
+        DRUM_ASSETS.anim.cabeca_estavel.forEach(u => assetsNecessarios.add(u));
+        const lista = Array.from(assetsNecessarios);
+        await Promise.all(lista.map(u => loadAndCache(u)));
+        miniStatus.innerText = "";
     }
 
-    function detectarCorda(nota) {
-      const n = parseInt(nota, 10);
-      if (isNaN(n)) return "E";
-      if (n <= 12) return "E";
-      if (n <= 24) return "A";
-      if (n <= 36) return "D";
-      return "G";
+    function setupListeners() {
+        document.getElementById("playBtn").onclick = togglePlay;
+        document.getElementById("recordVideoBtn").onclick = toggleRecording;
+        document.getElementById("bpmSlider").oninput = (e) => { bpmAtual = parseInt(e.target.value); document.getElementById("bpmDisplay").textContent = bpmAtual + " BPM"; };
+        document.getElementById("baixoVolume").oninput = (e) => baixoVolumeGlobal = parseFloat(e.target.value);
+        document.getElementById("drumVolume").oninput = (e) => bateriaVolumeGlobal = parseFloat(e.target.value);
+        document.getElementById("addBaixoCol").onclick = () => { baixoSeq.push(""); renderGrids(); };
+        document.getElementById("addCol").onclick = () => { baixoSeq.push(""); Object.keys(bateriaSeq).forEach(k => bateriaSeq[k].push("x")); renderGrids(); };
+        document.getElementById("duplicateSeq").onclick = () => { baixoSeq = [...baixoSeq, ...baixoSeq]; Object.keys(bateriaSeq).forEach(k => bateriaSeq[k] = [...bateriaSeq[k], ...bateriaSeq[k]]); renderGrids(); };
+        document.getElementById("clearAll").onclick = () => { baixoSeq.fill(""); Object.keys(bateriaSeq).forEach(k => bateriaSeq[k].fill("x")); renderGrids(); };
+        document.getElementById("playAleatorioBtn").onclick = gerarAleatorio;
+        document.getElementById("playExportadoBtn").onclick = importarJSON;
+        document.getElementById("exportWavBtn").onclick = exportarWAV;
     }
 
-    let drumAnimationRunning = false;
+    function deleteColumn(idx) {
+        if (baixoSeq.length <= 1) return;
+        baixoSeq.splice(idx, 1);
+        Object.keys(bateriaSeq).forEach(key => bateriaSeq[key].splice(idx, 1));
+        renderGrids();
+    }
+
+    function canvasRenderLoop() {
+        ctx.fillStyle = "#111"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.save();
+        ctx.scale(0.45, 0.45); ctx.translate(350, -180); 
+        const drawImg = (el) => { if (el && el.complete && el.naturalWidth > 0) ctx.drawImage(el, 0, 0); };
+        drawImg(domImages.bt_conducao);
+        drawImg(domImages.bt_pernaEsq);
+        drawImg(domImages.bt_tronco);
+        drawImg(domImages.bt_cabeca);
+        const zEsq = parseInt(domImages.bt_bracoEsq.style.zIndex || 10);
+        if (zEsq > 11) { drawImg(domImages.bt_bracoDir); drawImg(domImages.bt_bracoEsq); } else { drawImg(domImages.bt_bracoEsq); drawImg(domImages.bt_bracoDir); }
+        drawImg(domImages.bt_kit);
+        drawImg(domImages.bt_ataque);
+        ctx.restore();
+        if (domImages.bx_pernas.complete) ctx.drawImage(domImages.bx_pernas, 64, 332);
+        ctx.save(); 
+        ctx.translate(260, 416); 
+        let angle = 0;
+        if (isPlaying && pendulumStartTime > 0) {
+            const now = performance.now();
+            const elapsed = now - pendulumStartTime;
+            const speed = 0.003 * (bpmAtual / 120);
+            angle = Math.sin(elapsed * speed) * 2.3;
+        }
+        ctx.rotate(angle * Math.PI / 180); 
+        document.getElementById("bodyWrapperPendulo").style.transform = `rotate(${angle}deg)`;
+        ctx.translate(-260, -416);
+        if (domImages.bx_cabecaTras.complete) ctx.drawImage(domImages.bx_cabecaTras, 100, 60);
+        if (domImages.bx_tronco.complete) ctx.drawImage(domImages.bx_tronco, 0, 132);
+        if (domImages.bx_antebraco.complete) ctx.drawImage(domImages.bx_antebraco, -2, 179);
+        if (domImages.bx_bracoDir.complete) ctx.drawImage(domImages.bx_bracoDir, -5, 250);
+        if (domImages.bx_cabeca.complete) ctx.drawImage(domImages.bx_cabeca, 70, 37);
+        ctx.restore();
+        requestAnimationFrame(canvasRenderLoop);
+    }
+
+    function runFrameAnimation(elementId, frames, idleFrame, fps = 30, loop = false) {
+        const el = typeof elementId === 'string' ? document.getElementById(elementId) : elementId;
+        const start = performance.now();
+        const frameDuration = 1000 / fps;
+        if (activeAnimations[el.id]) cancelAnimationFrame(activeAnimations[el.id]);
+        const animate = (now) => {
+            const elapsed = now - start;
+            let index = Math.floor(elapsed / frameDuration);
+            if (loop) {
+                index = index % frames.length;
+                setCachedSrc(el, frames[index]);
+                activeAnimations[el.id] = requestAnimationFrame(animate);
+            } else {
+                if (index < frames.length) {
+                    setCachedSrc(el, frames[index]);
+                    activeAnimations[el.id] = requestAnimationFrame(animate);
+                } else {
+                    if (idleFrame) setCachedSrc(el, idleFrame);
+                    delete activeAnimations[el.id];
+                    if(el.id === 'bat_BracoEsq') el.style.zIndex = 10;
+                }
+            }
+        };
+        activeAnimations[el.id] = requestAnimationFrame(animate);
+    }
 
     function playDrumAnimation(drumType, currentStep) {
-      const fps = 40; 
-      
-      if (!drumTimers.tronco && isPlaying) {
-        let tIdx = 0; const tFrames = DRUM_ASSETS.anim.troncoTocando;
-        drumTimers.tronco = setInterval(() => {
-          domImages.bt_tronco.src = tFrames[tIdx]; tIdx = (tIdx + 1) % tFrames.length;
-        }, 30);
-      }
-
-      if (!drumTimers.cabeca && isPlaying) {
-        let cIdx = 0; const cFrames = DRUM_ASSETS.anim.cabeca_estavel;
-        drumTimers.cabeca = setInterval(() => {
-          domImages.bt_cabeca.src = cFrames[cIdx]; cIdx = (cIdx + 1) % cFrames.length;
-        }, 40); 
-      }
-
-      if (drumType === 'start') return;
-
-      if (drumType === 'bumbo') {
-        const prevStepIndex = (currentStep === 0) ? baixoSeq.length - 1 : currentStep - 1;
-        const isConsecutive = (bateriaSeq['bumbo'][prevStepIndex] === 'bumbo');
-        if (isConsecutive) {
-          domImages.bt_pernaEsq.src = DRUM_ASSETS.anim.perna_duplo[0];
-          setTimeout(() => { domImages.bt_pernaEsq.src = DRUM_ASSETS.anim.perna_duplo[1]; }, 40);
-          setTimeout(() => { domImages.bt_pernaEsq.src = DRUM_ASSETS.idle.pernaEsq; }, 90);
-        } 
-        return;
-      }
-
-      const prevHitStep = lastDrumStep[drumType];
-      const isRapidRepeat = (prevHitStep !== undefined && (currentStep - prevHitStep === 1 || (currentStep===0 && prevHitStep === baixoSeq.length-1)));
-
-      let armToUse = 'right';
-      if (drumType === 'caixa' || drumType === 'caixaAro') armToUse = 'left'; 
-
-      if (isRapidRepeat && lastArmUsed[drumType]) {
-        armToUse = (lastArmUsed[drumType] === 'right') ? 'left' : 'right';
-      }
-
-      lastDrumStep[drumType] = currentStep;
-      lastArmUsed[drumType] = armToUse;
-
-      if (armToUse === 'left') {
-        if (['ataque', 'tom1', 'tom2', 'surdo', 'conducao', 'conducao_centro'].includes(drumType)) {
-          domImages.bt_bracoEsq.style.zIndex = 12;
-        } else {
-          domImages.bt_bracoEsq.style.zIndex = 10;
+        if (!activeAnimations['bat_Tronco'] && isPlaying) {
+            runFrameAnimation(domImages.bt_tronco, DRUM_ASSETS.anim.troncoTocando, null, 30, true);
         }
-      } else {
-        domImages.bt_bracoEsq.style.zIndex = 10;
-      }
-
-      let frames = [];
-      const isLeft = (armToUse === 'left');
-      
-      if (!isLeft) {
-        if(drumType === 'caixa' || drumType === 'caixaAro') frames = DRUM_ASSETS.anim.bd_caixa;
-        else if(drumType === 'ataque') frames = DRUM_ASSETS.anim.bd_ataque;
-        else if(drumType === 'chimbal' || drumType === 'chimbalaberto') frames = DRUM_ASSETS.anim.bd_chimbal;
-        else if(drumType === 'conducao' || drumType === 'conducao_centro') frames = DRUM_ASSETS.anim.bd_conducao;
-        else if(drumType === 'surdo') frames = DRUM_ASSETS.anim.bd_surdo;
-        else if(drumType === 'tom1') frames = DRUM_ASSETS.anim.bd_tom1;
-        else if(drumType === 'tom2') frames = DRUM_ASSETS.anim.bd_tom2;
-        else frames = DRUM_ASSETS.anim.bd_caixa; 
-      } else {
-        if(drumType === 'caixa' || drumType === 'caixaAro') frames = DRUM_ASSETS.anim.be_caixa;
-        else if(drumType === 'ataque') frames = DRUM_ASSETS.anim.be_ataque;
-        else if(drumType === 'chimbal' || drumType === 'chimbalaberto') frames = DRUM_ASSETS.anim.be_chimbal;
-        else if(drumType === 'conducao' || drumType === 'conducao_centro') frames = DRUM_ASSETS.anim.be_conducao;
-        else if(drumType === 'surdo') frames = DRUM_ASSETS.anim.be_surdo;
-        else if(drumType === 'tom1') frames = DRUM_ASSETS.anim.be_tom1;
-        else if(drumType === 'tom2') frames = DRUM_ASSETS.anim.be_tom2;
-        else frames = DRUM_ASSETS.anim.be_caixa;
-      }
-
-      if(drumType === 'ataque') animateProp(domImages.bt_ataque, DRUM_ASSETS.anim.ataquePrato, DRUM_ASSETS.idle.ataque);
-      if(drumType === 'conducao' || drumType === 'conducao_centro') animateProp(domImages.bt_conducao, DRUM_ASSETS.anim.conducaoPrato, DRUM_ASSETS.idle.conducao);
-
-      const imgEl = !isLeft ? domImages.bt_bracoDir : domImages.bt_bracoEsq;
-      const timerKey = !isLeft ? 'bracoDir' : 'bracoEsq';
-      
-      clearInterval(drumTimers[timerKey]);
-
-      if (frames && frames.length > 0) {
-        imgEl.src = frames[0];
-      } else {
-        return;
-      }
-
-      let fIdx = 1;
-      
-      drumTimers[timerKey] = setInterval(() => {
-        if (fIdx < frames.length) {
-          imgEl.src = frames[fIdx];
-          fIdx++;
-        } else {
-          clearInterval(drumTimers[timerKey]);
-          imgEl.src = !isLeft ? DRUM_ASSETS.idle.bracoDir : DRUM_ASSETS.idle.bracoEsq;
-          if (isLeft) domImages.bt_bracoEsq.style.zIndex = 10;
+        if (!activeAnimations['bat_Cabeca'] && isPlaying) {
+            runFrameAnimation(domImages.bt_cabeca, DRUM_ASSETS.anim.cabeca_estavel, null, 25, true);
         }
-      }, 1000 / fps);
-    }
-
-    function animateProp(el, frames, idleSrc) {
-      if (frames && frames.length > 0) {
-        el.src = frames[0];
-      }
-      let i = 1;
-      const t = setInterval(() => {
-        if (i < frames.length) {
-          el.src = frames[i];
-          i++;
-        } else {
-          clearInterval(t);
-          el.src = idleSrc;
-        }
-      }, 35);
-    }
-
-    function resetDrummer() {
-      Object.values(drumTimers).forEach(t => clearInterval(t));
-      drumTimers = {};
-      lastDrumStep = {};
-      
-      domImages.bt_tronco.src = DRUM_ASSETS.idle.tronco;
-      domImages.bt_pernaEsq.src = DRUM_ASSETS.idle.pernaEsq;
-      domImages.bt_bracoDir.src = DRUM_ASSETS.idle.bracoDir;
-      domImages.bt_bracoEsq.src = DRUM_ASSETS.idle.bracoEsq;
-      domImages.bt_bracoEsq.style.zIndex = 10;
-      
-      domImages.bt_cabeca.src = DRUM_ASSETS.idle.cabeca;
-      domImages.bt_ataque.src = DRUM_ASSETS.idle.ataque;
-      domImages.bt_conducao.src = DRUM_ASSETS.idle.conducao;
-    }
-
-    function initHeadFrames() {
-      for (let i = 1; i <= CABECA_TOTAL_FRAMES; i++) {
-        const num = String(i).padStart(4, "0");
-        headFrames.push(`animacao/cabeca/cabeca${num}.png`);
-      }
-    }
-
-    const baixoGridHeader = document.getElementById("baixoGridHeader");
-    const baixoGridBody = document.getElementById("baixoGridBody");
-    const bateriaGridHeader = document.getElementById("bateriaGridHeader");
-    const bateriaGridBody = document.getElementById("bateriaGridBody");
-    const progressBar = document.getElementById("progressBar");
-
-    function criarCabecalhoGrid(gridHeader) {
-      gridHeader.innerHTML = "";
-      const thLabel = document.createElement("th");
-      thLabel.textContent = "Linha";
-      gridHeader.appendChild(thLabel);
-
-      const thIndex = document.createElement("th");
-      thIndex.textContent = "#";
-      gridHeader.appendChild(thIndex);
-
-      for (let i = 0; i < steps; i++) {
-        const th = document.createElement("th");
-        th.textContent = (i + 1);
-        gridHeader.appendChild(th);
-      }
-    }
-
-    function criarGridBaixo() {
-      baixoGridBody.innerHTML = "";
-      const tr = document.createElement("tr");
-
-      const tdLabel = document.createElement("td");
-      tdLabel.classList.add("row-label");
-      tdLabel.innerHTML = "<span>Baixo</span>";
-      tr.appendChild(tdLabel);
-
-      const tdIndex = document.createElement("td");
-      tdIndex.classList.add("step-index");
-      tdIndex.textContent = "";
-      tr.appendChild(tdIndex);
-
-      for (let i = 0; i < steps; i++) {
-        const td = document.createElement("td");
-        td.dataset.step = i;
-        td.addEventListener("click", () => clicarBaixo(i, td));
-        const span = document.createElement("span");
-        span.className = "note-label";
-        span.textContent = baixoSeq[i] || "-";
-        td.appendChild(span);
-        tr.appendChild(td);
-      }
-
-      baixoGridBody.appendChild(tr);
-    }
-
-    function criarGridBateria() {
-      bateriaGridBody.innerHTML = "";
-      drumLines.forEach((line, rowIdx) => {
-        const tr = document.createElement("tr");
-
-        const tdLabel = document.createElement("td");
-        tdLabel.classList.add("row-label");
-        tdLabel.innerHTML = `<span>${line.label}</span>`;
-        tr.appendChild(tdLabel);
-
-        const tdIndex = document.createElement("td");
-        tdIndex.classList.add("step-index");
-        tdIndex.textContent = "";
-        tr.appendChild(tdIndex);
-
-        for (let i = 0; i < steps; i++) {
-          const td = document.createElement("td");
-          td.dataset.step = i;
-          td.dataset.id = line.id;
-          td.addEventListener("click", () => clicarBateria(line.id, i, td));
-          tr.appendChild(td);
-        }
-
-        bateriaGridBody.appendChild(tr);
-      });
-    }
-
-    function highlightGridStep(step) {
-      const allStepCells = document.querySelectorAll(".step-index");
-      allStepCells.forEach(cell => cell.classList.remove("highlight"));
-
-      const baixoRow = baixoGridBody.querySelector("tr");
-      if (!baixoRow) return;
-      const indexCellBaixo = baixoRow.querySelector(".step-index");
-      if (indexCellBaixo) {
-        indexCellBaixo.classList.add("highlight");
-        indexCellBaixo.textContent = step + 1;
-      }
-
-      const bateriaRows = bateriaGridBody.querySelectorAll("tr");
-      bateriaRows.forEach(row => {
-        const idxCell = row.querySelector(".step-index");
-        if (idxCell) {
-          idxCell.classList.add("highlight");
-          idxCell.textContent = step + 1;
-        }
-      });
-
-      const allBaixoCells = baixoGridBody.querySelectorAll("td[data-step]");
-      allBaixoCells.forEach(td => td.classList.remove("highlight"));
-
-      const allBateriaCells = bateriaGridBody.querySelectorAll("td[data-step]");
-      allBateriaCells.forEach(td => td.classList.remove("highlight"));
-
-      const baixoCell = baixoGridBody.querySelector(`td[data-step="${step}"]`);
-      if (baixoCell) baixoCell.classList.add("highlight");
-
-      const bateriaCells = bateriaGridBody.querySelectorAll(`td[data-step="${step}"]`);
-      bateriaCells.forEach(td => td.classList.add("highlight"));
-    }
-
-    function clicarBaixo(i, td) {
-      const notaAtual = baixoSeq[i];
-      const novaNota = prompt("Digite a nota do baixo (1E, 2F, 3FS... 49GS ou x para ghost)", notaAtual || "");
-      if (novaNota === null) return;
-      const nota = novaNota.trim().toUpperCase();
-      if (nota !== "" && nota !== "X" && !PASTA_POSICOES.includes(nota)) {
-        alert("Nota inválida. Use por ex: 1E, 2F, 3FS, 10D, 21CS ou X.");
-        return;
-      }
-      baixoSeq[i] = nota === "" ? "" : nota;
-      const span = td.querySelector(".note-label");
-      span.textContent = nota === "" ? "-" : nota;
-      if (nota === "" || nota === "X") td.classList.remove("active");
-      else td.classList.add("active");
-      atualizarStatus("baixoStatusLabel", "Seq. do baixo atualizada");
-    }
-
-    function clicarBateria(id, step, td) {
-      if (bateriaSeq[id][step] === "x") {
-        bateriaSeq[id][step] = id;
-        td.classList.add("active-drum");
-      } else {
-        bateriaSeq[id][step] = "x";
-        td.classList.remove("active-drum");
-      }
-      atualizarStatus("bateriaStatusLabel", "Seq. da bateria atualizada");
-    }
-
-    function atualizarStatus(elementId, msg) {
-      const el = document.getElementById(elementId);
-      if (!el) return;
-      el.textContent = msg;
-      el.style.opacity = "1";
-      setTimeout(() => {
-        el.style.opacity = "0.8";
-      }, 1000);
-    }
-
-    function gerarAleatorio() {
-      const base = document.getElementById("notaBaseSelect").value;
-      const padrao = document.getElementById("padraoBaixoSelect").value;
-
-      if (!base) {
-        baixoSeq = Array(steps).fill("").map(() => {
-          const rnd = Math.random();
-          if (rnd < 0.2) return "";
-          if (rnd < 0.3) return "x";
-          const idx = Math.floor(Math.random() * PASTA_POSICOES.length);
-          return PASTA_POSICOES[idx];
-        });
-      } else {
-        const startIndex = PASTA_POSICOES.findIndex(n => n.endsWith(base));
-        const indices = [];
-        for (let i = 0; i < PASTA_POSICOES.length; i++) {
-          indices.push((startIndex + i) % PASTA_POSICOES.length);
-        }
-        baixoSeq = Array(steps).fill("").map((_, i) => {
-          if (padrao === "quadrado") {
-            if ([0,4,8,12].includes(i)) {
-              return PASTA_POSICOES[indices[0]];
-            } else if ([1,5,9,13].includes(i)) {
-              return PASTA_POSICOES[indices[3]];
-            } else {
-              return "";
+        if (drumType === 'start') return;
+        if (drumType === 'bumbo') {
+            const prevStepIndex = (currentStep === 0) ? baixoSeq.length - 1 : currentStep - 1;
+            const isConsecutive = (bateriaSeq['bumbo'][prevStepIndex] === 'bumbo');
+            if (isConsecutive) {
+                 runFrameAnimation(domImages.bt_pernaEsq, DRUM_ASSETS.anim.perna_duplo, DRUM_ASSETS.idle.pernaEsq, DRUM_FPS);
             }
-          } else if (padrao === "walking") {
-            if (i % 2 === 0) {
-              const pos = indices[i % indices.length];
-              return PASTA_POSICOES[pos];
+            return;
+        }
+        const prevHitStep = lastDrumStep[drumType];
+        const isRapidRepeat = (prevHitStep !== undefined && (currentStep - prevHitStep === 1 || (currentStep===0 && prevHitStep === baixoSeq.length-1)));
+        let armToUse = 'right';
+        if (['caixa', 'caixaAro'].includes(drumType)) armToUse = 'left';
+        if (isRapidRepeat && lastArmUsed[drumType]) {
+            armToUse = (lastArmUsed[drumType] === 'right') ? 'left' : 'right';
+        }
+        lastDrumStep[drumType] = currentStep;
+        lastArmUsed[drumType] = armToUse;
+        const isLeft = (armToUse === 'left');
+        const imgEl = isLeft ? domImages.bt_bracoEsq : domImages.bt_bracoDir;
+        const idleSrc = isLeft ? DRUM_ASSETS.idle.bracoEsq : DRUM_ASSETS.idle.bracoDir;
+        if (isLeft) {
+            if (['ataque', 'tom1', 'tom2', 'surdo', 'conducao', 'conducao_centro'].includes(drumType)) {
+                domImages.bt_bracoEsq.style.zIndex = 12;
             } else {
-              return "";
+                domImages.bt_bracoEsq.style.zIndex = 10;
             }
-          } else {
-            const rnd = Math.random();
-            if (rnd < 0.25) return "";
-            if (rnd < 0.35) return "x";
-            const pos = indices[i % indices.length];
-            return PASTA_POSICOES[pos];
-          }
-        });
-      }
-
-      const tr = baixoGridBody.querySelector("tr");
-      if (!tr) return;
-      tr.querySelectorAll("td[data-step]").forEach(td => {
-        const step = parseInt(td.dataset.step, 10);
-        const span = td.querySelector(".note-label");
-        const nota = baixoSeq[step];
-        span.textContent = nota === "" ? "-" : nota;
-        if (nota === "" || nota === "X") td.classList.remove("active");
-        else td.classList.add("active");
-      });
-
-      atualizarStatus("baixoStatusLabel", "Baixo aleatório gerado");
-    }
-
-    function aplicarSequenciaManual() {
-      const input = document.getElementById("manualSeqInput");
-      if (!input) return;
-      const value = input.value.trim();
-      if (!value) return;
-
-      const partes = value.split(",");
-      for (let i = 0; i < steps; i++) {
-        const p = partes[i];
-        if (!p) {
-          baixoSeq[i] = "";
-          continue;
         }
-        const nota = p.trim().toUpperCase();
-        if (nota !== "X" && nota !== "" && !PASTA_POSICOES.includes(nota)) {
-          alert(`Nota inválida na posição ${i + 1}: ${nota}`);
-          return;
+        let frames = [];
+        const mapName = isLeft ? 'be_' : 'bd_';
+        let key = drumType;
+        if(drumType === 'chimbalaberto') key = 'chimbal';
+        if(drumType === 'caixaAro') key = 'caixa';
+        if(drumType === 'conducao_centro') key = 'conducao';
+        if (DRUM_ASSETS.anim[mapName + key]) {
+            frames = DRUM_ASSETS.anim[mapName + key];
+        } else {
+            frames = isLeft ? DRUM_ASSETS.anim.be_caixa : DRUM_ASSETS.anim.bd_caixa;
         }
-        baixoSeq[i] = nota === "" ? "" : nota;
-      }
-
-      const tr = baixoGridBody.querySelector("tr");
-      if (!tr) return;
-      tr.querySelectorAll("td[data-step]").forEach(td => {
-        const step = parseInt(td.dataset.step, 10);
-        const span = td.querySelector(".note-label");
-        const nota = baixoSeq[step];
-        span.textContent = nota === "" ? "-" : nota;
-        if (nota === "" || nota === "X") td.classList.remove("active");
-        else td.classList.add("active");
-      });
-
-      atualizarStatus("baixoStatusLabel", "Sequência manual aplicada");
+        // Usando DRUM_FPS constante para garantir sincronia
+        runFrameAnimation(imgEl, frames, idleSrc, DRUM_FPS);
+        if(drumType === 'ataque') runFrameAnimation(domImages.bt_ataque, DRUM_ASSETS.anim.ataquePrato, DRUM_ASSETS.idle.ataque, 30);
+        if(drumType.includes('conducao')) runFrameAnimation(domImages.bt_conducao, DRUM_ASSETS.anim.conducaoPrato, DRUM_ASSETS.idle.conducao, 30);
     }
 
-    function apagarTudo() {
-      baixoSeq = Array(steps).fill("");
-      drumLines.forEach(d => bateriaSeq[d.id] = Array(steps).fill("x"));
-
-      const trBaixo = baixoGridBody.querySelector("tr");
-      if (trBaixo) {
-        trBaixo.querySelectorAll("td[data-step]").forEach(td => {
-          const span = td.querySelector(".note-label");
-          span.textContent = "-";
-          td.classList.remove("active");
-        });
-      }
-
-      bateriaGridBody.querySelectorAll("td[data-step]").forEach(td => {
-        td.classList.remove("active-drum");
-      });
-
-      atualizarStatus("baixoStatusLabel", "Tudo limpo");
-      atualizarStatus("bateriaStatusLabel", "Tudo limpo");
+    function animarBaixo(nota, msPorStep) {
+        if (nota === "x") {
+            if (ultimaNotaReal) {
+                const pasta = pastaFolderNames[posicaoAtualPasta] || "1F";
+                setCachedSrc(domImages.bx_tronco, `animacao/tronco_baixo/Pasta_${pasta}/${ultimaNotaReal}.png`);
+            }
+            animarMaoDireitaBaixo(ultimaCordaUsada, msPorStep);
+            return;
+        }
+        posicaoAtualPasta = escolherMelhorPasta(nota, posicaoAtualPasta);
+        ultimaNotaReal = nota;
+        const pastaNome = pastaFolderNames[posicaoAtualPasta];
+        setCachedSrc(domImages.bx_tronco, `animacao/tronco_baixo/Pasta_${pastaNome}/${nota}.png`);
+        const corda = getCordaDaNota(nota);
+        ultimaCordaUsada = corda;
+        setCachedSrc(domImages.bx_antebraco, `animacao/antebraco/antebraco${corda}.png`);
+        animarMaoDireitaBaixo(corda, msPorStep);
     }
 
-    function trocarTab(tab) {
-      currentTab = tab;
-      const tabBaixo = document.getElementById("tabBaixo");
-      const tabBateria = document.getElementById("tabBateria");
-
-      if (tab === "baixo") {
-        tabBaixo.classList.add("active");
-        tabBateria.classList.remove("active");
-      } else {
-        tabBateria.classList.add("active");
-        tabBaixo.classList.remove("active");
-      }
-
-      const baixoSection = document.querySelectorAll(".grid-section")[0];
-      const bateriaSection = document.querySelectorAll(".grid-section")[1];
-
-      if (tab === "baixo") {
-        baixoSection.style.display = "block";
-        bateriaSection.style.display = "block";
-        baixoSection.scrollIntoView({ behavior: "smooth", block: "start" });
-      } else {
-        baixoSection.style.display = "block";
-        bateriaSection.style.display = "block";
-        bateriaSection.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    }
-
-    function drawFrameToCanvas() {
-      if (!canvas || !ctx) return;
-      const stageRect = animacaoStage.getBoundingClientRect();
-      const wrapperRect = document.getElementById("animacaoStageWrapper").getBoundingClientRect();
-
-      ctx.fillStyle = "#000";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      const tempCanvas = document.createElement("canvas");
-      tempCanvas.width = stageRect.width;
-      tempCanvas.height = stageRect.height;
-      const tempCtx = tempCanvas.getContext("2d");
-
-      html2canvas(animacaoStage, {
-        backgroundColor: null,
-        useCORS: true,
-        scale: 1
-      }).then(stageCanvas => {
-        const destWidth = canvas.width;
-        const destHeight = canvas.height;
-        ctx.drawImage(stageCanvas, 0, 0, destWidth, destHeight);
-      }).catch(err => {
-        console.warn("Erro ao desenhar frame no canvas:", err);
-      });
-    }
-
-    let recordingAnimationFrameId = null;
-
-    function startRecording() {
-      if (mediaRecorder && mediaRecorder.state === "recording") return;
-
-      recordedChunks = [];
-      const recordingIndicator = document.getElementById("recordingIndicator");
-      recordingIndicator.classList.add("active");
-      document.getElementById("startRecordingBtn").disabled = true;
-      document.getElementById("stopRecordingBtn").disabled = false;
-
-      const stream = canvas.captureStream(30);
-      const audioDestStream = mediaStreamDestination.stream;
-      const mixedStream = new MediaStream([...stream.getVideoTracks(), ...audioDestStream.getAudioTracks()]);
-
-      mediaRecorder = new MediaRecorder(mixedStream, {
-        mimeType: "video/webm;codecs=vp9,opus"
-      });
-
-      mediaRecorder.ondataavailable = function(e) {
-        if (e.data.size > 0) recordedChunks.push(e.data);
-      };
-
-      mediaRecorder.onstop = function() {
-        const blob = new Blob(recordedChunks, { type: "video/webm" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.style.display = "none";
-        a.href = url;
-        a.download = "jamon-animacao.webm";
-        document.body.appendChild(a);
-        a.click();
-        URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-
-        recordingIndicator.classList.remove("active");
-        document.getElementById("startRecordingBtn").disabled = false;
-        document.getElementById("stopRecordingBtn").disabled = true;
-      };
-
-      mediaRecorder.start();
-
-      function loopDraw() {
-        drawFrameToCanvas();
-        recordingAnimationFrameId = requestAnimationFrame(loopDraw);
-      }
-      loopDraw();
-    }
-
-    function stopRecording() {
-      if (!mediaRecorder || mediaRecorder.state !== "recording") return;
-      mediaRecorder.stop();
-      if (recordingAnimationFrameId) cancelAnimationFrame(recordingAnimationFrameId);
-    }
-
-    async function getAudioBuffer(url) {
-      if (audioBuffers[url]) return audioBuffers[url];
-      const response = await fetch(url);
-      const arrayBuffer = await response.arrayBuffer();
-      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-      audioBuffers[url] = audioBuffer;
-      return audioBuffer;
-    }
-
-    async function tocarAudioBuffer(path, vol) {
-      try {
-        const buffer = await getAudioBuffer(path);
-        const source = audioContext.createBufferSource();
-        source.buffer = buffer;
-        const gainNode = audioContext.createGain();
-        gainNode.gain.value = vol;
-        source.connect(gainNode).connect(audioContext.destination);
-        source.connect(gainNode).connect(mediaStreamDestination);
-        source.start();
-      } catch (err) {
-        console.warn("Erro ao tocar áudio:", err);
-      }
+    function animarMaoDireitaBaixo(corda, duracaoStepMs) {
+        const frames = [];
+        for(let i=2; i<=5; i++) frames.push(`animacao/braco_direito/Corda_${corda}${i}.png`);
+        const idle = `animacao/braco_direito/Corda_${corda}1.png`;
+        let fps = 1000 / (duracaoStepMs / 5); 
+        if (fps < 20) fps = 20; 
+        if (fps > 60) fps = 60;
+        runFrameAnimation(domImages.bx_bracoDir, frames, idle, fps);
     }
 
     function stopRightHand() {
-      clearInterval(rightHandTimer);
-      domImages.bx_bracoDir.src = `animacao/braco_direito/Corda_${ultimaCordaUsada || 'E'}1.png`;
+        if(activeAnimations['bracoDireitoLayer']) cancelAnimationFrame(activeAnimations['bracoDireitoLayer']);
+        setCachedSrc(domImages.bx_bracoDir, `animacao/braco_direito/Corda_${ultimaCordaUsada||'E'}1.png`);
     }
 
-    function renderGrids() {
-      const bG = document.getElementById("baixoGridHeader");
-      const bB = document.getElementById("baixoGridBody");
-      const dG = document.getElementById("bateriaGridHeader");
-      const dB = document.getElementById("bateriaGridBody");
-
-      criarCabecalhoGrid(bG);
-      criarCabecalhoGrid(dG);
-      criarGridBaixo();
-      criarGridBateria();
+    function resetDrummer() {
+        Object.keys(activeAnimations).forEach(k => cancelAnimationFrame(activeAnimations[k]));
+        activeAnimations = {};
+        lastDrumStep = {};
+        setCachedSrc(domImages.bt_tronco, DRUM_ASSETS.idle.tronco);
+        setCachedSrc(domImages.bt_pernaEsq, DRUM_ASSETS.idle.pernaEsq);
+        setCachedSrc(domImages.bt_bracoDir, DRUM_ASSETS.idle.bracoDir);
+        setCachedSrc(domImages.bt_bracoEsq, DRUM_ASSETS.idle.bracoEsq);
+        domImages.bt_bracoEsq.style.zIndex = 10;
+        setCachedSrc(domImages.bt_cabeca, DRUM_ASSETS.idle.cabeca);
+        setCachedSrc(domImages.bt_ataque, DRUM_ASSETS.idle.ataque);
+        setCachedSrc(domImages.bt_conducao, DRUM_ASSETS.idle.conducao);
     }
 
-    let recorderLoop = null;
-
-    function setupListeners() {
-      document.getElementById("bpmInput").addEventListener("change", (e) => {
-        bpmAtual = Math.max(40, Math.min(220, parseInt(e.target.value, 10) || 90));
-        e.target.value = bpmAtual;
-      });
-
-      document.getElementById("baixoVolumeRange").addEventListener("input", (e) => {
-        baixoVolumeGlobal = parseFloat(e.target.value) || 0.9;
-      });
-
-      document.getElementById("bateriaVolumeRange").addEventListener("input", (e) => {
-        bateriaVolumeGlobal = parseFloat(e.target.value) || 0.9;
-      });
-    }
-
-    function verificarTamanhoCanvas() {
-      const wrapper = document.getElementById("recordingCanvasContainer");
-      if (!wrapper) return;
-      const w = wrapper.clientWidth - 12;
-      const h = w * (9/16);
-      canvas.width = w;
-      canvas.height = h;
-      drawFrameToCanvas();
-    }
-
-    function startCanvasAutoDraw() {
-      if (recorderLoop) clearInterval(recorderLoop);
-      recorderLoop = setInterval(() => {
-        drawFrameToCanvas();
-      }, 80);
-    }
-
-    async function preloadAllAssets() {
-      const imagens = [
-        DRUM_ASSETS.idle.tronco,
-        DRUM_ASSETS.idle.pernaEsq,
-        DRUM_ASSETS.idle.bracoDir,
-        DRUM_ASSETS.idle.bracoEsq,
-        DRUM_ASSETS.idle.cabeca,
-        DRUM_ASSETS.idle.ataque,
-        DRUM_ASSETS.idle.conducao,
-        "animacao/pernas/pernas.png",
-        "animacao/tronco_baixo/tronco_baixo.png",
-        "animacao/cabeca/cabeca0001.png",
-        "animacao/braco_direito/Corda_E1.png",
-        "animacao/tronco_baixo/Pasta_1F/1E.png"
-      ];
-
-      DRUM_ASSETS.anim.troncoTocando.forEach(p => imagens.push(p));
-      DRUM_ASSETS.anim.cabeca_estavel.forEach(p => imagens.push(p));
-      Object.keys(DRUM_ASSETS.anim).forEach(key => {
-        const arr = DRUM_ASSETS.anim[key];
-        if (Array.isArray(arr)) arr.forEach(p => imagens.push(p));
-      });
-
-      const audios = [
-        "assets/bumbo.mp3",
-        "assets/caixa.mp3",
-        "assets/caixaAro.mp3",
-        "assets/chimbal.mp3",
-        "assets/chimbal-aberto.mp3",
-        "assets/chimbal-pedal.mp3",
-        "assets/ataque.mp3",
-        "assets/conducao.mp3",
-        "assets/conducao-centro.mp3",
-        "assets/tom-1.mp3",
-        "assets/tom-2.mp3",
-        "assets/surdo.mp3",
-        "assets/bass-muted.mp3"
-      ];
-
-      try {
-        await Promise.all([
-          preloadImages(imagens),
-          Promise.all(audios.map(p => getAudioBuffer(p)))
-        ]);
-      } catch (e) {
-        console.warn("Falha no pré-carregamento geral:", e);
-      }
-    }
-
-    async function preloadSequenceAssets() {
-      const imgSet = new Set();
-      const audioSet = new Set();
-
-      let pCur = posicaoAtualPasta || 1;
-
-      for (let i = 0; i < baixoSeq.length; i++) {
-        const nota = baixoSeq[i];
-        if (!nota || nota === "") continue;
-
-        if (nota === "x") {
-          audioSet.add("assets/bass-muted.mp3");
-          continue;
-        }
-
-        pCur = escolherMelhorPasta(nota, pCur);
-        const pastaNome = pastaFolderNames[pCur] || "1F";
-        imgSet.add(`animacao/tronco_baixo/Pasta_${pastaNome}/${nota}.png`);
-
-        audioSet.add(`assets/BaixoMelodia/${nota}.mp3`);
-      }
-
-      drumLines.forEach(line => {
-        const seq = bateriaSeq[line.id] || [];
-        for (let i = 0; i < seq.length; i++) {
-          if (seq[i] === line.id) {
-            audioSet.add(`assets/${line.file}`);
-            break;
-          }
-        }
-      });
-
-      ["E", "A", "D", "G"].forEach(corda => {
-        for (let f = 1; f <= 5; f++) {
-          imgSet.add(`animacao/braco_direito/Corda_${corda}${f}.png`);
-        }
-      });
-
-      if (!imgSet.size && !audioSet.size) return;
-
-      try {
-        if (audioContext.state === "suspended") {
-          await audioContext.resume();
-        }
-
-        await Promise.all([
-          preloadImages([...imgSet]),
-          Promise.all([...audioSet].map(p => getAudioBuffer(p)))
-        ]);
-      } catch (e) {
-        console.warn("Falha ao pré-carregar sequência:", e);
-      }
-    }
-
-    function iniciarContagemEPlayback() {
-      const overlay = document.getElementById("countdownOverlay");
-      const txt = document.getElementById("countdownText");
-      overlay.style.display = "flex";
-      let count = 4;
-      txt.innerText = count;
-      const duracaoPulso = 60000 / bpmAtual;
-
-      const countInt = setInterval(() => {
-        count--;
-        if (count > 0) {
-          txt.innerText = count;
+    function togglePlay() {
+        if (isPlaying) {
+            pararPlayback();
         } else {
-          clearInterval(countInt);
-          overlay.style.display = "none";
-          iniciarPlayback();
+            const overlay = document.getElementById("countdownOverlay");
+            const txt = document.getElementById("countdownText");
+            overlay.style.display = "flex"; 
+            prepararAssetsDaSequencia().then(() => {
+                let count = 4; 
+                txt.innerText = count;
+                const ms = 60000 / bpmAtual;
+                const countInt = setInterval(() => {
+                    count--; 
+                    if(count > 0) {
+                        txt.innerText = count;
+                    } else { 
+                        clearInterval(countInt); 
+                        overlay.style.display = "none"; 
+                        iniciarPlayback(); 
+                    }
+                }, ms);
+            });
         }
-      }, duracaoPulso);
-    }
-
-    async function togglePlay() {
-      if (isPlaying) {
-        pararPlayback();
-      } else {
-        const playBtn = document.getElementById("playBtn");
-        const oldLabel = playBtn.innerText;
-        playBtn.disabled = true;
-        playBtn.innerText = "⏳ Preparando...";
-
-        await preloadSequenceAssets();
-
-        playBtn.disabled = false;
-        playBtn.innerText = oldLabel || "▶ Play";
-
-        iniciarContagemEPlayback();
-      }
     }
 
     function iniciarPlayback() {
-      if (audioContext.state === 'suspended') audioContext.resume();
-      isPlaying = true; atualPasso = 0;
-      lastDrumStep = {};
-      document.getElementById("playBtn").innerText = "⏸ Pause"; document.getElementById("playBtn").style.background = "#e65100";
-      
-      startPenduloAnim();
-      playDrumAnimation('start', 0); 
-
-      const msPorStep = (60000 / bpmAtual) / 4;
-      const loop = () => {
-        if (!isPlaying) return;
-        if (atualPasso >= baixoSeq.length) atualPasso = 0;
-        highlightGridStep(atualPasso);
+        if (audioContext.state === 'suspended') audioContext.resume();
+        isPlaying = true; 
+        atualPasso = 0;
+        lastDrumStep = {};
         
-        const notaBaixo = baixoSeq[atualPasso];
+        document.getElementById("playBtn").innerText = "⏸ Pause"; document.getElementById("playBtn").style.background = "#e65100";
+        pendulumStartTime = performance.now(); 
+        playDrumAnimation('start', 0); 
+
+        let nextStepTime = audioContext.currentTime;
+        const secondsPerStep = (60 / bpmAtual) / 4;
+
+        const scheduler = () => {
+            if (!isPlaying) return;
+            // Lookahead de 0.15s para garantir que pegamos o tempo de pré-roll da bateria
+            while (nextStepTime < audioContext.currentTime + 0.15) {
+                runStep(atualPasso, nextStepTime);
+                nextStepTime += secondsPerStep;
+                atualPasso++;
+                if (atualPasso >= baixoSeq.length) atualPasso = 0;
+            }
+            playbackInterval = requestAnimationFrame(scheduler); 
+        };
+        scheduler();
+    }
+
+    function runStep(stepIndex, timeToPlay) {
+        // CORREÇÃO DE SINCRONIA:
+        // delayVisualBase: Tempo até o áudio tocar (para Baixo e Barra de Progresso)
+        // delayDrumVisual: Tempo até o áudio tocar MENOS o tempo que leva para a baqueta chegar no tambor.
+        
+        const now = audioContext.currentTime;
+        const delayVisualBase = Math.max(0, (timeToPlay - now) * 1000);
+        
+        // Se a animação leva 50ms para chegar no impacto, começamos 50ms antes do som.
+        // Se já estamos atrasados (delay negativo), começa imediatamente (0).
+        let delayDrumVisual = (timeToPlay - now) * 1000 - DRUM_PREROLL_MS;
+        if (delayDrumVisual < 0) delayDrumVisual = 0;
+
+        // 1. Agenda BATERIA (Com Pre-Roll)
+        setTimeout(() => {
+            if(!isPlaying) return;
+            drumLines.forEach(line => {
+                if (bateriaSeq[line.id] && bateriaSeq[line.id][stepIndex] === line.id) {
+                    playDrumAnimation(line.id, stepIndex);
+                }
+            });
+        }, delayDrumVisual);
+
+        // 2. Agenda BAIXO e UI (Sincronia Exata)
+        setTimeout(() => {
+            if(!isPlaying) return;
+            highlightGridStep(stepIndex);
+            document.getElementById("progressBar").style.width = ((stepIndex + 1) / baixoSeq.length * 100) + "%";
+            
+            const notaBaixo = baixoSeq[stepIndex];
+            const msPorStep = (60000/bpmAtual)/4;
+            if (notaBaixo !== "") {
+                animarBaixo(notaBaixo, msPorStep);
+            } else {
+                stopRightHand();
+            }
+        }, delayVisualBase);
+
+        // 3. Agenda ÁUDIO (Web Audio API)
+        const notaBaixo = baixoSeq[stepIndex];
         if (notaBaixo !== "") {
-          let file = (notaBaixo === "x") ? "assets/bass-muted.mp3" : `assets/BaixoMelodia/${notaBaixo}.mp3`;
-          tocarAudioBuffer(file, baixoVolumeGlobal);
-          animarBaixo(notaBaixo, msPorStep);
-        } else {
-          stopRightHand();
+            let file = (notaBaixo === "x") ? "assets/bass-muted.mp3" : `assets/BaixoMelodia/${notaBaixo}.mp3`;
+            tocarAudioBufferAgendado(file, baixoVolumeGlobal, timeToPlay);
         }
-
         drumLines.forEach(line => {
-          if (bateriaSeq[line.id] && bateriaSeq[line.id][atualPasso] === line.id) {
-            tocarAudioBuffer(`assets/${line.file}`, bateriaVolumeGlobal);
-            playDrumAnimation(line.id, atualPasso);
-          }
+            if (bateriaSeq[line.id] && bateriaSeq[line.id][stepIndex] === line.id) {
+                tocarAudioBufferAgendado(`assets/${line.file}`, bateriaVolumeGlobal, timeToPlay);
+            }
         });
-        
-        document.getElementById("progressBar").style.width = ((atualPasso + 1) / baixoSeq.length * 100) + "%";
-        atualPasso++;
-      };
-      loop();
-      playbackInterval = setInterval(loop, msPorStep);
     }
 
     function pararPlayback() {
-      isPlaying = false; clearInterval(playbackInterval);
-      document.getElementById("playBtn").innerText = "▶ Play"; document.getElementById("playBtn").style.background = "";
-      
-      stopPenduloAnim(); 
-      resetDrummer();
+        isPlaying = false; 
+        cancelAnimationFrame(playbackInterval);
+        document.getElementById("playBtn").innerText = "▶ Play"; document.getElementById("playBtn").style.background = "";
+        pendulumStartTime = 0;
+        stopRightHand();
+        resetDrummer(); 
+        document.querySelectorAll(".playing-step").forEach(el => el.classList.remove("playing-step"));
+        if(audioBaixoAtual) { try{audioBaixoAtual.stop();}catch(e){} audioBaixoAtual = null; }
     }
 
-    function animarMaoDireita(c, d) {
-      clearInterval(rightHandTimer);
-      
-      let f = 1;
-      domImages.bx_bracoDir.src = `animacao/braco_direito/Corda_${c}${f}.png`;
-      f++;
+    async function tocarAudioBufferAgendado(path, vol, time) {
+        try {
+            const buffer = await getAudioBuffer(path); 
+            const source = audioContext.createBufferSource();
+            source.buffer = buffer;
+            const gainNode = audioContext.createGain();
+            gainNode.gain.value = vol;
+            source.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            gainNode.connect(mediaStreamDestination);
+            source.start(time); 
+            if (path.includes("BaixoMelodia") || path.includes("bass-muted")) {
+                if(audioBaixoAtual) try{audioBaixoAtual.stop(time + 0.1);}catch(e){}
+                audioBaixoAtual = source;
+            }
+        } catch (e) {}
+    }
 
-      rightHandTimer = setInterval(() => {
-        domImages.bx_bracoDir.src = `animacao/braco_direito/Corda_${c}${f}.png`;
-        f++;
-        if (f > 5) {
-          clearInterval(rightHandTimer);
-          domImages.bx_bracoDir.src = `animacao/braco_direito/Corda_${c}1.png`;
+    async function tocarAudioBuffer(path, vol) { tocarAudioBufferAgendado(path, vol, audioContext.currentTime); }
+
+    async function getAudioBuffer(url) {
+        if (audioBuffers[url]) return audioBuffers[url];
+        const response = await fetch(url);
+        const arrayBuffer = await response.arrayBuffer();
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        audioBuffers[url] = audioBuffer;
+        return audioBuffer;
+    }
+
+    async function toggleRecording() {
+        const btn = document.getElementById("recordVideoBtn");
+        if (isRecording) {
+            mediaRecorder.stop(); isRecording = false; btn.innerText = "🔴 Gravar (Auto)"; btn.classList.remove("recording");
+        } else {
+            try {
+                if (audioContext.state === 'suspended') await audioContext.resume();
+                const canvasStream = canvas.captureStream(30);
+                const videoTrack = canvasStream.getVideoTracks()[0];
+                const audioTrack = mediaStreamDestination.stream.getAudioTracks()[0];
+                const combinedStream = new MediaStream([videoTrack, audioTrack]);
+                let mimeType = 'video/webm';
+                if (MediaRecorder.isTypeSupported('video/webm; codecs=vp9')) mimeType = 'video/webm; codecs=vp9';
+                mediaRecorder = new MediaRecorder(combinedStream, { mimeType: mimeType, videoBitsPerSecond: 2500000 });
+                recordedChunks = [];
+                mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a'); a.style.display = 'none'; a.href = url; a.download = 'jam_session.webm';
+                    document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url);
+                };
+                mediaRecorder.start(); isRecording = true; btn.innerText = "⏹ Parar"; btn.classList.add("recording");
+                if (!isPlaying) togglePlay();
+            } catch (err) { alert("Erro gravação: " + err); }
         }
-      }, Math.min(d / 5, 40));
     }
+    async function exportarWAV() { alert("Exportação WAV pronta (simulação)."); }
 
-    function renderEverything() {
-      renderGrids();
-      drawFrameToCanvas();
+    function meterToBeats(m){return Number(m.split('/')[0])||4}
+    function expandRhythm(p,t){const j=p.join(' ').replace(/\s+/g,' ').trim().split(/\s+/);const o=[];while(o.length<t)for(const k of j){if(o.length>=t)break;o.push(k)}return o.slice(0,t)}
+    function parsePattern(p){const r={intro:[],loop:[]},m=p.match(/\((.*?)\)/);if(m)r.loop=m[1].trim().split(/\s+/);else r.loop=p.trim().split(/\s+/);return r}
+    function mapNoteToAnimId(n){let c=n.replace(/[0-9]/g,'').replace('#','S');const m=notasValidas.filter(x=>x.endsWith(c));return m.length>0?m[0]:"1E"}
+    function getCordaDaNota(n){const m=n.match(/^(\d+)/);if(!m)return"E";const i=parseInt(m[1]);if(i<=20)return"E";if(i<=28)return"A";if(i<=36)return"D";return"G"}
+    function escolherMelhorPasta(n,p){const l=[];for(let i=1;i<=24;i++)if(pastaMap[i].includes(n))l.push(i);if(!l.length)return 1;return l.reduce((a,b)=>Math.abs(b-p)<Math.abs(a-p)?b:a)}
+    function startHeadLoop(){if(headLoopTimer)clearInterval(headLoopTimer);headLoopTimer=setInterval(()=>{headFrameIndex=(headFrameIndex+1)%headFrames.length;if(headFrames[headFrameIndex])setCachedSrc(domImages.bx_cabeca, headFrames[headFrameIndex]);},33);}
+    
+    function renderGrids(){
+        const bG=document.getElementById("baixoGrid"),dG=document.getElementById("drumGridWrapper"),dl=document.getElementById("deleteGrid");
+        bG.innerHTML=""; dl.innerHTML=""; dG.innerHTML="";
+        baixoSeq.forEach((n,i)=>{
+            const b=document.createElement("button");b.className="delete-btn";b.innerText="×";b.onclick=()=>deleteColumn(i);dl.appendChild(b);
+            const c=document.createElement("div");c.className="cell";
+            if(n==="x"){c.innerText="X";c.classList.add("active-ghost")}else if(n!==""){c.innerText=n.replace("S","#");c.classList.add("active")}else c.style.opacity="0.3";
+            c.onclick=()=>abrirSelecaoNota(i);bG.appendChild(c);
+        });
+        drumLines.forEach(l=>{
+            const r=document.createElement("div");r.className="rowContainer";
+            const lb=document.createElement("div");lb.className="gridLabel";lb.innerText=l.label;r.appendChild(lb);
+            const g=document.createElement("div");g.className="trackGrid";
+            while(bateriaSeq[l.id].length<baixoSeq.length)bateriaSeq[l.id].push("x");
+            bateriaSeq[l.id].forEach((v,i)=>{
+                const c=document.createElement("div");c.className="cell";
+                if(v===l.id)c.classList.add("active");
+                c.onclick=()=>{bateriaSeq[l.id][i]=(bateriaSeq[l.id][i]==="x")?l.id:"x";if(bateriaSeq[l.id][i]!== "x")tocarAudioBuffer(`assets/${l.file}`,1.0);renderGrids()};
+                g.appendChild(c);
+            });
+            r.appendChild(g);dG.appendChild(r);
+        });
     }
-
-    window.onload = async () => {
-      verificarOrientacao();
-      window.addEventListener("resize", verificarOrientacao);
-      
-      initAnimacaoStage();
-      initHeadFrames();
-      await preloadAllAssets();
-      startHeadLoop();
-      gerarAleatorio();
-      renderGrids();
-      setupListeners();
-      verificarTamanhoCanvas();
-      startCanvasAutoDraw();
-      drawFrameToCanvas();
-    };
-
-    window.addEventListener("resize", () => {
-      verificarTamanhoCanvas();
-    });
-
-    function preloadImages(s) {
-      return Promise.all(s.map(u => new Promise(r => {
-        const i = new Image();
-        i.onload = i.onerror = r;
-        i.src = u;
-      })));
+    function highlightGridStep(s){document.querySelectorAll(".playing-step").forEach(e=>e.classList.remove("playing-step"));if(document.getElementById("baixoGrid").children[s])document.getElementById("baixoGrid").children[s].classList.add("playing-step");document.querySelectorAll(".trackGrid").forEach(g=>{if(g.children[s])g.children[s].classList.add("playing-step")})}
+    function abrirSelecaoNota(i){const o=document.getElementById("selectionOverlay"),ops=document.getElementById("selectionOptions");ops.innerHTML="";const ad=(l,v,c)=>{const d=document.createElement("div");d.className="selection-option "+(c||"");d.innerText=l;d.onclick=()=>{baixoSeq[i]=v;o.style.display="none";renderGrids();if(v&&v!=="x")tocarAudioBuffer(`assets/BaixoMelodia/${v}.mp3`,1)};ops.appendChild(d)};ad("—","");ad("X","x","ghost");notasValidas.forEach(n=>ad(n.replace("S","#"),n));o.style.display="flex";o.onclick=(e)=>{if(e.target===o)o.style.display="none"}}
+    function gerarAleatorio(){
+        const g=ALL_GROOVES[Math.floor(Math.random()*ALL_GROOVES.length)];
+        const kIdx=Math.floor(Math.random()*PITCHES.length);
+        const q=Math.random()>0.5?'maj':'min';
+        bpmAtual=(g.name==="Samba")?70:100+Math.floor(Math.random()*40);
+        document.getElementById("bpmSlider").value=bpmAtual; document.getElementById("bpmDisplay").innerText=bpmAtual+" BPM";
+        document.getElementById("generationInfo").innerText=`${g.name} em ${PITCHES[kIdx]}${q==='min'?'m':''}`; document.getElementById("generationInfo").style.display="inline";
+        let sk="Rock"; if(g.name.includes("Samba"))sk="Samba"; else if(g.name.includes("Jazz"))sk="Jazz"; else if(g.name.includes("Forró"))sk="Forró"; else if(g.name.includes("Metal"))sk="Metal"; else if(g.name.includes("Blues"))sk="Blues";
+        const progs=STYLE_PROGRESSIONS[sk]||STYLE_PROGRESSIONS.Rock; const prog=progs[Math.floor(Math.random()*progs.length)];
+        const beats=meterToBeats(g.meter); const steps=beats*4; const bars=Math.min(prog.length,4); const totSteps=steps*bars;
+        const rhy=expandRhythm(g.bassRhythm,totSteps); const nb=[];
+        for(let b=0;b<bars;b++){
+            const d=prog[b]; const root=(kIdx+DEGREE_TO_ROOT[d])%12;
+            let nIdx=[]; 
+            if(Array.isArray(g.bassScale)){
+                const isMin=(q==='min'&&[1,4,5].includes(d))||[2,3,6].includes(d);
+                const int=isMin?{1:0,2:2,3:3,4:5,5:7,6:8,7:10,8:12}:{1:0,2:2,3:4,4:5,5:7,6:9,7:11,8:12};
+                nIdx=g.bassScale.map(x=>(root+(int[x]||0))%12);
+            } else nIdx=[root];
+            const npb=Math.ceil(steps/nIdx.length);
+            for(let s=0;s<steps;s++){
+                const sym=rhy[b*steps+s]||'-';
+                if(sym==='x')nb.push("x"); else if(sym==='-'||sym==='sm')nb.push("");
+                else nb.push(mapNoteToAnimId(PITCHES[nIdx[Math.floor(s/npb)%nIdx.length]]));
+            }
+        }
+        baixoSeq=nb;
+        const drumP=parsePattern(g.drumPattern.join(' ')).loop;
+        drumLines.forEach(d=>bateriaSeq[d.id]=[]);
+        for(let i=0;i<baixoSeq.length;i++){
+            const t=drumP[i%drumP.length];
+            const acts=[];
+            if(['bu','bumbo','bch','ba','bco'].includes(t))acts.push('bumbo');
+            if(['ca','caixa','cch','cco'].includes(t))acts.push('caixa');
+            if(['ch','chimbal','bch','cch'].includes(t))acts.push('chimbal');
+            if(['co','conducao','bco','cco'].includes(t))acts.push('conducao');
+            if(t==='ba')acts.push('ataque'); if(t==='to1')acts.push('tom1');
+            drumLines.forEach(d=>{bateriaSeq[d.id].push(acts.includes(d.id)?d.id:"x")});
+        }
+        renderGrids();
     }
+    function importarJSON(){const i=document.createElement("input");i.type="file";i.accept=".json";i.onchange=(e)=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=(ev)=>{try{const d=JSON.parse(ev.target.result);if(d.baixo)baixoSeq=d.baixo;if(d.bateria)bateriaSeq=d.bateria;if(d.bpm)bpmAtual=d.bpm;renderGrids()}catch(e){alert("Erro JSON")}};r.readAsText(f)};i.click()}
+    function verificarOrientacao(){document.getElementById("orientationOverlay").style.display=(window.innerWidth<window.innerHeight&&window.innerWidth<900)?"flex":"none"}
   </script>
 </body>
 </html>
