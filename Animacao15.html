@@ -439,6 +439,9 @@
     let headAnimationTimeout = null;
     let currentHeadStyle = 'estavel'; // 'estavel', 'estavel2', 'virada'
     
+    // NOVO: Controle de animação dos braços
+    let armAnimationTimers = {};
+    
     const canvas = document.getElementById("recordingCanvas");
     const ctx = canvas.getContext("2d");
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -619,14 +622,27 @@
         requestAnimationFrame(canvasRenderLoop);
     }
 
+    // CORRIGIDO: Função runFrameAnimation melhorada
     function runFrameAnimation(elementId, frames, idleFrame, fps = 30, loop = false) {
         const el = typeof elementId === 'string' ? document.getElementById(elementId) : elementId;
         const start = performance.now();
         const frameDuration = 1000 / fps;
-        if (activeAnimations[el.id]) cancelAnimationFrame(activeAnimations[el.id]);
+        
+        // Cancela animação anterior se existir
+        if (activeAnimations[el.id]) {
+            cancelAnimationFrame(activeAnimations[el.id]);
+        }
+        
+        // Limpa timer se existir
+        if (armAnimationTimers[el.id]) {
+            clearTimeout(armAnimationTimers[el.id]);
+            delete armAnimationTimers[el.id];
+        }
+        
         const animate = (now) => {
             const elapsed = now - start;
             let index = Math.floor(elapsed / frameDuration);
+            
             if (loop) {
                 index = index % frames.length;
                 setCachedSrc(el, frames[index]);
@@ -636,15 +652,41 @@
                     setCachedSrc(el, frames[index]);
                     activeAnimations[el.id] = requestAnimationFrame(animate);
                 } else {
-                    if (idleFrame) {
+                    // Quando a animação termina, volta para o frame idle
+                    if (idleFrame !== null) {
                         setCachedSrc(el, idleFrame);
-                        if(el.id === 'bat_BracoEsq') el.style.zIndex = 10;
                     }
+                    
+                    // IMPORTANTE: Remove da lista de animações ativas
                     delete activeAnimations[el.id];
+                    
+                    // Ajusta z-index se for braço esquerdo
+                    if(el.id === 'bat_BracoEsq') {
+                        el.style.zIndex = 10;
+                    }
                 }
             }
         };
+        
         activeAnimations[el.id] = requestAnimationFrame(animate);
+        
+        // Para animações não-looping, programa um timer para limpar o estado
+        if (!loop) {
+            const totalDuration = frames.length * frameDuration;
+            armAnimationTimers[el.id] = setTimeout(() => {
+                if (activeAnimations[el.id]) {
+                    cancelAnimationFrame(activeAnimations[el.id]);
+                    delete activeAnimations[el.id];
+                }
+                if (idleFrame !== null) {
+                    setCachedSrc(el, idleFrame);
+                }
+                if(el.id === 'bat_BracoEsq') {
+                    el.style.zIndex = 10;
+                }
+                delete armAnimationTimers[el.id];
+            }, totalDuration + 50); // +50ms de margem
+        }
     }
 
     // NOVO: Função para animação de cabeça com estilo aleatório
@@ -761,15 +803,21 @@
         const isLeft = (armToUse === 'left');
         const imgEl = isLeft ? domImages.bt_bracoEsq : domImages.bt_bracoDir;
         
-        // IDLE é null para manter a mão congelada no último frame
-        const idleSrc = null; 
-        
+        // CORRIGIDO: Define o idle frame correto para cada braço
+        let idleSrc = null;
         if (isLeft) {
+            // Braço esquerdo volta para o frame 1 (idle)
+            idleSrc = DRUM_ASSETS.idle.bracoEsq;
+            
+            // Ajusta z-index para diferentes tipos de instrumentos
             if (['ataque', 'tom1', 'tom2', 'surdo', 'conducao', 'conducao_centro'].includes(drumType)) {
-                domImages.bt_bracoEsq.style.zIndex = 12;
+                imgEl.style.zIndex = 12;
             } else {
-                domImages.bt_bracoEsq.style.zIndex = 10;
+                imgEl.style.zIndex = 10;
             }
+        } else {
+            // Braço direito volta para o frame 3 (idle)
+            idleSrc = DRUM_ASSETS.idle.bracoDir;
         }
         
         let frames = [];
@@ -831,11 +879,16 @@
         activeAnimations = {};
         lastDrumStep = {};
         
-        // Cancela timeout da cabeça
+        // Cancela todos os timers
         if (headAnimationTimeout) {
             clearTimeout(headAnimationTimeout);
             headAnimationTimeout = null;
         }
+        
+        Object.keys(armAnimationTimers).forEach(timerId => {
+            clearTimeout(armAnimationTimers[timerId]);
+        });
+        armAnimationTimers = {};
         
         setCachedSrc(domImages.bt_tronco, DRUM_ASSETS.idle.tronco);
         setCachedSrc(domImages.bt_pernaEsq, DRUM_ASSETS.idle.pernaEsq);
