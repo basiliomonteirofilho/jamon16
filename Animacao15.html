@@ -4,7 +4,7 @@
   <link rel="icon" href="data:,">
   
   <meta charset="UTF-8" />
-  <title>Jam On - Sync Otimizado (Corrigido)</title>
+  <title>Jam On - Sync Otimizado (Mobile & HD Rec)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
   <style>
@@ -64,6 +64,8 @@
     #animacaoStageWrapper {
       position: relative; width: 100%; height: 100%;
       display: flex; align-items: center; justify-content: center;
+      /* Ajuste para garantir que o centro seja o ponto de referência */
+      transform-origin: center center;
     }
 
     /* =========================================
@@ -116,6 +118,7 @@
     #bracoDireitoLayer { top: 250px;  left: -5px;  z-index: 4; }
     #cabecaLayer       { top: 37px;   left: 70px;  z-index: 5; }
 
+    /* Canvas de gravação oculto - AGORA EM HD */
     #recordingCanvas {
       position: absolute; top: -9999px; left: -9999px; visibility: hidden;
     }
@@ -188,18 +191,47 @@
 
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
-    @media (max-width: 600px) { #bottomArea { flex-basis: 55vh; } :root { --label-width: 50px; --cell-size: 22px; } }
+    
+    /* ADAPTAÇÕES MOBILE */
+    @media (max-width: 800px) {
+        #animacaoStageWrapper {
+            /* Escala o palco para caber na tela sem quebrar o layout */
+            transform: scale(0.65);
+        }
+        #topArea {
+            /* Garante que o overflow hidden não corte a banda */
+            overflow: visible;
+        }
+    }
+    
+    @media (max-width: 600px) { 
+        #bottomArea { flex-basis: 60vh; } 
+        :root { --label-width: 50px; --cell-size: 22px; } 
+        
+        #animacaoStageWrapper {
+             /* Mais zoom out para celulares pequenos */
+            transform: scale(0.55);
+        }
+
+        /* Ajuste de botões para caber melhor na tela */
+        #playerControlsRow {
+            justify-content: space-between;
+        }
+        button { flex-grow: 1; justify-content: center; }
+        .sliderGroup { flex-grow: 1; justify-content: center; }
+    }
   </style>
 </head>
 <body>
 
   <div id="loadingOverlay">
-    <div id="loadingText">Carregando Estúdio...</div>
+    <div id="loadingText">Carregando Estúdio Mobile...</div>
     <div id="loadingBarContainer"><div id="loadingBar"></div></div>
   </div>
 
   <div id="orientationOverlay"><div><h1>🎵 Melhor Experiência 🎸</h1><p>Gire o dispositivo.</p></div></div>
-  <canvas id="recordingCanvas" width="520" height="520"></canvas>
+  
+  <canvas id="recordingCanvas" width="1280" height="720"></canvas>
 
   <div class="appRoot">
     <div id="topArea">
@@ -237,8 +269,8 @@
     <div id="bottomArea">
       <div id="playerControlsRow">
         <button id="playBtn" disabled>⏳ Carregando...</button>
-        <button id="playAleatorioBtn" disabled>🎲 Aleatório (Smart)</button>
-        <button id="recordVideoBtn">🔴 Gravar (Auto)</button>
+        <button id="playAleatorioBtn" disabled>🎲 Smart</button>
+        <button id="recordVideoBtn">🔴 Gravar Vídeo</button>
         <span id="generationInfo"></span>
         <span id="bpmDisplay" style="margin-left:auto">120 BPM</span>
         <input type="range" id="bpmSlider" min="60" max="180" value="120" />
@@ -276,7 +308,6 @@
     const DRUM_PREROLL_MS = DRUM_IMPACT_FRAME * DRUM_MS_PER_FRAME; // ~50ms
     
     // COMPENSACAO DE LATENCIA (Correção do Atraso)
-    // O navegador leva um tempo para "pintar" o DOM. Subtraímos isso.
     const VISUAL_OFFSET_MS = 25; 
 
     // NOVO: Animações da cabeça
@@ -285,7 +316,6 @@
         virada_esquerda: Array.from({length:8}, (_,i) => PASTA_BAT + `Cabeca/Virada_para_esquerda/cabeca${String(i+39).padStart(4,'0')}.png`),
         voltando_direita: Array.from({length:3}, (_,i) => PASTA_BAT + `Cabeca/Voltando_Virada_da_direita/cabeca${String(i+61).padStart(4,'0')}.png`),
         voltando_esquerda: Array.from({length:4}, (_,i) => PASTA_BAT + `Cabeca/Voltando_Virada_da_esquerda/cabeca${String(i+48).padStart(4,'0')}.png`),
-        // Animação principal (alterna entre as duas)
         cabeca_estavel: Array.from({length:26}, (_,i) => PASTA_BAT + `Cabeca/Cabeca_estavel/cabeca${String(i+1).padStart(4,'0')}.png`),
         cabeca_estavel2: Array.from({length:19}, (_,i) => PASTA_BAT + `Cabeca/Cabeca_estavel_2/cabeca${String(i+20).padStart(4,'0')}.png`)
     };
@@ -293,7 +323,7 @@
     const DRUM_ASSETS = {
         idle: {
             ataque: PASTA_BAT + "Ataque/Ataque0001.png",
-            bracoDir: PASTA_BAT + "Braco_direito/Caixa/braco_direito0003.png", // TERCEIRO FRAME COMO IDLE
+            bracoDir: PASTA_BAT + "Braco_direito/Caixa/braco_direito0003.png",
             bracoEsq: PASTA_BAT + "Braco_esquerdo/Caixa/braco_esquerda0001.png",
             cabeca: PASTA_BAT + "Cabeca/Cabeca_estavel/cabeca0024.png",
             conducao: PASTA_BAT + "Conducao/Conducao0001.png",
@@ -306,93 +336,21 @@
             ataquePrato: Array.from({length:7}, (_,i) => PASTA_BAT + `Ataque/Ataque${String(i+1).padStart(4,'0')}.png`),
             conducaoPrato: Array.from({length:6}, (_,i) => PASTA_BAT + `Conducao/Conducao${String(i+1).padStart(4,'0')}.png`),
             
-            // BRAÇO DIREITO - CORRIGIDO: Terceiro frame (índice 2) deve ser o impacto
-            bd_ataque: [
-                PASTA_BAT + "Braco_direito/Ataque/braco_direito0005.png",
-                PASTA_BAT + "Braco_direito/Ataque/braco_direito0006.png",
-                PASTA_BAT + "Braco_direito/Ataque/braco_direito0007.png", // IMPACTO
-                PASTA_BAT + "Braco_direito/Ataque/braco_direito0008.png"
-            ],
-            bd_caixa: [
-                PASTA_BAT + "Braco_direito/Caixa/braco_direito0001.png",
-                PASTA_BAT + "Braco_direito/Caixa/braco_direito0002.png",
-                PASTA_BAT + "Braco_direito/Caixa/braco_direito0003.png", // IMPACTO
-                PASTA_BAT + "Braco_direito/Caixa/braco_direito0004.png"
-            ],
-            bd_chimbal: [
-                PASTA_BAT + "Braco_direito/Chimbal/braco_direito0001.png",
-                PASTA_BAT + "Braco_direito/Chimbal/braco_direito0002.png",
-                PASTA_BAT + "Braco_direito/Chimbal/braco_direito0003.png", // IMPACTO
-                PASTA_BAT + "Braco_direito/Chimbal/braco_direito0004.png"
-            ],
-            bd_conducao: [
-                PASTA_BAT + "Braco_direito/Conducao/braco_direito0025.png",
-                PASTA_BAT + "Braco_direito/Conducao/braco_direito0026.png",
-                PASTA_BAT + "Braco_direito/Conducao/braco_direito0027.png", // IMPACTO
-                PASTA_BAT + "Braco_direito/Conducao/braco_direito0028.png"
-            ],
-            bd_surdo: [
-                PASTA_BAT + "Braco_direito/Surdo/braco_direito0021.png",
-                PASTA_BAT + "Braco_direito/Surdo/braco_direito0022.png",
-                PASTA_BAT + "Braco_direito/Surdo/braco_direito0023.png", // IMPACTO
-                PASTA_BAT + "Braco_direito/Surdo/braco_direito0024.png"
-            ],
-            bd_tom1: [
-                PASTA_BAT + "Braco_direito/Tom_1/braco_direito0013.png",
-                PASTA_BAT + "Braco_direito/Tom_1/braco_direito0014.png",
-                PASTA_BAT + "Braco_direito/Tom_1/braco_direito0015.png", // IMPACTO
-                PASTA_BAT + "Braco_direito/Tom_1/braco_direito0016.png"
-            ],
-            bd_tom2: [
-                PASTA_BAT + "Braco_direito/Tom_2/braco_direito0017.png",
-                PASTA_BAT + "Braco_direito/Tom_2/braco_direito0018.png",
-                PASTA_BAT + "Braco_direito/Tom_2/braco_direito0019.png", // IMPACTO
-                PASTA_BAT + "Braco_direito/Tom_2/braco_direito0020.png"
-            ],
+            bd_ataque: [PASTA_BAT + "Braco_direito/Ataque/braco_direito0005.png", PASTA_BAT + "Braco_direito/Ataque/braco_direito0006.png", PASTA_BAT + "Braco_direito/Ataque/braco_direito0007.png", PASTA_BAT + "Braco_direito/Ataque/braco_direito0008.png"],
+            bd_caixa: [PASTA_BAT + "Braco_direito/Caixa/braco_direito0001.png", PASTA_BAT + "Braco_direito/Caixa/braco_direito0002.png", PASTA_BAT + "Braco_direito/Caixa/braco_direito0003.png", PASTA_BAT + "Braco_direito/Caixa/braco_direito0004.png"],
+            bd_chimbal: [PASTA_BAT + "Braco_direito/Chimbal/braco_direito0001.png", PASTA_BAT + "Braco_direito/Chimbal/braco_direito0002.png", PASTA_BAT + "Braco_direito/Chimbal/braco_direito0003.png", PASTA_BAT + "Braco_direito/Chimbal/braco_direito0004.png"],
+            bd_conducao: [PASTA_BAT + "Braco_direito/Conducao/braco_direito0025.png", PASTA_BAT + "Braco_direito/Conducao/braco_direito0026.png", PASTA_BAT + "Braco_direito/Conducao/braco_direito0027.png", PASTA_BAT + "Braco_direito/Conducao/braco_direito0028.png"],
+            bd_surdo: [PASTA_BAT + "Braco_direito/Surdo/braco_direito0021.png", PASTA_BAT + "Braco_direito/Surdo/braco_direito0022.png", PASTA_BAT + "Braco_direito/Surdo/braco_direito0023.png", PASTA_BAT + "Braco_direito/Surdo/braco_direito0024.png"],
+            bd_tom1: [PASTA_BAT + "Braco_direito/Tom_1/braco_direito0013.png", PASTA_BAT + "Braco_direito/Tom_1/braco_direito0014.png", PASTA_BAT + "Braco_direito/Tom_1/braco_direito0015.png", PASTA_BAT + "Braco_direito/Tom_1/braco_direito0016.png"],
+            bd_tom2: [PASTA_BAT + "Braco_direito/Tom_2/braco_direito0017.png", PASTA_BAT + "Braco_direito/Tom_2/braco_direito0018.png", PASTA_BAT + "Braco_direito/Tom_2/braco_direito0019.png", PASTA_BAT + "Braco_direito/Tom_2/braco_direito0020.png"],
 
-            // BRAÇO ESQUERDO - CORRIGIDO: Terceiro frame (índice 2) deve ser o impacto
-            be_ataque: [
-                PASTA_BAT + "Braco_esquerdo/Ataque/braco_esquerda0009.png",
-                PASTA_BAT + "Braco_esquerdo/Ataque/braco_esquerda0010.png",
-                PASTA_BAT + "Braco_esquerdo/Ataque/braco_esquerda0011.png", // IMPACTO
-                PASTA_BAT + "Braco_esquerdo/Ataque/braco_esquerda0012.png"
-            ],
-            be_caixa: [
-                PASTA_BAT + "Braco_esquerdo/Caixa/braco_esquerda0001.png",
-                PASTA_BAT + "Braco_esquerdo/Caixa/braco_esquerda0002.png",
-                PASTA_BAT + "Braco_esquerdo/Caixa/braco_esquerda0003.png", // IMPACTO
-                PASTA_BAT + "Braco_esquerdo/Caixa/braco_esquerda0004.png"
-            ],
-            be_chimbal: [
-                PASTA_BAT + "Braco_esquerdo/Chimbal/braco_esquerda0005.png",
-                PASTA_BAT + "Braco_esquerdo/Chimbal/braco_esquerda0006.png",
-                PASTA_BAT + "Braco_esquerdo/Chimbal/braco_esquerda0007.png", // IMPACTO
-                PASTA_BAT + "Braco_esquerdo/Chimbal/braco_esquerda0008.png"
-            ],
-            be_conducao: [
-                PASTA_BAT + "Braco_esquerdo/Conducao/braco_esquerda0025.png",
-                PASTA_BAT + "Braco_esquerdo/Conducao/braco_esquerda0026.png",
-                PASTA_BAT + "Braco_esquerdo/Conducao/braco_esquerda0027.png", // IMPACTO
-                PASTA_BAT + "Braco_esquerdo/Conducao/braco_esquerda0028.png"
-            ],
-            be_surdo: [
-                PASTA_BAT + "Braco_esquerdo/Surdo/braco_esquerda0021.png",
-                PASTA_BAT + "Braco_esquerdo/Surdo/braco_esquerda0022.png",
-                PASTA_BAT + "Braco_esquerdo/Surdo/braco_esquerda0023.png", // IMPACTO
-                PASTA_BAT + "Braco_esquerdo/Surdo/braco_esquerda0024.png"
-            ],
-            be_tom1: [
-                PASTA_BAT + "Braco_esquerdo/Tom_1/braco_esquerda0013.png",
-                PASTA_BAT + "Braco_esquerdo/Tom_1/braco_esquerda0014.png",
-                PASTA_BAT + "Braco_esquerdo/Tom_1/braco_esquerda0015.png", // IMPACTO
-                PASTA_BAT + "Braco_esquerdo/Tom_1/braco_esquerda0016.png"
-            ],
-            be_tom2: [
-                PASTA_BAT + "Braco_esquerdo/Tom_2/braco_esquerda0017.png",
-                PASTA_BAT + "Braco_esquerdo/Tom_2/braco_esquerda0018.png",
-                PASTA_BAT + "Braco_esquerdo/Tom_2/braco_esquerda0019.png", // IMPACTO
-                PASTA_BAT + "Braco_esquerdo/Tom_2/braco_esquerda0020.png"
-            ],
+            be_ataque: [PASTA_BAT + "Braco_esquerdo/Ataque/braco_esquerda0009.png", PASTA_BAT + "Braco_esquerdo/Ataque/braco_esquerda0010.png", PASTA_BAT + "Braco_esquerdo/Ataque/braco_esquerda0011.png", PASTA_BAT + "Braco_esquerdo/Ataque/braco_esquerda0012.png"],
+            be_caixa: [PASTA_BAT + "Braco_esquerdo/Caixa/braco_esquerda0001.png", PASTA_BAT + "Braco_esquerdo/Caixa/braco_esquerda0002.png", PASTA_BAT + "Braco_esquerdo/Caixa/braco_esquerda0003.png", PASTA_BAT + "Braco_esquerdo/Caixa/braco_esquerda0004.png"],
+            be_chimbal: [PASTA_BAT + "Braco_esquerdo/Chimbal/braco_esquerda0005.png", PASTA_BAT + "Braco_esquerdo/Chimbal/braco_esquerda0006.png", PASTA_BAT + "Braco_esquerdo/Chimbal/braco_esquerda0007.png", PASTA_BAT + "Braco_esquerdo/Chimbal/braco_esquerda0008.png"],
+            be_conducao: [PASTA_BAT + "Braco_esquerdo/Conducao/braco_esquerda0025.png", PASTA_BAT + "Braco_esquerdo/Conducao/braco_esquerda0026.png", PASTA_BAT + "Braco_esquerdo/Conducao/braco_esquerda0027.png", PASTA_BAT + "Braco_esquerdo/Conducao/braco_esquerda0028.png"],
+            be_surdo: [PASTA_BAT + "Braco_esquerdo/Surdo/braco_esquerda0021.png", PASTA_BAT + "Braco_esquerdo/Surdo/braco_esquerda0022.png", PASTA_BAT + "Braco_esquerdo/Surdo/braco_esquerda0023.png", PASTA_BAT + "Braco_esquerdo/Surdo/braco_esquerda0024.png"],
+            be_tom1: [PASTA_BAT + "Braco_esquerdo/Tom_1/braco_esquerda0013.png", PASTA_BAT + "Braco_esquerdo/Tom_1/braco_esquerda0014.png", PASTA_BAT + "Braco_esquerdo/Tom_1/braco_esquerda0015.png", PASTA_BAT + "Braco_esquerdo/Tom_1/braco_esquerda0016.png"],
+            be_tom2: [PASTA_BAT + "Braco_esquerdo/Tom_2/braco_esquerda0017.png", PASTA_BAT + "Braco_esquerdo/Tom_2/braco_esquerda0018.png", PASTA_BAT + "Braco_esquerdo/Tom_2/braco_esquerda0019.png", PASTA_BAT + "Braco_esquerdo/Tom_2/braco_esquerda0020.png"],
 
             perna_duplo: [ PASTA_BAT+"Perna_esquerda/Pedal_duplo/Baterista0002.png", PASTA_BAT+"Perna_esquerda/Pedal_duplo/Baterista0003.png" ]
         }
@@ -437,7 +395,7 @@
     // NOVO: Controle de virada da cabeça
     let lastHeadAnimation = null;
     let headAnimationTimeout = null;
-    let currentHeadStyle = 'estavel'; // 'estavel', 'estavel2', 'virada'
+    let currentHeadStyle = 'estavel'; 
     
     // NOVO: Controle de animação dos braços
     let armAnimationTimers = {};
@@ -590,10 +548,20 @@
         renderGrids();
     }
 
+    // ========================================================
+    // RENDERIZAÇÃO NO CANVAS (GRAVAÇÃO) - ATUALIZADO PARA HD
+    // ========================================================
     function canvasRenderLoop() {
-        ctx.fillStyle = "#111"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // Limpa e preenche fundo
+        ctx.fillStyle = "#111"; 
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // --- DESENHA O BATERISTA (FUNDO ESQUERDA) ---
         ctx.save();
-        ctx.scale(0.45, 0.45); ctx.translate(350, -180); 
+        // Move o baterista para uma posição boa no canvas 1280x720
+        ctx.translate(400, 150); // Posição X, Y
+        ctx.scale(0.55, 0.55);   // Escala um pouco maior que a anterior para o HD
+
         const drawImg = (el) => { if (el && el.complete && el.naturalWidth > 0) ctx.drawImage(el, 0, 0); };
         drawImg(domImages.bt_conducao);
         drawImg(domImages.bt_pernaEsq);
@@ -604,9 +572,23 @@
         drawImg(domImages.bt_kit);
         drawImg(domImages.bt_ataque);
         ctx.restore();
+
+        // --- DESENHA O BAIXISTA (FRENTE DIREITA) ---
+        ctx.save();
+        // Centraliza e ajusta o baixista no canvas
+        ctx.translate(550, 100); // Posição X, Y
+        // O baixista original é 520x520, vamos manter a escala 1:1 ou ajustar levemente
+        // ctx.scale(1, 1); 
+
+        // Desenha pernas (fixas no layout original)
+        // No original: left: 64px, top: 332px. Aqui desenhamos relativo ao translate acima
         if (domImages.bx_pernas.complete) ctx.drawImage(domImages.bx_pernas, 64, 332);
+
+        // Grupo do tronco com balanço (Pêndulo)
         ctx.save(); 
+        // No CSS original o pivot é 50% 80%. Imagem 520x520 -> 50%=260, 80%=416
         ctx.translate(260, 416); 
+        
         let angle = 0;
         if (isPlaying && pendulumStartTime > 0) {
             const now = performance.now();
@@ -614,15 +596,23 @@
             const speed = 0.003 * (bpmAtual / 120);
             angle = Math.sin(elapsed * speed) * 2.3;
         }
-        ctx.rotate(angle * Math.PI / 180); 
+        ctx.rotate(angle * Math.PI / 180);
+        
+        // Aplica o rotate no DIV visual também
         document.getElementById("bodyWrapperPendulo").style.transform = `rotate(${angle}deg)`;
-        ctx.translate(-260, -416);
+        
+        ctx.translate(-260, -416); // Retorna a origem
+        
+        // Desenha partes do corpo usando as coordenadas originais CSS
         if (domImages.bx_cabecaTras.complete) ctx.drawImage(domImages.bx_cabecaTras, 100, 60);
         if (domImages.bx_tronco.complete) ctx.drawImage(domImages.bx_tronco, 0, 132);
         if (domImages.bx_antebraco.complete) ctx.drawImage(domImages.bx_antebraco, -2, 179);
         if (domImages.bx_bracoDir.complete) ctx.drawImage(domImages.bx_bracoDir, -5, 250);
         if (domImages.bx_cabeca.complete) ctx.drawImage(domImages.bx_cabeca, 70, 37);
-        ctx.restore();
+        
+        ctx.restore(); // Fim do grupo pendulo
+        ctx.restore(); // Fim do grupo baixista
+
         requestAnimationFrame(canvasRenderLoop);
     }
 
@@ -631,24 +621,21 @@
         const el = typeof elementId === 'string' ? document.getElementById(elementId) : elementId;
         const frameDuration = 1000 / fps;
         
-        // Cancela animação anterior se existir
         if (activeAnimations[el.id]) {
             cancelAnimationFrame(activeAnimations[el.id]);
             delete activeAnimations[el.id];
         }
         
-        // Limpa timer se existir
         if (armAnimationTimers[el.id]) {
             clearTimeout(armAnimationTimers[el.id]);
             delete armAnimationTimers[el.id];
         }
         
-        // CORREÇÃO CRÍTICA: Se startFrame > 0, começa já no frame desejado
         if (startFrame > 0 && startFrame < frames.length) {
             setCachedSrc(el, frames[startFrame]);
         }
         
-        const start = performance.now() - (startFrame * frameDuration); // Ajusta o tempo inicial
+        const start = performance.now() - (startFrame * frameDuration); 
         const animate = (now) => {
             const elapsed = now - start;
             let index = Math.floor(elapsed / frameDuration);
@@ -662,22 +649,14 @@
                     setCachedSrc(el, frames[index]);
                     activeAnimations[el.id] = requestAnimationFrame(animate);
                 } else {
-                    // Quando a animação termina
                     if (keepLastFrame && el.id === 'bat_BracoDir') {
-                        // BRAÇO DIREITO: Mantém o último frame
                         setCachedSrc(el, frames[frames.length - 1]);
-                        // Guarda a referência para poder restaurar se necessário
                         lastRightArmFrame = frames[frames.length - 1];
                         lastRightArmFrames = frames;
                     } else if (idleFrame !== null) {
-                        // Outros elementos: volta para o frame idle
                         setCachedSrc(el, idleFrame);
                     }
-                    
-                    // Remove da lista de animações ativas
                     delete activeAnimations[el.id];
-                    
-                    // Ajusta z-index se for braço esquerdo
                     if(el.id === 'bat_BracoEsq') {
                         el.style.zIndex = 10;
                     }
@@ -687,7 +666,6 @@
         
         activeAnimations[el.id] = requestAnimationFrame(animate);
         
-        // Para animações não-looping, programa um timer para limpar o estado
         if (!loop) {
             const remainingFrames = frames.length - startFrame;
             const totalDuration = remainingFrames * frameDuration;
@@ -696,8 +674,6 @@
                     cancelAnimationFrame(activeAnimations[el.id]);
                     delete activeAnimations[el.id];
                 }
-                
-                // Aplica a mesma lógica de manter o frame
                 if (keepLastFrame && el.id === 'bat_BracoDir') {
                     setCachedSrc(el, frames[frames.length - 1]);
                     lastRightArmFrame = frames[frames.length - 1];
@@ -705,80 +681,50 @@
                 } else if (idleFrame !== null && !keepLastFrame) {
                     setCachedSrc(el, idleFrame);
                 }
-                
                 if(el.id === 'bat_BracoEsq') {
                     el.style.zIndex = 10;
                 }
                 delete armAnimationTimers[el.id];
-            }, totalDuration + 50); // +50ms de margem
+            }, totalDuration + 50); 
         }
     }
 
-    // Função especial para tocar a caixa começando no frame 3
     function playCaixaAnimation(imgEl, isLeft, currentStep) {
         const frames = isLeft ? DRUM_ASSETS.anim.be_caixa : DRUM_ASSETS.anim.bd_caixa;
         const idleSrc = isLeft ? DRUM_ASSETS.idle.bracoEsq : DRUM_ASSETS.idle.bracoDir;
-        
-        // Para o braço direito, mantém o último frame
-        const keepLastFrame = !isLeft; // Apenas para braço direito
-        
-        // CORREÇÃO: Para caixa, começa no frame 3 (impacto) instantaneamente
+        const keepLastFrame = !isLeft; 
         runFrameAnimation(imgEl, frames, idleSrc, DRUM_FPS, false, 2, keepLastFrame);
-        
-        // Ajusta z-index se for braço esquerdo
         if (isLeft) {
-            imgEl.style.zIndex = 10; // Caixa não precisa de z-index alto
+            imgEl.style.zIndex = 10;
         }
     }
 
-    // Função para braço direito que mantém a posição final
     function playRightArmAnimation(frames, idleFrame, startFrame = 0) {
-        // Para o braço direito, sempre mantém o último frame
         runFrameAnimation(domImages.bt_bracoDir, frames, idleFrame, DRUM_FPS, false, startFrame, true);
     }
 
-    // NOVO: Função para animação de cabeça com estilo aleatório
     function playRandomHeadAnimation() {
         if (!isPlaying || activeAnimations['bat_Cabeca']) return;
-        
-        // Aleatoriamente escolhe entre as duas animações estáveis
-        const shouldSwitch = Math.random() > 0.7; // 30% de chance de trocar
+        const shouldSwitch = Math.random() > 0.7; 
         if (shouldSwitch) {
             currentHeadStyle = currentHeadStyle === 'estavel' ? 'estavel2' : 'estavel';
         }
-        
-        const frames = currentHeadStyle === 'estavel' ? 
-            CABECA_ANIMATIONS.cabeca_estavel : 
-            CABECA_ANIMATIONS.cabeca_estavel2;
-        
+        const frames = currentHeadStyle === 'estavel' ? CABECA_ANIMATIONS.cabeca_estavel : CABECA_ANIMATIONS.cabeca_estavel2;
         runFrameAnimation(domImages.bt_cabeca, frames, null, 25, true);
-        
-        // Agenda próxima troca
         if (headAnimationTimeout) clearTimeout(headAnimationTimeout);
         headAnimationTimeout = setTimeout(() => {
             if (isPlaying) playRandomHeadAnimation();
-        }, 2000 + Math.random() * 3000); // 2-5 segundos
+        }, 2000 + Math.random() * 3000); 
     }
 
-    // NOVO: Função para animação de virada da cabeça
     function playHeadTurnAnimation(direction = 'right') {
         if (!isPlaying) return;
-        
-        // Cancela animação atual
         if (activeAnimations['bat_Cabeca']) {
             cancelAnimationFrame(activeAnimations['bat_Cabeca']);
             delete activeAnimations['bat_Cabeca'];
         }
-        
-        const turnFrames = direction === 'right' ? 
-            CABECA_ANIMATIONS.virada_direita : 
-            CABECA_ANIMATIONS.virada_esquerda;
-        
-        const returnFrames = direction === 'right' ?
-            CABECA_ANIMATIONS.voltando_direita :
-            CABECA_ANIMATIONS.voltando_esquerda;
-        
-        // Executa virada
+        const turnFrames = direction === 'right' ? CABECA_ANIMATIONS.virada_direita : CABECA_ANIMATIONS.virada_esquerda;
+        const returnFrames = direction === 'right' ? CABECA_ANIMATIONS.voltando_direita : CABECA_ANIMATIONS.voltando_esquerda;
         let step = 0;
         const animateTurn = () => {
             if (step < turnFrames.length) {
@@ -786,7 +732,6 @@
                 step++;
                 setTimeout(animateTurn, 50);
             } else {
-                // Volta depois de um tempo
                 setTimeout(() => {
                     let returnStep = 0;
                     const animateReturn = () => {
@@ -795,12 +740,11 @@
                             returnStep++;
                             setTimeout(animateReturn, 50);
                         } else {
-                            // Volta para animação normal
                             setTimeout(() => playRandomHeadAnimation(), 500);
                         }
                     };
                     animateReturn();
-                }, 800); // Mantém virada por 800ms
+                }, 800); 
             }
         };
         animateTurn();
@@ -810,14 +754,10 @@
         if (!activeAnimations['bat_Tronco'] && isPlaying) {
             runFrameAnimation(domImages.bt_tronco, DRUM_ASSETS.anim.troncoTocando, null, 30, true);
         }
-        
-        // NOVO: Inicia animação de cabeça aleatória se não estiver ativa
         if (!activeAnimations['bat_Cabeca'] && isPlaying) {
             playRandomHeadAnimation();
         }
-        
         if (drumType === 'start') return;
-        
         if (drumType === 'bumbo') {
             const prevStepIndex = (currentStep === 0) ? baixoSeq.length - 1 : currentStep - 1;
             const isConsecutive = (bateriaSeq['bumbo'][prevStepIndex] === 'bumbo');
@@ -826,37 +766,24 @@
             }
             return;
         }
-        
         const prevHitStep = lastDrumStep[drumType];
         const isRapidRepeat = (prevHitStep !== undefined && (currentStep - prevHitStep === 1 || (currentStep===0 && prevHitStep === baixoSeq.length-1)));
-        
         let armToUse = 'right';
         if (['caixa', 'caixaAro'].includes(drumType)) armToUse = 'left';
         if (isRapidRepeat && lastArmUsed[drumType]) {
             armToUse = (lastArmUsed[drumType] === 'right') ? 'left' : 'right';
         }
-        
         lastDrumStep[drumType] = currentStep;
         lastArmUsed[drumType] = armToUse;
-        
-        // NOVO: Verifica se precisa fazer virada da cabeça
-        const shouldTurnHead = (drumType === 'tom2' || drumType === 'surdo' || drumType === 'conducao' || drumType === 'conducao_centro') 
-                               && isRapidRepeat 
-                               && Math.random() > 0.5; // 50% de chance
-        
+        const shouldTurnHead = (drumType === 'tom2' || drumType === 'surdo' || drumType === 'conducao' || drumType === 'conducao_centro') && isRapidRepeat && Math.random() > 0.5; 
         if (shouldTurnHead) {
             playHeadTurnAnimation(armToUse === 'right' ? 'right' : 'left');
         }
-        
         const isLeft = (armToUse === 'left');
         const imgEl = isLeft ? domImages.bt_bracoEsq : domImages.bt_bracoDir;
-        
-        // Define o idle frame correto para cada braço
         let idleSrc = null;
         if (isLeft) {
             idleSrc = DRUM_ASSETS.idle.bracoEsq;
-            
-            // Ajusta z-index para diferentes tipos de instrumentos
             if (['ataque', 'tom1', 'tom2', 'surdo', 'conducao', 'conducao_centro'].includes(drumType)) {
                 imgEl.style.zIndex = 12;
             } else {
@@ -865,8 +792,6 @@
         } else {
             idleSrc = DRUM_ASSETS.idle.bracoDir;
         }
-        
-        // CORREÇÃO: Para caixa, usa a função especial que começa no frame 3
         if (drumType === 'caixa' || drumType === 'caixaAro') {
             playCaixaAnimation(imgEl, isLeft, currentStep);
         } else {
@@ -876,22 +801,17 @@
             if(drumType === 'chimbalaberto') key = 'chimbal';
             if(drumType === 'caixaAro') key = 'caixa';
             if(drumType === 'conducao_centro') key = 'conducao';
-            
             if (DRUM_ASSETS.anim[mapName + key]) {
                 frames = DRUM_ASSETS.anim[mapName + key];
             } else {
                 frames = isLeft ? DRUM_ASSETS.anim.be_caixa : DRUM_ASSETS.anim.bd_caixa;
             }
-            
-            // Se for braço direito, usa a função especial que mantém o último frame
             if (!isLeft) {
                 playRightArmAnimation(frames, idleSrc);
             } else {
-                // Braço esquerdo: comportamento normal
                 runFrameAnimation(imgEl, frames, idleSrc, DRUM_FPS);
             }
         }
-        
         if(drumType === 'ataque') runFrameAnimation(domImages.bt_ataque, DRUM_ASSETS.anim.ataquePrato, DRUM_ASSETS.idle.ataque, 30);
         if(drumType.includes('conducao')) runFrameAnimation(domImages.bt_conducao, DRUM_ASSETS.anim.conducaoPrato, DRUM_ASSETS.idle.conducao, 30);
     }
@@ -934,33 +854,25 @@
         Object.keys(activeAnimations).forEach(k => cancelAnimationFrame(activeAnimations[k]));
         activeAnimations = {};
         lastDrumStep = {};
-        
-        // Cancela todos os timers
         if (headAnimationTimeout) {
             clearTimeout(headAnimationTimeout);
             headAnimationTimeout = null;
         }
-        
         Object.keys(armAnimationTimers).forEach(timerId => {
             clearTimeout(armAnimationTimers[timerId]);
         });
         armAnimationTimers = {};
-        
         setCachedSrc(domImages.bt_tronco, DRUM_ASSETS.idle.tronco);
         setCachedSrc(domImages.bt_pernaEsq, DRUM_ASSETS.idle.pernaEsq);
-        
-        // BRAÇO DIREITO: Volta para a posição idle normal no reset
         setCachedSrc(domImages.bt_bracoDir, DRUM_ASSETS.idle.bracoDir);
         lastRightArmFrame = null;
         lastRightArmFrames = null;
-        
         setCachedSrc(domImages.bt_bracoEsq, DRUM_ASSETS.idle.bracoEsq);
         domImages.bt_bracoEsq.style.zIndex = 10;
         setCachedSrc(domImages.bt_cabeca, DRUM_ASSETS.idle.cabeca);
         setCachedSrc(domImages.bt_ataque, DRUM_ASSETS.idle.ataque);
         setCachedSrc(domImages.bt_conducao, DRUM_ASSETS.idle.conducao);
-        
-        currentHeadStyle = 'estavel'; // Reseta para estilo padrão
+        currentHeadStyle = 'estavel'; 
     }
 
     function togglePlay() {
@@ -993,14 +905,11 @@
         isPlaying = true; 
         atualPasso = 0;
         lastDrumStep = {};
-        
         document.getElementById("playBtn").innerText = "⏸ Pause"; document.getElementById("playBtn").style.background = "#e65100";
         pendulumStartTime = performance.now(); 
         playDrumAnimation('start', 0); 
-
         let nextStepTime = audioContext.currentTime;
         const secondsPerStep = (60 / bpmAtual) / 4;
-
         const scheduler = () => {
             if (!isPlaying) return;
             while (nextStepTime < audioContext.currentTime + 0.15) {
@@ -1016,10 +925,7 @@
 
     function runStep(stepIndex, timeToPlay) {
         const now = audioContext.currentTime;
-        // Compensação visual: VISUAL_OFFSET_MS (25ms) ajuda a corrigir a latência de pintura do navegador
         const delayVisualBase = Math.max(0, (timeToPlay - now) * 1000 - VISUAL_OFFSET_MS);
-        
-        // PREROLL BATERIA: ~50ms antes do audio + Compensação visual
         let delayDrumVisual = (timeToPlay - now) * 1000 - DRUM_PREROLL_MS - VISUAL_OFFSET_MS;
         if (delayDrumVisual < 0) delayDrumVisual = 0;
 
@@ -1036,7 +942,6 @@
             if(!isPlaying) return;
             highlightGridStep(stepIndex);
             document.getElementById("progressBar").style.width = ((stepIndex + 1) / baixoSeq.length * 100) + "%";
-            
             const notaBaixo = baixoSeq[stepIndex];
             const msPorStep = (60000/bpmAtual)/4;
             if (notaBaixo !== "") {
@@ -1101,7 +1006,7 @@
     async function toggleRecording() {
         const btn = document.getElementById("recordVideoBtn");
         if (isRecording) {
-            mediaRecorder.stop(); isRecording = false; btn.innerText = "🔴 Gravar (Auto)"; btn.classList.remove("recording");
+            mediaRecorder.stop(); isRecording = false; btn.innerText = "🔴 Gravar Vídeo"; btn.classList.remove("recording");
         } else {
             try {
                 if (audioContext.state === 'suspended') await audioContext.resume();
@@ -1206,4 +1111,3 @@
   </script>
 </body>
 </html>
-
