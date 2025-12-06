@@ -4,7 +4,7 @@
   <link rel="icon" href="data:,">
   
   <meta charset="UTF-8" />
-  <title>Jam On - Sync Otimizado (Mobile & HD Rec)</title>
+  <title>Jam On - Sync Otimizado (Mobile + HD + Fix Cabeça)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
   <style>
@@ -64,7 +64,6 @@
     #animacaoStageWrapper {
       position: relative; width: 100%; height: 100%;
       display: flex; align-items: center; justify-content: center;
-      /* Ajuste para garantir que o centro seja o ponto de referência */
       transform-origin: center center;
     }
 
@@ -118,7 +117,7 @@
     #bracoDireitoLayer { top: 250px;  left: -5px;  z-index: 4; }
     #cabecaLayer       { top: 37px;   left: 70px;  z-index: 5; }
 
-    /* Canvas de gravação oculto - AGORA EM HD */
+    /* CANVAS HD OCULTO */
     #recordingCanvas {
       position: absolute; top: -9999px; left: -9999px; visibility: hidden;
     }
@@ -194,29 +193,15 @@
     
     /* ADAPTAÇÕES MOBILE */
     @media (max-width: 800px) {
-        #animacaoStageWrapper {
-            /* Escala o palco para caber na tela sem quebrar o layout */
-            transform: scale(0.65);
-        }
-        #topArea {
-            /* Garante que o overflow hidden não corte a banda */
-            overflow: visible;
-        }
+        #animacaoStageWrapper { transform: scale(0.65); }
+        #topArea { overflow: visible; }
     }
     
     @media (max-width: 600px) { 
         #bottomArea { flex-basis: 60vh; } 
         :root { --label-width: 50px; --cell-size: 22px; } 
-        
-        #animacaoStageWrapper {
-             /* Mais zoom out para celulares pequenos */
-            transform: scale(0.55);
-        }
-
-        /* Ajuste de botões para caber melhor na tela */
-        #playerControlsRow {
-            justify-content: space-between;
-        }
+        #animacaoStageWrapper { transform: scale(0.55); }
+        #playerControlsRow { justify-content: space-between; }
         button { flex-grow: 1; justify-content: center; }
         .sliderGroup { flex-grow: 1; justify-content: center; }
     }
@@ -225,7 +210,7 @@
 <body>
 
   <div id="loadingOverlay">
-    <div id="loadingText">Carregando Estúdio Mobile...</div>
+    <div id="loadingText">Carregando Estúdio Completo...</div>
     <div id="loadingBarContainer"><div id="loadingBar"></div></div>
   </div>
 
@@ -432,10 +417,18 @@
     window.onload = async () => {
         verificarOrientacao();
         window.addEventListener("resize", verificarOrientacao);
-        for (let i = 1; i <= 100; i++) headFrames.push(`animacao/cabeca/cabeca${String(i).padStart(4, "0")}.png`);
+        
+        // GERA LISTA DE FRAMES DA CABEÇA DO BAIXISTA
+        for (let i = 1; i <= 100; i++) {
+            headFrames.push(`animacao/cabeca/cabeca${String(i).padStart(4, "0")}.png`);
+        }
+
+        // CARREGA TUDO ANTES DE INICIAR
         await preloadBaseAssets();
+        
         startHeadLoop();
         gerarAleatorio();
+        
         setCachedSrc(domImages.bt_kit, DRUM_ASSETS.idle.bateria);
         setCachedSrc(domImages.bt_tronco, DRUM_ASSETS.idle.tronco);
         setCachedSrc(domImages.bt_cabeca, DRUM_ASSETS.idle.cabeca);
@@ -445,6 +438,7 @@
         setCachedSrc(domImages.bt_conducao, DRUM_ASSETS.idle.conducao);
         setCachedSrc(domImages.bt_ataque, DRUM_ASSETS.idle.ataque);
         setCachedSrc(domImages.bx_tronco, `animacao/tronco_baixo/Pasta_1F/1E.png`);
+        
         renderGrids();
         setupListeners();
         requestAnimationFrame(canvasRenderLoop);
@@ -471,17 +465,26 @@
     }
 
     async function preloadBaseAssets() {
+        const progressBar = document.getElementById("loadingBar");
+        const statusText = document.getElementById("loadingText");
+        statusText.innerText = "Carregando Animações...";
+
         const toLoad = Object.values(DRUM_ASSETS.idle);
         toLoad.push("animacao/pernas/Pernas.png");
         toLoad.push("animacao/cabeca_tras/cabeca-parte-de-tras.png");
         toLoad.push("animacao/antebraco/antebracoE.png");
+        
+        // CORREÇÃO: Adiciona os 100 frames da cabeça para carregar AGORA
+        headFrames.forEach(frame => toLoad.push(frame));
+
         const total = toLoad.length;
         let loaded = 0;
-        const progressBar = document.getElementById("loadingBar");
+        
         await Promise.all(toLoad.map(src => loadAndCache(src).then(() => {
             loaded++;
             progressBar.style.width = (loaded/total)*100 + "%";
         })));
+        
         document.getElementById("loadingOverlay").style.opacity = "0";
         setTimeout(() => { 
             document.getElementById("loadingOverlay").style.display = "none"; 
@@ -549,7 +552,7 @@
     }
 
     // ========================================================
-    // RENDERIZAÇÃO NO CANVAS (GRAVAÇÃO) - ATUALIZADO PARA HD
+    // RENDERIZAÇÃO NO CANVAS (GRAVAÇÃO) - HD 1280x720
     // ========================================================
     function canvasRenderLoop() {
         // Limpa e preenche fundo
@@ -558,9 +561,8 @@
         
         // --- DESENHA O BATERISTA (FUNDO ESQUERDA) ---
         ctx.save();
-        // Move o baterista para uma posição boa no canvas 1280x720
-        ctx.translate(400, 150); // Posição X, Y
-        ctx.scale(0.55, 0.55);   // Escala um pouco maior que a anterior para o HD
+        ctx.translate(400, 150); 
+        ctx.scale(0.55, 0.55);   
 
         const drawImg = (el) => { if (el && el.complete && el.naturalWidth > 0) ctx.drawImage(el, 0, 0); };
         drawImg(domImages.bt_conducao);
@@ -575,18 +577,13 @@
 
         // --- DESENHA O BAIXISTA (FRENTE DIREITA) ---
         ctx.save();
-        // Centraliza e ajusta o baixista no canvas
-        ctx.translate(550, 100); // Posição X, Y
-        // O baixista original é 520x520, vamos manter a escala 1:1 ou ajustar levemente
-        // ctx.scale(1, 1); 
+        ctx.translate(550, 100); 
 
         // Desenha pernas (fixas no layout original)
-        // No original: left: 64px, top: 332px. Aqui desenhamos relativo ao translate acima
         if (domImages.bx_pernas.complete) ctx.drawImage(domImages.bx_pernas, 64, 332);
 
         // Grupo do tronco com balanço (Pêndulo)
         ctx.save(); 
-        // No CSS original o pivot é 50% 80%. Imagem 520x520 -> 50%=260, 80%=416
         ctx.translate(260, 416); 
         
         let angle = 0;
@@ -603,7 +600,7 @@
         
         ctx.translate(-260, -416); // Retorna a origem
         
-        // Desenha partes do corpo usando as coordenadas originais CSS
+        // Desenha partes do corpo
         if (domImages.bx_cabecaTras.complete) ctx.drawImage(domImages.bx_cabecaTras, 100, 60);
         if (domImages.bx_tronco.complete) ctx.drawImage(domImages.bx_tronco, 0, 132);
         if (domImages.bx_antebraco.complete) ctx.drawImage(domImages.bx_antebraco, -2, 179);
@@ -616,7 +613,7 @@
         requestAnimationFrame(canvasRenderLoop);
     }
 
-    // CORRIGIDO: Função runFrameAnimation melhorada
+    // Função runFrameAnimation
     function runFrameAnimation(elementId, frames, idleFrame, fps = 30, loop = false, startFrame = 0, keepLastFrame = false) {
         const el = typeof elementId === 'string' ? document.getElementById(elementId) : elementId;
         const frameDuration = 1000 / fps;
