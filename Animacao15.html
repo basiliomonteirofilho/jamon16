@@ -4,7 +4,7 @@
   <link rel="icon" href="data:,">
   
   <meta charset="UTF-8" />
-  <title>Jam On - Sync Otimizado (Lite)</title>
+  <title>Jam On - Sync Otimizado (WAV Edition)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
   <style>
@@ -133,6 +133,15 @@
     
     #playBtn { background: var(--accent-color); border-color: var(--highlight-color); font-weight: bold; color: #fff; }
     
+    /* Estilo para botão gravando */
+    #exportWavBtn.recording {
+        background: #d50000;
+        color: white;
+        border-color: #ff5252;
+        animation: pulseRec 1s infinite;
+    }
+    @keyframes pulseRec { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+
     #generationInfo {
         margin-left: auto; font-size: 0.7rem; color: var(--highlight-color);
         background: rgba(0,230,118, 0.1); padding: 4px 8px; border-radius: 4px;
@@ -258,11 +267,11 @@
     
     // CONFIGURAÇÃO DE SINCRONIA
     const DRUM_FPS = 40; 
-    const DRUM_IMPACT_FRAME = 2; // Frame index 2 (Terceira imagem) é o impacto
+    const DRUM_IMPACT_FRAME = 2; 
     const DRUM_MS_PER_FRAME = 1000 / DRUM_FPS;
-    const DRUM_PREROLL_MS = DRUM_IMPACT_FRAME * DRUM_MS_PER_FRAME; // ~50ms
+    const DRUM_PREROLL_MS = DRUM_IMPACT_FRAME * DRUM_MS_PER_FRAME; 
     
-    // COMPENSACAO DE LATENCIA (Correção do Atraso)
+    // COMPENSACAO DE LATENCIA
     const VISUAL_OFFSET_MS = 25; 
 
     // NOVO: Animações da cabeça
@@ -271,7 +280,6 @@
         virada_esquerda: Array.from({length:8}, (_,i) => PASTA_BAT + `Cabeca/Virada_para_esquerda/cabeca${String(i+39).padStart(4,'0')}.png`),
         voltando_direita: Array.from({length:3}, (_,i) => PASTA_BAT + `Cabeca/Voltando_Virada_da_direita/cabeca${String(i+61).padStart(4,'0')}.png`),
         voltando_esquerda: Array.from({length:4}, (_,i) => PASTA_BAT + `Cabeca/Voltando_Virada_da_esquerda/cabeca${String(i+48).padStart(4,'0')}.png`),
-        // Animação principal (alterna entre as duas)
         cabeca_estavel: Array.from({length:26}, (_,i) => PASTA_BAT + `Cabeca/Cabeca_estavel/cabeca${String(i+1).padStart(4,'0')}.png`),
         cabeca_estavel2: Array.from({length:19}, (_,i) => PASTA_BAT + `Cabeca/Cabeca_estavel_2/cabeca${String(i+20).padStart(4,'0')}.png`)
     };
@@ -279,7 +287,7 @@
     const DRUM_ASSETS = {
         idle: {
             ataque: PASTA_BAT + "Ataque/Ataque0001.png",
-            bracoDir: PASTA_BAT + "Braco_direito/Caixa/braco_direito0003.png", // TERCEIRO FRAME COMO IDLE
+            bracoDir: PASTA_BAT + "Braco_direito/Caixa/braco_direito0003.png", 
             bracoEsq: PASTA_BAT + "Braco_esquerdo/Caixa/braco_esquerda0001.png",
             cabeca: PASTA_BAT + "Cabeca/Cabeca_estavel/cabeca0024.png",
             conducao: PASTA_BAT + "Conducao/Conducao0001.png",
@@ -292,94 +300,21 @@
             ataquePrato: Array.from({length:7}, (_,i) => PASTA_BAT + `Ataque/Ataque${String(i+1).padStart(4,'0')}.png`),
             conducaoPrato: Array.from({length:6}, (_,i) => PASTA_BAT + `Conducao/Conducao${String(i+1).padStart(4,'0')}.png`),
             
-            // BRAÇO DIREITO
-            bd_ataque: [
-                PASTA_BAT + "Braco_direito/Ataque/braco_direito0005.png",
-                PASTA_BAT + "Braco_direito/Ataque/braco_direito0006.png",
-                PASTA_BAT + "Braco_direito/Ataque/braco_direito0007.png", // IMPACTO
-                PASTA_BAT + "Braco_direito/Ataque/braco_direito0008.png"
-            ],
-            bd_caixa: [
-                PASTA_BAT + "Braco_direito/Caixa/braco_direito0001.png",
-                PASTA_BAT + "Braco_direito/Caixa/braco_direito0002.png",
-                PASTA_BAT + "Braco_direito/Caixa/braco_direito0003.png", // IMPACTO
-                PASTA_BAT + "Braco_direito/Caixa/braco_direito0004.png"
-            ],
-            bd_chimbal: [
-                PASTA_BAT + "Braco_direito/Chimbal/braco_direito0001.png",
-                PASTA_BAT + "Braco_direito/Chimbal/braco_direito0002.png",
-                PASTA_BAT + "Braco_direito/Chimbal/braco_direito0003.png", // IMPACTO
-                PASTA_BAT + "Braco_direito/Chimbal/braco_direito0004.png"
-            ],
-            bd_conducao: [
-                PASTA_BAT + "Braco_direito/Conducao/braco_direito0025.png",
-                PASTA_BAT + "Braco_direito/Conducao/braco_direito0026.png",
-                PASTA_BAT + "Braco_direito/Conducao/braco_direito0027.png", // IMPACTO
-                PASTA_BAT + "Braco_direito/Conducao/braco_direito0028.png"
-            ],
-            bd_surdo: [
-                PASTA_BAT + "Braco_direito/Surdo/braco_direito0021.png",
-                PASTA_BAT + "Braco_direito/Surdo/braco_direito0022.png",
-                PASTA_BAT + "Braco_direito/Surdo/braco_direito0023.png", // IMPACTO
-                PASTA_BAT + "Braco_direito/Surdo/braco_direito0024.png"
-            ],
-            bd_tom1: [
-                PASTA_BAT + "Braco_direito/Tom_1/braco_direito0013.png",
-                PASTA_BAT + "Braco_direito/Tom_1/braco_direito0014.png",
-                PASTA_BAT + "Braco_direito/Tom_1/braco_direito0015.png", // IMPACTO
-                PASTA_BAT + "Braco_direito/Tom_1/braco_direito0016.png"
-            ],
-            bd_tom2: [
-                PASTA_BAT + "Braco_direito/Tom_2/braco_direito0017.png",
-                PASTA_BAT + "Braco_direito/Tom_2/braco_direito0018.png",
-                PASTA_BAT + "Braco_direito/Tom_2/braco_direito0019.png", // IMPACTO
-                PASTA_BAT + "Braco_direito/Tom_2/braco_direito0020.png"
-            ],
+            bd_ataque: [ PASTA_BAT + "Braco_direito/Ataque/braco_direito0005.png", PASTA_BAT + "Braco_direito/Ataque/braco_direito0006.png", PASTA_BAT + "Braco_direito/Ataque/braco_direito0007.png", PASTA_BAT + "Braco_direito/Ataque/braco_direito0008.png" ],
+            bd_caixa: [ PASTA_BAT + "Braco_direito/Caixa/braco_direito0001.png", PASTA_BAT + "Braco_direito/Caixa/braco_direito0002.png", PASTA_BAT + "Braco_direito/Caixa/braco_direito0003.png", PASTA_BAT + "Braco_direito/Caixa/braco_direito0004.png" ],
+            bd_chimbal: [ PASTA_BAT + "Braco_direito/Chimbal/braco_direito0001.png", PASTA_BAT + "Braco_direito/Chimbal/braco_direito0002.png", PASTA_BAT + "Braco_direito/Chimbal/braco_direito0003.png", PASTA_BAT + "Braco_direito/Chimbal/braco_direito0004.png" ],
+            bd_conducao: [ PASTA_BAT + "Braco_direito/Conducao/braco_direito0025.png", PASTA_BAT + "Braco_direito/Conducao/braco_direito0026.png", PASTA_BAT + "Braco_direito/Conducao/braco_direito0027.png", PASTA_BAT + "Braco_direito/Conducao/braco_direito0028.png" ],
+            bd_surdo: [ PASTA_BAT + "Braco_direito/Surdo/braco_direito0021.png", PASTA_BAT + "Braco_direito/Surdo/braco_direito0022.png", PASTA_BAT + "Braco_direito/Surdo/braco_direito0023.png", PASTA_BAT + "Braco_direito/Surdo/braco_direito0024.png" ],
+            bd_tom1: [ PASTA_BAT + "Braco_direito/Tom_1/braco_direito0013.png", PASTA_BAT + "Braco_direito/Tom_1/braco_direito0014.png", PASTA_BAT + "Braco_direito/Tom_1/braco_direito0015.png", PASTA_BAT + "Braco_direito/Tom_1/braco_direito0016.png" ],
+            bd_tom2: [ PASTA_BAT + "Braco_direito/Tom_2/braco_direito0017.png", PASTA_BAT + "Braco_direito/Tom_2/braco_direito0018.png", PASTA_BAT + "Braco_direito/Tom_2/braco_direito0019.png", PASTA_BAT + "Braco_direito/Tom_2/braco_direito0020.png" ],
 
-            // BRAÇO ESQUERDO
-            be_ataque: [
-                PASTA_BAT + "Braco_esquerdo/Ataque/braco_esquerda0009.png",
-                PASTA_BAT + "Braco_esquerdo/Ataque/braco_esquerda0010.png",
-                PASTA_BAT + "Braco_esquerdo/Ataque/braco_esquerda0011.png", // IMPACTO
-                PASTA_BAT + "Braco_esquerdo/Ataque/braco_esquerda0012.png"
-            ],
-            be_caixa: [
-                PASTA_BAT + "Braco_esquerdo/Caixa/braco_esquerda0001.png",
-                PASTA_BAT + "Braco_esquerdo/Caixa/braco_esquerda0002.png",
-                PASTA_BAT + "Braco_esquerdo/Caixa/braco_esquerda0003.png", // IMPACTO
-                PASTA_BAT + "Braco_esquerdo/Caixa/braco_esquerda0004.png"
-            ],
-            be_chimbal: [
-                PASTA_BAT + "Braco_esquerdo/Chimbal/braco_esquerda0005.png",
-                PASTA_BAT + "Braco_esquerdo/Chimbal/braco_esquerda0006.png",
-                PASTA_BAT + "Braco_esquerdo/Chimbal/braco_esquerda0007.png", // IMPACTO
-                PASTA_BAT + "Braco_esquerdo/Chimbal/braco_esquerda0008.png"
-            ],
-            be_conducao: [
-                PASTA_BAT + "Braco_esquerdo/Conducao/braco_esquerda0025.png",
-                PASTA_BAT + "Braco_esquerdo/Conducao/braco_esquerda0026.png",
-                PASTA_BAT + "Braco_esquerdo/Conducao/braco_esquerda0027.png", // IMPACTO
-                PASTA_BAT + "Braco_esquerdo/Conducao/braco_esquerda0028.png"
-            ],
-            be_surdo: [
-                PASTA_BAT + "Braco_esquerdo/Surdo/braco_esquerda0021.png",
-                PASTA_BAT + "Braco_esquerdo/Surdo/braco_esquerda0022.png",
-                PASTA_BAT + "Braco_esquerdo/Surdo/braco_esquerda0023.png", // IMPACTO
-                PASTA_BAT + "Braco_esquerdo/Surdo/braco_esquerda0024.png"
-            ],
-            be_tom1: [
-                PASTA_BAT + "Braco_esquerdo/Tom_1/braco_esquerda0013.png",
-                PASTA_BAT + "Braco_esquerdo/Tom_1/braco_esquerda0014.png",
-                PASTA_BAT + "Braco_esquerdo/Tom_1/braco_esquerda0015.png", // IMPACTO
-                PASTA_BAT + "Braco_esquerdo/Tom_1/braco_esquerda0016.png"
-            ],
-            be_tom2: [
-                PASTA_BAT + "Braco_esquerdo/Tom_2/braco_esquerda0017.png",
-                PASTA_BAT + "Braco_esquerdo/Tom_2/braco_esquerda0018.png",
-                PASTA_BAT + "Braco_esquerdo/Tom_2/braco_esquerda0019.png", // IMPACTO
-                PASTA_BAT + "Braco_esquerdo/Tom_2/braco_esquerda0020.png"
-            ],
-
+            be_ataque: [ PASTA_BAT + "Braco_esquerdo/Ataque/braco_esquerda0009.png", PASTA_BAT + "Braco_esquerdo/Ataque/braco_esquerda0010.png", PASTA_BAT + "Braco_esquerdo/Ataque/braco_esquerda0011.png", PASTA_BAT + "Braco_esquerdo/Ataque/braco_esquerda0012.png" ],
+            be_caixa: [ PASTA_BAT + "Braco_esquerdo/Caixa/braco_esquerda0001.png", PASTA_BAT + "Braco_esquerdo/Caixa/braco_esquerda0002.png", PASTA_BAT + "Braco_esquerdo/Caixa/braco_esquerda0003.png", PASTA_BAT + "Braco_esquerdo/Caixa/braco_esquerda0004.png" ],
+            be_chimbal: [ PASTA_BAT + "Braco_esquerdo/Chimbal/braco_esquerda0005.png", PASTA_BAT + "Braco_esquerdo/Chimbal/braco_esquerda0006.png", PASTA_BAT + "Braco_esquerdo/Chimbal/braco_esquerda0007.png", PASTA_BAT + "Braco_esquerdo/Chimbal/braco_esquerda0008.png" ],
+            be_conducao: [ PASTA_BAT + "Braco_esquerdo/Conducao/braco_esquerda0025.png", PASTA_BAT + "Braco_esquerdo/Conducao/braco_esquerda0026.png", PASTA_BAT + "Braco_esquerdo/Conducao/braco_esquerda0027.png", PASTA_BAT + "Braco_esquerdo/Conducao/braco_esquerda0028.png" ],
+            be_surdo: [ PASTA_BAT + "Braco_esquerdo/Surdo/braco_esquerda0021.png", PASTA_BAT + "Braco_esquerdo/Surdo/braco_esquerda0022.png", PASTA_BAT + "Braco_esquerdo/Surdo/braco_esquerda0023.png", PASTA_BAT + "Braco_esquerdo/Surdo/braco_esquerda0024.png" ],
+            be_tom1: [ PASTA_BAT + "Braco_esquerdo/Tom_1/braco_esquerda0013.png", PASTA_BAT + "Braco_esquerdo/Tom_1/braco_esquerda0014.png", PASTA_BAT + "Braco_esquerdo/Tom_1/braco_esquerda0015.png", PASTA_BAT + "Braco_esquerdo/Tom_1/braco_esquerda0016.png" ],
+            be_tom2: [ PASTA_BAT + "Braco_esquerdo/Tom_2/braco_esquerda0017.png", PASTA_BAT + "Braco_esquerdo/Tom_2/braco_esquerda0018.png", PASTA_BAT + "Braco_esquerdo/Tom_2/braco_esquerda0019.png", PASTA_BAT + "Braco_esquerdo/Tom_2/braco_esquerda0020.png" ],
             perna_duplo: [ PASTA_BAT+"Perna_esquerda/Pedal_duplo/Baterista0002.png", PASTA_BAT+"Perna_esquerda/Pedal_duplo/Baterista0003.png" ]
         }
     };
@@ -420,20 +355,27 @@
     let lastArmUsed = {};  
     let pendulumStartTime = 0;
     
-    // NOVO: Controle de virada da cabeça
+    // Animação Cabeça & Braço
     let lastHeadAnimation = null;
     let headAnimationTimeout = null;
-    let currentHeadStyle = 'estavel'; // 'estavel', 'estavel2', 'virada'
-    
-    // NOVO: Controle de animação dos braços
+    let currentHeadStyle = 'estavel'; 
     let armAnimationTimers = {};
-    
-    // NOVO: Controle da última posição do braço direito
     let lastRightArmFrame = null;
     let lastRightArmFrames = null;
     
+    // Áudio & Gravação
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const audioBuffers = {};
+    
+    // CANAL MESTRE PARA GRAVAÇÃO
+    const masterGain = audioContext.createGain();
+    masterGain.connect(audioContext.destination);
+
+    // Variáveis de Gravação WAV
+    let isRecordingWav = false;
+    let wavRecorderNode = null;
+    let leftChannelData = [];
+    let rightChannelData = [];
 
     const domImages = {
         bx_pernas: document.getElementById("pernasLayer"),
@@ -442,7 +384,6 @@
         bx_antebraco: document.getElementById("antebracoLayer"),
         bx_bracoDir: document.getElementById("bracoDireitoLayer"),
         bx_cabeca: document.getElementById("cabecaLayer"),
-        
         bt_ataque: document.getElementById("bat_Ataque"),
         bt_bracoDir: document.getElementById("bat_BracoDir"),
         bt_bracoEsq: document.getElementById("bat_BracoEsq"),
@@ -471,8 +412,119 @@
         setCachedSrc(domImages.bx_tronco, `animacao/tronco_baixo/Pasta_1F/1E.png`);
         renderGrids();
         setupListeners();
+        initWavRecorder(); // Inicia o nó de gravação
         requestAnimationFrame(canvasRenderLoop);
     };
+
+    function initWavRecorder() {
+        // Cria um ScriptProcessor para capturar audio bufferSize=4096
+        if(audioContext.createScriptProcessor) {
+            wavRecorderNode = audioContext.createScriptProcessor(4096, 2, 2);
+            wavRecorderNode.onaudioprocess = (e) => {
+                if (!isRecordingWav) return;
+                const left = e.inputBuffer.getChannelData(0);
+                const right = e.inputBuffer.getChannelData(1);
+                // Copia os dados
+                leftChannelData.push(new Float32Array(left));
+                rightChannelData.push(new Float32Array(right));
+            };
+            masterGain.connect(wavRecorderNode);
+            wavRecorderNode.connect(audioContext.destination); // Necessário para o processador rodar
+        }
+    }
+
+    function toggleWavRecording() {
+        const btn = document.getElementById("exportWavBtn");
+        if (!isRecordingWav) {
+            // INICIAR
+            leftChannelData = [];
+            rightChannelData = [];
+            isRecordingWav = true;
+            btn.innerText = "⏹ Parar Rec";
+            btn.classList.add("recording");
+            if (!isPlaying) togglePlay(); // Começa a tocar se estiver parado
+        } else {
+            // PARAR E SALVAR
+            isRecordingWav = false;
+            btn.innerText = "💾 WAV";
+            btn.classList.remove("recording");
+            saveWavFile();
+        }
+    }
+
+    function saveWavFile() {
+        if(leftChannelData.length === 0) return;
+        const bufferLength = leftChannelData.length * leftChannelData[0].length;
+        const leftBuffer = mergeBuffers(leftChannelData, bufferLength);
+        const rightBuffer = mergeBuffers(rightChannelData, bufferLength);
+        const interleaved = interleave(leftBuffer, rightBuffer);
+        const dataview = encodeWAV(interleaved, audioContext.sampleRate);
+        const blob = new Blob([dataview], { type: 'audio/wav' });
+        
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = 'jam_session.wav';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+    }
+
+    function mergeBuffers(channelBuffer, recordingLength) {
+        const result = new Float32Array(recordingLength);
+        let offset = 0;
+        for (let i = 0; i < channelBuffer.length; i++) {
+            result.set(channelBuffer[i], offset);
+            offset += channelBuffer[i].length;
+        }
+        return result;
+    }
+
+    function interleave(inputL, inputR) {
+        const length = inputL.length + inputR.length;
+        const result = new Float32Array(length);
+        let index = 0, inputIndex = 0;
+        while (index < length) {
+            result[index++] = inputL[inputIndex];
+            result[index++] = inputR[inputIndex];
+            inputIndex++;
+        }
+        return result;
+    }
+
+    function encodeWAV(samples, sampleRate) {
+        const buffer = new ArrayBuffer(44 + samples.length * 2);
+        const view = new DataView(buffer);
+        const writeString = (view, offset, string) => {
+            for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i));
+        };
+
+        writeString(view, 0, 'RIFF');
+        view.setUint32(4, 36 + samples.length * 2, true);
+        writeString(view, 8, 'WAVE');
+        writeString(view, 12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true); // PCM
+        view.setUint16(22, 2, true); // Stereo
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * 4, true);
+        view.setUint16(32, 4, true);
+        view.setUint16(34, 16, true); // 16-bit
+        writeString(view, 36, 'data');
+        view.setUint32(40, samples.length * 2, true);
+
+        // Escreve os dados PCM
+        let offset = 44;
+        for (let i = 0; i < samples.length; i++) {
+            let s = Math.max(-1, Math.min(1, samples[i]));
+            // Converte float para PCM 16-bit com volume cheio (0x7FFF)
+            s = s < 0 ? s * 0x8000 : s * 0x7FFF;
+            view.setInt16(offset, s, true);
+            offset += 2;
+        }
+        return view;
+    }
 
     function loadAndCache(url) {
         if (imgCache.has(url)) return Promise.resolve(imgCache.get(url));
@@ -561,7 +613,7 @@
         document.getElementById("clearAll").onclick = () => { baixoSeq.fill(""); Object.keys(bateriaSeq).forEach(k => bateriaSeq[k].fill("x")); renderGrids(); };
         document.getElementById("playAleatorioBtn").onclick = gerarAleatorio;
         document.getElementById("playExportadoBtn").onclick = importarJSON;
-        document.getElementById("exportWavBtn").onclick = exportarWAV;
+        document.getElementById("exportWavBtn").onclick = toggleWavRecording;
     }
 
     function deleteColumn(idx) {
@@ -572,8 +624,6 @@
     }
 
     function canvasRenderLoop() {
-        if (domImages.bx_pernas.complete) { /* O loop visual do Canvas foi mantido apenas para referência, mas os elementos DOM são renderizados via CSS/HTML */ }
-        
         let angle = 0;
         if (isPlaying && pendulumStartTime > 0) {
             const now = performance.now();
@@ -582,37 +632,20 @@
             angle = Math.sin(elapsed * speed) * 2.3;
         }
         document.getElementById("bodyWrapperPendulo").style.transform = `rotate(${angle}deg)`;
-        
         requestAnimationFrame(canvasRenderLoop);
     }
 
-    // CORRIGIDO: Função runFrameAnimation melhorada
+    // Função de Animação de Frames
     function runFrameAnimation(elementId, frames, idleFrame, fps = 30, loop = false, startFrame = 0, keepLastFrame = false) {
         const el = typeof elementId === 'string' ? document.getElementById(elementId) : elementId;
         const frameDuration = 1000 / fps;
-        
-        // Cancela animação anterior se existir
-        if (activeAnimations[el.id]) {
-            cancelAnimationFrame(activeAnimations[el.id]);
-            delete activeAnimations[el.id];
-        }
-        
-        // Limpa timer se existir
-        if (armAnimationTimers[el.id]) {
-            clearTimeout(armAnimationTimers[el.id]);
-            delete armAnimationTimers[el.id];
-        }
-        
-        // Se startFrame > 0, começa já no frame desejado
-        if (startFrame > 0 && startFrame < frames.length) {
-            setCachedSrc(el, frames[startFrame]);
-        }
-        
-        const start = performance.now() - (startFrame * frameDuration); // Ajusta o tempo inicial
+        if (activeAnimations[el.id]) { cancelAnimationFrame(activeAnimations[el.id]); delete activeAnimations[el.id]; }
+        if (armAnimationTimers[el.id]) { clearTimeout(armAnimationTimers[el.id]); delete armAnimationTimers[el.id]; }
+        if (startFrame > 0 && startFrame < frames.length) { setCachedSrc(el, frames[startFrame]); }
+        const start = performance.now() - (startFrame * frameDuration);
         const animate = (now) => {
             const elapsed = now - start;
             let index = Math.floor(elapsed / frameDuration);
-            
             if (loop) {
                 index = index % frames.length;
                 setCachedSrc(el, frames[index]);
@@ -622,61 +655,37 @@
                     setCachedSrc(el, frames[index]);
                     activeAnimations[el.id] = requestAnimationFrame(animate);
                 } else {
-                    // Quando a animação termina
                     if (keepLastFrame && el.id === 'bat_BracoDir') {
-                        // BRAÇO DIREITO: Mantém o último frame
                         setCachedSrc(el, frames[frames.length - 1]);
                         lastRightArmFrame = frames[frames.length - 1];
                         lastRightArmFrames = frames;
-                    } else if (idleFrame !== null) {
-                        // Outros elementos: volta para o frame idle
-                        setCachedSrc(el, idleFrame);
-                    }
-                    
-                    // Remove da lista de animações ativas
+                    } else if (idleFrame !== null) { setCachedSrc(el, idleFrame); }
                     delete activeAnimations[el.id];
-                    
-                    // Ajusta z-index se for braço esquerdo
-                    if(el.id === 'bat_BracoEsq') {
-                        el.style.zIndex = 10;
-                    }
+                    if(el.id === 'bat_BracoEsq') { el.style.zIndex = 10; }
                 }
             }
         };
-        
         activeAnimations[el.id] = requestAnimationFrame(animate);
-        
-        // Para animações não-looping, programa um timer para limpar o estado
         if (!loop) {
             const remainingFrames = frames.length - startFrame;
             const totalDuration = remainingFrames * frameDuration;
             armAnimationTimers[el.id] = setTimeout(() => {
-                if (activeAnimations[el.id]) {
-                    cancelAnimationFrame(activeAnimations[el.id]);
-                    delete activeAnimations[el.id];
-                }
-                
+                if (activeAnimations[el.id]) { cancelAnimationFrame(activeAnimations[el.id]); delete activeAnimations[el.id]; }
                 if (keepLastFrame && el.id === 'bat_BracoDir') {
                     setCachedSrc(el, frames[frames.length - 1]);
                     lastRightArmFrame = frames[frames.length - 1];
                     lastRightArmFrames = frames;
-                } else if (idleFrame !== null && !keepLastFrame) {
-                    setCachedSrc(el, idleFrame);
-                }
-                
-                if(el.id === 'bat_BracoEsq') {
-                    el.style.zIndex = 10;
-                }
+                } else if (idleFrame !== null && !keepLastFrame) { setCachedSrc(el, idleFrame); }
+                if(el.id === 'bat_BracoEsq') { el.style.zIndex = 10; }
                 delete armAnimationTimers[el.id];
             }, totalDuration + 50); 
         }
     }
 
-    // Função especial para tocar a caixa começando no frame 3
     function playCaixaAnimation(imgEl, isLeft, currentStep) {
         const frames = isLeft ? DRUM_ASSETS.anim.be_caixa : DRUM_ASSETS.anim.bd_caixa;
         const idleSrc = isLeft ? DRUM_ASSETS.idle.bracoEsq : DRUM_ASSETS.idle.bracoDir;
-        const keepLastFrame = !isLeft; // Apenas para braço direito
+        const keepLastFrame = !isLeft; 
         runFrameAnimation(imgEl, frames, idleSrc, DRUM_FPS, false, 2, keepLastFrame);
         if (isLeft) imgEl.style.zIndex = 10; 
     }
@@ -685,53 +694,28 @@
         runFrameAnimation(domImages.bt_bracoDir, frames, idleFrame, DRUM_FPS, false, startFrame, true);
     }
 
-    // NOVO: Função para animação de cabeça com estilo aleatório
     function playRandomHeadAnimation() {
         if (!isPlaying || activeAnimations['bat_Cabeca']) return;
         const shouldSwitch = Math.random() > 0.7; 
-        if (shouldSwitch) {
-            currentHeadStyle = currentHeadStyle === 'estavel' ? 'estavel2' : 'estavel';
-        }
-        const frames = currentHeadStyle === 'estavel' ? 
-            CABECA_ANIMATIONS.cabeca_estavel : 
-            CABECA_ANIMATIONS.cabeca_estavel2;
+        if (shouldSwitch) { currentHeadStyle = currentHeadStyle === 'estavel' ? 'estavel2' : 'estavel'; }
+        const frames = currentHeadStyle === 'estavel' ? CABECA_ANIMATIONS.cabeca_estavel : CABECA_ANIMATIONS.cabeca_estavel2;
         runFrameAnimation(domImages.bt_cabeca, frames, null, 25, true);
         if (headAnimationTimeout) clearTimeout(headAnimationTimeout);
-        headAnimationTimeout = setTimeout(() => {
-            if (isPlaying) playRandomHeadAnimation();
-        }, 2000 + Math.random() * 3000); 
+        headAnimationTimeout = setTimeout(() => { if (isPlaying) playRandomHeadAnimation(); }, 2000 + Math.random() * 3000); 
     }
 
-    // NOVO: Função para animação de virada da cabeça
     function playHeadTurnAnimation(direction = 'right') {
         if (!isPlaying) return;
-        if (activeAnimations['bat_Cabeca']) {
-            cancelAnimationFrame(activeAnimations['bat_Cabeca']);
-            delete activeAnimations['bat_Cabeca'];
-        }
-        const turnFrames = direction === 'right' ? 
-            CABECA_ANIMATIONS.virada_direita : 
-            CABECA_ANIMATIONS.virada_esquerda;
-        const returnFrames = direction === 'right' ?
-            CABECA_ANIMATIONS.voltando_direita :
-            CABECA_ANIMATIONS.voltando_esquerda;
+        if (activeAnimations['bat_Cabeca']) { cancelAnimationFrame(activeAnimations['bat_Cabeca']); delete activeAnimations['bat_Cabeca']; }
+        const turnFrames = direction === 'right' ? CABECA_ANIMATIONS.virada_direita : CABECA_ANIMATIONS.virada_esquerda;
+        const returnFrames = direction === 'right' ? CABECA_ANIMATIONS.voltando_direita : CABECA_ANIMATIONS.voltando_esquerda;
         let step = 0;
         const animateTurn = () => {
-            if (step < turnFrames.length) {
-                setCachedSrc(domImages.bt_cabeca, turnFrames[step]);
-                step++;
-                setTimeout(animateTurn, 50);
-            } else {
+            if (step < turnFrames.length) { setCachedSrc(domImages.bt_cabeca, turnFrames[step]); step++; setTimeout(animateTurn, 50); } else {
                 setTimeout(() => {
                     let returnStep = 0;
                     const animateReturn = () => {
-                        if (returnStep < returnFrames.length) {
-                            setCachedSrc(domImages.bt_cabeca, returnFrames[returnStep]);
-                            returnStep++;
-                            setTimeout(animateReturn, 50);
-                        } else {
-                            setTimeout(() => playRandomHeadAnimation(), 500);
-                        }
+                        if (returnStep < returnFrames.length) { setCachedSrc(domImages.bt_cabeca, returnFrames[returnStep]); returnStep++; setTimeout(animateReturn, 50); } else { setTimeout(() => playRandomHeadAnimation(), 500); }
                     };
                     animateReturn();
                 }, 800); 
@@ -741,82 +725,43 @@
     }
 
     function playDrumAnimation(drumType, currentStep) {
-        if (!activeAnimations['bat_Tronco'] && isPlaying) {
-            runFrameAnimation(domImages.bt_tronco, DRUM_ASSETS.anim.troncoTocando, null, 30, true);
-        }
-        
-        if (!activeAnimations['bat_Cabeca'] && isPlaying) {
-            playRandomHeadAnimation();
-        }
-        
+        if (!activeAnimations['bat_Tronco'] && isPlaying) { runFrameAnimation(domImages.bt_tronco, DRUM_ASSETS.anim.troncoTocando, null, 30, true); }
+        if (!activeAnimations['bat_Cabeca'] && isPlaying) { playRandomHeadAnimation(); }
         if (drumType === 'start') return;
         
         if (drumType === 'bumbo') {
             const prevStepIndex = (currentStep === 0) ? baixoSeq.length - 1 : currentStep - 1;
             const isConsecutive = (bateriaSeq['bumbo'][prevStepIndex] === 'bumbo');
-            if (isConsecutive) {
-                 runFrameAnimation(domImages.bt_pernaEsq, DRUM_ASSETS.anim.perna_duplo, DRUM_ASSETS.idle.pernaEsq, DRUM_FPS);
-            }
+            if (isConsecutive) { runFrameAnimation(domImages.bt_pernaEsq, DRUM_ASSETS.anim.perna_duplo, DRUM_ASSETS.idle.pernaEsq, DRUM_FPS); }
             return;
         }
         
         const prevHitStep = lastDrumStep[drumType];
         const isRapidRepeat = (prevHitStep !== undefined && (currentStep - prevHitStep === 1 || (currentStep===0 && prevHitStep === baixoSeq.length-1)));
-        
         let armToUse = 'right';
         if (['caixa', 'caixaAro'].includes(drumType)) armToUse = 'left';
-        if (isRapidRepeat && lastArmUsed[drumType]) {
-            armToUse = (lastArmUsed[drumType] === 'right') ? 'left' : 'right';
-        }
+        if (isRapidRepeat && lastArmUsed[drumType]) { armToUse = (lastArmUsed[drumType] === 'right') ? 'left' : 'right'; }
+        lastDrumStep[drumType] = currentStep; lastArmUsed[drumType] = armToUse;
         
-        lastDrumStep[drumType] = currentStep;
-        lastArmUsed[drumType] = armToUse;
-        
-        const shouldTurnHead = (drumType === 'tom2' || drumType === 'surdo' || drumType === 'conducao' || drumType === 'conducao_centro') 
-                               && isRapidRepeat 
-                               && Math.random() > 0.5; 
-        
-        if (shouldTurnHead) {
-            playHeadTurnAnimation(armToUse === 'right' ? 'right' : 'left');
-        }
+        const shouldTurnHead = (drumType === 'tom2' || drumType === 'surdo' || drumType === 'conducao' || drumType === 'conducao_centro') && isRapidRepeat && Math.random() > 0.5; 
+        if (shouldTurnHead) { playHeadTurnAnimation(armToUse === 'right' ? 'right' : 'left'); }
         
         const isLeft = (armToUse === 'left');
         const imgEl = isLeft ? domImages.bt_bracoEsq : domImages.bt_bracoDir;
         let idleSrc = null;
         if (isLeft) {
             idleSrc = DRUM_ASSETS.idle.bracoEsq;
-            if (['ataque', 'tom1', 'tom2', 'surdo', 'conducao', 'conducao_centro'].includes(drumType)) {
-                imgEl.style.zIndex = 12;
-            } else {
-                imgEl.style.zIndex = 10;
-            }
-        } else {
-            idleSrc = DRUM_ASSETS.idle.bracoDir;
-        }
+            if (['ataque', 'tom1', 'tom2', 'surdo', 'conducao', 'conducao_centro'].includes(drumType)) { imgEl.style.zIndex = 12; } else { imgEl.style.zIndex = 10; }
+        } else { idleSrc = DRUM_ASSETS.idle.bracoDir; }
         
-        if (drumType === 'caixa' || drumType === 'caixaAro') {
-            playCaixaAnimation(imgEl, isLeft, currentStep);
-        } else {
+        if (drumType === 'caixa' || drumType === 'caixaAro') { playCaixaAnimation(imgEl, isLeft, currentStep); } else {
             let frames = [];
             const mapName = isLeft ? 'be_' : 'bd_';
             let key = drumType;
-            if(drumType === 'chimbalaberto') key = 'chimbal';
-            if(drumType === 'caixaAro') key = 'caixa';
-            if(drumType === 'conducao_centro') key = 'conducao';
-            
-            if (DRUM_ASSETS.anim[mapName + key]) {
-                frames = DRUM_ASSETS.anim[mapName + key];
-            } else {
-                frames = isLeft ? DRUM_ASSETS.anim.be_caixa : DRUM_ASSETS.anim.bd_caixa;
-            }
-            
-            if (!isLeft) {
-                playRightArmAnimation(frames, idleSrc);
-            } else {
-                runFrameAnimation(imgEl, frames, idleSrc, DRUM_FPS);
-            }
+            if(drumType === 'chimbalaberto') key = 'chimbal'; if(drumType === 'caixaAro') key = 'caixa'; if(drumType === 'conducao_centro') key = 'conducao';
+            if (DRUM_ASSETS.anim[mapName + key]) { frames = DRUM_ASSETS.anim[mapName + key]; } else { frames = isLeft ? DRUM_ASSETS.anim.be_caixa : DRUM_ASSETS.anim.bd_caixa; }
+            if (!isLeft) { playRightArmAnimation(frames, idleSrc); } else { runFrameAnimation(imgEl, frames, idleSrc, DRUM_FPS); }
         }
-        
         if(drumType === 'ataque') runFrameAnimation(domImages.bt_ataque, DRUM_ASSETS.anim.ataquePrato, DRUM_ASSETS.idle.ataque, 30);
         if(drumType.includes('conducao')) runFrameAnimation(domImages.bt_conducao, DRUM_ASSETS.anim.conducaoPrato, DRUM_ASSETS.idle.conducao, 30);
     }
@@ -835,24 +780,18 @@
         const pastaNome = pastaFolderNames[posicaoAtualPasta];
         setCachedSrc(domImages.bx_tronco, `animacao/tronco_baixo/Pasta_${pastaNome}/${nota}.png`);
         
-        // CORREÇÃO: Pega a corda correta e carrega o antebraço correspondente
         const corda = getCordaDaNota(nota);
         ultimaCordaUsada = corda;
         setCachedSrc(domImages.bx_antebraco, `animacao/antebraco/antebraco${corda}.png`);
-        
         animarMaoDireitaBaixo(corda, msPorStep);
     }
 
     function animarMaoDireitaBaixo(corda, duracaoStepMs) {
         const frames = [];
-        // Animação de toque: Frames 2, 3, 4, 5
         for(let i=2; i<=5; i++) frames.push(`animacao/braco_direito/Corda_${corda}${i}.png`);
-        // Frame de repouso: Frame 1 da corda atual
         const idle = `animacao/braco_direito/Corda_${corda}1.png`;
-        
         let fps = 1000 / (duracaoStepMs / 5); 
-        if (fps < 20) fps = 20; 
-        if (fps > 60) fps = 60;
+        if (fps < 20) fps = 20; if (fps > 60) fps = 60;
         runFrameAnimation(domImages.bx_bracoDir, frames, idle, fps);
     }
 
@@ -863,29 +802,19 @@
 
     function resetDrummer() {
         Object.keys(activeAnimations).forEach(k => cancelAnimationFrame(activeAnimations[k]));
-        activeAnimations = {};
-        lastDrumStep = {};
-        if (headAnimationTimeout) {
-            clearTimeout(headAnimationTimeout);
-            headAnimationTimeout = null;
-        }
-        Object.keys(armAnimationTimers).forEach(timerId => {
-            clearTimeout(armAnimationTimers[timerId]);
-        });
+        activeAnimations = {}; lastDrumStep = {};
+        if (headAnimationTimeout) { clearTimeout(headAnimationTimeout); headAnimationTimeout = null; }
+        Object.keys(armAnimationTimers).forEach(timerId => { clearTimeout(armAnimationTimers[timerId]); });
         armAnimationTimers = {};
-        
         setCachedSrc(domImages.bt_tronco, DRUM_ASSETS.idle.tronco);
         setCachedSrc(domImages.bt_pernaEsq, DRUM_ASSETS.idle.pernaEsq);
         setCachedSrc(domImages.bt_bracoDir, DRUM_ASSETS.idle.bracoDir);
-        lastRightArmFrame = null;
-        lastRightArmFrames = null;
-        
+        lastRightArmFrame = null; lastRightArmFrames = null;
         setCachedSrc(domImages.bt_bracoEsq, DRUM_ASSETS.idle.bracoEsq);
         domImages.bt_bracoEsq.style.zIndex = 10;
         setCachedSrc(domImages.bt_cabeca, DRUM_ASSETS.idle.cabeca);
         setCachedSrc(domImages.bt_ataque, DRUM_ASSETS.idle.ataque);
         setCachedSrc(domImages.bt_conducao, DRUM_ASSETS.idle.conducao);
-        
         currentHeadStyle = 'estavel'; 
     }
 
@@ -897,18 +826,11 @@
             const txt = document.getElementById("countdownText");
             overlay.style.display = "flex"; 
             prepararAssetsDaSequencia().then(() => {
-                let count = 4; 
-                txt.innerText = count;
+                let count = 4; txt.innerText = count;
                 const ms = 60000 / bpmAtual;
                 const countInt = setInterval(() => {
                     count--; 
-                    if(count > 0) {
-                        txt.innerText = count;
-                    } else { 
-                        clearInterval(countInt); 
-                        overlay.style.display = "none"; 
-                        iniciarPlayback(); 
-                    }
+                    if(count > 0) { txt.innerText = count; } else { clearInterval(countInt); overlay.style.display = "none"; iniciarPlayback(); }
                 }, ms);
             });
         }
@@ -916,17 +838,12 @@
 
     function iniciarPlayback() {
         if (audioContext.state === 'suspended') audioContext.resume();
-        isPlaying = true; 
-        atualPasso = 0;
-        lastDrumStep = {};
-        
+        isPlaying = true; atualPasso = 0; lastDrumStep = {};
         document.getElementById("playBtn").innerText = "⏸ Pause"; document.getElementById("playBtn").style.background = "#e65100";
         pendulumStartTime = performance.now(); 
         playDrumAnimation('start', 0); 
-
         let nextStepTime = audioContext.currentTime;
         const secondsPerStep = (60 / bpmAtual) / 4;
-
         const scheduler = () => {
             if (!isPlaying) return;
             while (nextStepTime < audioContext.currentTime + 0.15) {
@@ -943,16 +860,13 @@
     function runStep(stepIndex, timeToPlay) {
         const now = audioContext.currentTime;
         const delayVisualBase = Math.max(0, (timeToPlay - now) * 1000 - VISUAL_OFFSET_MS);
-        
         let delayDrumVisual = (timeToPlay - now) * 1000 - DRUM_PREROLL_MS - VISUAL_OFFSET_MS;
         if (delayDrumVisual < 0) delayDrumVisual = 0;
 
         setTimeout(() => {
             if(!isPlaying) return;
             drumLines.forEach(line => {
-                if (bateriaSeq[line.id] && bateriaSeq[line.id][stepIndex] === line.id) {
-                    playDrumAnimation(line.id, stepIndex);
-                }
+                if (bateriaSeq[line.id] && bateriaSeq[line.id][stepIndex] === line.id) { playDrumAnimation(line.id, stepIndex); }
             });
         }, delayDrumVisual);
 
@@ -960,14 +874,9 @@
             if(!isPlaying) return;
             highlightGridStep(stepIndex);
             document.getElementById("progressBar").style.width = ((stepIndex + 1) / baixoSeq.length * 100) + "%";
-            
             const notaBaixo = baixoSeq[stepIndex];
             const msPorStep = (60000/bpmAtual)/4;
-            if (notaBaixo !== "") {
-                animarBaixo(notaBaixo, msPorStep);
-            } else {
-                stopRightHand();
-            }
+            if (notaBaixo !== "") { animarBaixo(notaBaixo, msPorStep); } else { stopRightHand(); }
         }, delayVisualBase);
 
         const notaBaixo = baixoSeq[stepIndex];
@@ -1001,7 +910,8 @@
             const gainNode = audioContext.createGain();
             gainNode.gain.value = vol;
             source.connect(gainNode);
-            gainNode.connect(audioContext.destination);
+            // CRUCIAL: Conecta ao Master Gain em vez do destino direto, para permitir gravação
+            gainNode.connect(masterGain);
             source.start(time); 
             if (path.includes("BaixoMelodia") || path.includes("bass-muted")) {
                 if(audioBaixoAtual) try{audioBaixoAtual.stop(time + 0.1);}catch(e){}
@@ -1021,25 +931,18 @@
         return audioBuffer;
     }
 
-    async function exportarWAV() { alert("Exportação WAV pronta (simulação)."); }
+    async function exportarWAV() { alert("Use o botão de Rec."); }
 
     function meterToBeats(m){return Number(m.split('/')[0])||4}
     function expandRhythm(p,t){const j=p.join(' ').replace(/\s+/g,' ').trim().split(/\s+/);const o=[];while(o.length<t)for(const k of j){if(o.length>=t)break;o.push(k)}return o.slice(0,t)}
     function parsePattern(p){const r={intro:[],loop:[]},m=p.match(/\((.*?)\)/);if(m)r.loop=m[1].trim().split(/\s+/);else r.loop=p.trim().split(/\s+/);return r}
     function mapNoteToAnimId(n){let c=n.replace(/[0-9]/g,'').replace('#','S');const m=notasValidas.filter(x=>x.endsWith(c));return m.length>0?m[0]:"1E"}
-    
-    // CORRIGIDO: Mapeamento realista de notas para cordas (E, A, D, G)
     function getCordaDaNota(n){
         const m=n.match(/^(\d+)/);
         if(!m)return"E";
         const i=parseInt(m[1]);
-        // Afinação Padrão aproximada (E=1..5, A=6..10, D=11..15, G=16+)
-        if(i<=5)return"E";
-        if(i<=10)return"A";
-        if(i<=15)return"D";
-        return"G";
+        if(i<=5)return"E"; if(i<=10)return"A"; if(i<=15)return"D"; return"G";
     }
-
     function escolherMelhorPasta(n,p){const l=[];for(let i=1;i<=24;i++)if(pastaMap[i].includes(n))l.push(i);if(!l.length)return 1;return l.reduce((a,b)=>Math.abs(b-p)<Math.abs(a-p)?b:a)}
     function startHeadLoop(){if(headLoopTimer)clearInterval(headLoopTimer);headLoopTimer=setInterval(()=>{headFrameIndex=(headFrameIndex+1)%headFrames.length;if(headFrames[headFrameIndex])setCachedSrc(domImages.bx_cabeca, headFrames[headFrameIndex]);},33);}
     
