@@ -4,7 +4,7 @@
   <link rel="icon" href="data:,">
   
   <meta charset="UTF-8" />
-  <title>Jam On - Mobile Performance (480p Fixed)</title>
+  <title>Jam On - Ultra Light & Clean Mode</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
   <style>
@@ -54,7 +54,13 @@
     .appRoot {
       width: 100vw; height: 100vh; display: flex; flex-direction: column;
       background: radial-gradient(circle at top, #222 0%, #000 80%);
+      transition: opacity 0.3s;
     }
+
+    /* MODO LIMPO (Esconde controles) */
+    body.clean-mode #bottomArea { display: none !important; }
+    body.clean-mode #recordingCanvas { display: none !important; } /* Garante que o canvas oculto não interfira */
+    body.clean-mode #animacaoStageWrapper { transform: scale(0.9); } /* Ajuste leve para preencher melhor */
 
     #topArea {
       flex: 1; display: flex; align-items: center; justify-content: center;
@@ -65,10 +71,11 @@
       position: relative; width: 100%; height: 100%;
       display: flex; align-items: center; justify-content: center;
       transform-origin: center center;
+      transition: transform 0.3s;
     }
 
     /* =========================================
-       ESTILO DA BATERISTA (TELA)
+       ESTILO DA BATERISTA
        ========================================= */
     #bateristaStage {
       position: absolute;
@@ -85,7 +92,6 @@
       will-change: transform, src; 
     }
 
-    /* ORDEM DE CAMADAS (Z-INDEX) */
     #bat_PernaEsq     { top: 0; left: 0; z-index: 2; }
     #bat_Tronco       { top: 0; left: 0; z-index: 3; }
     #bat_Cabeca       { top: 0; left: 0; z-index: 4; }
@@ -96,7 +102,7 @@
     #bat_Ataque       { top: 0; left: 0; z-index: 22; }
 
     /* =========================================
-       ESTILO DA BAIXISTA (TELA)
+       ESTILO DA BAIXISTA
        ========================================= */
     #baixistaStage {
       position: relative; width: 520px; height: 520px;
@@ -117,7 +123,7 @@
     #bracoDireitoLayer { top: 250px;  left: -5px;  z-index: 4; }
     #cabecaLayer       { top: 37px;   left: 70px;  z-index: 5; }
 
-    /* CANVAS OCULTO OTIMIZADO (854x480 - 480p Wide) */
+    /* CANVAS OCULTO (360p - Super Leve) */
     #recordingCanvas {
       position: absolute; top: -9999px; left: -9999px; visibility: hidden;
     }
@@ -139,7 +145,8 @@
     button:disabled { opacity: 0.5; cursor: not-allowed; }
     
     #playBtn { background: var(--accent-color); border-color: var(--highlight-color); font-weight: bold; color: #fff; }
-    
+    #cleanModeBtn { background: #4a148c; border-color: #ea80fc; color: #fff; }
+
     #recordVideoBtn.recording {
         background: var(--record-color); color: white; border-color: #ff0000;
         animation: pulse 1.5s infinite; font-weight: bold;
@@ -187,6 +194,12 @@
 
     .countdownOverlay { position: absolute; inset: 0; display: none; justify-content: center; align-items: center; z-index: 50; background: rgba(0,0,0,0.7); font-size: 5rem; font-weight: 900; color: var(--highlight-color); }
     #loadingStatusMini { position: absolute; bottom: 20px; font-size: 1rem; color: #fff; font-weight: normal; }
+    
+    #cleanExitHint {
+        position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+        background: rgba(0,0,0,0.7); color: white; padding: 10px 20px; border-radius: 20px;
+        z-index: 60000; display: none; pointer-events: none; font-size: 0.9rem;
+    }
 
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
@@ -212,9 +225,11 @@
     <div id="loadingBarContainer"><div id="loadingBar"></div></div>
   </div>
 
+  <div id="cleanExitHint">Toque na tela para sair do Modo Limpo</div>
+
   <div id="orientationOverlay"><div><h1>🎵 Melhor Experiência 🎸</h1><p>Gire o dispositivo.</p></div></div>
   
-  <canvas id="recordingCanvas" width="854" height="480"></canvas>
+  <canvas id="recordingCanvas" width="640" height="360"></canvas>
 
   <div class="appRoot">
     <div id="topArea">
@@ -248,20 +263,20 @@
 
     <div id="bottomArea">
       <div id="playerControlsRow">
-        <button id="playBtn" disabled>⏳ Carregando...</button>
-        <button id="playAleatorioBtn" disabled>🎲 Smart</button>
-        <button id="recordVideoBtn">🔴 Gravar Vídeo</button>
-        <span id="generationInfo"></span>
+        <button id="playBtn" disabled>⏳</button>
+        <button id="playAleatorioBtn" disabled>🎲</button>
+        <button id="recordVideoBtn">🔴 Rec (Auto)</button>
+        <button id="cleanModeBtn">👁️ Modo Limpo</button> <span id="generationInfo"></span>
         <span id="bpmDisplay" style="margin-left:auto">120 BPM</span>
         <input type="range" id="bpmSlider" min="60" max="180" value="120" />
         <div class="sliderGroup"><label>Bx</label><input type="range" id="baixoVolume" min="0" max="1" step="0.05" value="0.9" /></div>
         <div class="sliderGroup"><label>Dr</label><input type="range" id="drumVolume" min="0" max="1" step="0.05" value="0.9" /></div>
         <button id="playExportadoBtn">📁</button>
-        <button id="exportWavBtn">💾 WAV</button>
+        <button id="exportWavBtn">💾</button>
         <button id="addBaixoCol">+1</button>
         <button id="addCol">+All</button>
         <button id="duplicateSeq">x2</button>
-        <button id="clearAll">Limpar</button>
+        <button id="clearAll">Limp</button>
       </div>
       <div id="progressContainer"><div id="progressBar"></div></div>
       <div id="gridsArea">
@@ -277,7 +292,8 @@
   <script>
     const PASTA_BAT = "animacao/Baterista/";
     const imgCache = new Map();
-    const DRUM_FPS = 40; 
+    // REDUZIDO PARA 24 FPS (Cinematic/Leve)
+    const DRUM_FPS = 24; 
     const DRUM_IMPACT_FRAME = 2; 
     const DRUM_MS_PER_FRAME = 1000 / DRUM_FPS;
     const DRUM_PREROLL_MS = DRUM_IMPACT_FRAME * DRUM_MS_PER_FRAME; 
@@ -331,7 +347,6 @@
         }
     };
 
-    const pastaMap = { 1: ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B"], 2: ["3FS","4G","5GS","6A","8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C"], 3: ["4G","5GS","6A","7AS","9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS"], 4: ["5GS","6A","7AS","8B","10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D"], 5: ["6A","7AS","8B","9C","11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS"], 6: ["7AS","8B","9C","10CS","12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E"], 7: ["8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F"], 8: ["9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS"], 9: ["10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G"], 10: ["11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS"], 11: ["12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A"], 12: ["13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS"], 13: ["14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B"], 14: ["15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C"], 15: ["16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS"], 16: ["17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D"], 17: ["18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS"], 18: ["19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E"], 19: ["20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F"], 20: ["21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS","36DS","37E","38F","39FS"], 21: ["22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D","37E","38F","39FS","40G"], 22: ["23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS","38F","39FS","40G","41GS"], 23: ["24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E","39FS","40G","41GS","42A"], 24: ["25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F","40G","41GS","42A","43AS"] };
     const notasValidas = ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B","21C","22CS","23D","24DS","25E","26F","27FS","28G","29GS","30A","31AS","32B","33C","34CS","35D","36DS","37E","38F","39FS","40G","41GS","42A","43AS"];
     const drumLines = [
       { id: "bumbo", label: "Bumbo", file: "bumbo.mp3" }, { id: "caixa", label: "Caixa", file: "caixa.mp3" }, { id: "caixaAro", label: "Aro", file: "caixaAro.mp3" }, { id: "chimbal", label: "HH", file: "chimbal.mp3" }, { id: "chimbal_pedal", label: "HH Ped", file: "chimbal-pedal.mp3" }, { id: "chimbalaberto", label: "HH Open", file: "chimbal-aberto.mp3" }, { id: "ataque", label: "Ataque", file: "ataque.mp3" }, { id: "tom1", label: "Tom 1", file: "tom-1.mp3" }, { id: "tom2", label: "Tom 2", file: "tom-2.mp3" }, { id: "surdo", label: "Surdo", file: "surdo.mp3" }, { id: "conducao", label: "Ride", file: "conducao.mp3" }, { id: "conducao_centro", label: "Ride C", file: "conducao-centro.mp3" }
@@ -521,6 +536,25 @@
         document.getElementById("playAleatorioBtn").onclick = gerarAleatorio;
         document.getElementById("playExportadoBtn").onclick = importarJSON;
         document.getElementById("exportWavBtn").onclick = exportarWAV;
+        
+        // NOVO LISTENER: MODO LIMPO
+        document.getElementById("cleanModeBtn").onclick = () => {
+            document.body.classList.add("clean-mode");
+            document.getElementById("cleanExitHint").style.display = "block";
+            
+            // Toque em qualquer lugar para sair
+            const exitHandler = () => {
+                document.body.classList.remove("clean-mode");
+                document.getElementById("cleanExitHint").style.display = "none";
+                document.removeEventListener("click", exitHandler);
+                document.removeEventListener("touchstart", exitHandler);
+            };
+            // Delay para não sair imediatamente ao clicar no botão
+            setTimeout(() => {
+                document.addEventListener("click", exitHandler);
+                document.addEventListener("touchstart", exitHandler);
+            }, 500);
+        };
     }
 
     function deleteColumn(idx) {
@@ -531,119 +565,59 @@
     }
 
     // ========================================================
-    // WARM-UP (PREPARAÇÃO) DO CANVAS 480P
+    // FUNÇÃO UNIFICADA DE DESENHO (CORRIGE POSIÇÃO)
     // ========================================================
-    function desenharCenaEstatica() {
-        ctx.fillStyle = "#111"; 
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Esta função desenha exatamente a mesma cena para o Warm-up e o Vídeo
+    function desenharCenaUnificada(contexto, width, height) {
+        contexto.fillStyle = "#111"; 
+        contexto.fillRect(0, 0, width, height);
         
-        // Gradiente de Fundo
-        const gradient = ctx.createRadialGradient(427, 240, 50, 427, 240, 400);
+        // Gradiente de Fundo (Centralizado proporcionalmente)
+        const cx = width / 2;
+        const cy = height / 2;
+        const gradient = contexto.createRadialGradient(cx, cy, 50, cx, cy, width * 0.8);
         gradient.addColorStop(0, "#222");
         gradient.addColorStop(1, "#000");
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        contexto.fillStyle = gradient;
+        contexto.fillRect(0, 0, width, height);
         
-        // --- BATERISTA (AJUSTADO PARA 480p - FUNDO ESQUERDA) ---
-        ctx.save();
-        ctx.translate(180, 80); 
-        ctx.scale(0.45, 0.45);
+        // --- BATERISTA (AJUSTADO 360p) ---
+        contexto.save();
+        // Escalas relativas ao tamanho 640x360
+        contexto.translate(width * 0.22, height * 0.2); 
+        contexto.scale(0.35, 0.35); // Levemente menor para caber melhor
         
-        const draw = (img) => { if(img && img.complete) ctx.drawImage(img, 0, 0); };
+        const draw = (img) => { if(img && img.complete) contexto.drawImage(img, 0, 0); };
         draw(domImages.bt_conducao);
         draw(domImages.bt_pernaEsq);
         draw(domImages.bt_tronco);
         draw(domImages.bt_cabeca);
-        draw(domImages.bt_bracoEsq);
-        draw(domImages.bt_bracoDir);
-        draw(domImages.bt_kit);
-        draw(domImages.bt_ataque);
-        ctx.restore();
-
-        // --- BAIXISTA (AJUSTADO PARA 480p - FRENTE DIREITA) ---
-        ctx.save();
-        ctx.translate(400, 50); 
-        ctx.scale(0.7, 0.7);
-
-        if (domImages.bx_pernas.complete) ctx.drawImage(domImages.bx_pernas, 64, 332);
         
-        ctx.save();
-        ctx.translate(260, 416); // Pivot
-        ctx.translate(-260, -416); // Retorna
-        
-        if (domImages.bx_cabecaTras.complete) ctx.drawImage(domImages.bx_cabecaTras, 100, 60);
-        if (domImages.bx_tronco.src && domImages.bx_tronco.complete) {
-            ctx.drawImage(domImages.bx_tronco, 0, 132);
-        } else {
-             const img = new Image(); img.src = `animacao/tronco_baixo/Pasta_1F/1E.png`;
-             if(img.complete) ctx.drawImage(img, 0, 132);
-        }
-        if (domImages.bx_antebraco.complete) ctx.drawImage(domImages.bx_antebraco, -2, 179);
-        if (domImages.bx_bracoDir.complete) ctx.drawImage(domImages.bx_bracoDir, -5, 250);
-        if (domImages.bx_cabeca.complete) ctx.drawImage(domImages.bx_cabeca, 70, 37);
-        
-        ctx.restore();
-        ctx.restore();
-    }
-
-    // ========================================================
-    // RENDER LOOP OTIMIZADO (LIMITADO A 30 FPS)
-    // ========================================================
-    let lastDrawTime = 0;
-    const FRAME_INTERVAL = 1000 / 30; // 30 FPS
-
-    function canvasRenderLoop(timestamp) {
-        requestAnimationFrame(canvasRenderLoop);
-        
-        // THROTTLE: Se não estiver gravando, ou se for muito cedo, não desenha
-        if (!isRecording) return;
-        if (timestamp - lastDrawTime < FRAME_INTERVAL) return;
-        lastDrawTime = timestamp;
-
-        ctx.fillStyle = "#111"; 
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        const gradient = ctx.createRadialGradient(427, 240, 50, 427, 240, 400);
-        gradient.addColorStop(0, "#222");
-        gradient.addColorStop(1, "#000");
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // --- CAMADA 1: BATERISTA ---
-        ctx.save();
-        ctx.translate(180, 80); 
-        ctx.scale(0.45, 0.45);   
-
-        const drawImg = (el) => { if (el && el.complete && el.naturalWidth > 0) ctx.drawImage(el, 0, 0); };
-        
-        drawImg(domImages.bt_conducao);
-        drawImg(domImages.bt_pernaEsq);
-        drawImg(domImages.bt_tronco);
-        drawImg(domImages.bt_cabeca);
-        
+        // Z-Index Lógica
         const zEsq = parseInt(domImages.bt_bracoEsq.style.zIndex || 10);
         if (zEsq > 11) { 
-            drawImg(domImages.bt_bracoDir); 
-            drawImg(domImages.bt_bracoEsq); 
+            draw(domImages.bt_bracoDir); 
+            draw(domImages.bt_bracoEsq); 
         } else { 
-            drawImg(domImages.bt_bracoEsq); 
-            drawImg(domImages.bt_bracoDir); 
+            draw(domImages.bt_bracoEsq); 
+            draw(domImages.bt_bracoDir); 
         }
         
-        drawImg(domImages.bt_kit);
-        drawImg(domImages.bt_ataque);
-        ctx.restore();
+        draw(domImages.bt_kit);
+        draw(domImages.bt_ataque);
+        contexto.restore();
 
-        // --- CAMADA 2: BAIXISTA ---
-        ctx.save();
-        ctx.translate(400, 50); 
-        ctx.scale(0.7, 0.7); 
+        // --- BAIXISTA (AJUSTADO 360p) ---
+        contexto.save();
+        contexto.translate(width * 0.55, height * 0.15); 
+        contexto.scale(0.55, 0.55);
 
-        if (domImages.bx_pernas.complete) ctx.drawImage(domImages.bx_pernas, 64, 332);
-
-        ctx.save(); 
-        ctx.translate(260, 416); 
+        if (domImages.bx_pernas.complete) contexto.drawImage(domImages.bx_pernas, 64, 332);
         
+        contexto.save();
+        contexto.translate(260, 416); // Pivot
+        
+        // Aplica Rotação se estiver tocando
         let angle = 0;
         if (isPlaying && pendulumStartTime > 0) {
             const now = performance.now();
@@ -651,23 +625,45 @@
             const speed = 0.003 * (bpmAtual / 120);
             angle = Math.sin(elapsed * speed) * 2.3;
         }
-        ctx.rotate(angle * Math.PI / 180);
+        contexto.rotate(angle * Math.PI / 180);
         
-        document.getElementById("bodyWrapperPendulo").style.transform = `rotate(${angle}deg)`;
+        contexto.translate(-260, -416); // Retorna
         
-        ctx.translate(-260, -416); 
-        
-        if (domImages.bx_cabecaTras.complete) ctx.drawImage(domImages.bx_cabecaTras, 100, 60);
-        if (domImages.bx_tronco.complete && domImages.bx_tronco.src) {
-            ctx.drawImage(domImages.bx_tronco, 0, 132);
+        if (domImages.bx_cabecaTras.complete) contexto.drawImage(domImages.bx_cabecaTras, 100, 60);
+        if (domImages.bx_tronco.src && domImages.bx_tronco.complete) {
+            contexto.drawImage(domImages.bx_tronco, 0, 132);
+        } else {
+             const img = new Image(); img.src = `animacao/tronco_baixo/Pasta_1F/1E.png`;
+             if(img.complete) contexto.drawImage(img, 0, 132);
         }
+        if (domImages.bx_antebraco.complete) contexto.drawImage(domImages.bx_antebraco, -2, 179);
+        if (domImages.bx_bracoDir.complete) contexto.drawImage(domImages.bx_bracoDir, -5, 250);
+        if (domImages.bx_cabeca.complete) contexto.drawImage(domImages.bx_cabeca, 70, 37);
         
-        if (domImages.bx_antebraco.complete) ctx.drawImage(domImages.bx_antebraco, -2, 179);
-        if (domImages.bx_bracoDir.complete) ctx.drawImage(domImages.bx_bracoDir, -5, 250);
-        if (domImages.bx_cabeca.complete) ctx.drawImage(domImages.bx_cabeca, 70, 37);
+        contexto.restore();
+        contexto.restore();
+    }
+
+    // WARM-UP (Usa a função unificada)
+    function desenharCenaEstatica() {
+        desenharCenaUnificada(ctx, canvas.width, canvas.height);
+    }
+
+    // LOOP DE GRAVAÇÃO (Usa a função unificada)
+    let lastDrawTime = 0;
+    const FRAME_INTERVAL = 1000 / 24; // 24 FPS travado
+
+    function canvasRenderLoop(timestamp) {
+        requestAnimationFrame(canvasRenderLoop);
         
-        ctx.restore(); 
-        ctx.restore(); 
+        // Só desenha se estiver gravando
+        if (!isRecording) return;
+        
+        // Limitador de FPS para poupar CPU
+        if (timestamp - lastDrawTime < FRAME_INTERVAL) return;
+        lastDrawTime = timestamp;
+
+        desenharCenaUnificada(ctx, canvas.width, canvas.height);
     }
 
     function runFrameAnimation(elementId, frames, idleFrame, fps = 30, loop = false, startFrame = 0, keepLastFrame = false) {
@@ -1096,9 +1092,10 @@
                 const audioTrack = mediaStreamDestination.stream.getAudioTracks()[0];
                 const combinedStream = new MediaStream([videoTrack, audioTrack]);
                 
-                let options = { mimeType: 'video/webm; codecs=vp8', videoBitsPerSecond: 1500000 };
+                // OTIMIZAÇÃO EXTREMA: 1MBps bitrate
+                let options = { mimeType: 'video/webm; codecs=vp8', videoBitsPerSecond: 1000000 };
                 if (!MediaRecorder.isTypeSupported('video/webm; codecs=vp8')) {
-                    options = { mimeType: 'video/webm', videoBitsPerSecond: 1500000 };
+                    options = { mimeType: 'video/webm', videoBitsPerSecond: 1000000 };
                 }
                 
                 mediaRecorder = new MediaRecorder(combinedStream, options);
