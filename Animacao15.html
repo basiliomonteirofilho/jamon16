@@ -4,7 +4,7 @@
   <link rel="icon" href="data:,">
   
   <meta charset="UTF-8" />
-  <title>Jam On - Offline Rendering (Fixed)</title>
+  <title>Jam On - Mobile Fit & HD Video</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
   <style>
@@ -46,11 +46,11 @@
       height: 100%; background: var(--highlight-color); width: 0%; transition: width 0.1s linear;
     }
 
-    /* OVERLAY DE RENDERIZAÇÃO (Bloqueia a tela enquanto exporta) */
+    /* OVERLAY DE RENDERIZAÇÃO */
     #renderOverlay {
         position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 60000;
         display: none; flex-direction: column; justify-content: center; align-items: center;
-        color: #fff;
+        color: #fff; text-align: center;
     }
     #renderSpinner {
         width: 50px; height: 50px; border: 5px solid #333; border-top: 5px solid var(--record-color);
@@ -58,7 +58,7 @@
     }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     #renderStatus { font-size: 1.2rem; font-weight: bold; color: var(--record-color); margin-bottom: 5px; }
-    #renderSub { font-size: 0.9rem; color: #888; text-align: center; padding: 0 20px; }
+    #renderSub { font-size: 0.9rem; color: #888; padding: 0 20px; }
 
     #orientationOverlay {
       position: fixed; inset: 0; background: rgba(0,0,0,0.95); color: #fff;
@@ -75,10 +75,13 @@
       position: relative; overflow: hidden;
     }
 
+    /* AJUSTE DE ZOOM DO PALCO */
     #animacaoStageWrapper {
       position: relative; width: 100%; height: 100%;
       display: flex; align-items: center; justify-content: center;
       transform-origin: center center;
+      /* Padrão Desktop */
+      transform: scale(0.8); 
     }
 
     /* =========================================
@@ -89,7 +92,8 @@
       width: 520px; height: 520px;
       transform-origin: center center;
       z-index: 1; 
-      transform: scale(0.35) translate(250px, -300px);
+      /* Posição Visual na Tela */
+      transform: scale(0.45) translate(-300px, -200px); 
       pointer-events: none;
     }
     
@@ -115,6 +119,8 @@
       position: relative; width: 520px; height: 520px;
       transform-origin: center center;
       z-index: 100; 
+      /* Posição Visual na Tela */
+      transform: scale(0.8) translate(100px, 50px);
     }
 
     #pernasLayer { position: absolute; top: 332px; left: 64px; z-index: 1; }
@@ -130,7 +136,7 @@
     #bracoDireitoLayer { top: 250px;  left: -5px;  z-index: 4; }
     #cabecaLayer       { top: 37px;   left: 70px;  z-index: 5; }
 
-    /* CANVAS OCULTO (360p Otimizado) */
+    /* CANVAS 720p (HD) - Retomando qualidade */
     #recordingCanvas {
       position: absolute; top: -9999px; left: -9999px; visibility: hidden;
     }
@@ -152,11 +158,7 @@
     button:disabled { opacity: 0.5; cursor: not-allowed; }
     
     #playBtn { background: var(--accent-color); border-color: var(--highlight-color); font-weight: bold; color: #fff; }
-    
-    /* Botão de Exportar Video */
-    #exportVideoBtn {
-        background: #b71c1c; border-color: #ff5252; color: white; font-weight: bold;
-    }
+    #exportVideoBtn { background: #b71c1c; border-color: #ff5252; color: white; font-weight: bold; }
 
     #generationInfo {
         margin-left: auto; font-size: 0.7rem; color: var(--highlight-color);
@@ -203,14 +205,22 @@
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
     
+    /* ADAPTAÇÕES MOBILE - DIMINUI BASTANTE O ZOOM */
     @media (max-width: 800px) {
-        #animacaoStageWrapper { transform: scale(0.65); }
-        #topArea { overflow: visible; }
+        #animacaoStageWrapper { 
+            /* Reduzido para 0.45 para caber tudo na tela */
+            transform: scale(0.45); 
+        }
+        #topArea { overflow: hidden; }
     }
+    
     @media (max-width: 600px) { 
         #bottomArea { flex-basis: 60vh; } 
         :root { --label-width: 50px; --cell-size: 22px; } 
-        #animacaoStageWrapper { transform: scale(0.55); }
+        #animacaoStageWrapper { 
+            /* Reduzido para 0.38 - Garante que apareçam inteiros no celular */
+            transform: scale(0.38); 
+        }
         #playerControlsRow { justify-content: space-between; }
         button { flex-grow: 1; justify-content: center; }
         .sliderGroup { flex-grow: 1; justify-content: center; }
@@ -226,13 +236,13 @@
 
   <div id="renderOverlay">
     <div id="renderSpinner"></div>
-    <div id="renderStatus">Gerando Vídeo...</div>
-    <div id="renderSub">Não feche o navegador. O áudio será tocado em segundo plano.</div>
+    <div id="renderStatus">Gerando Vídeo HD...</div>
+    <div id="renderSub">Aguarde. Isso pode levar alguns segundos.</div>
   </div>
 
   <div id="orientationOverlay"><div><h1>🎵 Melhor Experiência 🎸</h1><p>Gire o dispositivo.</p></div></div>
   
-  <canvas id="recordingCanvas" width="640" height="360"></canvas>
+  <canvas id="recordingCanvas" width="1280" height="720"></canvas>
 
   <div class="appRoot">
     <div id="topArea">
@@ -268,7 +278,7 @@
       <div id="playerControlsRow">
         <button id="playBtn" disabled>⏳</button>
         <button id="playAleatorioBtn" disabled>🎲</button>
-        <button id="exportVideoBtn">🎥 Exportar Video</button>
+        <button id="exportVideoBtn">🎥 Exportar Vídeo</button>
         
         <span id="generationInfo"></span>
         <span id="bpmDisplay" style="margin-left:auto">120 BPM</span>
@@ -296,14 +306,12 @@
   <script>
     const PASTA_BAT = "animacao/Baterista/";
     const imgCache = new Map();
-    const DRUM_FPS = 24; 
+    const DRUM_FPS = 30; // 30 FPS para suavidade razoável
     const DRUM_IMPACT_FRAME = 2; 
     const DRUM_MS_PER_FRAME = 1000 / DRUM_FPS;
     const DRUM_PREROLL_MS = DRUM_IMPACT_FRAME * DRUM_MS_PER_FRAME; 
     const VISUAL_OFFSET_MS = 25; 
 
-    // --- VARIÁVEL REINSERIDA ---
-    const pastaMap = { 1: ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B"], 2: ["3FS","4G","5GS","6A","8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C"], 3: ["4G","5GS","6A","7AS","9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS"], 4: ["5GS","6A","7AS","8B","10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D"], 5: ["6A","7AS","8B","9C","11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS"], 6: ["7AS","8B","9C","10CS","12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E"], 7: ["8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F"], 8: ["9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS"], 9: ["10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G"], 10: ["11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS"], 11: ["12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A"], 12: ["13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS"], 13: ["14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B"], 14: ["15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C"], 15: ["16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS"], 16: ["17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D"], 17: ["18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS"], 18: ["19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E"], 19: ["20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F"], 20: ["21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS","36DS","37E","38F","39FS"], 21: ["22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D","37E","38F","39FS","40G"], 22: ["23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS","38F","39FS","40G","41GS"], 23: ["24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E","39FS","40G","41GS","42A"], 24: ["25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F","40G","41GS","42A","43AS"] };
     const pastaFolderNames = { 1:"1F", 2:"2FS", 3:"3G", 4:"4GS", 5:"5A", 6:"6AS", 7:"7B", 8:"8C", 9:"9CS", 10:"10D", 11:"11DS", 12:"12E", 13:"13F", 14:"14FS", 15:"15G", 16:"16GS", 17:"17A", 18:"18AS", 19:"19B", 20:"20C", 21:"21CS", 22:"22D", 23:"23DS", 24:"24E" };
 
     const CABECA_ANIMATIONS = {
@@ -554,12 +562,14 @@
     }
 
     // ========================================================
-    // DESENHO UNIFICADO
+    // DESENHO UNIFICADO (POSICIONAMENTO IGUAL PARA PREVIEW E VÍDEO)
     // ========================================================
     function desenharCenaUnificada(contexto, width, height) {
+        // Limpa
         contexto.fillStyle = "#111"; 
         contexto.fillRect(0, 0, width, height);
         
+        // Gradiente
         const cx = width / 2; const cy = height / 2;
         const gradient = contexto.createRadialGradient(cx, cy, 50, cx, cy, width * 0.8);
         gradient.addColorStop(0, "#222");
@@ -567,9 +577,12 @@
         contexto.fillStyle = gradient;
         contexto.fillRect(0, 0, width, height);
         
+        // --- BATERISTA (FUNDO ESQUERDA) ---
+        // Coordenadas calibradas para HD (1280x720)
+        // Usamos escala para adaptar a posição
         contexto.save();
-        contexto.translate(width * 0.22, height * 0.2); 
-        contexto.scale(0.35, 0.35); 
+        contexto.translate(width * 0.25, height * 0.2); // 25% X, 20% Y
+        contexto.scale(0.55, 0.55); // Escala para HD
         
         const draw = (img) => { if(img && img.complete) contexto.drawImage(img, 0, 0); };
         draw(domImages.bt_conducao);
@@ -583,14 +596,16 @@
         draw(domImages.bt_ataque);
         contexto.restore();
 
+        // --- BAIXISTA (FRENTE DIREITA) ---
         contexto.save();
-        contexto.translate(width * 0.55, height * 0.15); 
-        contexto.scale(0.55, 0.55);
+        contexto.translate(width * 0.6, height * 0.15); // 60% X, 15% Y
+        contexto.scale(0.85, 0.85); // Maior, em destaque
 
         if (domImages.bx_pernas.complete) contexto.drawImage(domImages.bx_pernas, 64, 332);
         
+        // Pêndulo do Baixo
         contexto.save();
-        contexto.translate(260, 416); // Pivot
+        contexto.translate(260, 416); // Pivot (Centro do corpo aprox)
         
         let angle = 0;
         if ((isPlaying || isExporting) && pendulumStartTime > 0) {
@@ -600,7 +615,7 @@
             angle = Math.sin(elapsed * speed) * 2.3;
         }
         contexto.rotate(angle * Math.PI / 180);
-        contexto.translate(-260, -416); 
+        contexto.translate(-260, -416); // Retorna
         
         if (domImages.bx_cabecaTras.complete) contexto.drawImage(domImages.bx_cabecaTras, 100, 60);
         if (domImages.bx_tronco.src && domImages.bx_tronco.complete) {
@@ -613,47 +628,54 @@
         if (domImages.bx_bracoDir.complete) contexto.drawImage(domImages.bx_bracoDir, -5, 250);
         if (domImages.bx_cabeca.complete) contexto.drawImage(domImages.bx_cabeca, 70, 37);
         
-        contexto.restore();
-        contexto.restore();
+        contexto.restore(); // Fecha Pêndulo
+        contexto.restore(); // Fecha Baixista
     }
 
+    // Loop de Renderização do Vídeo
     let lastDrawTime = 0;
-    const FRAME_INTERVAL = 1000 / 24; 
+    const FRAME_INTERVAL = 1000 / 30; // 30 FPS no vídeo
 
     function canvasRenderLoop(timestamp) {
         requestAnimationFrame(canvasRenderLoop);
+        
+        // Se não estiver exportando, não gasta CPU desenhando no canvas oculto
         if (!isExporting) return;
+        
+        // Limitador de FPS (Throttle) para não travar o celular
         if (timestamp - lastDrawTime < FRAME_INTERVAL) return;
         lastDrawTime = timestamp;
+
         desenharCenaUnificada(ctx, canvas.width, canvas.height);
     }
 
     // ========================================================
-    // LÓGICA DE EXPORTAÇÃO "OFFLINE"
+    // LÓGICA DE EXPORTAÇÃO "OFFLINE" (SEM TRAVAR VISUAL)
     // ========================================================
     async function iniciarProcessoExportacao() {
         if (isPlaying) pararPlayback();
         if (audioContext.state === 'suspended') await audioContext.resume();
 
-        // Bloqueia a tela
+        // 1. Mostra Overlay e Bloqueia Tela
         document.getElementById("renderOverlay").style.display = "flex";
         
-        // Garante que tudo carregou
+        // 2. Garante Assets
         await prepararAssetsDaSequencia();
 
-        // Configura modo
+        // 3. Configura Modo Exportação
         isExporting = true;
         
-        // Desenha primeiro frame
+        // Desenha frame inicial estático
         desenharCenaUnificada(ctx, canvas.width, canvas.height);
 
-        // Inicia stream
-        const canvasStream = canvas.captureStream(24);
+        // 4. Inicia Stream e Recorder
+        const canvasStream = canvas.captureStream(30);
         const videoTrack = canvasStream.getVideoTracks()[0];
         const audioTrack = mediaStreamDestination.stream.getAudioTracks()[0];
         const combinedStream = new MediaStream([videoTrack, audioTrack]);
         
-        let options = { mimeType: 'video/webm; codecs=vp8', videoBitsPerSecond: 800000 }; 
+        // Configurações de Qualidade (Bitrate moderado para HD em mobile)
+        let options = { mimeType: 'video/webm; codecs=vp8', videoBitsPerSecond: 2500000 }; 
         if (!MediaRecorder.isTypeSupported('video/webm; codecs=vp8')) options = { mimeType: 'video/webm' };
         
         mediaRecorder = new MediaRecorder(combinedStream, options);
@@ -661,11 +683,13 @@
         
         mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
         mediaRecorder.onstop = () => {
+            // Fim da gravação: Gera download
             const blob = new Blob(recordedChunks, { type: 'video/webm' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a'); a.style.display = 'none'; a.href = url; a.download = 'jam_export.webm';
             document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url);
             
+            // Restaura estado
             isExporting = false;
             document.getElementById("renderOverlay").style.display = "none";
             pararPlayback(); 
@@ -673,7 +697,7 @@
 
         mediaRecorder.start();
 
-        // Inicia a música internamente
+        // 5. Inicia Playback Oculto (com delay de segurança)
         setTimeout(() => {
             iniciarPlaybackDeExportacao();
         }, 1000);
@@ -684,10 +708,11 @@
         lastDrumStep = {};
         pendulumStartTime = performance.now();
         
+        // Inicia animação inicial
         playDrumAnimation('start', 0);
+        
         let nextStepTime = audioContext.currentTime;
         const secondsPerStep = (60 / bpmAtual) / 4;
-        
         const totalDurationSteps = baixoSeq.length; 
         let stepsPlayed = 0;
 
@@ -696,6 +721,7 @@
 
             while (nextStepTime < audioContext.currentTime + 0.15) {
                 if (stepsPlayed >= totalDurationSteps) {
+                    // FIM: Para gravador com margem de segurança
                     setTimeout(() => {
                         if(mediaRecorder.state !== 'inactive') mediaRecorder.stop();
                     }, 1000); 
@@ -706,6 +732,7 @@
                 nextStepTime += secondsPerStep;
                 atualPasso++;
                 stepsPlayed++;
+                // Loop circular lógico (apenas para manter índices válidos)
                 if (atualPasso >= baixoSeq.length) atualPasso = 0;
             }
             requestAnimationFrame(scheduler);
