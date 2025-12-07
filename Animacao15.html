@@ -4,7 +4,7 @@
   <link rel="icon" href="data:,">
   
   <meta charset="UTF-8" />
-  <title>Jam On - Renderização Profissional</title>
+  <title>Jam On - Offline Rendering (Fixed)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
   <style>
@@ -46,7 +46,7 @@
       height: 100%; background: var(--highlight-color); width: 0%; transition: width 0.1s linear;
     }
 
-    /* OVERLAY DE RENDERIZAÇÃO (NOVO) */
+    /* OVERLAY DE RENDERIZAÇÃO (Bloqueia a tela enquanto exporta) */
     #renderOverlay {
         position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 60000;
         display: none; flex-direction: column; justify-content: center; align-items: center;
@@ -58,7 +58,7 @@
     }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     #renderStatus { font-size: 1.2rem; font-weight: bold; color: var(--record-color); margin-bottom: 5px; }
-    #renderSub { font-size: 0.9rem; color: #888; }
+    #renderSub { font-size: 0.9rem; color: #888; text-align: center; padding: 0 20px; }
 
     #orientationOverlay {
       position: fixed; inset: 0; background: rgba(0,0,0,0.95); color: #fff;
@@ -99,7 +99,6 @@
       will-change: transform, src; 
     }
 
-    /* ORDEM DE CAMADAS (Z-INDEX) */
     #bat_PernaEsq     { top: 0; left: 0; z-index: 2; }
     #bat_Tronco       { top: 0; left: 0; z-index: 3; }
     #bat_Cabeca       { top: 0; left: 0; z-index: 4; }
@@ -154,7 +153,7 @@
     
     #playBtn { background: var(--accent-color); border-color: var(--highlight-color); font-weight: bold; color: #fff; }
     
-    /* Botão de Exportar Video (Estilo diferente) */
+    /* Botão de Exportar Video */
     #exportVideoBtn {
         background: #b71c1c; border-color: #ff5252; color: white; font-weight: bold;
     }
@@ -228,7 +227,7 @@
   <div id="renderOverlay">
     <div id="renderSpinner"></div>
     <div id="renderStatus">Gerando Vídeo...</div>
-    <div id="renderSub">Aguarde, não feche o navegador.</div>
+    <div id="renderSub">Não feche o navegador. O áudio será tocado em segundo plano.</div>
   </div>
 
   <div id="orientationOverlay"><div><h1>🎵 Melhor Experiência 🎸</h1><p>Gire o dispositivo.</p></div></div>
@@ -269,7 +268,7 @@
       <div id="playerControlsRow">
         <button id="playBtn" disabled>⏳</button>
         <button id="playAleatorioBtn" disabled>🎲</button>
-        <button id="exportVideoBtn">🎥 Exportar Vídeo</button>
+        <button id="exportVideoBtn">🎥 Exportar Video</button>
         
         <span id="generationInfo"></span>
         <span id="bpmDisplay" style="margin-left:auto">120 BPM</span>
@@ -303,6 +302,8 @@
     const DRUM_PREROLL_MS = DRUM_IMPACT_FRAME * DRUM_MS_PER_FRAME; 
     const VISUAL_OFFSET_MS = 25; 
 
+    // --- VARIÁVEL REINSERIDA ---
+    const pastaMap = { 1: ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B"], 2: ["3FS","4G","5GS","6A","8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C"], 3: ["4G","5GS","6A","7AS","9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS"], 4: ["5GS","6A","7AS","8B","10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D"], 5: ["6A","7AS","8B","9C","11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS"], 6: ["7AS","8B","9C","10CS","12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E"], 7: ["8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F"], 8: ["9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS"], 9: ["10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G"], 10: ["11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS"], 11: ["12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A"], 12: ["13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS"], 13: ["14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B"], 14: ["15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C"], 15: ["16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS"], 16: ["17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D"], 17: ["18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS"], 18: ["19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E"], 19: ["20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F"], 20: ["21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS","36DS","37E","38F","39FS"], 21: ["22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D","37E","38F","39FS","40G"], 22: ["23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS","38F","39FS","40G","41GS"], 23: ["24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E","39FS","40G","41GS","42A"], 24: ["25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F","40G","41GS","42A","43AS"] };
     const pastaFolderNames = { 1:"1F", 2:"2FS", 3:"3G", 4:"4GS", 5:"5A", 6:"6AS", 7:"7B", 8:"8C", 9:"9CS", 10:"10D", 11:"11DS", 12:"12E", 13:"13F", 14:"14FS", 15:"15G", 16:"16GS", 17:"17A", 18:"18AS", 19:"19B", 20:"20C", 21:"21CS", 22:"22D", 23:"23DS", 24:"24E" };
 
     const CABECA_ANIMATIONS = {
@@ -391,7 +392,7 @@
     let lastRightArmFrames = null;
     
     // VARIÁVEIS DE EXPORTAÇÃO
-    let isExporting = false; // "Modo Renderização"
+    let isExporting = false;
     
     const canvas = document.getElementById("recordingCanvas");
     const ctx = canvas.getContext("2d");
@@ -530,7 +531,7 @@
 
     function setupListeners() {
         document.getElementById("playBtn").onclick = togglePlay;
-        // SUBSTITUI O ANTIGO RECORD PELO EXPORTAR
+        // BOTÃO DE EXPORTAR
         document.getElementById("exportVideoBtn").onclick = iniciarProcessoExportacao; 
         
         document.getElementById("bpmSlider").oninput = (e) => { bpmAtual = parseInt(e.target.value); document.getElementById("bpmDisplay").textContent = bpmAtual + " BPM"; };
@@ -553,13 +554,12 @@
     }
 
     // ========================================================
-    // DESENHO UNIFICADO (GARANTE POSIÇÃO IGUAL SEMPRE)
+    // DESENHO UNIFICADO
     // ========================================================
     function desenharCenaUnificada(contexto, width, height) {
         contexto.fillStyle = "#111"; 
         contexto.fillRect(0, 0, width, height);
         
-        // Gradiente
         const cx = width / 2; const cy = height / 2;
         const gradient = contexto.createRadialGradient(cx, cy, 50, cx, cy, width * 0.8);
         gradient.addColorStop(0, "#222");
@@ -567,7 +567,6 @@
         contexto.fillStyle = gradient;
         contexto.fillRect(0, 0, width, height);
         
-        // BATERISTA (Fundo Esq)
         contexto.save();
         contexto.translate(width * 0.22, height * 0.2); 
         contexto.scale(0.35, 0.35); 
@@ -584,7 +583,6 @@
         draw(domImages.bt_ataque);
         contexto.restore();
 
-        // BAIXISTA (Frente Dir)
         contexto.save();
         contexto.translate(width * 0.55, height * 0.15); 
         contexto.scale(0.55, 0.55);
@@ -594,7 +592,6 @@
         contexto.save();
         contexto.translate(260, 416); // Pivot
         
-        // Rotação: Funciona se 'isPlaying' for true (Play normal) OU se 'isExporting' for true (Render)
         let angle = 0;
         if ((isPlaying || isExporting) && pendulumStartTime > 0) {
             const now = performance.now();
@@ -620,46 +617,42 @@
         contexto.restore();
     }
 
-    // LOOP DE RENDERIZAÇÃO
     let lastDrawTime = 0;
-    const FRAME_INTERVAL = 1000 / 24; // 24 FPS (Leve)
+    const FRAME_INTERVAL = 1000 / 24; 
 
     function canvasRenderLoop(timestamp) {
         requestAnimationFrame(canvasRenderLoop);
-        
-        // Só desenha no canvas oculto se estivermos no "Modo Exportação"
         if (!isExporting) return;
-        
         if (timestamp - lastDrawTime < FRAME_INTERVAL) return;
         lastDrawTime = timestamp;
-
         desenharCenaUnificada(ctx, canvas.width, canvas.height);
     }
 
     // ========================================================
-    // LÓGICA DE EXPORTAÇÃO "DEDICADA" (AUTOMÁTICA)
+    // LÓGICA DE EXPORTAÇÃO "OFFLINE"
     // ========================================================
     async function iniciarProcessoExportacao() {
         if (isPlaying) pararPlayback();
         if (audioContext.state === 'suspended') await audioContext.resume();
 
-        // 1. Prepara Assets
+        // Bloqueia a tela
         document.getElementById("renderOverlay").style.display = "flex";
+        
+        // Garante que tudo carregou
         await prepararAssetsDaSequencia();
 
-        // 2. Configura "Modo Exportação"
+        // Configura modo
         isExporting = true;
         
-        // Desenha uma vez parado para o início do vídeo
+        // Desenha primeiro frame
         desenharCenaUnificada(ctx, canvas.width, canvas.height);
 
-        // 3. Inicia Gravador (Com delay de segurança)
+        // Inicia stream
         const canvasStream = canvas.captureStream(24);
         const videoTrack = canvasStream.getVideoTracks()[0];
         const audioTrack = mediaStreamDestination.stream.getAudioTracks()[0];
         const combinedStream = new MediaStream([videoTrack, audioTrack]);
         
-        // Codec Leve
         let options = { mimeType: 'video/webm; codecs=vp8', videoBitsPerSecond: 800000 }; 
         if (!MediaRecorder.isTypeSupported('video/webm; codecs=vp8')) options = { mimeType: 'video/webm' };
         
@@ -673,45 +666,39 @@
             const a = document.createElement('a'); a.style.display = 'none'; a.href = url; a.download = 'jam_export.webm';
             document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url);
             
-            // Limpeza Final
             isExporting = false;
             document.getElementById("renderOverlay").style.display = "none";
-            pararPlayback(); // Garante que tudo parou
+            pararPlayback(); 
         };
 
         mediaRecorder.start();
 
-        // 4. Inicia Playback Automatizado após 1 segundo (pra estabilizar gravador)
+        // Inicia a música internamente
         setTimeout(() => {
             iniciarPlaybackDeExportacao();
         }, 1000);
     }
 
     function iniciarPlaybackDeExportacao() {
-        // Reseta variaveis
         atualPasso = 0;
         lastDrumStep = {};
         pendulumStartTime = performance.now();
         
-        // Inicia
         playDrumAnimation('start', 0);
         let nextStepTime = audioContext.currentTime;
         const secondsPerStep = (60 / bpmAtual) / 4;
         
-        // Calcula duração total para parar automaticamente
         const totalDurationSteps = baixoSeq.length; 
         let stepsPlayed = 0;
 
         const scheduler = () => {
-            // Se o usuário cancelar ou algo der errado
             if (!isExporting) return;
 
             while (nextStepTime < audioContext.currentTime + 0.15) {
                 if (stepsPlayed >= totalDurationSteps) {
-                    // FIM DA MÚSICA - PARA GRAVAÇÃO
                     setTimeout(() => {
                         if(mediaRecorder.state !== 'inactive') mediaRecorder.stop();
-                    }, 1000); // 1s de sobra no final
+                    }, 1000); 
                     return; 
                 }
 
@@ -719,8 +706,6 @@
                 nextStepTime += secondsPerStep;
                 atualPasso++;
                 stepsPlayed++;
-                // Loop circular (opcional, aqui estamos gravando linearmente 1 ciclo)
-                // Se quiser gravar em loop, mude a logica de stepsPlayed
                 if (atualPasso >= baixoSeq.length) atualPasso = 0;
             }
             requestAnimationFrame(scheduler);
@@ -729,12 +714,8 @@
     }
 
     // ========================================================
-    // MÉTODOS DE ANIMAÇÃO E SOM (PADRÃO)
+    // FUNÇÕES DE ANIMAÇÃO PADRÃO
     // ========================================================
-    // (As funções runFrameAnimation, playCaixaAnimation, playRandomHeadAnimation, etc...
-    // permanecem idênticas ao código anterior, elas funcionam para ambos os modos)
-    // VOU REPETIR APENAS AS ESSENCIAIS PARA O CONTEXTO:
-
     function runFrameAnimation(elementId, frames, idleFrame, fps = 30, loop = false, startFrame = 0, keepLastFrame = false) {
         const el = typeof elementId === 'string' ? document.getElementById(elementId) : elementId;
         const frameDuration = 1000 / fps;
@@ -922,7 +903,6 @@
         setCachedSrc(domImages.bx_bracoDir, `animacao/braco_direito/Corda_${ultimaCordaUsada||'E'}1.png`);
     }
 
-    // Playback Normal (Tela)
     function togglePlay() {
         if (isPlaying) { pararPlayback(); } 
         else {
@@ -977,7 +957,7 @@
 
         setTimeout(() => {
             if(!isPlaying && !isExporting) return;
-            if(!isExporting) highlightGridStep(stepIndex); // Só destaca grid no modo visual
+            if(!isExporting) highlightGridStep(stepIndex);
             
             const notaBaixo = baixoSeq[stepIndex];
             const msPorStep = (60000/bpmAtual)/4;
