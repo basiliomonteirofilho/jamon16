@@ -4,7 +4,7 @@
   <link rel="icon" href="data:,">
   
   <meta charset="UTF-8" />
-  <title>Jam On - Ultra Light & Clean Mode</title>
+  <title>Jam On - Renderização Profissional</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
   <style>
@@ -46,6 +46,20 @@
       height: 100%; background: var(--highlight-color); width: 0%; transition: width 0.1s linear;
     }
 
+    /* OVERLAY DE RENDERIZAÇÃO (NOVO) */
+    #renderOverlay {
+        position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 60000;
+        display: none; flex-direction: column; justify-content: center; align-items: center;
+        color: #fff;
+    }
+    #renderSpinner {
+        width: 50px; height: 50px; border: 5px solid #333; border-top: 5px solid var(--record-color);
+        border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    #renderStatus { font-size: 1.2rem; font-weight: bold; color: var(--record-color); margin-bottom: 5px; }
+    #renderSub { font-size: 0.9rem; color: #888; }
+
     #orientationOverlay {
       position: fixed; inset: 0; background: rgba(0,0,0,0.95); color: #fff;
       display: none; justify-content: center; align-items: center; z-index: 10000;
@@ -54,13 +68,7 @@
     .appRoot {
       width: 100vw; height: 100vh; display: flex; flex-direction: column;
       background: radial-gradient(circle at top, #222 0%, #000 80%);
-      transition: opacity 0.3s;
     }
-
-    /* MODO LIMPO (Esconde controles) */
-    body.clean-mode #bottomArea { display: none !important; }
-    body.clean-mode #recordingCanvas { display: none !important; } /* Garante que o canvas oculto não interfira */
-    body.clean-mode #animacaoStageWrapper { transform: scale(0.9); } /* Ajuste leve para preencher melhor */
 
     #topArea {
       flex: 1; display: flex; align-items: center; justify-content: center;
@@ -71,7 +79,6 @@
       position: relative; width: 100%; height: 100%;
       display: flex; align-items: center; justify-content: center;
       transform-origin: center center;
-      transition: transform 0.3s;
     }
 
     /* =========================================
@@ -92,6 +99,7 @@
       will-change: transform, src; 
     }
 
+    /* ORDEM DE CAMADAS (Z-INDEX) */
     #bat_PernaEsq     { top: 0; left: 0; z-index: 2; }
     #bat_Tronco       { top: 0; left: 0; z-index: 3; }
     #bat_Cabeca       { top: 0; left: 0; z-index: 4; }
@@ -123,7 +131,7 @@
     #bracoDireitoLayer { top: 250px;  left: -5px;  z-index: 4; }
     #cabecaLayer       { top: 37px;   left: 70px;  z-index: 5; }
 
-    /* CANVAS OCULTO (360p - Super Leve) */
+    /* CANVAS OCULTO (360p Otimizado) */
     #recordingCanvas {
       position: absolute; top: -9999px; left: -9999px; visibility: hidden;
     }
@@ -145,13 +153,11 @@
     button:disabled { opacity: 0.5; cursor: not-allowed; }
     
     #playBtn { background: var(--accent-color); border-color: var(--highlight-color); font-weight: bold; color: #fff; }
-    #cleanModeBtn { background: #4a148c; border-color: #ea80fc; color: #fff; }
-
-    #recordVideoBtn.recording {
-        background: var(--record-color); color: white; border-color: #ff0000;
-        animation: pulse 1.5s infinite; font-weight: bold;
+    
+    /* Botão de Exportar Video (Estilo diferente) */
+    #exportVideoBtn {
+        background: #b71c1c; border-color: #ff5252; color: white; font-weight: bold;
     }
-    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(213, 0, 0, 0.7); } 70% { box-shadow: 0 0 0 8px rgba(213, 0, 0, 0); } }
 
     #generationInfo {
         margin-left: auto; font-size: 0.7rem; color: var(--highlight-color);
@@ -194,12 +200,6 @@
 
     .countdownOverlay { position: absolute; inset: 0; display: none; justify-content: center; align-items: center; z-index: 50; background: rgba(0,0,0,0.7); font-size: 5rem; font-weight: 900; color: var(--highlight-color); }
     #loadingStatusMini { position: absolute; bottom: 20px; font-size: 1rem; color: #fff; font-weight: normal; }
-    
-    #cleanExitHint {
-        position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-        background: rgba(0,0,0,0.7); color: white; padding: 10px 20px; border-radius: 20px;
-        z-index: 60000; display: none; pointer-events: none; font-size: 0.9rem;
-    }
 
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
@@ -225,7 +225,11 @@
     <div id="loadingBarContainer"><div id="loadingBar"></div></div>
   </div>
 
-  <div id="cleanExitHint">Toque na tela para sair do Modo Limpo</div>
+  <div id="renderOverlay">
+    <div id="renderSpinner"></div>
+    <div id="renderStatus">Gerando Vídeo...</div>
+    <div id="renderSub">Aguarde, não feche o navegador.</div>
+  </div>
 
   <div id="orientationOverlay"><div><h1>🎵 Melhor Experiência 🎸</h1><p>Gire o dispositivo.</p></div></div>
   
@@ -265,8 +269,9 @@
       <div id="playerControlsRow">
         <button id="playBtn" disabled>⏳</button>
         <button id="playAleatorioBtn" disabled>🎲</button>
-        <button id="recordVideoBtn">🔴 Rec (Auto)</button>
-        <button id="cleanModeBtn">👁️ Modo Limpo</button> <span id="generationInfo"></span>
+        <button id="exportVideoBtn">🎥 Exportar Vídeo</button>
+        
+        <span id="generationInfo"></span>
         <span id="bpmDisplay" style="margin-left:auto">120 BPM</span>
         <input type="range" id="bpmSlider" min="60" max="180" value="120" />
         <div class="sliderGroup"><label>Bx</label><input type="range" id="baixoVolume" min="0" max="1" step="0.05" value="0.9" /></div>
@@ -292,14 +297,12 @@
   <script>
     const PASTA_BAT = "animacao/Baterista/";
     const imgCache = new Map();
-    // REDUZIDO PARA 24 FPS (Cinematic/Leve)
     const DRUM_FPS = 24; 
     const DRUM_IMPACT_FRAME = 2; 
     const DRUM_MS_PER_FRAME = 1000 / DRUM_FPS;
     const DRUM_PREROLL_MS = DRUM_IMPACT_FRAME * DRUM_MS_PER_FRAME; 
     const VISUAL_OFFSET_MS = 25; 
 
-    // VARIAVEL GLOBAL REINSERIDA CORRETAMENTE
     const pastaFolderNames = { 1:"1F", 2:"2FS", 3:"3G", 4:"4GS", 5:"5A", 6:"6AS", 7:"7B", 8:"8C", 9:"9CS", 10:"10D", 11:"11DS", 12:"12E", 13:"13F", 14:"14FS", 15:"15G", 16:"16GS", 17:"17A", 18:"18AS", 19:"19B", 20:"20C", 21:"21CS", 22:"22D", 23:"23DS", 24:"24E" };
 
     const CABECA_ANIMATIONS = {
@@ -387,12 +390,15 @@
     let lastRightArmFrame = null;
     let lastRightArmFrames = null;
     
+    // VARIÁVEIS DE EXPORTAÇÃO
+    let isExporting = false; // "Modo Renderização"
+    
     const canvas = document.getElementById("recordingCanvas");
     const ctx = canvas.getContext("2d");
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const audioBuffers = {};
     const mediaStreamDestination = audioContext.createMediaStreamDestination();
-    let mediaRecorder = null, recordedChunks = [], isRecording = false;
+    let mediaRecorder = null, recordedChunks = [];
 
     const domImages = {
         bx_pernas: document.getElementById("pernasLayer"),
@@ -489,7 +495,7 @@
 
     async function prepararAssetsDaSequencia() {
         const miniStatus = document.getElementById("loadingStatusMini");
-        miniStatus.innerText = "Preparando Animação...";
+        if(miniStatus) miniStatus.innerText = "Preparando...";
         const assetsNecessarios = new Set();
         let pastaCalc = 1;
         for (let i = 0; i < baixoSeq.length; i++) {
@@ -520,12 +526,13 @@
         });
         const lista = Array.from(assetsNecessarios);
         await Promise.all(lista.map(u => loadAndCache(u)));
-        miniStatus.innerText = "";
     }
 
     function setupListeners() {
         document.getElementById("playBtn").onclick = togglePlay;
-        document.getElementById("recordVideoBtn").onclick = toggleRecording;
+        // SUBSTITUI O ANTIGO RECORD PELO EXPORTAR
+        document.getElementById("exportVideoBtn").onclick = iniciarProcessoExportacao; 
+        
         document.getElementById("bpmSlider").oninput = (e) => { bpmAtual = parseInt(e.target.value); document.getElementById("bpmDisplay").textContent = bpmAtual + " BPM"; };
         document.getElementById("baixoVolume").oninput = (e) => baixoVolumeGlobal = parseFloat(e.target.value);
         document.getElementById("drumVolume").oninput = (e) => bateriaVolumeGlobal = parseFloat(e.target.value);
@@ -536,25 +543,6 @@
         document.getElementById("playAleatorioBtn").onclick = gerarAleatorio;
         document.getElementById("playExportadoBtn").onclick = importarJSON;
         document.getElementById("exportWavBtn").onclick = exportarWAV;
-        
-        // NOVO LISTENER: MODO LIMPO
-        document.getElementById("cleanModeBtn").onclick = () => {
-            document.body.classList.add("clean-mode");
-            document.getElementById("cleanExitHint").style.display = "block";
-            
-            // Toque em qualquer lugar para sair
-            const exitHandler = () => {
-                document.body.classList.remove("clean-mode");
-                document.getElementById("cleanExitHint").style.display = "none";
-                document.removeEventListener("click", exitHandler);
-                document.removeEventListener("touchstart", exitHandler);
-            };
-            // Delay para não sair imediatamente ao clicar no botão
-            setTimeout(() => {
-                document.addEventListener("click", exitHandler);
-                document.addEventListener("touchstart", exitHandler);
-            }, 500);
-        };
     }
 
     function deleteColumn(idx) {
@@ -565,49 +553,38 @@
     }
 
     // ========================================================
-    // FUNÇÃO UNIFICADA DE DESENHO (CORRIGE POSIÇÃO)
+    // DESENHO UNIFICADO (GARANTE POSIÇÃO IGUAL SEMPRE)
     // ========================================================
-    // Esta função desenha exatamente a mesma cena para o Warm-up e o Vídeo
     function desenharCenaUnificada(contexto, width, height) {
         contexto.fillStyle = "#111"; 
         contexto.fillRect(0, 0, width, height);
         
-        // Gradiente de Fundo (Centralizado proporcionalmente)
-        const cx = width / 2;
-        const cy = height / 2;
+        // Gradiente
+        const cx = width / 2; const cy = height / 2;
         const gradient = contexto.createRadialGradient(cx, cy, 50, cx, cy, width * 0.8);
         gradient.addColorStop(0, "#222");
         gradient.addColorStop(1, "#000");
         contexto.fillStyle = gradient;
         contexto.fillRect(0, 0, width, height);
         
-        // --- BATERISTA (AJUSTADO 360p) ---
+        // BATERISTA (Fundo Esq)
         contexto.save();
-        // Escalas relativas ao tamanho 640x360
         contexto.translate(width * 0.22, height * 0.2); 
-        contexto.scale(0.35, 0.35); // Levemente menor para caber melhor
+        contexto.scale(0.35, 0.35); 
         
         const draw = (img) => { if(img && img.complete) contexto.drawImage(img, 0, 0); };
         draw(domImages.bt_conducao);
         draw(domImages.bt_pernaEsq);
         draw(domImages.bt_tronco);
         draw(domImages.bt_cabeca);
-        
-        // Z-Index Lógica
         const zEsq = parseInt(domImages.bt_bracoEsq.style.zIndex || 10);
-        if (zEsq > 11) { 
-            draw(domImages.bt_bracoDir); 
-            draw(domImages.bt_bracoEsq); 
-        } else { 
-            draw(domImages.bt_bracoEsq); 
-            draw(domImages.bt_bracoDir); 
-        }
-        
+        if (zEsq > 11) { draw(domImages.bt_bracoDir); draw(domImages.bt_bracoEsq); } 
+        else { draw(domImages.bt_bracoEsq); draw(domImages.bt_bracoDir); }
         draw(domImages.bt_kit);
         draw(domImages.bt_ataque);
         contexto.restore();
 
-        // --- BAIXISTA (AJUSTADO 360p) ---
+        // BAIXISTA (Frente Dir)
         contexto.save();
         contexto.translate(width * 0.55, height * 0.15); 
         contexto.scale(0.55, 0.55);
@@ -617,17 +594,16 @@
         contexto.save();
         contexto.translate(260, 416); // Pivot
         
-        // Aplica Rotação se estiver tocando
+        // Rotação: Funciona se 'isPlaying' for true (Play normal) OU se 'isExporting' for true (Render)
         let angle = 0;
-        if (isPlaying && pendulumStartTime > 0) {
+        if ((isPlaying || isExporting) && pendulumStartTime > 0) {
             const now = performance.now();
             const elapsed = now - pendulumStartTime;
             const speed = 0.003 * (bpmAtual / 120);
             angle = Math.sin(elapsed * speed) * 2.3;
         }
         contexto.rotate(angle * Math.PI / 180);
-        
-        contexto.translate(-260, -416); // Retorna
+        contexto.translate(-260, -416); 
         
         if (domImages.bx_cabecaTras.complete) contexto.drawImage(domImages.bx_cabecaTras, 100, 60);
         if (domImages.bx_tronco.src && domImages.bx_tronco.complete) {
@@ -644,45 +620,129 @@
         contexto.restore();
     }
 
-    // WARM-UP (Usa a função unificada)
-    function desenharCenaEstatica() {
-        desenharCenaUnificada(ctx, canvas.width, canvas.height);
-    }
-
-    // LOOP DE GRAVAÇÃO (Usa a função unificada)
+    // LOOP DE RENDERIZAÇÃO
     let lastDrawTime = 0;
-    const FRAME_INTERVAL = 1000 / 24; // 24 FPS travado
+    const FRAME_INTERVAL = 1000 / 24; // 24 FPS (Leve)
 
     function canvasRenderLoop(timestamp) {
         requestAnimationFrame(canvasRenderLoop);
         
-        // Só desenha se estiver gravando
-        if (!isRecording) return;
+        // Só desenha no canvas oculto se estivermos no "Modo Exportação"
+        if (!isExporting) return;
         
-        // Limitador de FPS para poupar CPU
         if (timestamp - lastDrawTime < FRAME_INTERVAL) return;
         lastDrawTime = timestamp;
 
         desenharCenaUnificada(ctx, canvas.width, canvas.height);
     }
 
+    // ========================================================
+    // LÓGICA DE EXPORTAÇÃO "DEDICADA" (AUTOMÁTICA)
+    // ========================================================
+    async function iniciarProcessoExportacao() {
+        if (isPlaying) pararPlayback();
+        if (audioContext.state === 'suspended') await audioContext.resume();
+
+        // 1. Prepara Assets
+        document.getElementById("renderOverlay").style.display = "flex";
+        await prepararAssetsDaSequencia();
+
+        // 2. Configura "Modo Exportação"
+        isExporting = true;
+        
+        // Desenha uma vez parado para o início do vídeo
+        desenharCenaUnificada(ctx, canvas.width, canvas.height);
+
+        // 3. Inicia Gravador (Com delay de segurança)
+        const canvasStream = canvas.captureStream(24);
+        const videoTrack = canvasStream.getVideoTracks()[0];
+        const audioTrack = mediaStreamDestination.stream.getAudioTracks()[0];
+        const combinedStream = new MediaStream([videoTrack, audioTrack]);
+        
+        // Codec Leve
+        let options = { mimeType: 'video/webm; codecs=vp8', videoBitsPerSecond: 800000 }; 
+        if (!MediaRecorder.isTypeSupported('video/webm; codecs=vp8')) options = { mimeType: 'video/webm' };
+        
+        mediaRecorder = new MediaRecorder(combinedStream, options);
+        recordedChunks = [];
+        
+        mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+        mediaRecorder.onstop = () => {
+            const blob = new Blob(recordedChunks, { type: 'video/webm' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.style.display = 'none'; a.href = url; a.download = 'jam_export.webm';
+            document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url);
+            
+            // Limpeza Final
+            isExporting = false;
+            document.getElementById("renderOverlay").style.display = "none";
+            pararPlayback(); // Garante que tudo parou
+        };
+
+        mediaRecorder.start();
+
+        // 4. Inicia Playback Automatizado após 1 segundo (pra estabilizar gravador)
+        setTimeout(() => {
+            iniciarPlaybackDeExportacao();
+        }, 1000);
+    }
+
+    function iniciarPlaybackDeExportacao() {
+        // Reseta variaveis
+        atualPasso = 0;
+        lastDrumStep = {};
+        pendulumStartTime = performance.now();
+        
+        // Inicia
+        playDrumAnimation('start', 0);
+        let nextStepTime = audioContext.currentTime;
+        const secondsPerStep = (60 / bpmAtual) / 4;
+        
+        // Calcula duração total para parar automaticamente
+        const totalDurationSteps = baixoSeq.length; 
+        let stepsPlayed = 0;
+
+        const scheduler = () => {
+            // Se o usuário cancelar ou algo der errado
+            if (!isExporting) return;
+
+            while (nextStepTime < audioContext.currentTime + 0.15) {
+                if (stepsPlayed >= totalDurationSteps) {
+                    // FIM DA MÚSICA - PARA GRAVAÇÃO
+                    setTimeout(() => {
+                        if(mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+                    }, 1000); // 1s de sobra no final
+                    return; 
+                }
+
+                runStep(atualPasso, nextStepTime);
+                nextStepTime += secondsPerStep;
+                atualPasso++;
+                stepsPlayed++;
+                // Loop circular (opcional, aqui estamos gravando linearmente 1 ciclo)
+                // Se quiser gravar em loop, mude a logica de stepsPlayed
+                if (atualPasso >= baixoSeq.length) atualPasso = 0;
+            }
+            requestAnimationFrame(scheduler);
+        };
+        scheduler();
+    }
+
+    // ========================================================
+    // MÉTODOS DE ANIMAÇÃO E SOM (PADRÃO)
+    // ========================================================
+    // (As funções runFrameAnimation, playCaixaAnimation, playRandomHeadAnimation, etc...
+    // permanecem idênticas ao código anterior, elas funcionam para ambos os modos)
+    // VOU REPETIR APENAS AS ESSENCIAIS PARA O CONTEXTO:
+
     function runFrameAnimation(elementId, frames, idleFrame, fps = 30, loop = false, startFrame = 0, keepLastFrame = false) {
         const el = typeof elementId === 'string' ? document.getElementById(elementId) : elementId;
         const frameDuration = 1000 / fps;
         
-        if (activeAnimations[el.id]) {
-            cancelAnimationFrame(activeAnimations[el.id]);
-            delete activeAnimations[el.id];
-        }
+        if (activeAnimations[el.id]) { cancelAnimationFrame(activeAnimations[el.id]); delete activeAnimations[el.id]; }
+        if (armAnimationTimers[el.id]) { clearTimeout(armAnimationTimers[el.id]); delete armAnimationTimers[el.id]; }
         
-        if (armAnimationTimers[el.id]) {
-            clearTimeout(armAnimationTimers[el.id]);
-            delete armAnimationTimers[el.id];
-        }
-        
-        if (startFrame > 0 && startFrame < frames.length) {
-            setCachedSrc(el, frames[startFrame]);
-        }
+        if (startFrame > 0 && startFrame < frames.length) setCachedSrc(el, frames[startFrame]);
         
         const start = performance.now() - (startFrame * frameDuration); 
         const animate = (now) => {
@@ -706,33 +766,22 @@
                         setCachedSrc(el, idleFrame);
                     }
                     delete activeAnimations[el.id];
-                    if(el.id === 'bat_BracoEsq') {
-                        el.style.zIndex = 10;
-                    }
+                    if(el.id === 'bat_BracoEsq') el.style.zIndex = 10;
                 }
             }
         };
-        
         activeAnimations[el.id] = requestAnimationFrame(animate);
         
         if (!loop) {
-            const remainingFrames = frames.length - startFrame;
-            const totalDuration = remainingFrames * frameDuration;
+            const totalDuration = (frames.length - startFrame) * frameDuration;
             armAnimationTimers[el.id] = setTimeout(() => {
-                if (activeAnimations[el.id]) {
-                    cancelAnimationFrame(activeAnimations[el.id]);
-                    delete activeAnimations[el.id];
-                }
+                if (activeAnimations[el.id]) { cancelAnimationFrame(activeAnimations[el.id]); delete activeAnimations[el.id]; }
                 if (keepLastFrame && el.id === 'bat_BracoDir') {
                     setCachedSrc(el, frames[frames.length - 1]);
                     lastRightArmFrame = frames[frames.length - 1];
                     lastRightArmFrames = frames;
-                } else if (idleFrame !== null && !keepLastFrame) {
-                    setCachedSrc(el, idleFrame);
-                }
-                if(el.id === 'bat_BracoEsq') {
-                    el.style.zIndex = 10;
-                }
+                } else if (idleFrame !== null && !keepLastFrame) setCachedSrc(el, idleFrame);
+                if(el.id === 'bat_BracoEsq') el.style.zIndex = 10;
                 delete armAnimationTimers[el.id];
             }, totalDuration + 50); 
         }
@@ -743,9 +792,7 @@
         const idleSrc = isLeft ? DRUM_ASSETS.idle.bracoEsq : DRUM_ASSETS.idle.bracoDir;
         const keepLastFrame = !isLeft; 
         runFrameAnimation(imgEl, frames, idleSrc, DRUM_FPS, false, 2, keepLastFrame);
-        if (isLeft) {
-            imgEl.style.zIndex = 10;
-        }
+        if (isLeft) imgEl.style.zIndex = 10;
     }
 
     function playRightArmAnimation(frames, idleFrame, startFrame = 0) {
@@ -753,25 +800,18 @@
     }
 
     function playRandomHeadAnimation() {
-        if (!isPlaying || activeAnimations['bat_Cabeca']) return;
+        if ((!isPlaying && !isExporting) || activeAnimations['bat_Cabeca']) return;
         const shouldSwitch = Math.random() > 0.7; 
-        if (shouldSwitch) {
-            currentHeadStyle = currentHeadStyle === 'estavel' ? 'estavel2' : 'estavel';
-        }
+        if (shouldSwitch) currentHeadStyle = currentHeadStyle === 'estavel' ? 'estavel2' : 'estavel';
         const frames = currentHeadStyle === 'estavel' ? CABECA_ANIMATIONS.cabeca_estavel : CABECA_ANIMATIONS.cabeca_estavel2;
         runFrameAnimation(domImages.bt_cabeca, frames, null, 25, true);
         if (headAnimationTimeout) clearTimeout(headAnimationTimeout);
-        headAnimationTimeout = setTimeout(() => {
-            if (isPlaying) playRandomHeadAnimation();
-        }, 2000 + Math.random() * 3000); 
+        headAnimationTimeout = setTimeout(() => { if (isPlaying || isExporting) playRandomHeadAnimation(); }, 2000 + Math.random() * 3000); 
     }
 
     function playHeadTurnAnimation(direction = 'right') {
-        if (!isPlaying) return;
-        if (activeAnimations['bat_Cabeca']) {
-            cancelAnimationFrame(activeAnimations['bat_Cabeca']);
-            delete activeAnimations['bat_Cabeca'];
-        }
+        if (!isPlaying && !isExporting) return;
+        if (activeAnimations['bat_Cabeca']) { cancelAnimationFrame(activeAnimations['bat_Cabeca']); delete activeAnimations['bat_Cabeca']; }
         const turnFrames = direction === 'right' ? CABECA_ANIMATIONS.virada_direita : CABECA_ANIMATIONS.virada_esquerda;
         const returnFrames = direction === 'right' ? CABECA_ANIMATIONS.voltando_direita : CABECA_ANIMATIONS.voltando_esquerda;
         let step = 0;
@@ -800,66 +840,50 @@
     }
 
     function playDrumAnimation(drumType, currentStep) {
-        if (!activeAnimations['bat_Tronco'] && isPlaying) {
+        if (!activeAnimations['bat_Tronco'] && (isPlaying || isExporting)) {
             runFrameAnimation(domImages.bt_tronco, DRUM_ASSETS.anim.troncoTocando, null, 30, true);
         }
-        if (!activeAnimations['bat_Cabeca'] && isPlaying) {
+        if (!activeAnimations['bat_Cabeca'] && (isPlaying || isExporting)) {
             playRandomHeadAnimation();
         }
         if (drumType === 'start') return;
         if (drumType === 'bumbo') {
             const prevStepIndex = (currentStep === 0) ? baixoSeq.length - 1 : currentStep - 1;
             const isConsecutive = (bateriaSeq['bumbo'][prevStepIndex] === 'bumbo');
-            if (isConsecutive) {
-                 runFrameAnimation(domImages.bt_pernaEsq, DRUM_ASSETS.anim.perna_duplo, DRUM_ASSETS.idle.pernaEsq, DRUM_FPS);
-            }
+            if (isConsecutive) runFrameAnimation(domImages.bt_pernaEsq, DRUM_ASSETS.anim.perna_duplo, DRUM_ASSETS.idle.pernaEsq, DRUM_FPS);
             return;
         }
         const prevHitStep = lastDrumStep[drumType];
         const isRapidRepeat = (prevHitStep !== undefined && (currentStep - prevHitStep === 1 || (currentStep===0 && prevHitStep === baixoSeq.length-1)));
         let armToUse = 'right';
         if (['caixa', 'caixaAro'].includes(drumType)) armToUse = 'left';
-        if (isRapidRepeat && lastArmUsed[drumType]) {
-            armToUse = (lastArmUsed[drumType] === 'right') ? 'left' : 'right';
-        }
+        if (isRapidRepeat && lastArmUsed[drumType]) armToUse = (lastArmUsed[drumType] === 'right') ? 'left' : 'right';
         lastDrumStep[drumType] = currentStep;
         lastArmUsed[drumType] = armToUse;
         const shouldTurnHead = (drumType === 'tom2' || drumType === 'surdo' || drumType === 'conducao' || drumType === 'conducao_centro') && isRapidRepeat && Math.random() > 0.5; 
-        if (shouldTurnHead) {
-            playHeadTurnAnimation(armToUse === 'right' ? 'right' : 'left');
-        }
+        if (shouldTurnHead) playHeadTurnAnimation(armToUse === 'right' ? 'right' : 'left');
+        
         const isLeft = (armToUse === 'left');
         const imgEl = isLeft ? domImages.bt_bracoEsq : domImages.bt_bracoDir;
-        let idleSrc = null;
+        let idleSrc = isLeft ? DRUM_ASSETS.idle.bracoEsq : DRUM_ASSETS.idle.bracoDir;
         if (isLeft) {
-            idleSrc = DRUM_ASSETS.idle.bracoEsq;
-            if (['ataque', 'tom1', 'tom2', 'surdo', 'conducao', 'conducao_centro'].includes(drumType)) {
-                imgEl.style.zIndex = 12;
-            } else {
-                imgEl.style.zIndex = 10;
-            }
-        } else {
-            idleSrc = DRUM_ASSETS.idle.bracoDir;
+            if (['ataque', 'tom1', 'tom2', 'surdo', 'conducao', 'conducao_centro'].includes(drumType)) imgEl.style.zIndex = 12;
+            else imgEl.style.zIndex = 10;
         }
-        if (drumType === 'caixa' || drumType === 'caixaAro') {
-            playCaixaAnimation(imgEl, isLeft, currentStep);
-        } else {
+        
+        if (drumType === 'caixa' || drumType === 'caixaAro') playCaixaAnimation(imgEl, isLeft, currentStep);
+        else {
             let frames = [];
             const mapName = isLeft ? 'be_' : 'bd_';
             let key = drumType;
             if(drumType === 'chimbalaberto') key = 'chimbal';
             if(drumType === 'caixaAro') key = 'caixa';
             if(drumType === 'conducao_centro') key = 'conducao';
-            if (DRUM_ASSETS.anim[mapName + key]) {
-                frames = DRUM_ASSETS.anim[mapName + key];
-            } else {
-                frames = isLeft ? DRUM_ASSETS.anim.be_caixa : DRUM_ASSETS.anim.bd_caixa;
-            }
-            if (!isLeft) {
-                playRightArmAnimation(frames, idleSrc);
-            } else {
-                runFrameAnimation(imgEl, frames, idleSrc, DRUM_FPS);
-            }
+            if (DRUM_ASSETS.anim[mapName + key]) frames = DRUM_ASSETS.anim[mapName + key];
+            else frames = isLeft ? DRUM_ASSETS.anim.be_caixa : DRUM_ASSETS.anim.bd_caixa;
+            
+            if (!isLeft) playRightArmAnimation(frames, idleSrc);
+            else runFrameAnimation(imgEl, frames, idleSrc, DRUM_FPS);
         }
         if(drumType === 'ataque') runFrameAnimation(domImages.bt_ataque, DRUM_ASSETS.anim.ataquePrato, DRUM_ASSETS.idle.ataque, 30);
         if(drumType.includes('conducao')) runFrameAnimation(domImages.bt_conducao, DRUM_ASSETS.anim.conducaoPrato, DRUM_ASSETS.idle.conducao, 30);
@@ -889,8 +913,7 @@
         for(let i=2; i<=5; i++) frames.push(`animacao/braco_direito/Corda_${corda}${i}.png`);
         const idle = `animacao/braco_direito/Corda_${corda}1.png`;
         let fps = 1000 / (duracaoStepMs / 5); 
-        if (fps < 20) fps = 20; 
-        if (fps > 60) fps = 60;
+        if (fps < 20) fps = 20; if (fps > 60) fps = 60;
         runFrameAnimation(domImages.bx_bracoDir, frames, idle, fps);
     }
 
@@ -899,75 +922,27 @@
         setCachedSrc(domImages.bx_bracoDir, `animacao/braco_direito/Corda_${ultimaCordaUsada||'E'}1.png`);
     }
 
-    function resetDrummer() {
-        Object.keys(activeAnimations).forEach(k => cancelAnimationFrame(activeAnimations[k]));
-        activeAnimations = {};
-        lastDrumStep = {};
-        if (headAnimationTimeout) {
-            clearTimeout(headAnimationTimeout);
-            headAnimationTimeout = null;
-        }
-        Object.keys(armAnimationTimers).forEach(timerId => {
-            clearTimeout(armAnimationTimers[timerId]);
-        });
-        armAnimationTimers = {};
-        setCachedSrc(domImages.bt_tronco, DRUM_ASSETS.idle.tronco);
-        setCachedSrc(domImages.bt_pernaEsq, DRUM_ASSETS.idle.pernaEsq);
-        setCachedSrc(domImages.bt_bracoDir, DRUM_ASSETS.idle.bracoDir);
-        lastRightArmFrame = null;
-        lastRightArmFrames = null;
-        setCachedSrc(domImages.bt_bracoEsq, DRUM_ASSETS.idle.bracoEsq);
-        domImages.bt_bracoEsq.style.zIndex = 10;
-        setCachedSrc(domImages.bt_cabeca, DRUM_ASSETS.idle.cabeca);
-        setCachedSrc(domImages.bt_ataque, DRUM_ASSETS.idle.ataque);
-        setCachedSrc(domImages.bt_conducao, DRUM_ASSETS.idle.conducao);
-        currentHeadStyle = 'estavel'; 
-    }
-
-    // NOVA LÓGICA DE PLAYBACK E GRAVAÇÃO
+    // Playback Normal (Tela)
     function togglePlay() {
-        if (isRecording) {
-            toggleRecording(); 
-            return;
+        if (isPlaying) { pararPlayback(); } 
+        else {
+            const overlay = document.getElementById("countdownOverlay");
+            const txt = document.getElementById("countdownText");
+            overlay.style.display = "flex"; 
+            prepararAssetsDaSequencia().then(() => {
+                let count = 4; txt.innerText = count; const ms = 60000 / bpmAtual;
+                const countInt = setInterval(() => {
+                    count--; if(count > 0) txt.innerText = count;
+                    else { clearInterval(countInt); overlay.style.display = "none"; iniciarPlayback(); }
+                }, ms);
+            });
         }
-
-        if (isPlaying) {
-            pararPlayback();
-        } else {
-            iniciarContagemEPlay();
-        }
-    }
-
-    function iniciarContagemEPlay(callback) {
-        const overlay = document.getElementById("countdownOverlay");
-        const txt = document.getElementById("countdownText");
-        overlay.style.display = "flex"; 
-        
-        prepararAssetsDaSequencia().then(() => {
-            let count = 4; 
-            txt.innerText = count;
-            const ms = 60000 / bpmAtual; 
-            
-            const countInt = setInterval(() => {
-                count--; 
-                if(count > 0) {
-                    txt.innerText = count;
-                } else { 
-                    clearInterval(countInt); 
-                    overlay.style.display = "none"; 
-                    if(callback) callback(); 
-                    iniciarPlayback(); 
-                }
-            }, ms);
-        });
     }
 
     function iniciarPlayback() {
         if (audioContext.state === 'suspended') audioContext.resume();
-        isPlaying = true; 
-        atualPasso = 0;
-        lastDrumStep = {};
-        document.getElementById("playBtn").innerText = "⏸ Pause"; document.getElementById("playBtn").style.background = "#e65100";
+        isPlaying = true; atualPasso = 0; lastDrumStep = {};
+        document.getElementById("playBtn").innerText = "⏸"; document.getElementById("playBtn").style.background = "#e65100";
         pendulumStartTime = performance.now(); 
         playDrumAnimation('start', 0); 
         let nextStepTime = audioContext.currentTime;
@@ -992,7 +967,7 @@
         if (delayDrumVisual < 0) delayDrumVisual = 0;
 
         setTimeout(() => {
-            if(!isPlaying) return;
+            if(!isPlaying && !isExporting) return;
             drumLines.forEach(line => {
                 if (bateriaSeq[line.id] && bateriaSeq[line.id][stepIndex] === line.id) {
                     playDrumAnimation(line.id, stepIndex);
@@ -1001,16 +976,13 @@
         }, delayDrumVisual);
 
         setTimeout(() => {
-            if(!isPlaying) return;
-            highlightGridStep(stepIndex);
-            document.getElementById("progressBar").style.width = ((stepIndex + 1) / baixoSeq.length * 100) + "%";
+            if(!isPlaying && !isExporting) return;
+            if(!isExporting) highlightGridStep(stepIndex); // Só destaca grid no modo visual
+            
             const notaBaixo = baixoSeq[stepIndex];
             const msPorStep = (60000/bpmAtual)/4;
-            if (notaBaixo !== "") {
-                animarBaixo(notaBaixo, msPorStep);
-            } else {
-                stopRightHand();
-            }
+            if (notaBaixo !== "") animarBaixo(notaBaixo, msPorStep);
+            else stopRightHand();
         }, delayVisualBase);
 
         const notaBaixo = baixoSeq[stepIndex];
@@ -1028,7 +1000,7 @@
     function pararPlayback() {
         isPlaying = false; 
         cancelAnimationFrame(playbackInterval);
-        document.getElementById("playBtn").innerText = "▶ Play"; document.getElementById("playBtn").style.background = "";
+        document.getElementById("playBtn").innerText = "▶"; document.getElementById("playBtn").style.background = "";
         pendulumStartTime = 0;
         stopRightHand();
         resetDrummer(); 
@@ -1063,68 +1035,6 @@
         const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
         audioBuffers[url] = audioBuffer;
         return audioBuffer;
-    }
-
-    // NOVA LÓGICA DE GRAVAÇÃO OTIMIZADA
-    async function toggleRecording() {
-        const btn = document.getElementById("recordVideoBtn");
-        
-        if (isRecording) {
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop(); 
-            }
-            isRecording = false; 
-            btn.innerText = "🔴 Gravar Vídeo"; 
-            btn.classList.remove("recording");
-            
-            if (isPlaying) pararPlayback();
-
-        } else {
-            if (isPlaying) pararPlayback();
-            
-            try {
-                if (audioContext.state === 'suspended') await audioContext.resume();
-                
-                desenharCenaEstatica();
-
-                const canvasStream = canvas.captureStream(30);
-                const videoTrack = canvasStream.getVideoTracks()[0];
-                const audioTrack = mediaStreamDestination.stream.getAudioTracks()[0];
-                const combinedStream = new MediaStream([videoTrack, audioTrack]);
-                
-                // OTIMIZAÇÃO EXTREMA: 1MBps bitrate
-                let options = { mimeType: 'video/webm; codecs=vp8', videoBitsPerSecond: 1000000 };
-                if (!MediaRecorder.isTypeSupported('video/webm; codecs=vp8')) {
-                    options = { mimeType: 'video/webm', videoBitsPerSecond: 1000000 };
-                }
-                
-                mediaRecorder = new MediaRecorder(combinedStream, options);
-                recordedChunks = [];
-                
-                mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
-                
-                mediaRecorder.onstop = () => {
-                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a'); a.style.display = 'none'; a.href = url; a.download = 'jam_session.webm';
-                    document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url);
-                };
-
-                mediaRecorder.start(); 
-                isRecording = true; 
-                btn.innerText = "⏹ Parar"; 
-                btn.classList.add("recording");
-
-                setTimeout(() => {
-                    iniciarContagemEPlay();
-                }, 500);
-
-            } catch (err) { 
-                alert("Erro gravação: " + err); 
-                isRecording = false;
-                btn.innerText = "🔴 Gravar Vídeo";
-            }
-        }
     }
     
     async function exportarWAV() { alert("Exportação WAV pronta (simulação)."); }
