@@ -4,7 +4,7 @@
   <link rel="icon" href="data:,">
   
   <meta charset="UTF-8" />
-  <title>Jam On - Sync Otimizado (Final Version Fixed)</title>
+  <title>Jam On - Mobile Performance (480p Fixed)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
   <style>
@@ -68,7 +68,7 @@
     }
 
     /* =========================================
-       ESTILO DA BATERISTA (VISUALIZAÇÃO TELA)
+       ESTILO DA BATERISTA (TELA)
        ========================================= */
     #bateristaStage {
       position: absolute;
@@ -96,7 +96,7 @@
     #bat_Ataque       { top: 0; left: 0; z-index: 22; }
 
     /* =========================================
-       ESTILO DA BAIXISTA (VISUALIZAÇÃO TELA)
+       ESTILO DA BAIXISTA (TELA)
        ========================================= */
     #baixistaStage {
       position: relative; width: 520px; height: 520px;
@@ -117,7 +117,7 @@
     #bracoDireitoLayer { top: 250px;  left: -5px;  z-index: 4; }
     #cabecaLayer       { top: 37px;   left: 70px;  z-index: 5; }
 
-    /* CANVAS HD OCULTO (1280x720) */
+    /* CANVAS OCULTO OTIMIZADO (854x480 - 480p Wide) */
     #recordingCanvas {
       position: absolute; top: -9999px; left: -9999px; visibility: hidden;
     }
@@ -214,7 +214,7 @@
 
   <div id="orientationOverlay"><div><h1>🎵 Melhor Experiência 🎸</h1><p>Gire o dispositivo.</p></div></div>
   
-  <canvas id="recordingCanvas" width="1280" height="720"></canvas>
+  <canvas id="recordingCanvas" width="854" height="480"></canvas>
 
   <div class="appRoot">
     <div id="topArea">
@@ -283,6 +283,9 @@
     const DRUM_PREROLL_MS = DRUM_IMPACT_FRAME * DRUM_MS_PER_FRAME; 
     const VISUAL_OFFSET_MS = 25; 
 
+    // VARIAVEL GLOBAL REINSERIDA CORRETAMENTE
+    const pastaFolderNames = { 1:"1F", 2:"2FS", 3:"3G", 4:"4GS", 5:"5A", 6:"6AS", 7:"7B", 8:"8C", 9:"9CS", 10:"10D", 11:"11DS", 12:"12E", 13:"13F", 14:"14FS", 15:"15G", 16:"16GS", 17:"17A", 18:"18AS", 19:"19B", 20:"20C", 21:"21CS", 22:"22D", 23:"23DS", 24:"24E" };
+
     const CABECA_ANIMATIONS = {
         virada_direita: Array.from({length:10}, (_,i) => PASTA_BAT + `Cabeca/Virada_para_direita/cabeca${String(i+51).padStart(4,'0')}.png`),
         virada_esquerda: Array.from({length:8}, (_,i) => PASTA_BAT + `Cabeca/Virada_para_esquerda/cabeca${String(i+39).padStart(4,'0')}.png`),
@@ -329,10 +332,6 @@
     };
 
     const pastaMap = { 1: ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B"], 2: ["3FS","4G","5GS","6A","8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C"], 3: ["4G","5GS","6A","7AS","9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS"], 4: ["5GS","6A","7AS","8B","10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D"], 5: ["6A","7AS","8B","9C","11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS"], 6: ["7AS","8B","9C","10CS","12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E"], 7: ["8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F"], 8: ["9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS"], 9: ["10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G"], 10: ["11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS"], 11: ["12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A"], 12: ["13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS"], 13: ["14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B"], 14: ["15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C"], 15: ["16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS"], 16: ["17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D"], 17: ["18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS"], 18: ["19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E"], 19: ["20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F"], 20: ["21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS","36DS","37E","38F","39FS"], 21: ["22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D","37E","38F","39FS","40G"], 22: ["23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS","38F","39FS","40G","41GS"], 23: ["24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E","39FS","40G","41GS","42A"], 24: ["25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F","40G","41GS","42A","43AS"] };
-    
-    // CORREÇÃO: Variável reinserida!
-    const pastaFolderNames = { 1:"1F", 2:"2FS", 3:"3G", 4:"4GS", 5:"5A", 6:"6AS", 7:"7B", 8:"8C", 9:"9CS", 10:"10D", 11:"11DS", 12:"12E", 13:"13F", 14:"14FS", 15:"15G", 16:"16GS", 17:"17A", 18:"18AS", 19:"19B", 20:"20C", 21:"21CS", 22:"22D", 23:"23DS", 24:"24E" };
-
     const notasValidas = ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B","21C","22CS","23D","24DS","25E","26F","27FS","28G","29GS","30A","31AS","32B","33C","34CS","35D","36DS","37E","38F","39FS","40G","41GS","42A","43AS"];
     const drumLines = [
       { id: "bumbo", label: "Bumbo", file: "bumbo.mp3" }, { id: "caixa", label: "Caixa", file: "caixa.mp3" }, { id: "caixaAro", label: "Aro", file: "caixaAro.mp3" }, { id: "chimbal", label: "HH", file: "chimbal.mp3" }, { id: "chimbal_pedal", label: "HH Ped", file: "chimbal-pedal.mp3" }, { id: "chimbalaberto", label: "HH Open", file: "chimbal-aberto.mp3" }, { id: "ataque", label: "Ataque", file: "ataque.mp3" }, { id: "tom1", label: "Tom 1", file: "tom-1.mp3" }, { id: "tom2", label: "Tom 2", file: "tom-2.mp3" }, { id: "surdo", label: "Surdo", file: "surdo.mp3" }, { id: "conducao", label: "Ride", file: "conducao.mp3" }, { id: "conducao_centro", label: "Ride C", file: "conducao-centro.mp3" }
@@ -532,23 +531,23 @@
     }
 
     // ========================================================
-    // A CENA ESTATICA (WARM-UP)
+    // WARM-UP (PREPARAÇÃO) DO CANVAS 480P
     // ========================================================
     function desenharCenaEstatica() {
         ctx.fillStyle = "#111"; 
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        // Fundo Gradiente
-        const gradient = ctx.createRadialGradient(640, 360, 100, 640, 360, 600);
+        // Gradiente de Fundo
+        const gradient = ctx.createRadialGradient(427, 240, 50, 427, 240, 400);
         gradient.addColorStop(0, "#222");
         gradient.addColorStop(1, "#000");
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        // --- Desenha Baterista (Parado) ---
+        // --- BATERISTA (AJUSTADO PARA 480p - FUNDO ESQUERDA) ---
         ctx.save();
-        ctx.translate(280, 100); 
-        ctx.scale(0.65, 0.65);
+        ctx.translate(180, 80); 
+        ctx.scale(0.45, 0.45);
         
         const draw = (img) => { if(img && img.complete) ctx.drawImage(img, 0, 0); };
         draw(domImages.bt_conducao);
@@ -561,10 +560,10 @@
         draw(domImages.bt_ataque);
         ctx.restore();
 
-        // --- Desenha Baixista (Parado) ---
+        // --- BAIXISTA (AJUSTADO PARA 480p - FRENTE DIREITA) ---
         ctx.save();
-        ctx.translate(680, 80); 
-        ctx.scale(0.9, 0.9);
+        ctx.translate(400, 50); 
+        ctx.scale(0.7, 0.7);
 
         if (domImages.bx_pernas.complete) ctx.drawImage(domImages.bx_pernas, 64, 332);
         
@@ -588,13 +587,23 @@
     }
 
     // ========================================================
-    // RENDERIZAÇÃO DA "CÂMERA VIRTUAL" (GRAVAÇÃO)
+    // RENDER LOOP OTIMIZADO (LIMITADO A 30 FPS)
     // ========================================================
-    function canvasRenderLoop() {
+    let lastDrawTime = 0;
+    const FRAME_INTERVAL = 1000 / 30; // 30 FPS
+
+    function canvasRenderLoop(timestamp) {
+        requestAnimationFrame(canvasRenderLoop);
+        
+        // THROTTLE: Se não estiver gravando, ou se for muito cedo, não desenha
+        if (!isRecording) return;
+        if (timestamp - lastDrawTime < FRAME_INTERVAL) return;
+        lastDrawTime = timestamp;
+
         ctx.fillStyle = "#111"; 
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        const gradient = ctx.createRadialGradient(640, 360, 100, 640, 360, 600);
+        const gradient = ctx.createRadialGradient(427, 240, 50, 427, 240, 400);
         gradient.addColorStop(0, "#222");
         gradient.addColorStop(1, "#000");
         ctx.fillStyle = gradient;
@@ -602,8 +611,8 @@
 
         // --- CAMADA 1: BATERISTA ---
         ctx.save();
-        ctx.translate(280, 100); 
-        ctx.scale(0.65, 0.65);   
+        ctx.translate(180, 80); 
+        ctx.scale(0.45, 0.45);   
 
         const drawImg = (el) => { if (el && el.complete && el.naturalWidth > 0) ctx.drawImage(el, 0, 0); };
         
@@ -627,8 +636,8 @@
 
         // --- CAMADA 2: BAIXISTA ---
         ctx.save();
-        ctx.translate(680, 80); 
-        ctx.scale(0.9, 0.9); 
+        ctx.translate(400, 50); 
+        ctx.scale(0.7, 0.7); 
 
         if (domImages.bx_pernas.complete) ctx.drawImage(domImages.bx_pernas, 64, 332);
 
@@ -659,8 +668,6 @@
         
         ctx.restore(); 
         ctx.restore(); 
-
-        requestAnimationFrame(canvasRenderLoop);
     }
 
     function runFrameAnimation(elementId, frames, idleFrame, fps = 30, loop = false, startFrame = 0, keepLastFrame = false) {
@@ -924,7 +931,6 @@
     // NOVA LÓGICA DE PLAYBACK E GRAVAÇÃO
     function togglePlay() {
         if (isRecording) {
-            // Se estiver gravando e clicar em Pause, para a gravação também.
             toggleRecording(); 
             return;
         }
@@ -944,7 +950,6 @@
         prepararAssetsDaSequencia().then(() => {
             let count = 4; 
             txt.innerText = count;
-            // Usa tempo fixo para contagem (mais previsível para UI) ou baseado em BPM
             const ms = 60000 / bpmAtual; 
             
             const countInt = setInterval(() => {
@@ -954,7 +959,7 @@
                 } else { 
                     clearInterval(countInt); 
                     overlay.style.display = "none"; 
-                    if(callback) callback(); // Se for gravação, executa o callback
+                    if(callback) callback(); 
                     iniciarPlayback(); 
                 }
             }, ms);
@@ -1064,12 +1069,11 @@
         return audioBuffer;
     }
 
-    // NOVA LÓGICA DE GRAVAÇÃO COM SEGURANÇA E WARM-UP
+    // NOVA LÓGICA DE GRAVAÇÃO OTIMIZADA
     async function toggleRecording() {
         const btn = document.getElementById("recordVideoBtn");
         
         if (isRecording) {
-            // -- PARAR GRAVAÇÃO --
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                 mediaRecorder.stop(); 
             }
@@ -1077,28 +1081,21 @@
             btn.innerText = "🔴 Gravar Vídeo"; 
             btn.classList.remove("recording");
             
-            // Também para o playback automaticamente ao parar a gravação
             if (isPlaying) pararPlayback();
 
         } else {
-            // -- INICIAR GRAVAÇÃO --
-            
-            // 1. Para qualquer som/animação atual para limpar o estado
             if (isPlaying) pararPlayback();
             
             try {
                 if (audioContext.state === 'suspended') await audioContext.resume();
                 
-                // 2. WARM-UP: Desenha a cena estática no canvas ANTES de começar a gravar
                 desenharCenaEstatica();
 
-                // Configura o gravador
                 const canvasStream = canvas.captureStream(30);
                 const videoTrack = canvasStream.getVideoTracks()[0];
                 const audioTrack = mediaStreamDestination.stream.getAudioTracks()[0];
                 const combinedStream = new MediaStream([videoTrack, audioTrack]);
                 
-                // OTIMIZAÇÃO: Usa VP8 e bitrate menor para mobile
                 let options = { mimeType: 'video/webm; codecs=vp8', videoBitsPerSecond: 1500000 };
                 if (!MediaRecorder.isTypeSupported('video/webm; codecs=vp8')) {
                     options = { mimeType: 'video/webm', videoBitsPerSecond: 1500000 };
@@ -1116,13 +1113,11 @@
                     document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url);
                 };
 
-                // 3. Inicia o MediaRecorder
                 mediaRecorder.start(); 
                 isRecording = true; 
                 btn.innerText = "⏹ Parar"; 
                 btn.classList.add("recording");
 
-                // 4. Espera 500ms antes de iniciar a contagem/play
                 setTimeout(() => {
                     iniciarContagemEPlay();
                 }, 500);
