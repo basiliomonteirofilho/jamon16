@@ -4,8 +4,9 @@
   <link rel="icon" href="data:,">
   
   <meta charset="UTF-8" />
-  <title>Jam On - Final Stable Version</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Jam On - Mobile Zoom & No-Lag Rec</title>
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.6, maximum-scale=3.0, user-scalable=yes" />
 
   <style>
     :root {
@@ -28,7 +29,10 @@
       font-family: system-ui, -apple-system, sans-serif;
       background: #000;
       color: #f5f5f5;
-      overflow: hidden;
+      /* MUDANÇA 2: Permite rolagem (Scroll) na vertical */
+      overflow-y: auto; 
+      overflow-x: hidden; /* Evita rolagem horizontal indesejada */
+      min-height: 100vh;
     }
 
     /* TELA DE CARREGAMENTO */
@@ -66,21 +70,25 @@
     }
 
     .appRoot {
-      width: 100vw; height: 100vh; display: flex; flex-direction: column;
+      width: 100%; min-height: 100vh; display: flex; flex-direction: column;
       background: radial-gradient(circle at top, #222 0%, #000 80%);
     }
 
     #topArea {
-      flex: 1; display: flex; align-items: center; justify-content: center;
-      position: relative; overflow: hidden;
+      /* MUDANÇA 3: Altura fixa grande para caber os personagens na vertical */
+      height: 80vh; 
+      min-height: 500px;
+      display: flex; align-items: center; justify-content: center;
+      position: relative; 
+      overflow: hidden;
     }
 
     #animacaoStageWrapper {
       position: relative; width: 100%; height: 100%;
       display: flex; align-items: center; justify-content: center;
       transform-origin: center center;
-      /* Ajuste Visual para Mobile: Menor para caber tudo */
-      transform: scale(0.8); 
+      /* Escala padrão para desktop */
+      transform: scale(0.9);
     }
 
     /* =========================================
@@ -91,6 +99,7 @@
       width: 520px; height: 520px;
       transform-origin: center center;
       z-index: 1; 
+      /* Posição padrão */
       transform: scale(0.45) translate(-300px, -200px); 
       pointer-events: none;
     }
@@ -117,6 +126,7 @@
       position: relative; width: 520px; height: 520px;
       transform-origin: center center;
       z-index: 100; 
+      /* Posição padrão */
       transform: scale(0.8) translate(100px, 50px);
     }
 
@@ -133,54 +143,61 @@
     #bracoDireitoLayer { top: 250px;  left: -5px;  z-index: 4; }
     #cabecaLayer       { top: 37px;   left: 70px;  z-index: 5; }
 
+    /* CANVAS 480p - Leve para não travar */
     #recordingCanvas {
       position: absolute; top: -9999px; left: -9999px; visibility: hidden;
     }
 
     #bottomArea {
-      flex: 0 0 50vh; max-height: 450px; min-height: 300px;
+      /* MUDANÇA 4: Remove travas de tamanho, permitindo o conteúdo fluir */
+      flex: 1;
       display: flex; flex-direction: column; background: var(--panel-bg);
-      border-top: 1px solid #333; padding: 10px; z-index: 200;
+      border-top: 1px solid #333; padding: 15px; z-index: 200;
       box-shadow: 0 -5px 30px rgba(0,0,0,0.8);
+      min-height: 400px; /* Garante altura para os controles */
     }
 
-    #playerControlsRow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
+    #playerControlsRow { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 15px; justify-content: center; }
+    
     button {
-      padding: 6px 12px; border-radius: 4px; border: 1px solid #444;
-      background: #222; color: #eee; font-size: 0.75rem; cursor: pointer;
-      display: flex; align-items: center; gap: 4px; white-space: nowrap;
+      padding: 10px 16px; border-radius: 6px; border: 1px solid #444;
+      background: #222; color: #eee; font-size: 0.9rem; cursor: pointer;
+      display: flex; align-items: center; gap: 6px; white-space: nowrap;
+      /* Botões maiores para toque */
+      min-height: 44px; 
     }
     button:hover { background: #333; border-color: #777; }
     button:disabled { opacity: 0.5; cursor: not-allowed; }
     
-    #playBtn { background: var(--accent-color); border-color: var(--highlight-color); font-weight: bold; color: #fff; }
-    #exportVideoBtn { background: #b71c1c; border-color: #ff5252; color: white; font-weight: bold; }
+    #playBtn { background: var(--accent-color); border-color: var(--highlight-color); font-weight: bold; color: #fff; flex-grow: 1; justify-content: center; }
+    #exportVideoBtn { background: #b71c1c; border-color: #ff5252; color: white; font-weight: bold; flex-grow: 1; justify-content: center; }
 
     #generationInfo {
         margin-left: auto; font-size: 0.7rem; color: var(--highlight-color);
         background: rgba(0,230,118, 0.1); padding: 4px 8px; border-radius: 4px;
         border: 1px solid var(--accent-color); display: none; white-space: nowrap;
+        width: 100%; text-align: center; margin-top: 5px;
     }
 
-    .sliderGroup { display: flex; align-items: center; gap: 5px; background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; }
-    .sliderGroup label { font-size: 0.7rem; color: #ccc; }
-    input[type="range"] { width: 70px; cursor: pointer; accent-color: var(--highlight-color); }
-    #bpmDisplay { font-family: monospace; font-weight: bold; min-width: 65px; text-align: center; font-size: 0.8rem;}
+    .sliderGroup { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 6px; }
+    .sliderGroup label { font-size: 0.8rem; color: #ccc; }
+    input[type="range"] { width: 100px; cursor: pointer; accent-color: var(--highlight-color); height: 20px; }
+    #bpmDisplay { font-family: monospace; font-weight: bold; min-width: 70px; text-align: center; font-size: 0.9rem;}
 
-    #progressContainer { width: 100%; height: 3px; background: #333; margin-bottom: 8px; }
-    #progressBar { height: 100%; width: 0%; background: var(--highlight-color); transition: width 0.1s linear; }
+    #progressContainer { width: 100%; height: 6px; background: #333; margin-bottom: 15px; border-radius: 3px; }
+    #progressBar { height: 100%; width: 0%; background: var(--highlight-color); transition: width 0.1s linear; border-radius: 3px; }
 
-    #gridsArea { flex: 1; overflow: auto; border: 1px solid #333; background: var(--grid-bg); position: relative; }
+    #gridsArea { flex: 1; overflow: auto; border: 1px solid #333; background: var(--grid-bg); position: relative; min-height: 300px; }
     .rowContainer { display: flex; align-items: center; margin-bottom: 1px; width: max-content; min-width: 100%; position: relative; }
     .gridLabel {
       position: sticky; left: 0; z-index: 10; width: var(--label-width); min-width: var(--label-width);
-      font-size: 0.65rem; text-align: right; padding-right: 8px; color: #aaa; background: #000;
-      border-right: 1px solid #333; height: var(--cell-size); display: flex; align-items: center; justify-content: flex-end;
+      font-size: 0.7rem; text-align: right; padding-right: 8px; color: #aaa; background: #000;
+      border-right: 1px solid #333; height: 32px; display: flex; align-items: center; justify-content: flex-end;
     }
-    .trackGrid { display: grid; grid-auto-flow: column; grid-auto-columns: var(--cell-size); grid-template-rows: var(--cell-size); gap: 1px; padding-left: 1px; }
-    .delete-btn { width: var(--cell-size); height: 18px; font-size: 10px; background: #b71c1c; border: none; color: white; cursor: pointer; }
+    .trackGrid { display: grid; grid-auto-flow: column; grid-auto-columns: 30px; grid-template-rows: 32px; gap: 1px; padding-left: 1px; }
+    .delete-btn { width: 30px; height: 20px; font-size: 10px; background: #b71c1c; border: none; color: white; cursor: pointer; }
     
-    .cell { background: var(--cell-bg); border: 1px solid var(--cell-border); border-radius: 2px; color: #fff; font-size: 0.65rem; display: flex; align-items: center; justify-content: center; cursor: pointer; width: var(--cell-size); height: var(--cell-size); }
+    .cell { background: var(--cell-bg); border: 1px solid var(--cell-border); border-radius: 2px; color: #fff; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; cursor: pointer; width: 30px; height: 32px; }
     .cell.active { background: var(--accent-color); border-color: var(--highlight-color); }
     .cell.active-ghost { background: #880e4f; border-color: #f50057; }
     .cell.playing-step { background-color: #333 !important; border-color: #fff !important; }
@@ -190,8 +207,8 @@
     #selectionOverlay.visible { display: flex; }
     #selectionPanel { background: #1a1a1a; border: 1px solid #444; padding: 20px; border-radius: 8px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
     #selectionTitle { margin-bottom: 15px; font-weight: bold; color: #fff; text-align: center; }
-    #selectionOptions { display: grid; grid-template-columns: repeat(auto-fill, minmax(45px, 1fr)); gap: 6px; }
-    .selection-option { padding: 10px 0; background: #2c2c2c; text-align: center; border-radius: 4px; font-size: 0.8rem; cursor: pointer; border: 1px solid transparent; }
+    #selectionOptions { display: grid; grid-template-columns: repeat(auto-fill, minmax(50px, 1fr)); gap: 8px; }
+    .selection-option { padding: 12px 0; background: #2c2c2c; text-align: center; border-radius: 4px; font-size: 0.9rem; cursor: pointer; border: 1px solid transparent; }
     .selection-option.active { background: var(--accent-color); border-color: var(--highlight-color); }
     .selection-option.ghost { color: #ff80ab; border-color: #880e4f; }
 
@@ -201,22 +218,24 @@
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
     
-    /* ADAPTAÇÕES MOBILE VISUAL */
+    /* ADAPTAÇÕES ESPECÍFICAS PARA CELULAR */
     @media (max-width: 800px) {
-        #animacaoStageWrapper { transform: scale(0.45); }
-        #topArea { overflow: hidden; }
-    }
-    
-    @media (max-width: 600px) { 
-        #bottomArea { flex-basis: 60vh; } 
-        :root { --label-width: 50px; --cell-size: 22px; } 
+        /* Ajuste para caber tudo na vertical */
         #animacaoStageWrapper { 
-            /* Escala pequena para aparecer a banda toda na tela do celular */
-            transform: scale(0.38); 
+            transform: scale(0.65); /* Escala reduzida para visualização */
+            flex-direction: column; /* Garante fluxo vertical se precisar */
         }
-        #playerControlsRow { justify-content: space-between; }
-        button { flex-grow: 1; justify-content: center; }
-        .sliderGroup { flex-grow: 1; justify-content: center; }
+        
+        /* Posicionamento Visual: Baterista em cima, Baixista embaixo */
+        #bateristaStage {
+            transform: scale(0.4) translate(0px, -350px);
+            left: 50%; margin-left: -260px; /* Centraliza */
+        }
+        
+        #baixistaStage {
+            transform: scale(0.7) translate(0px, 100px);
+            left: 50%; margin-left: -260px; /* Centraliza */
+        }
     }
   </style>
 </head>
@@ -229,13 +248,13 @@
 
   <div id="renderOverlay">
     <div id="renderSpinner"></div>
-    <div id="renderStatus">Gerando Vídeo...</div>
-    <div id="renderSub">Aguarde. Isso pode levar alguns segundos.</div>
+    <div id="renderStatus">Renderizando Vídeo...</div>
+    <div id="renderSub">Não feche o navegador.</div>
   </div>
 
   <div id="orientationOverlay"><div><h1>🎵 Melhor Experiência 🎸</h1><p>Gire o dispositivo.</p></div></div>
   
-  <canvas id="recordingCanvas" width="1280" height="720"></canvas>
+  <canvas id="recordingCanvas" width="854" height="480"></canvas>
 
   <div class="appRoot">
     <div id="topArea">
@@ -299,15 +318,14 @@
   <script>
     const PASTA_BAT = "animacao/Baterista/";
     const imgCache = new Map();
-    const DRUM_FPS = 30; // 30 FPS no vídeo
+    const DRUM_FPS = 24; // 24 FPS para vídeo fluido em mobile
     const DRUM_IMPACT_FRAME = 2; 
     const DRUM_MS_PER_FRAME = 1000 / DRUM_FPS;
     const DRUM_PREROLL_MS = DRUM_IMPACT_FRAME * DRUM_MS_PER_FRAME; 
     const VISUAL_OFFSET_MS = 25; 
 
-    // VARIAVEIS IMPORTANTES
+    // VARIÁVEIS GLOBAIS ESSENCIAIS
     const pastaFolderNames = { 1:"1F", 2:"2FS", 3:"3G", 4:"4GS", 5:"5A", 6:"6AS", 7:"7B", 8:"8C", 9:"9CS", 10:"10D", 11:"11DS", 12:"12E", 13:"13F", 14:"14FS", 15:"15G", 16:"16GS", 17:"17A", 18:"18AS", 19:"19B", 20:"20C", 21:"21CS", 22:"22D", 23:"23DS", 24:"24E" };
-    // A VARIAVEL QUE FALTAVA:
     const pastaMap = { 1: ["1E","2F","3FS","4G","5GS","6A","7AS","8B","9C","10CS","11D","12DS","13E","14F","15FS","16G","17GS","18A","19AS","20B"], 2: ["3FS","4G","5GS","6A","8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C"], 3: ["4G","5GS","6A","7AS","9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS"], 4: ["5GS","6A","7AS","8B","10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D"], 5: ["6A","7AS","8B","9C","11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS"], 6: ["7AS","8B","9C","10CS","12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E"], 7: ["8B","9C","10CS","11D","13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F"], 8: ["9C","10CS","11D","12DS","14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS"], 9: ["10CS","11D","12DS","13E","15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G"], 10: ["11D","12DS","13E","14F","16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS"], 11: ["12DS","13E","14F","15FS","17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A"], 12: ["13E","14F","15FS","16G","18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS"], 13: ["14F","15FS","16G","17GS","19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B"], 14: ["15FS","16G","17GS","18A","20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C"], 15: ["16G","17GS","18A","19AS","21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS"], 16: ["17GS","18A","19AS","20B","22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D"], 17: ["18A","19AS","20B","21C","23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS"], 18: ["19AS","20B","21C","22CS","24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E"], 19: ["20B","21C","22CS","23D","25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F"], 20: ["21C","22CS","23D","24DS","26F","27FS","28G","29GS","31AS","32B","33C","34CS","36DS","37E","38F","39FS"], 21: ["22CS","23D","24DS","25E","27FS","28G","29GS","30A","32B","33C","34CS","35D","37E","38F","39FS","40G"], 22: ["23D","24DS","25E","26F","28G","29GS","30A","31AS","33C","34CS","35D","36DS","38F","39FS","40G","41GS"], 23: ["24DS","25E","26F","27FS","29GS","30A","31AS","32B","34CS","35D","36DS","37E","39FS","40G","41GS","42A"], 24: ["25E","26F","27FS","28G","30A","31AS","32B","33C","35D","36DS","37E","38F","40G","41GS","42A","43AS"] };
 
     const CABECA_ANIMATIONS = {
@@ -574,11 +592,9 @@
         contexto.fillRect(0, 0, width, height);
         
         // --- BATERISTA (FUNDO ESQUERDA) ---
-        // Coordenadas calibradas para HD (1280x720)
-        // Usamos escala para adaptar a posição
         contexto.save();
-        contexto.translate(width * 0.25, height * 0.2); // 25% X, 20% Y
-        contexto.scale(0.55, 0.55); // Escala para HD
+        contexto.translate(width * 0.25, height * 0.2); 
+        contexto.scale(0.55, 0.55); // Escala HD
         
         const draw = (img) => { if(img && img.complete) contexto.drawImage(img, 0, 0); };
         draw(domImages.bt_conducao);
@@ -594,14 +610,14 @@
 
         // --- BAIXISTA (FRENTE DIREITA) ---
         contexto.save();
-        contexto.translate(width * 0.6, height * 0.15); // 60% X, 15% Y
-        contexto.scale(0.85, 0.85); // Maior, em destaque
+        contexto.translate(width * 0.6, height * 0.15); 
+        contexto.scale(0.85, 0.85);
 
         if (domImages.bx_pernas.complete) contexto.drawImage(domImages.bx_pernas, 64, 332);
         
-        // Pêndulo do Baixo
+        // Pêndulo
         contexto.save();
-        contexto.translate(260, 416); // Pivot (Centro do corpo aprox)
+        contexto.translate(260, 416); // Pivot
         
         let angle = 0;
         if ((isPlaying || isExporting) && pendulumStartTime > 0) {
@@ -611,7 +627,7 @@
             angle = Math.sin(elapsed * speed) * 2.3;
         }
         contexto.rotate(angle * Math.PI / 180);
-        contexto.translate(-260, -416); // Retorna
+        contexto.translate(-260, -416); 
         
         if (domImages.bx_cabecaTras.complete) contexto.drawImage(domImages.bx_cabecaTras, 100, 60);
         if (domImages.bx_tronco.src && domImages.bx_tronco.complete) {
@@ -624,53 +640,41 @@
         if (domImages.bx_bracoDir.complete) contexto.drawImage(domImages.bx_bracoDir, -5, 250);
         if (domImages.bx_cabeca.complete) contexto.drawImage(domImages.bx_cabeca, 70, 37);
         
-        contexto.restore(); // Fecha Pêndulo
-        contexto.restore(); // Fecha Baixista
+        contexto.restore();
+        contexto.restore();
     }
 
-    // Loop de Renderização do Vídeo
+    // Loop de Renderização (Vídeo apenas)
     let lastDrawTime = 0;
-    const FRAME_INTERVAL = 1000 / 30; // 30 FPS no vídeo
+    const FRAME_INTERVAL = 1000 / 30; // 30 FPS
 
     function canvasRenderLoop(timestamp) {
         requestAnimationFrame(canvasRenderLoop);
-        
-        // Se não estiver exportando, não gasta CPU desenhando no canvas oculto
         if (!isExporting) return;
-        
-        // Limitador de FPS (Throttle) para não travar o celular
         if (timestamp - lastDrawTime < FRAME_INTERVAL) return;
         lastDrawTime = timestamp;
-
         desenharCenaUnificada(ctx, canvas.width, canvas.height);
     }
 
     // ========================================================
-    // LÓGICA DE EXPORTAÇÃO "OFFLINE" (SEM TRAVAR VISUAL)
+    // EXPORTAÇÃO OFFLINE
     // ========================================================
     async function iniciarProcessoExportacao() {
         if (isPlaying) pararPlayback();
         if (audioContext.state === 'suspended') await audioContext.resume();
 
-        // 1. Mostra Overlay e Bloqueia Tela
         document.getElementById("renderOverlay").style.display = "flex";
-        
-        // 2. Garante Assets
         await prepararAssetsDaSequencia();
 
-        // 3. Configura Modo Exportação
         isExporting = true;
-        
-        // Desenha frame inicial estático
         desenharCenaUnificada(ctx, canvas.width, canvas.height);
 
-        // 4. Inicia Stream e Recorder
         const canvasStream = canvas.captureStream(30);
         const videoTrack = canvasStream.getVideoTracks()[0];
         const audioTrack = mediaStreamDestination.stream.getAudioTracks()[0];
         const combinedStream = new MediaStream([videoTrack, audioTrack]);
         
-        // Configurações de Qualidade (Bitrate moderado para HD em mobile)
+        // 480p/2.5Mbps - Equilíbrio Mobile
         let options = { mimeType: 'video/webm; codecs=vp8', videoBitsPerSecond: 2500000 }; 
         if (!MediaRecorder.isTypeSupported('video/webm; codecs=vp8')) options = { mimeType: 'video/webm' };
         
@@ -679,13 +683,11 @@
         
         mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
         mediaRecorder.onstop = () => {
-            // Fim da gravação: Gera download
             const blob = new Blob(recordedChunks, { type: 'video/webm' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a'); a.style.display = 'none'; a.href = url; a.download = 'jam_export.webm';
             document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url);
             
-            // Restaura estado
             isExporting = false;
             document.getElementById("renderOverlay").style.display = "none";
             pararPlayback(); 
@@ -693,7 +695,6 @@
 
         mediaRecorder.start();
 
-        // 5. Inicia Playback Oculto (com delay de segurança)
         setTimeout(() => {
             iniciarPlaybackDeExportacao();
         }, 1000);
@@ -703,8 +704,6 @@
         atualPasso = 0;
         lastDrumStep = {};
         pendulumStartTime = performance.now();
-        
-        // Inicia animação inicial
         playDrumAnimation('start', 0);
         
         let nextStepTime = audioContext.currentTime;
@@ -717,7 +716,6 @@
 
             while (nextStepTime < audioContext.currentTime + 0.15) {
                 if (stepsPlayed >= totalDurationSteps) {
-                    // FIM: Para gravador com margem de segurança
                     setTimeout(() => {
                         if(mediaRecorder.state !== 'inactive') mediaRecorder.stop();
                     }, 1000); 
@@ -728,7 +726,6 @@
                 nextStepTime += secondsPerStep;
                 atualPasso++;
                 stepsPlayed++;
-                // Loop circular lógico (apenas para manter índices válidos)
                 if (atualPasso >= baixoSeq.length) atualPasso = 0;
             }
             requestAnimationFrame(scheduler);
@@ -737,7 +734,7 @@
     }
 
     // ========================================================
-    // FUNÇÕES DE ANIMAÇÃO PADRÃO
+    // ANIMAÇÃO PADRÃO
     // ========================================================
     function runFrameAnimation(elementId, frames, idleFrame, fps = 30, loop = false, startFrame = 0, keepLastFrame = false) {
         const el = typeof elementId === 'string' ? document.getElementById(elementId) : elementId;
